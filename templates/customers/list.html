@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Customers - Awning Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Customers</h1>
+    <a href="{{ url_for('customers.new_customer') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> New Customer
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <!-- Search Form -->
+        <form method="GET" class="mb-3">
+            <div class="row">
+                <div class="col-md-8">
+                    <input type="text" class="form-control" name="search" 
+                           placeholder="Search customers..." value="{{ search }}">
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-outline-primary">Search</button>
+                    <a href="{{ url_for('customers.list_customers') }}" class="btn btn-outline-secondary">Clear</a>
+                </div>
+            </div>
+        </form>
+
+        <!-- Customer Table -->
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Contact</th>
+                        <th>City, State</th>
+                        <th>Phone</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in customers.items %}
+                    <tr>
+                        <td>{{ customer.id }}</td>
+                        <td>
+                            <a href="{{ url_for('customers.view_customer', id=customer.id) }}">
+                                {{ customer.name }}
+                            </a>
+                        </td>
+                        <td>{{ customer.contact or '-' }}</td>
+                        <td>{{ customer.city }}{% if customer.city and customer.state %}, {% endif %}{{ customer.state }}</td>
+                        <td>{{ customer.home_phone or customer.work_phone or customer.cell_phone or '-' }}</td>
+                        <td>
+                            <a href="{{ url_for('customers.view_customer', id=customer.id) }}" 
+                               class="btn btn-sm btn-outline-primary">View</a>
+                            <a href="{{ url_for('customers.edit_customer', id=customer.id) }}" 
+                               class="btn btn-sm btn-outline-secondary">Edit</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if customers.pages > 1 %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination">
+                {% if customers.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('customers.list_customers', page=customers.prev_num, search=search) }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page in customers.iter_pages() %}
+                    {% if page %}
+                        {% if page != customers.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('customers.list_customers', page=page, search=search) }}">{{ page }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page }}</span>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if customers.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('customers.list_customers', page=customers.next_num, search=search) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
