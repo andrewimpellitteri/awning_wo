@@ -120,3 +120,4 @@ data/
 data/*.csv
 *.db
 *.sqlite
+csv_export/

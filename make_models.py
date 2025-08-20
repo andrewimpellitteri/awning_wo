@@ -65,3 +65,4 @@ for table in tables:
     print(f"Generated model for table: {table}")
 
 conn.close()
+print("done")
