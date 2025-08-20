@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if work_order %}Edit{% else %}New{% endif %} Work Order - Awning Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .form-section {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .required {
+            color: #dc3545;
+        }
+        
+        .rush-section {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-home me-2"></i>Awning Management
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('work_orders.list_work_orders') }}">Work Orders</a>
+                <a class="nav-link" href="{{ url_for('customers.list_customers') }}">Customers</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h4 class="mb-0">
+                            <i class="fas fa-clipboard-list me-2"></i>
+                            {% if work_order %}Edit Work Order{% else %}New Work Order{% endif %}
+                        </h4>
+                    </div>
+                    
+                    <div class="card-body">
+                        <form method="POST" action="{% if work_order %}{{ url_for('work_orders.update_work_order', id=work_order.id) }}{% else %}{{ url_for('work_orders.create_work_order') }}{% endif %}">
+                            <!-- Customer Selection -->
+                            <div class="form-section">
+                                <h5 class="mb-3"><i class="fas fa-user me-2"></i>Customer Information</h5>
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <label for="customer_id" class="form-label">
+                                            Customer <span class="required">*</span>
+                                        </label>
+                                        <select name="customer_id" id="customer_id" class="form-select" required>
+                                            <option value="">Select a customer...</option>
+                                            {% for c in customers %}
+                                            <option value="{{ c.id }}" 
+                                                    {% if customer and c.id == customer.id %}selected{% endif %}>
+                                                {{ c.customer_name }} - {{ c.phone or 'No phone' }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">&nbsp;</label>
+                                        <div>
+                                            <a href="{{ url_for('customers.new_customer') }}" class="btn btn-outline-secondary">
+                                                <i class="fas fa-plus me-1"></i>Add New Customer
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Work Order Details -->
+                            <div class="form-section">
+                                <h5 class="mb-3"><i class="fas fa-clipboard-list me-2"></i>Work Order Details</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label for="wo_name" class="form-label">Work Order Name</label>
+                                        <input type="text" class="form-control" id="wo_name" name="wo_name" 
+                                               value="{{ work_order.wo_name if work_order else '' }}"
+                                               placeholder="e.g., Patio Awning Repair">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="quote" class="form-label">Quote Amount</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" step="0.01" class="form-control" id="quote" name="quote" 
+                                                   value="{{ work_order.quote if work_order and work_order.quote else '' }}"
+                                                   placeholder="0.00">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dates -->
+                            <div class="form-section">
+                                <h5 class="mb-3"><i class="fas fa-calendar me-2"></i>Scheduling</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label for="date_in" class="form-label">
+                                            Date In <span class="required">*</span>
+                                        </label>
+                                        <input type="date" class="form-control" id="date_in" name="date_in" 
+                                               value="{{ work_order.date_in.strftime('%Y-%m-%d') if work_order and work_order.date_in else '' }}"
+                                               required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="date_required" class="form-label">Date Required</label>
+                                        <input type="date" class="form-control" id="date_required" name="date_required" 
+                                               value="{{ work_order.date_required.strftime('%Y-%m-%d') if work_order and work_order.date_required else '' }}">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Services -->
+                            <div class="form-section">
+                                <h5 class="mb-3"><i class="fas fa-tools me-2"></i>Services</h5>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="clean" name="clean" value="1"
+                                                   {% if work_order and work_order.clean %}checked{% endif %}>
+                                            <label class="form-check-label" for="clean">
+                                                <i class="fas fa-spray-can me-1"></i>Clean
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="treat" name="treat" value="1"
+                                                   {% if work_order and work_order.treat %}checked{% endif %}>
+                                            <label class="form-check-label" for="treat">
+                                                <i class="fas fa-shield-alt me-1"></i>Treat
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="rush_order" name="rush_order" value="1"
+                                                   {% if work_order and work_order.rush_order %}checked{% endif %}>
+                                            <label class="form-check-label" for="rush_order">
+                                                <i class="fas fa-bolt me-1 text-danger"></i>Rush Order
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Rush Order Warning -->
+                            <div class="rush-section d-none" id="rush-warning">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                    <strong>Rush Order</strong>
+                                </div>
+                                <small class="text-muted">This work order will be prioritized and may incur additional charges.</small>
+                            </div>
+
+                            <!-- Special Instructions -->
+                            <div class="form-section">
+                                <h5 class="mb-3"><i class="fas fa-sticky-note me-2"></i>Special Instructions</h5>
+                                <textarea class="form-control" id="special_instructions" name="special_instructions" 
+                                          rows="4" placeholder="Any special instructions or notes...">{{ work_order.special_instructions if work_order else '' }}</textarea>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    {% if work_order %}Update Work Order{% else %}Create Work Order{% endif %}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Show/hide rush order warning
+        document.getElementById('rush_order').addEventListener('change', function() {
+            const warning = document.getElementById('rush-warning');
+            if (this.checked) {
+                warning.classList.remove('d-none');
+            } else {
+                warning.classList.add('d-none');
+            }
+        });
+
+        // Trigger on page load if already checked
+        if (document.getElementById('rush_order').checked) {
+            document.getElementById('rush-warning').classList.remove('d-none');
+        }
+    </script>
+</body>
+</html>

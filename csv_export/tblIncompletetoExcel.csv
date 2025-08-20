@@ -1,0 +1,426 @@
+Clean,DateIn,Name,WorkOrderNo,Source,SourceOld,Storage,StorageTime,Rack#,SpecialInstructions,RepairsNeeded,SeeRepair,ReturnStatus,Treat,RushOrder,DateRequired,ShipTo
+"12/09/06 00:00:00","11/30/06 00:00:00","Ledner",19970,"NS LI",,,"Temporary","cleaning room","Clean Only",,,"Deliver",,0,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","Ruglie",19973,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","Krasner",20008,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","McElroy",20004,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","Vannote",20002,"NS LI","NS LI",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","Dehavenos",20001,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","Garvey",19999,"NS LI",,,"Temporary",,"Clean Only
+
+PLEASE VERIFY ALL PIECES AND WEIGH.  I BELIEVE THE ORIGINAL LIST IS WRONG. We weighed items - Main 14#, Jib 25#, Cover 5#. Scott said to bill according to NSLI list.",,,"Deliver",,0,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","Gillikin",19995,"NS LI",,,"Temporary",,"Clean Only
+
+PLEASE VERIFY ALL PIECES AND WEIGH.  I BELIEVE THE ORIGINAL LIST IS WRONG. We weighed items - Main 25#, Jib 18#, Cover 5#. Scott said to bill according to NSLI list.",,,"Deliver",,0,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","Schade",19998,"NS LI",,,"Temporary",,"Clean Only
+
+PLEASE VERIFY ALL PIECES AND WEIGH.  I BELIEVE THE ORIGINAL LIST IS WRONG. We weighed items - Main 24#, Jib 13#, Cover 5#. Scott said to bill according to NSLI list.",,,"Deliver",,0,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","Eppig",19985,"NS LI","NS LI",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","Wurm",19991,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","Deliso",19993,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","Kessler",19994,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","Coleman",19997,"NS LI",,,"Temporary",,"Clean Only
+
+PLEASE VERIFY ALL PIECES AND WEIGH.  I BELIEVE THE ORIGINAL LIST IS WRONG. We weighed items - Main 25#, Jib 13#, Cover 5#. Scott said to bill according to NSLI list.",,,"Deliver",,0,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","Zeckendorf",19996,"NS LI",,,"Temporary",,"Clean Only
+
+PLEASE VERIFY ALL PIECES AND WEIGH.  I BELIEVE THE ORIGINAL LIST IS WRONG. We weighed items - Main 25#, Jib 13#, Cover 5#. Scott said to bill according to NSLI list.",,,"Deliver",,0,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","Dejoux",20000,"NS LI",,,"Temporary",,"Clean Only
+
+PLEASE VERIFY ALL PIECES AND WEIGH.  I BELIEVE THE ORIGINAL LIST IS WRONG. We weighed items - Main 26#, Jib 14#, Cover 5#. Scott said to bill according to NSLI list.",,,"Deliver",,0,,"Source"
+"12/10/06 00:00:00","11/17/06 00:00:00","Kesner",19745,"Montgomery Shade & Awning, Lt",,,"Temporary","4 B","Clean & Treat",,,"Ship","12/10/06 00:00:00",0,,"Source"
+"12/10/06 00:00:00","11/17/06 00:00:00","Copes",19746,"Watertown Canvas",,,"Temporary",,"Clean & Treat
+EXTRA HEAVY TREAT!
+
+NO CHARGE PER SCOTT'S AGREEMENT WITH LLOYD",,,"Ship","12/12/06 00:00:00",0,,"Customer"
+"12/10/06 00:00:00","11/22/06 00:00:00","Brown",19868,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/11/06 00:00:00","12/01/06 00:00:00","Proctor",20120,"Custom Marine Canvas",,,"Temporary",,"Clean & Treat
+
+DON'T KNOW WHEN THESE CAME IN OR WHEN THEY WERE DONE.",,,"Unknown","12/11/06 00:00:00",0,,"Source"
+"12/11/06 00:00:00","11/22/06 00:00:00","Raven",19886,"NS RI","NS RI",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/11/06 00:00:00","11/30/06 00:00:00","Khanschassoff",19992,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/11/06 00:00:00","12/01/06 00:00:00","Berthart",20121,"ACE Sails",,,"Temporary",,"Clean Only
+
+DON'T KNOW WHEN THESE CAME IN, IF KATIE DELIVERED THEM, OR WHEN THEY WERE DONE",,,"Unknown","12/12/06 00:00:00",0,,"Source"
+"12/11/06 00:00:00","11/30/06 00:00:00","Forman",19986,"NS LI",,,"Temporary",,"Clean Only
+WE WEIGHED: REACHER 62#, SAIL 57#, SAIL 44#. SCOTT SAID TO BILL ACCORDING TO THEIR LIST.",,,"Deliver",,0,,"Source"
+"12/01/06 00:00:00","11/21/06 00:00:00","Coles",19813,"Doyle",,"bin 7 top - DO NOT STACK","Temporary","bin 6 top & bottom","Clean Only
+
+WE WEIGHED GENOA AT 47#",,,"Deliver",,0,,"Source"
+"12/01/06 00:00:00","11/21/06 00:00:00","Mullen",19814,"Doyle",,"bin 7 top - DO NOT STACK","Temporary","bin 6 top & bottom","Clean Only",,,"Deliver",,0,,"Source"
+"12/01/06 00:00:00","11/21/06 00:00:00","Hussey",19818,"Doyle","DOYLE / QS","bin 7 top - DO NOT STACK","Temporary","bin 6 top & bottom","Clean Only",,,"Deliver",,0,,"Source"
+"12/01/06 00:00:00","11/21/06 00:00:00","Keller",19825,"Doyle",,"bin 7 top-DO NOT STACK","Temporary","bin 6 top & bottom","Clean Only",,,"Deliver",,0,,"Source"
+"12/01/06 00:00:00","11/21/06 00:00:00","Smith",19827,"Doyle",,"bin 7 top-DO NOT STACK","Temporary","bin 6 top & bottom","Clean Only",,,"Deliver",,0,,"Source"
+"12/01/06 00:00:00","11/21/06 00:00:00","Dahl",19829,"Doyle","NS LI","bin 7 top-DO NOT STACK","Temporary","bin 6 top & bottom","Clean Only",,,"Deliver",,0,,"Source"
+"12/01/06 00:00:00","11/21/06 00:00:00","Moseley",19810,"Doyle",,"bin 7 top - DO NOT STACK","Temporary","bin 6 top & bottom","Clean Only",,,"Deliver",,0,,"Source"
+"12/02/06 00:00:00","11/29/06 00:00:00","Codner",19927,"ACE Sails","CMC",,"Temporary",,"Clean Only
+
+DROPPED OFF BY CMC, DELIVER TO ACE",,,"Deliver",,0,,"Source"
+"12/02/06 00:00:00","11/29/06 00:00:00","Carey",19926,"ACE Sails","CMC",,"Temporary","bin 9 bottom","Clean Only
+
+DROPPED OFF BY CMC, DELIVER TO ACE.",,,"Deliver",,0,,"Source"
+"12/02/06 00:00:00","11/29/06 00:00:00","Tanner",19932,"ACE Sails","ACE Sails",,"Temporary","bin 9 bottom","Clean Only
+
+DROPPED OFF BY CMC, DELIVER TO ACE",,,"Deliver",,0,,"Source"
+"12/02/06 00:00:00","11/29/06 00:00:00","Koslowski",19928,"ACE Sails","CMC",,"Temporary","bin 9 bottom","MAIN - CLEAN & TREAT
+GENOA - Clean Only
+
+DROPPED OFF BY CMC, DELIVER TO ACE",,,"Ship","12/04/06 00:00:00",0,,"Source"
+"12/02/06 00:00:00","11/29/06 00:00:00","Morris",19929,"ACE Sails",,,"Temporary","bin 9 bottom","Clean Only
+
+DROPPED OFF BY CMC, DELIVER TO ACE",,,"Deliver",,0,,"Source"
+"12/02/06 00:00:00","11/29/06 00:00:00","Scholl",19931,"ACE Sails","CMC",,"Temporary","bin 9 bottom","Clean Only
+
+DROPPED OFF BY CMC, DELIVER TO ACE",,,"Deliver",,0,,"Source"
+"12/02/06 00:00:00","11/29/06 00:00:00","Thoresen",19933,"ACE Sails","Custom Marine Canvas",,"Temporary","bin 9 bottom","Clean Only
+
+DROPPED OFF BY CMC, DELIVER TO ACE",,,"Deliver",,0,,"Source"
+"12/02/06 00:00:00","11/29/06 00:00:00","Carey",19936,"ACE Sails","CMC",,"Temporary","bin 9 bottom?","Clean & Treat
+
+WEIGH SAILCOVER AND MARK MATERIAL FOR DODGER.",,,"Pick Up","12/04/06 00:00:00",0,,"Source"
+"12/02/06 00:00:00","11/29/06 00:00:00","Codner",19937,"ACE Sails","CMC",,"Temporary","bin 9 bottom?","Clean & Treat",,,"Pick Up","12/05/06 00:00:00",0,,"Source"
+"12/02/06 00:00:00","11/29/06 00:00:00","Ashe",19925,"ACE Sails",,,"Temporary","bin 9 bottom","Clean Only
+
+DROPPED OFF BY CMC; DELIVER TO ACE.",,,"Deliver",,0,,"Source"
+"12/02/06 00:00:00","11/29/06 00:00:00","Williams",19934,"ACE Sails","Ace Sails",,"Temporary","bin 9 bottom","Clean Only
+
+DROPPED OFF BY CMC, DELIVER TO ACE",,,"Deliver",,0,,"Source"
+"12/04/06 00:00:00","11/22/06 00:00:00","McGurvy",19881,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/04/06 00:00:00","11/22/06 00:00:00","Blanchard",19872,"NS RI",,,"Temporary",,"Sails/Covers - Clean Only
+
+Gennaker/Spin - RINSE ONLY",,,"Deliver",,0,,"Source"
+"12/04/06 00:00:00","11/22/06 00:00:00","Devine",19871,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/04/06 00:00:00","11/22/06 00:00:00","Chesser",19870,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/04/06 00:00:00","11/29/06 00:00:00","Strasser",19930,"ACE Sails","Farrar",,"Temporary","bin 9 bottom","Clean Only
+
+DROPPED OFF BY CMC, DELIVER TO ACE",,,"Deliver",,0,,"Source"
+"12/04/06 00:00:00","11/29/06 00:00:00","Wressel",19935,"ACE Sails",,,"Temporary","bin 9 bottom","Clean Only
+
+DROPPED OFF BY CMC, DELIVER TO ACE",,,"Deliver",,0,,"Source"
+"12/04/06 00:00:00","11/22/06 00:00:00","Brown",19875,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/05/06 00:00:00","11/15/06 00:00:00","O'Neil",19713,"Gemini Marine Canvas",,,"Temporary","2 B","Clean & Treat",,,"Ship","12/06/06 00:00:00",0,,"Source"
+"12/05/06 00:00:00","11/22/06 00:00:00","Deveraux",19877,"NS RI",,,"Temporary",,"Clean Only
+
+MOLD ON THE GENOA. These are a type of mylar that Drew told us not to bleach.",,,"Deliver",,0,,"Source"
+"12/05/06 00:00:00","11/22/06 00:00:00","Babcock",19884,"NS RI","NS RI",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/05/06 00:00:00","11/22/06 00:00:00","Brown",19887,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/05/06 00:00:00","11/15/06 00:00:00","Darby",19714,"Gemini Marine Canvas",,,"Temporary","25 hang 2 & top","Clean & Treat
+
+THEY WILL DO REPAIRS",,,"Ship","12/05/06 00:00:00",0,,"Source"
+"12/05/06 00:00:00","11/07/06 00:00:00","Mentzer",19631,"ACI",,,"Temporary","5 C","Clean & Treat
+
+KARL INSPECTED ONE PIECES, APPEARS WHEN ORIGINALLY SEWN THAT THEY MISSED AN INCH OF FABRIC, NOT BAD. CUSTOMER ONLY WANTS A COUPLE MORE YEARS.","YES","R6557","Ship","12/05/06 00:00:00",0,,"Customer"
+"12/05/06 00:00:00","12/01/06 00:00:00","Lynch",20014,"Sutton Sail Repair",,,"Temporary",,"Clean Only",,,"Pick Up",,0,,"Source"
+"12/05/06 00:00:00","12/01/06 00:00:00","Dragan",20013,"Sutton Sail Repair","Sutton Sail Repair",,"Temporary",,"Clean Only",,,"Pick Up",,0,,"Source"
+"12/05/06 00:00:00","12/01/06 00:00:00","Perret",20012,"Sutton Sail Repair",,,"Temporary",,"Clean Only",,,"Pick Up",,0,,"Source"
+"12/05/06 00:00:00","12/01/06 00:00:00","Pyrch",20011,"Sutton Sail Repair",,,"Temporary",,"Main/Jib - Clean Only
+
+Spinnaker - RINSE ONLY",,,"Pick Up",,0,,"Source"
+"12/05/06 00:00:00","11/22/06 00:00:00","Seiffer",19889,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/05/06 00:00:00","11/14/06 00:00:00","Maffeo",19724,"ACI",,,"Temporary","25 hang 2 & top","Clean & Treat
+
+$35 pickup fee",,,"Deliver","12/05/06 00:00:00",0,,"Customer"
+"12/05/06 00:00:00","11/20/06 00:00:00","McKay",19784,"ACI",,,"Temporary","5 B","Clean & Treat","YES","R6578","Pick Up","12/06/06 00:00:00",1,"12/15/06 00:00:00","Customer"
+"12/05/06 00:00:00","11/16/06 00:00:00","Elkin",19730,"ACI","ACI",,"Temporary","4 B?","Clean & Treat
+
+Flybridge cover has leather on underside, it is peeling and all over underside, got most off but when folded up again, it got all over the place again; Sm did lint clean up again - grey leater is a PIA","YES","R6575","Pick Up","12/05/06 00:00:00",0,,"Customer"
+"12/05/06 00:00:00","11/22/06 00:00:00","Culver",19874,"NS RI",,,"Temporary",,"RINSE ONLY",,,"Deliver",,0,,"Source"
+"12/06/06 00:00:00","12/05/06 00:00:00","Ferrante",20019,"ACI",,,"Temporary","7B & 7C","Clean & Treat
+
+2 NAVY SIDES (5'4x2'4) DOUBLE TREAT ESPECIALLY NEAR VELCRO ON EDGES. CUSTOMER HAS LEAKING PROBLEM HERE, MAY MAKE MODIFICATIONS IN THE FUTURE.",,,"Pick Up","12/06/06 00:00:00",1,"12/20/06 00:00:00","Customer"
+"12/06/06 00:00:00","11/15/06 00:00:00","Simons",19716,"Cameo House",,,"Temporary","2 C","Clean & Treat",,,"Ship","12/12/06 00:00:00",0,,"Source"
+"12/06/06 00:00:00","11/30/06 00:00:00","Harron",19939,"Awning Cleaning Industries",,,"Temporary","22 C","Clean & Treat
+
+BE CAREFUL OF BLEACH! CUSTOMER IS PICKY. Bleached underside lightly 4x, looks much better, best we can do.",,,"Re-Hang","12/06/06 00:00:00",0,,"Customer"
+"12/06/06 00:00:00","11/22/06 00:00:00","Murphy",19878,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/06/06 00:00:00","11/20/06 00:00:00","Page",19800,"ACI",,,"Temporary","1 C","Clean & Treat",,,"Ship","12/06/06 00:00:00",1,"12/15/06 00:00:00","Customer"
+"12/06/06 00:00:00","11/22/06 00:00:00","Grieb",19885,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/06/06 00:00:00","11/22/06 00:00:00","Erskine",19869,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/06/06 00:00:00","11/22/06 00:00:00","Abramson",19883,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/07/06 00:00:00","11/04/06 00:00:00","Gibbons",19622,"ACI",,,"Temporary","25 Hang 2","Clean & Treat",,,"Pick Up","12/07/06 00:00:00",0,,"Customer"
+"12/07/06 00:00:00","11/22/06 00:00:00","Baywin",19888,"NS RI",,,"Temporary",,"MAIN - Clean Only
+
+GENNAKER - RINSE Only",,,"Deliver",,0,,"Source"
+"12/07/06 00:00:00","11/22/06 00:00:00","Pastor",19873,"NS RI",,,"Temporary",,"Sail - Clean Only
+
+Cover - CLEAN & TREAT",,,"Deliver","12/07/06 00:00:00",0,,"Source"
+"12/07/06 00:00:00","11/22/06 00:00:00","Anots",19876,"NS RI",,,"Temporary",,"Sails - Clean Only
+
+Covers - CLEAN & TREAT (MEASURE)",,,"Deliver","12/07/06 00:00:00",0,,"Source"
+"12/11/06 00:00:00","11/22/06 00:00:00","Bathary",19882,"NS RI","NS RI",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/11/06 00:00:00","11/30/06 00:00:00","Schickler",19988,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/11/06 00:00:00","11/22/06 00:00:00","Beuchner",19879,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/11/06 00:00:00","11/30/06 00:00:00","Buffet",20003,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/11/06 00:00:00","11/30/06 00:00:00","Winter",19980,"NS LI","NS LI",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/11/06 00:00:00","11/29/06 00:00:00","Gustin",19938,"Custom Marine Canvas",,,"Temporary","bin 9 bottom?","Clean & Treat",,,"Pick Up","12/12/06 00:00:00",0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Bonanno",19989,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Taff",19990,"NS LI","NS LI",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Hunt",19978,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Dorfman",19987,"NS LI","NS LI",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Lilleby",19981,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Norris",19984,"NS LI","DOYLE",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/20/06 00:00:00","Ramsburg",19788,"ACI","ACI",,"Temporary","11 B","Clean & Treat",,,"Ship","12/12/06 00:00:00",0,,"Customer"
+"12/12/06 00:00:00","11/30/06 00:00:00","Chernail",19982,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Goldschmidt",19979,"NS LI","NS LI",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Wenz",19977,"NS LI","NS LI",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Holker",19976,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Fisher",19975,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Haensly",20005,"NS LI","NS LI",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Schreitmueller",20006,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Lange",20007,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Olsen",19974,"NS LI","NS LI",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Rostan",19972,"NS LI","NS LI",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","12/05/06 00:00:00","Animal Hospital",20023,"Chilson's Shops Inc.",,,"Temporary","1 B","Clean & Treat",,,"Ship","12/12/06 00:00:00",1,,"Source"
+"12/12/06 00:00:00","11/16/06 00:00:00","Steel",19733,"Acme Awning Co., Inc.",,,"Temporary",,"Clean & Treat",,,"Unknown","12/13/06 00:00:00",0,,"Source"
+"12/12/06 00:00:00","11/30/06 00:00:00","Vogel",19971,"NS LI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/12/06 00:00:00","11/16/06 00:00:00","Jones",19726,"ACI",,,"Temporary",,"Clean & Treat
+
+CUSTOMER WANTS LATERAL BACK UP IN 2-4 WEEKS.  LATERAL NOT THAT DIRTY, BE GENTLE WHEN CLEANING. HOLD ON CLEANING FOR POOLHOUSE COVER, MAY RECOVER.","POOHOUSE","R","Re-Hang","12/13/06 00:00:00",1,,"Customer"
+"12/13/06 00:00:00","12/08/06 00:00:00","Grosso",20117,"Sutton Sail Repair",,,"Temporary",,"Clean Only",,,"Pick Up",,0,,"Source"
+"12/13/06 00:00:00","12/08/06 00:00:00","Wendin",20116,"Sutton Sail Repair",,,"Temporary",,"Clean Only",,,"Pick Up",,0,,"Source"
+"12/13/06 00:00:00","12/08/06 00:00:00","Costello",20115,"Sutton Sail Repair","Sutton Sail Repair",,"Temporary",,"Clean Only",,,"Pick Up",,0,,"Source"
+"12/27/06 00:00:00","11/29/06 00:00:00","Flamma",19922,"Carriage House Canvas",,,"Temporary","5 B","Clean & Treat
+
+HAS A LINE THAT APPEARS TO BE FROM A GLUE PATCH, DID NOT COME OUT.",,,"Ship","12/28/06 00:00:00",1,,"Source"
+"12/28/06 00:00:00","11/22/06 00:00:00","Hale",19848,"Niantic Awning",,,"Temporary",,"Clean & Treat",,,"Unknown","12/29/06 00:00:00",0,,"Source"
+"12/28/06 00:00:00","11/22/06 00:00:00","Buel",19837,"Niantic Awning",,,"Temporary",,"Clean & Treat",,,"Unknown","12/29/06 00:00:00",0,,"Source"
+"12/28/06 00:00:00","12/22/06 00:00:00","Levine",20293,"Sutton Sail Repair",,,"Temporary",,"Clean Only",,,"Pick Up",,0,,"Source"
+"12/28/06 00:00:00","11/22/06 00:00:00","Berger",19835,"Niantic Awning",,,"Temporary",,"Clean & Treat",,,"Unknown","12/29/06 00:00:00",0,,"Source"
+"12/28/06 00:00:00","12/22/06 00:00:00","Kaye",20294,"Sutton Sail Repair",,,"Temporary",,"Clean Only",,,"Pick Up",,0,,"Source"
+"12/29/06 00:00:00","11/22/06 00:00:00","Cook",19840,"Niantic Awning",,,"Temporary",,"Clean & Treat",,,"Unknown","01/02/07 00:00:00",0,,"Source"
+"12/29/06 00:00:00","11/22/06 00:00:00","Kaplan",19853,"Niantic Awning",,,"Temporary",,"Clean & Treat",,,"Unknown","01/02/07 00:00:00",0,,"Source"
+"12/29/06 00:00:00","11/22/06 00:00:00","Lee",19904,"P & G Canvas",,,"Temporary","25 hang 3 & top","BIMINI - Clean & Treat
+
+Curtains - CLEAN & POLISH WINDOWS (DON'T TREAT FABRIC!)",,,"Ship","01/02/07 00:00:00",0,,"Source"
+"12/29/06 00:00:00","11/22/06 00:00:00","Anselmi",19834,"Niantic Awning",,,"Temporary",,"Clean & Treat",,,"Unknown","01/03/07 00:00:00",0,,"Source"
+"12/29/06 00:00:00","11/22/06 00:00:00","Connolly",19839,"Niantic Awning",,,"Temporary",,"Clean & Treat
+
+ONE AWNING HAS RIP.",,,"Unknown","12/26/06 00:00:00",0,,"Source"
+"12/29/06 00:00:00","11/22/06 00:00:00","Dads",19841,"Niantic Awning",,,"Temporary",,"Clean & Treat",,,"Deliver","12/29/06 00:00:00",0,,"Source"
+"12/29/06 00:00:00","11/22/06 00:00:00","Davis",19842,"Niantic Awning",,,"Temporary",,"Clean & Treat",,,"Deliver","01/02/07 00:00:00",0,,"Source"
+"12/30/06 00:00:00","12/18/06 00:00:00","Hudner",20172,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/30/06 00:00:00","12/18/06 00:00:00","Wajsfelner",20161,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/30/06 00:00:00","12/18/06 00:00:00","Peterson",20162,"NS RI",,,"Temporary",,"DAC MAIN (89#) and JIB TOP (56#) - Clean Only
+
+ALL OTHERS - RINSE ONLY",,,"Deliver",,0,,"Source"
+"12/30/06 00:00:00","12/18/06 00:00:00","Teiporah",20163,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/30/06 00:00:00","12/18/06 00:00:00","Odyssey",20165,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/30/06 00:00:00","12/18/06 00:00:00","Manticore",20166,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/30/06 00:00:00","12/18/06 00:00:00","Atlantica",20168,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/30/06 00:00:00","12/18/06 00:00:00","Potter",20171,"NS RI",,,"Temporary",,"Spinnaker - RINSE ONLY
+
+Main/Jib - CLEAN ONLY",,,"Deliver",,0,,"Source"
+"12/30/06 00:00:00","12/18/06 00:00:00","Thornton",20173,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/07/06 00:00:00","11/22/06 00:00:00","Pollock",19890,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/08/06 00:00:00","11/16/06 00:00:00","75 Willow Street",19734,"Acme Awning Co., Inc.",,,"Temporary",,"Clean & Treat",,,"Unknown","12/08/06 00:00:00",0,,"Source"
+"12/08/06 00:00:00","11/22/06 00:00:00","Bookstore Restaurant",19897,"Lower Cape Canvas/Ocean Tailor",,,"Temporary","5 A","Clean & Treat
+RECLEANED; WHILE WASHING, MORE COLOR CAME OFF THAN DIRT, SOME DIRT LINES REMAIN, BEST WE CAN DO.",,,"Ship","12/13/06 00:00:00",1,,"Source"
+"12/09/06 00:00:00","11/30/06 00:00:00","Enright",19983,"NS LI","DOYLE",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/13/06 00:00:00","12/08/06 00:00:00","Krtil",20113,"Sutton Sail Repair","Sutton Sail Repair",,"Temporary",,"Clean Only",,,"Pick Up",,0,,"Source"
+"12/13/06 00:00:00","12/08/06 00:00:00","Reilly",20114,"Sutton Sail Repair",,,"Temporary",,"Clean Only",,,"Pick Up",,0,,"Source"
+"12/14/06 00:00:00","11/16/06 00:00:00","Regency Hotel",19732,"Acme Awning Co., Inc.",,,"Temporary",,"Clean & Treat",,,"Unknown","12/14/06 00:00:00",0,,"Source"
+"12/14/06 00:00:00","11/09/06 00:00:00","deKertanguay",19652,"CEKing",,,"Temporary",,"Clean & Treat
+
+HEAVY MILDEW ON BOTTOM HALF, GOT MOST OUT, SOME REMAINS.",,,"Unknown","12/15/06 00:00:00",0,,"Source"
+"12/14/06 00:00:00","11/09/06 00:00:00","Begazy",19651,"CEKing",,,"Temporary",,"Clean & Treat",,,"Unknown","12/15/06 00:00:00",0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Celotto",19954,"NS CT",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Mellor",19953,"NS CT",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Prentiss",19952,"NS CT",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Piselli",19951,"NS CT","NS CT",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Van Reesema",19950,"NS CT",,,"Temporary",,"26# JIB - Clean Only
+
+All Others - RINSE ONLY",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Noack",19947,"NS CT",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Landry",19949,"NS CT",,,"Temporary",,"RINSE Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Pugh",19948,"NS CT",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Rinaldi",19946,"NS CT","ACE/CMC/ACI",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","White",19945,"NS CT",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Lisle",19944,"NS CT",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Holahan",19942,"NS CT","NS CT","bin 7 top","Temporary","Bin 6 top & bottom","Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/09/06 00:00:00","Signorelli",19646,"CEKing",,,"Temporary",,"Clean & Treat",,,"Unknown","12/18/06 00:00:00",0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Pieper",19956,"NS CT",,,"Temporary",,"Clean Only
+
+MEASURE DODGER",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Fitzpatrick",19957,"NS CT","NS CT",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/09/06 00:00:00","Karan",19656,"CEKing","CEK",,"Temporary",,"Clean & Treat",,,"Unknown","12/18/06 00:00:00",0,,"Source"
+"12/18/06 00:00:00","11/09/06 00:00:00","Demko",19657,"CEKing",,,"Temporary",,"Clean & Treat",,,"Unknown","12/18/06 00:00:00",0,,"Source"
+"12/18/06 00:00:00","11/24/06 00:00:00","Gugliemi",19905,"ACI",,,"Temporary","25 hang 3 & top","Clean & Treat
+
+CUSTOMER WILL BE SHIPPING ADD'L PIECES HE FORGOT, ADD THEM TO THIS ORDER. IF DONE BEFORE CHRISTMAS, THEY WILL PICKUP, OTHERWISE SHIP BACK.",,,"Unknown","12/18/06 00:00:00",1,,"Customer"
+"12/18/06 00:00:00","11/30/06 00:00:00","Shea",19943,"NS CT",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","12/13/06 00:00:00","Halliday",20141,"Brown's Awnings",,,"Temporary","4 D","Clean & Treat
+
+SOME WHITE PAINT MARKS REMAIN",,,"Ship","12/18/06 00:00:00",1,"12/20/06 00:00:00","Source"
+"12/18/06 00:00:00","12/11/06 00:00:00","Olivero",20124,"Window Works",,,"Temporary","ENERCO rack 3A left","Clean & Treat",,,"Ship","12/18/06 00:00:00",1,,"Source"
+"12/18/06 00:00:00","12/08/06 00:00:00","Cleary",20082,"Canvas Connection",,,"Temporary","4 C","Clean & Treat
+
+FIRST TIME CUSTOMER, THIS IS A TEST ITEM.  DO YOUR ABSOLUTE BEST - THANKS!",,,"Ship","12/18/06 00:00:00",1,"12/15/06 00:00:00","Source"
+"12/18/06 00:00:00","12/12/06 00:00:00","Soper",20128,"Custom Marine Canvas",,,"Temporary",,"Clean & Treat",,,"Pick Up","12/18/06 00:00:00",0,,"Source"
+"12/18/06 00:00:00","12/12/06 00:00:00","Kraus",20129,"Custom Marine Canvas",,,"Temporary",,"Clean & Treat",,,"Pick Up","12/18/06 00:00:00",0,,"Source"
+"12/18/06 00:00:00","12/12/06 00:00:00","Sadlak",20130,"Custom Marine Canvas","ACE Sails",,"Temporary",,"Clean & Treat",,,"Pick Up","12/18/06 00:00:00",0,,"Source"
+"12/18/06 00:00:00","12/12/06 00:00:00","Backmender",20189,"Custom Marine Canvas","ACE/CMC",,"Temporary",,"Clean Only
+
+NOT ON ORIGINAL LIST. BROUGHT TO ACI BY CMC? DELIVER TO ACE.",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Lombard",19955,"NS CT",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","12/12/06 00:00:00","Affinity",20132,"ACE Sails",,,"Temporary",,"Clean Only
+
+BROUGHT TO ACI BY CMC. DELIVER TO ACE.",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","12/11/06 00:00:00","Hoyt",20111,"NS CT",,,"Temporary","bin 7 bottom","RINSE Only",,,"Deliver",,1,"12/19/06 00:00:00","Source"
+"12/18/06 00:00:00","12/12/06 00:00:00","Riella",20134,"ACE Sails",,,"Temporary",,"Clean Only
+
+Genoa not on original list.
+BROUGHT TO ACI BY CMC. DELIVER TO ACE.",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","12/12/06 00:00:00","Burke",20131,"ACE Sails","ACE/CMC",,"Temporary",,"Clean Only
+
+BROUGHT TO ACI BY CMC. DELIVER TO ACE.",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","12/13/06 00:00:00","Wagon Wheel",20143,"Chilson's Shops Inc.",,,"Temporary","4 C","Clean & Treat
+
+PO#1676",,,"Ship","12/18/06 00:00:00",1,"12/20/06 00:00:00","Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Glincher",19964,"NS CT","NS CT",,"Temporary",,"MAIN/GENOA - Clean Only - DID NOT RECEIVE GENOA
+
+SPINNAKERS - RINSE ONLY",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","North",19958,"NS CT",,,"Temporary",,"RINSE Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Kull",19959,"NS CT",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Lively Lady",19960,"NS CT",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Teal",19961,"NS CT",,,"Temporary",,"Clean Only
+
+MEASURE/WEIGH COVERS AS NECESSARY",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","12/12/06 00:00:00","Sadlak",20133,"ACE Sails","ACE Sails",,"Temporary",,"Clean Only
+
+DELIVERED TO ACI BY CMC",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Windsong",19963,"NS CT",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Andrea",19969,"NS CT","NS CT",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Dow",19965,"NS CT",,,"Temporary",,"Clean Only
+
+GENOA NOT ON ORIGINAL LIST",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Kinsella",19966,"NS CT","Sutton Sail Repair",,"Temporary",,"RINSE Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Van Ostendorf",19967,"NS CT",,,"Temporary",,"Clean Only
+
+YANKEE AND STAYSAIL WERE TAGGED FOR THE OTHER ACCORDING TO THE WEIGHTS.",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Vanardsak",19968,"NS CT",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/18/06 00:00:00","11/30/06 00:00:00","Sprowl",19962,"NS CT","NS CT",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Gillies",20060,"ACE Sails","ACE Sails",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Thompson",20059,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Marino",20057,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Small",20065,"ACE Sails","ACE/CMC",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","01/00/00 00:00:00","Swann",20104,"QS CT (Shore)","QS CT (Shore)",,"Temporary",,"Sails - CLEAN ONLY - should have been rinse only, my mistake.
+
+Bags / Turtles - RINSE ONLY",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/12/06 00:00:00","Riella",20125,"Custom Marine Canvas",,,"Temporary",,"Claen & Treat",,,"Pick Up","12/19/06 00:00:00",0,,"Source"
+"12/19/06 00:00:00","12/12/06 00:00:00","Wressel",20126,"Custom Marine Canvas",,,"Temporary",,"Clean & Treat",,,"Pick Up","12/19/06 00:00:00",0,,"Source"
+"12/19/06 00:00:00","12/12/06 00:00:00","Burke",20127,"Custom Marine Canvas",,,"Temporary",,"Clean & Treat
+
+TOOK DODGER APART INTO 3 PIECES TO HANG IT.",,,"Pick Up","12/19/06 00:00:00",0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Korch",20056,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","11/09/06 00:00:00","Lipper",19659,"CEKing","CEK",,"Temporary",,"Clean & Treat",,,"Unknown","12/20/06 00:00:00",0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Splitgerber",20064,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","11/09/06 00:00:00","Green",19654,"CEKing",,,"Temporary",,"Clean & Treat",,,"Unknown","12/20/06 00:00:00",0,,"Source"
+"12/19/06 00:00:00","11/09/06 00:00:00","Cohen",19644,"CEKing","CEK",,"Temporary",,"Clean & Treat",,,"Unknown","12/20/06 00:00:00",0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Feeney",20049,"ACE Sails","Custom Marine Canvas",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Desena",20046,"ACE Sails","ACE Sails",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Moy",20036,"ACE Sails",,,"Temporary",,"Clean Only
+
+AARON CALLED AND CANCELLED CLEANING OF THE GENOA.",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Moccelaar",20054,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Hold Fast",20037,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Schofield",20038,"ACE Sails","ACE Sails",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Cool Change",20040,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Day",20052,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Dees",20044,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Cambria",20043,"ACE Sails","ACE Sails",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","Aalberg",20047,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/19/06 00:00:00","12/07/06 00:00:00","CT Ducks",20042,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/20/06 00:00:00","12/07/06 00:00:00","Santana",20045,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/20/06 00:00:00","11/09/06 00:00:00","Ottenes",19660,"UK Halsey",,,"Temporary","4 B","Clean & Treat",,,"Unknown","12/20/06 00:00:00",0,,"Source"
+"12/20/06 00:00:00","11/09/06 00:00:00","Buhuniak",19662,"ACI",,,"Temporary","Showroom","QUOTE Clean & Treat
+Approved 11/14/06",,,"Pick Up","12/20/06 00:00:00",0,,"Customer"
+"12/20/06 00:00:00","11/17/06 00:00:00","Lees Market",19743,"ACI",,,"Temporary","1 A","Clean & Treat
+NO PAPERWORK IN BOX. Large cover cleaned several times and sat a while with bleach, best we can do.",,,"Ship","12/20/06 00:00:00",0,,"Customer"
+"12/20/06 00:00:00","12/15/06 00:00:00","Nelson",20151,"Sutton Sail Repair","Sutton Sail Repair",,"Temporary",,"Spinnaker - RINSE ONLY
+
+ALL OTHERS - Clean Only",,,"Pick Up",,0,,"Source"
+"12/20/06 00:00:00","12/07/06 00:00:00","Selkie",20041,"ACE Sails","ACE Sails",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/20/06 00:00:00","12/15/06 00:00:00","Mitchell",20149,"Sutton Sail Repair","Sutton Sail Repair",,"Temporary",,"Clean Only",,,"Pick Up",,0,,"Source"
+"12/20/06 00:00:00","12/15/06 00:00:00","Coyle",20150,"Sutton Sail Repair",,,"Temporary",,"Clean Only",,,"Pick Up",,0,,"Source"
+"12/20/06 00:00:00","11/18/06 00:00:00","Callahan",19742,"ACI",,,"Temporary","bin 8 top","Clean & Treat",,,"Ship","12/20/06 00:00:00",0,,"Customer"
+"12/20/06 00:00:00","12/07/06 00:00:00","Lordon",20061,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/20/06 00:00:00","12/07/06 00:00:00","Perriten",20050,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/20/06 00:00:00","12/07/06 00:00:00","Ling",20058,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/20/06 00:00:00","12/07/06 00:00:00","Henry",20048,"ACE Sails","ACE Sails",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/20/06 00:00:00","11/13/06 00:00:00","Dermott",19789,"ACI","ACI",,"Temporary","25 hang 3","Clean & Treat","QUOTE","R6583","Pick Up","12/20/06 00:00:00",0,,"Customer"
+"12/20/06 00:00:00","12/07/06 00:00:00","Hodges",20051,"ACE Sails","Custom Marine Canvas",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/21/06 00:00:00","12/07/06 00:00:00","Hackenyos",20055,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/21/06 00:00:00","12/07/06 00:00:00","Foolish Heart",20039,"ACE Sails","Fairclough",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/21/06 00:00:00","11/20/06 00:00:00","Cramer",19786,"ACI","ACI",,"Temporary",,"Clean & Treat
+
+STORE FLAT UNTIL PICKUP; CUSTOMER WILL COME IN AND HELP US GET THEM PROPERLY INTO THE 3 TUBES HE DROPPED OFF.",,,"Pick Up","12/22/06 00:00:00",0,,"Customer"
+"12/21/06 00:00:00","12/07/06 00:00:00","Lentz",20053,"ACE Sails","ACE Sails",,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/21/06 00:00:00","12/07/06 00:00:00","Cerino",20062,"ACE Sails",,,"Temporary",,"Clean Only
+
+PLEASE WEIGH SAIL!",,,"Deliver",,0,,"Source"
+"12/21/06 00:00:00","12/11/06 00:00:00","Geiger",20123,"Carriage House Canvas",,,"Temporary","3 A","Clean & Treat
+
+CLEANED 2X, 1ST TIME MAJORITY OF DIRT/MOLD CAME OFF, 2ND TIME LET DRY AND RECLEANED W/SCRUB PAD. BEST WE CAN DO.",,,"Ship","12/23/06 00:00:00",1,,"Source"
+"12/21/06 00:00:00","12/07/06 00:00:00","Leverone",20063,"ACE Sails",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/22/06 00:00:00","11/09/06 00:00:00","Antilety",19650,"CEKing",,,"Temporary",,"Clean & Treat",,,"Unknown","12/24/06 00:00:00",0,,"Source"
+"12/22/06 00:00:00","11/09/06 00:00:00","Dimenna",19645,"CEKing","CEK",,"Temporary",,"Clean & Treat",,,"Unknown","12/22/06 00:00:00",0,,"Source"
+"12/22/06 00:00:00","11/09/06 00:00:00","Werbel",19648,"CEKing",,,"Temporary",,"Clean & Treat
+RAFTERS MAY NEED RESTITCH",,,"Unknown","12/24/06 00:00:00",0,,"Source"
+"12/22/06 00:00:00","11/09/06 00:00:00","Cesarani",19649,"CEKing","CEK",,"Temporary",,"Clean & Treat",,,"Unknown","12/22/06 00:00:00",0,,"Source"
+"12/22/06 00:00:00","11/09/06 00:00:00","Isreal",19647,"CEKing","C. E. King",,"Temporary",,"Clean & Treat",,,"Unknown","12/24/06 00:00:00",0,,"Source"
+"12/22/06 00:00:00","11/20/06 00:00:00","Gersten",19797,"Perino's Canvas Man, Inc.",,,"Temporary",,"Clean & Treat",,,"Ship","12/24/06 00:00:00",0,,"Source"
+"12/30/06 00:00:00","12/18/06 00:00:00","Cato",20177,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/30/06 00:00:00","12/18/06 00:00:00","Powers",20180,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/30/06 00:00:00","12/18/06 00:00:00","Arrighi",20185,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/30/06 00:00:00","12/18/06 00:00:00","French",20183,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/30/06 00:00:00","12/18/06 00:00:00","Fischer",20170,"NS RI",,,"Temporary",,"Clean Only",,,"Deliver",,0,,"Source"
+"12/23/06 00:00:00","11/20/06 00:00:00","McGrath",19796,"Perino's Canvas Man, Inc.",,,"Temporary","2 A","Clean & Treat",,,"Ship","12/23/06 00:00:00",0,,"Source"
+"12/23/06 00:00:00","11/20/06 00:00:00","Heist",19801,"Brown's Awnings",,,"Temporary","5 A","Clean & Treat
+
+HAS RIP ON THE WING.",,,"Ship","12/27/06 00:00:00",0,,"Source"
+"12/23/06 00:00:00","11/20/06 00:00:00","Delucca",19795,"Perino's Canvas Man, Inc.",,,"Temporary","2 A","Clean & Treat
+
+COVER IS NOT SQUARE",,,"Ship","12/23/06 00:00:00",0,,"Source"
+"12/23/06 00:00:00","11/20/06 00:00:00","Palmieri",19794,"Perino's Canvas Man, Inc.",,,"Temporary","2 A","Clean & Treat",,,"Ship","12/26/06 00:00:00",0,,"Source"
+"12/23/06 00:00:00","11/20/06 00:00:00","Wilbert",19798,"Perino's Canvas Man, Inc.","Perino's",,"Temporary",,"Clean & Treat",,,"Ship","12/26/06 00:00:00",0,,"Source"
+"12/23/06 00:00:00","11/20/06 00:00:00","Webb",19792,"Perino's Canvas Man, Inc.",,,"Temporary","2 A","Clean & Treat",,,"Ship","12/23/06 00:00:00",0,,"Source"
+"12/24/06 00:00:00","11/22/06 00:00:00","Craboni",19894,"Allerton Harbor Canvas",,,"Temporary","6 A","Clean & Treat",,,"Ship","12/26/06 00:00:00",0,,"Source"
+"12/24/06 00:00:00","11/22/06 00:00:00","McSween",19900,"ACI","ACI",,"Temporary","6 C","Clean & Treat",,,"Ship","12/26/06 00:00:00",0,,"Source"
+"12/24/06 00:00:00","11/22/06 00:00:00","O'Neill",19892,"ACI",,,"Temporary","6 A","Clean & Treat",,,"Ship","12/26/06 00:00:00",0,,"Customer"
+"12/26/06 00:00:00","11/20/06 00:00:00","Miles",19791,"ACI",,"6 - 25 HANG 3","Temporary","2 - 25 HANG 3 TOP","Clean & Treat
+
+LUBE ZIPPERS",,,"Pick Up","12/26/06 00:00:00",0,,"Customer"
+"12/26/06 00:00:00","11/20/06 00:00:00","Preece",19804,"ACI",,,"Temporary","25 hang 3","Clean & Treat",,,"Pick Up","12/27/06 00:00:00",0,,"Customer"
+"12/26/06 00:00:00","11/22/06 00:00:00","Bellatrix",19899,"Gemini Marine Canvas",,"25 hang 2","Temporary","25 hang 1 top","Clean & Treat",,,"Ship","12/28/06 00:00:00",0,,"Source"
+"12/26/06 00:00:00","11/09/06 00:00:00","Liebowitz",19653,"CEKing",,,"Temporary",,"Clean & Treat
+
+BLEACHED 4X ON TOM, DON'T WANT TO KILL FABRIC, BEST WE CAN DO, HAS RIPS ALONG VALANCE.",,,"Unknown","12/26/06 00:00:00",0,,"Source"
+"12/26/06 00:00:00","11/09/06 00:00:00","Hirsch",19643,"CEKing","CEK",,"Temporary",,"Clean & Treat
+
+SEAMS NEAR FB MAY NEED RESTITCH",,,"Unknown","12/27/06 00:00:00",0,,"Source"
+"12/26/06 00:00:00","11/22/06 00:00:00","Sterling",19895,"KA-Fitz",,,"Temporary","6 C","Clean & Treat
+
+Tag #391 STITCHING LOOSE",,,"Unknown","12/27/06 00:00:00",1,,"Source"
+"12/27/06 00:00:00","11/22/06 00:00:00","Grasso",19847,"Niantic Awning",,,"Temporary",,"Clean & Treat",,,"Unknown","12/28/06 00:00:00",0,,"Source"
+"12/27/06 00:00:00","11/09/06 00:00:00","Sullivan",19665,"Fabri-Care",,,"Temporary",,"CHECK STITCHING FIRST!  Seems ok by KS & MV
+
+Clean & Treat",,,"Pick Up","12/28/06 00:00:00",0,,"Source"
+"12/27/06 00:00:00","12/22/06 00:00:00","Downing",20295,"Sutton Sail Repair",,,"Temporary",,"Clean Only",,,"Pick Up","12/29/06 00:00:00",0,,"Source"
+"12/27/06 00:00:00","11/09/06 00:00:00","Smith",19658,"CEKing","CEK",,"Temporary",,"Clean & Treat",,,"Unknown","12/27/06 00:00:00",0,,"Source"
+"12/27/06 00:00:00","11/22/06 00:00:00","Hinman",19851,"Niantic Awning",,,"Temporary",,"Clean & Treat",,,"Unknown","12/28/06 00:00:00",0,,"Source"
+"12/27/06 00:00:00","11/22/06 00:00:00","Deangelis",19843,"Niantic Awning",,,"Temporary",,"Clean & Treat",,,"Unknown","01/02/07 00:00:00",0,,"Source"
+"12/27/06 00:00:00","11/22/06 00:00:00","Ford",19844,"Niantic Awning",,,"Temporary",,"Clean & Treat?
+
+PLEASE WEIGH",,,"Unknown","12/28/06 00:00:00",0,,"Source"
+"12/27/06 00:00:00","11/22/06 00:00:00","Geer",19845,"Niantic Awning",,,"Temporary",,"Clean & Treat",,,"Deliver","12/27/06 00:00:00",0,,"Source"
+"12/27/06 00:00:00","11/22/06 00:00:00","Glowacki",19846,"Niantic Awning",,,"Temporary",,"Clean & Treat
+
+SINGLE HAS A HOLE IN THE FB.",,,"Unknown","12/27/06 00:00:00",0,,"Source"
+"12/27/06 00:00:00","12/22/06 00:00:00","Hood",20296,"Sutton Sail Repair",,,"Temporary",,"Clean & TREAT",,,"Pick Up","12/27/06 00:00:00",0,,"Source"
+"12/27/06 00:00:00","11/22/06 00:00:00","Hanrahan",19849,"Niantic Awning",,,"Temporary",,"Clean & Treat",,,"Unknown","12/27/06 00:00:00",0,,"Source"
+"12/27/06 00:00:00","11/22/06 00:00:00","Hewitt",19850,"Niantic Awning",,,"Temporary",,"Clean & Treat
+
+SOME GREEN DID NOT COME OUT INSIDE DOUBLE FABRIC ON VALANCE.",,,"Unknown","12/28/06 00:00:00",0,,"Source"
+"12/27/06 00:00:00","11/22/06 00:00:00","Boone",19836,"Niantic Awning",,,"Temporary",,"Clean & Treat",,,"Unknown","12/27/06 00:00:00",0,,"Source"
+"12/27/06 00:00:00","11/29/06 00:00:00","Frazier",19921,"Montgomery Shade & Awning, Lt",,,"Temporary","6 B","Clean & Treat
+
+SMOKE RESIDUE FROM BURNING BUILDING. Some spots looked like sap, otherwise came out great.",,,"Ship","12/27/06 00:00:00",1,,"Source"

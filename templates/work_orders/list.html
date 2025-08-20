@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Orders - Awning Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .badge-draft { background-color: #6c757d; }
+        .badge-in-progress { background-color: #0d6efd; }
+        .badge-completed { background-color: #198754; }
+        .badge-delivered { background-color: #20c997; }
+        .badge-cancelled { background-color: #dc3545; }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(0,0,0,.075);
+        }
+        
+        .rush-order {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .status-filter {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-home me-2"></i>Awning Management
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('work_orders.list_work_orders') }}">Work Orders</a>
+                <a class="nav-link" href="{{ url_for('customers.list_customers') }}">Customers</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">
+                                <i class="fas fa-clipboard-list me-2"></i>Work Orders
+                            </h4>
+                            <a href="{{ url_for('work_orders.new_work_order') }}" class="btn btn-light">
+                                <i class="fas fa-plus me-2"></i>New Work Order
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <!-- Status Filter -->
+                        <div class="status-filter">
+                            <h6 class="mb-3">Filter by Status:</h6>
+                            <div class="btn-group" role="group">
+                                <a href="{{ url_for('work_orders.list_work_orders') }}" 
+                                   class="btn btn-sm {% if not status %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    All
+                                </a>
+                                <a href="{{ url_for('work_orders.list_work_orders', status='draft') }}" 
+                                   class="btn btn-sm {% if status == 'draft' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    Draft
+                                </a>
+                                <a href="{{ url_for('work_orders.list_work_orders', status='in_progress') }}" 
+                                   class="btn btn-sm {% if status == 'in_progress' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    In Progress
+                                </a>
+                                <a href="{{ url_for('work_orders.list_work_orders', status='completed') }}" 
+                                   class="btn btn-sm {% if status == 'completed' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    Completed
+                                </a>
+                                <a href="{{ url_for('work_orders.list_work_orders', status='delivered') }}" 
+                                   class="btn btn-sm {% if status == 'delivered' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                                    Delivered
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Work Orders Table -->
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>WO #</th>
+                                        <th>Customer</th>
+                                        <th>Name</th>
+                                        <th>Date In</th>
+                                        <th>Date Required</th>
+                                        <th>Status</th>
+                                        <th>Rush</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for wo in work_orders.items %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ wo.work_order_no }}</strong>
+                                        </td>
+                                        <td>
+                                            {% if wo.customer %}
+                                                <a href="{{ url_for('customers.view_customer', id=wo.customer.id) }}" 
+                                                   class="text-decoration-none">
+                                                    {{ wo.customer.customer_name }}
+                                                </a>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ wo.wo_name or '-' }}</td>
+                                        <td>
+                                            {% if wo.date_in %}
+                                                {{ wo.date_in.strftime('%m/%d/%Y') }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if wo.date_required %}
+                                                <span class="{% if wo.date_required < today %}text-danger{% endif %}">
+                                                    {{ wo.date_required.strftime('%m/%d/%Y') }}
+                                                </span>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ wo.return_status or 'draft' }}">
+                                                {{ (wo.return_status or 'Draft').replace('_', ' ').title() }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if wo.rush_order %}
+                                                <i class="fas fa-bolt rush-order" title="Rush Order"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('work_orders.view_work_order', id=wo.id) }}" 
+                                                   class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('work_orders.edit_work_order', id=wo.id) }}" 
+                                                   class="btn btn-outline-secondary btn-sm">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">
+                                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                                            <p>No work orders found</p>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination -->
+                        {% if work_orders.pages > 1 %}
+                        <nav aria-label="Work orders pagination">
+                            <ul class="pagination justify-content-center">
+                                {% if work_orders.has_prev %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('work_orders.list_work_orders', page=work_orders.prev_num, status=status) }}">
+                                            Previous
+                                        </a>
+                                    </li>
+                                {% endif %}
+                                
+                                {% for page_num in work_orders.iter_pages() %}
+                                    {% if page_num %}
+                                        {% if page_num != work_orders.page %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ url_for('work_orders.list_work_orders', page=page_num, status=status) }}">
+                                                    {{ page_num }}
+                                                </a>
+                                            </li>
+                                        {% else %}
+                                            <li class="page-item active">
+                                                <span class="page-link">{{ page_num }}</span>
+                                            </li>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                                
+                                {% if work_orders.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('work_orders.list_work_orders', page=work_orders.next_num, status=status) }}">
+                                            Next
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
