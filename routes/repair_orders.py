@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required
-from models.customer import Customer
-from models.repair_order import RepairOrder, RepairOrderItem
+from models.tblCustomers import TblCustomer as Customer
+from models.tblRepairWorkOrderDetail import Tblrepairworkorderdetail as RepairOrder
+from models.tblRepOrdDetCustAwngs import Tblreporddetcustawngs as RepairOrderItem
 from extensions import db  # Change from: from app import db
 from datetime import datetime
 

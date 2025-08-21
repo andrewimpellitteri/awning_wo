@@ -1,10 +1,12 @@
 from flask import Blueprint, jsonify, request
 from flask_login import login_required
-from models.customer import Customer
-from models.work_order import WorkOrder
-from models.repair_order import RepairOrder
-from models.inventory import InventoryItem
-from models.reference import Material, Color, Condition
+from models.tblCustomers import TblCustomer as Customer
+from models.tblCustWorkOrderDetail import Tblcustworkorderdetail as WorkOrder
+from models.tblRepairWorkOrderDetail import Tblrepairworkorderdetail as RepairOrder
+from models.tblColor import Tblcolor as Color
+from models.tblMaterial import Tblmaterial as Material
+from models.tblCondition import Tblcondition as Condition
+from models.tblCustAwngs import Tblcustawngs as InventoryItem
 from extensions import db  # Change from: from app import db
 
 api_bp = Blueprint("api", __name__)

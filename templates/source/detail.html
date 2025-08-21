@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}{{ source.SSource }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('source.source_list') }}">Sources</a>
+                            </li>
+                            <li class="breadcrumb-item active">{{ source.SSource }}</li>
+                        </ol>
+                    </nav>
+                    <h2>{{ source.SSource }}</h2>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('source.edit_source', source_name=source.SSource) }}" 
+                       class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <button type="button" 
+                            class="btn btn-danger" 
+                            onclick="confirmDelete('{{ source.SSource }}')">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Main Information -->
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-info-circle"></i> Source Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label text-muted">Source Name</label>
+                                        <p class="form-control-plaintext">{{ source.SSource }}</p>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label text-muted">Address</label>
+                                        <p class="form-control-plaintext">
+                                            {% if source.SourceAddress %}
+                                                {{ source.SourceAddress }}
+                                            {% else %}
+                                                <span class="text-muted">Not provided</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label text-muted">City</label>
+                                        <p class="form-control-plaintext">
+                                            {% if source.SourceCity %}
+                                                {{ source.SourceCity }}
+                                            {% else %}
+                                                <span class="text-muted">Not provided</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label text-muted">State</label>
+                                        <p class="form-control-plaintext">
+                                            {% if source.SourceState %}
+                                                <span class="badge bg-secondary fs-6">{{ source.SourceState }}</span>
+                                            {% else %}
+                                                <span class="text-muted">Not provided</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label text-muted">ZIP Code</label>
+                                        <p class="form-control-plaintext">
+                                            {% if source.SourceZip %}
+                                                {{ source.SourceZip }}
+                                            {% else %}
+                                                <span class="text-muted">Not provided</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label text-muted">Phone</label>
+                                        <p class="form-control-plaintext">
+                                            {% if source.SourcePhone %}
+                                                <a href="tel:{{ source.SourcePhone }}" class="text-decoration-none">
+                                                    <i class="fas fa-phone"></i> {{ source.clean_phone() }}
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">Not provided</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label text-muted">Fax</label>
+                                        <p class="form-control-plaintext">
+                                            {% if source.SourceFax %}
+                                                <i class="fas fa-fax"></i> {{ source.SourceFax }}
+                                            {% else %}
+                                                <span class="text-muted">Not provided</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label text-muted">Email</label>
+                                        <p class="form-control-plaintext">
+                                            {% if source.clean_email() %}
+                                                <a href="mailto:{{ source.clean_email() }}" class="text-decoration-none">
+                                                    <i class="fas fa-envelope"></i> {{ source.clean_email() }}
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">Not provided</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions & Map -->
+                <div class="col-lg-4">
+                    <!-- Quick Actions -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-bolt"></i> Quick Actions
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                {% if source.SourcePhone %}
+                                    <a href="tel:{{ source.SourcePhone }}" class="btn btn-outline-success">
+                                        <i class="fas fa-phone"></i> Call {{ source.clean_phone() }}
+                                    </a>
+                                {% endif %}
+                                
+                                {% if source.clean_email() %}
+                                    <a href="mailto:{{ source.clean_email() }}" class="btn btn-outline-primary">
+                                        <i class="fas fa-envelope"></i> Send Email
+                                    </a>
+                                {% endif %}
+                                
+                                {% if source.SourceAddress and source.SourceCity and source.SourceState %}
+                                    <a href="https://maps.google.com/?q={{ source.SourceAddress }}, {{ source.SourceCity }}, {{ source.SourceState }} {{ source.SourceZip or '' }}" 
+                                       target="_blank" 
+                                       class="btn btn-outline-info">
+                                        <i class="fas fa-map-marker-alt"></i> View on Map
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Address Card -->
+                    {% if source.SourceAddress or source.SourceCity or source.SourceState %}
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-map-marker-alt"></i> Address
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <address class="mb-0">
+                                    {% if source.SourceAddress %}
+                                        {{ source.SourceAddress }}<br>
+                                    {% endif %}
+                                    {% if source.SourceCity or source.SourceState or source.SourceZip %}
+                                        {{ source.SourceCity or '' }}{% if source.SourceCity and source.SourceState %}, {% endif %}{{ source.SourceState or '' }} {{ source.SourceZip or '' }}
+                                    {% endif %}
+                                </address>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this source?</p>
+                <p><strong>{{ source.SSource }}</strong></p>
+                <p class="text-muted">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('source.delete_source', source_name=source.SSource) }}" 
+                      method="POST" 
+                      class="d-inline">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(sourceName) {
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+</script>
+{% endblock %}

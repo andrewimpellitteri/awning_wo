@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if edit_mode %}Edit {{ customer.Name or customer.CustID }}{% else %}Add New Customer{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="{{ url_for('customers.list_customers') }}">Customers</a>
+                        </li>
+                        {% if edit_mode %}
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('customers.customer_detail', customer_id=customer.CustID) }}">
+                                    {{ customer.Name or customer.CustID }}
+                                </a>
+                            </li>
+                            <li class="breadcrumb-item active">Edit</li>
+                        {% else %}
+                            <li class="breadcrumb-item active">Add New</li>
+                        {% endif %}
+                    </ol>
+                </nav>
+                <h2>
+                    {% if edit_mode %}
+                        <i class="fas fa-edit"></i> Edit Customer
+                    {% else %}
+                        <i class="fas fa-plus"></i> Add New Customer
+                    {% endif %}
+                </h2>
+            </div>
+
+            <form method="POST" novalidate>
+                <div class="row">
+                    <!-- Main Form -->
+                    <div class="col-lg-8">
+                        <!-- Basic Information -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Basic Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="CustID" class="form-label">
+                                                Customer ID <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="CustID" 
+                                                   name="CustID"
+                                                   value="{{ customer.CustID if edit_mode else (form_data.CustID if form_data else '') }}"
+                                                   {% if edit_mode %}readonly{% endif %}
+                                                   required>
+                                            {% if edit_mode %}
+                                                <div class="form-text">Customer ID cannot be changed</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="Name" class="form-label">
+                                                Customer Name <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="Name" 
+                                                   name="Name"
+                                                   value="{{ customer.Name if edit_mode else (form_data.Name if form_data else '') }}"
+                                                   required>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="Contact" class="form-label">Contact Person</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="Contact" 
+                                                   name="Contact"
+                                                   value="{{ customer.Contact if edit_mode else (form_data.Contact if form_data else '') }}">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="Source" class="form-label">Source</label>
+                                            <select class="form-select" id="Source" name="Source">
+                                                <option value="">Select a source...</option>
+                                                {% for source in sources %}
+                                                    <option value="{{ source.SSource }}" 
+                                                            {% if (edit_mode and source.SSource == customer.Source) or (form_data and source.SSource == form_data.Source) %}selected{% endif %}>
+                                                        {{ source.SSource }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Information -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Contact Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="HomePhone" class="form-label">Home Phone</label>
+                                            <input type="tel" 
+                                                   class="form-control" 
+                                                   id="HomePhone" 
+                                                   name="HomePhone"
+                                                   value="{{ customer.HomePhone if edit_mode else (form_data.HomePhone if form_data else '') }}"
+                                                   placeholder="(555) 123-4567">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="WorkPhone" class="form-label">Work Phone</label>
+                                            <input type="tel" 
+                                                   class="form-control" 
+                                                   id="WorkPhone" 
+                                                   name="WorkPhone"
+                                                   value="{{ customer.WorkPhone if edit_mode else (form_data.WorkPhone if form_data else '') }}"
+                                                   placeholder="(555) 123-4567">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label for="CellPhone" class="form-label">Cell Phone</label>
+                                            <input type="tel" 
+                                                   class="form-control" 
+                                                   id="CellPhone" 
+                                                   name="CellPhone"
+                                                   value="{{ customer.CellPhone if edit_mode else (form_data.CellPhone if form_data else '') }}"
+                                                   placeholder="(555) 123-4567">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="EmailAddress" class="form-label">Email Address</label>
+                                    <input type="email" 
+                                           class="form-control" 
+                                           id="EmailAddress" 
+                                           name="EmailAddress"
+                                           value="{{ customer.clean_email() if edit_mode else (form_data.EmailAddress if form_data else '') }}"
+                                           placeholder="customer@example.com">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Physical Address -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Physical Address</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="Address" class="form-label">Address Line 1</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="Address" 
+                                           name="Address"
+                                           value="{{ customer.Address if edit_mode else (form_data.Address if form_data else '') }}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="Address2" class="form-label">Address Line 2</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="Address2" 
+                                           name="Address2"
+                                           value="{{ customer.Address2 if edit_mode else (form_data.Address2 if form_data else '') }}">
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="City" class="form-label">City</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="City" 
+                                                   name="City"
+                                                   value="{{ customer.City if edit_mode else (form_data.City if form_data else '') }}">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="State" class="form-label">State</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="State" 
+                                                   name="State"
+                                                   value="{{ customer.State if edit_mode else (form_data.State if form_data else '') }}"
+                                                   maxlength="2"
+                                                   placeholder="CT">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="ZipCode" class="form-label">ZIP Code</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="ZipCode" 
+                                                   name="ZipCode"
+                                                   value="{{ customer.ZipCode if edit_mode else (form_data.ZipCode if form_data else '') }}"
+                                                   maxlength="10">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mailing Address -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    Mailing Address 
+                                    <small class="text-muted">(if different from physical)</small>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="MailAddress" class="form-label">Mailing Address</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="MailAddress" 
+                                           name="MailAddress"
+                                           value="{{ customer.MailAddress if edit_mode else (form_data.MailAddress if form_data else '') }}">
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="MailCity" class="form-label">City</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="MailCity" 
+                                                   name="MailCity"
+                                                   value="{{ customer.MailCity if edit_mode else (form_data.MailCity if form_data else '') }}">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="MailState" class="form-label">State</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="MailState" 
+                                                   name="MailState"
+                                                   value="{{ customer.MailState if edit_mode else (form_data.MailState if form_data else '') }}"
+                                                   maxlength="2">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-3">
+                                        <div class="mb-3">
+                                            <label for="MailZip" class="form-label">ZIP Code</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="MailZip" 
+                                                   name="MailZip"
+                                                   value="{{ customer.MailZip if edit_mode else (form_data.MailZip if form_data else '') }}"
+                                                   maxlength="10">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between mb-4">
+                            <a href="{% if edit_mode %}{{ url_for('customers.customer_detail', customer_id=customer.CustID) }}{% else %}{{ url_for('customers.list_customers') }}{% endif %}" 
+                               class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                {% if edit_mode %}Update Customer{% else %}Create Customer{% endif %}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Sidebar -->
+                    <div class="col-lg-4">
+                        <!-- Help -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-info-circle"></i> Help
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <h6>Required Fields</h6>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success"></i> Customer ID</li>
+                                    <li><i class="fas fa-check text-success"></i> Customer Name</li>
+                                </ul>
+                                
+                                <h6 class="mt-3">Tips</h6>
+                                <ul class="small">
+                                    <li>Use a unique, memorable ID for each customer</li>
+                                    <li>Phone numbers can be entered with or without formatting</li>
+                                    <li>Select a source to track how you found this customer</li>
+                                    <li>Mailing address is optional if same as physical address</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Source Preview -->
+                        <div class="card" id="sourcePreview" style="display: none;">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-building"></i> Selected Source
+                                </h6>
+                            </div>
+                            <div class="card-body" id="sourceDetails">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Phone number formatting
+function formatPhoneInput(input) {
+    input.addEventListener('input', function(e) {
+        // Remove all non-digits
+        let value = this.value.replace(/\D/g, '');
+        
+        // Format as (XXX) XXX-XXXX
+        if (value.length >= 6) {
+            value = `(${value.slice(0,3)}) ${value.slice(3,6)}-${value.slice(6,10)}`;
+        } else if (value.length >= 3) {
+            value = `(${value.slice(0,3)}) ${value.slice(3)}`;
+        }
+        
+        this.value = value;
+    });
+}
+
+// Apply phone formatting to all phone inputs
+formatPhoneInput(document.getElementById('HomePhone'));
+formatPhoneInput(document.getElementById('WorkPhone'));
+formatPhoneInput(document.getElementById('CellPhone'));
+
+// State input formatting
+document.getElementById('State').addEventListener('input', function(e) {
+    this.value = this.value.toUpperCase().slice(0, 2);
+});
+
+document.getElementById('MailState').addEventListener('input', function(e) {
+    this.value = this.value.toUpperCase().slice(0, 2);
+});
+
+// Source selection handler
+document.getElementById('Source').addEventListener('change', function() {
+    const sourceName = this.value;
+    const sourcePreview = document.getElementById('sourcePreview');
+    const sourceDetails = document.getElementById('sourceDetails');
+    
+    if (sourceName) {
+        fetch(`{{ url_for('customers.api_source_info', source_name='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(sourceName)))
+            .then(response => response.json())
+            .then(data => {
+                sourceDetails.innerHTML = `
+                    <h6>${sourceName}</h6>
+                    ${data.address ? `<p class="small mb-1">${data.address}</p>` : ''}
+                    ${data.city || data.state ? `<p class="small mb-0">${data.city || ''} ${data.state || ''} ${data.zip || ''}</p>` : ''}
+                `;
+                sourcePreview.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error fetching source info:', error);
+                sourcePreview.style.display = 'none';
+            });
+    } else {
+        sourcePreview.style.display = 'none';
+    }
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const custId = document.getElementById('CustID').value.trim();
+    const custName = document.getElementById('Name').value.trim();
+    
+    if (!custId) {
+        e.preventDefault();
+        alert('Customer ID is required.');
+        document.getElementById('CustID').focus();
+        return false;
+    }
+    
+    if (!custName) {
+        e.preventDefault();
+        alert('Customer name is required.');
+        document.getElementById('Name').focus();
+        return false;
+    }
+    
+    // Validate email if provided
+    const email = document.getElementById('EmailAddress').value.trim();
+    if (email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            e.preventDefault();
+            alert('Please enter a valid email address.');
+            document.getElementById('EmailAddress').focus();
+            return false;
+        }
+    }
+});
+</script>
+{% endblock %}

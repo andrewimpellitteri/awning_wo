@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if edit_mode %}Edit {{ source.SSource }}{% else %}Add New Source{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="mb-4">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="{{ url_for('source.source_list') }}">Sources</a>
+                        </li>
+                        {% if edit_mode %}
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('source.source_detail', source_name=source.SSource) }}">
+                                    {{ source.SSource }}
+                                </a>
+                            </li>
+                            <li class="breadcrumb-item active">Edit</li>
+                        {% else %}
+                            <li class="breadcrumb-item active">Add New</li>
+                        {% endif %}
+                    </ol>
+                </nav>
+                <h2>
+                    {% if edit_mode %}
+                        <i class="fas fa-edit"></i> Edit Source
+                    {% else %}
+                        <i class="fas fa-plus"></i> Add New Source
+                    {% endif %}
+                </h2>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Source Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" novalidate>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="SSource" class="form-label">
+                                                Source Name <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="SSource" 
+                                                   name="SSource"
+                                                   value="{{ source.SSource if edit_mode else (form_data.SSource if form_data else '') }}"
+                                                   {% if edit_mode %}readonly{% endif %}
+                                                   required>
+                                            {% if edit_mode %}
+                                                <div class="form-text">Source name cannot be changed</div>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="SourceAddress" class="form-label">Address</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="SourceAddress" 
+                                                   name="SourceAddress"
+                                                   value="{{ source.SourceAddress if edit_mode else (form_data.SourceAddress if form_data else '') }}">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="SourceCity" class="form-label">City</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="SourceCity" 
+                                                   name="SourceCity"
+                                                   value="{{ source.SourceCity if edit_mode else (form_data.SourceCity if form_data else '') }}">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="SourceState" class="form-label">State</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="SourceState" 
+                                                   name="SourceState"
+                                                   value="{{ source.SourceState if edit_mode else (form_data.SourceState if form_data else '') }}"
+                                                   maxlength="2"
+                                                   placeholder="e.g. CA, NY, TX">
+                                            <div class="form-text">Two-letter state abbreviation</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="SourceZip" class="form-label">ZIP Code</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="SourceZip" 
+                                                   name="SourceZip"
+                                                   value="{{ source.SourceZip if edit_mode else (form_data.SourceZip if form_data else '') }}"
+                                                   maxlength="10">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="SourcePhone" class="form-label">Phone</label>
+                                            <input type="tel" 
+                                                   class="form-control" 
+                                                   id="SourcePhone" 
+                                                   name="SourcePhone"
+                                                   value="{{ source.SourcePhone if edit_mode else (form_data.SourcePhone if form_data else '') }}"
+                                                   placeholder="e.g. 555-123-4567">
+                                            <div class="form-text">Numbers only (no spaces or dashes)</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="SourceFax" class="form-label">Fax</label>
+                                            <input type="tel" 
+                                                   class="form-control" 
+                                                   id="SourceFax" 
+                                                   name="SourceFax"
+                                                   value="{{ source.SourceFax if edit_mode else (form_data.SourceFax if form_data else '') }}"
+                                                   placeholder="e.g. 555-123-4567">
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label for="SourceEmail" class="form-label">Email</label>
+                                            <input type="email" 
+                                                   class="form-control" 
+                                                   id="SourceEmail" 
+                                                   name="SourceEmail"
+                                                   value="{{ source.clean_email() if edit_mode else (form_data.SourceEmail if form_data else '') }}"
+                                                   placeholder="email@example.com">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <hr>
+                                
+                                <div class="d-flex justify-content-between">
+                                    <a href="{% if edit_mode %}{{ url_for('source.source_detail', source_name=source.SSource) }}{% else %}{{ url_for('source.source_list') }}{% endif %}" 
+                                       class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i>
+                                        {% if edit_mode %}Update Source{% else %}Create Source{% endif %}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Help Card -->
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-info-circle"></i> Help
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <h6>Required Fields</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Source Name</li>
+                            </ul>
+                            
+                            <h6 class="mt-3">Tips</h6>
+                            <ul class="small">
+                                <li>Use the full business name for the source name</li>
+                                <li>Enter phone numbers as digits only (e.g., 5551234567)</li>
+                                <li>Use standard 2-letter state abbreviations (CA, NY, etc.)</li>
+                                <li>Double-check email addresses for accuracy</li>
+                            </ul>
+                            
+                            {% if edit_mode %}
+                                <div class="alert alert-info small mt-3">
+                                    <i class="fas fa-info-circle"></i>
+                                    The source name cannot be changed after creation.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Phone number formatting
+document.getElementById('SourcePhone').addEventListener('input', function(e) {
+    // Remove all non-digits
+    this.value = this.value.replace(/\D/g, '');
+});
+
+document.getElementById('SourceFax').addEventListener('input', function(e) {
+    // Remove all non-digits
+    this.value = this.value.replace(/\D/g, '');
+});
+
+// State input formatting
+document.getElementById('SourceState').addEventListener('input', function(e) {
+    // Convert to uppercase and limit to 2 characters
+    this.value = this.value.toUpperCase().slice(0, 2);
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const sourceName = document.getElementById('SSource').value.trim();
+    
+    if (!sourceName) {
+        e.preventDefault();
+        alert('Source name is required.');
+        document.getElementById('SSource').focus();
+        return false;
+    }
+    
+    // Validate email if provided
+    const email = document.getElementById('SourceEmail').value.trim();
+    if (email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            e.preventDefault();
+            alert('Please enter a valid email address.');
+            document.getElementById('SourceEmail').focus();
+            return false;
+        }
+    }
+    
+    // Validate phone if provided
+    const phone = document.getElementById('SourcePhone').value.trim();
+    if (phone && phone.length < 10) {
+        e.preventDefault();
+        alert('Please enter a valid 10-digit phone number.');
+        document.getElementById('SourcePhone').focus();
+        return false;
+    }
+});
+</script>
+{% endblock %}
