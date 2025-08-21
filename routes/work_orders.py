@@ -1,93 +1,49 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required
-
-# Commented out until models are recreated
-# from models.tblCustomers import TblCustomer as Customer
-# from models.tblCustWorkOrderDetail import Tblcustworkorderdetail as WorkOrder
-# from models.tblCustAwngs import Tblcustawngs as InventoryItem
+from flask import Blueprint, render_template, request
 from extensions import db
-from datetime import datetime
-
-work_orders_bp = Blueprint("work_orders", __name__)
+from models.work_order import WorkOrder
 
 
-def parse_date_safe(date_str):
-    """
-    Safely parse a date string from the database or form.
-    Returns a date object or None if invalid/empty.
-    Supports formats like '12/31/22 00:00:00' and 'YYYY-MM-DD'.
-    """
-    if not date_str or date_str.strip() == "":
-        return None
-    for fmt in ("%m/%d/%y %H:%M:%S", "%Y-%m-%d"):
-        try:
-            return datetime.strptime(date_str, fmt).date()
-        except ValueError:
-            continue
-    return None
+work_orders_bp = Blueprint("work_orders", __name__, url_prefix="/work_orders")
 
 
 @work_orders_bp.route("/")
-@login_required
 def list_work_orders():
-    """List all work orders - placeholder implementation"""
-    # TODO: Implement when WorkOrder model is available
-    flash("Work orders feature is currently unavailable", "info")
-    return render_template(
-        "placeholder.html",
-        title="Work Orders",
-        message="Work orders functionality will be available once models are restored.",
+    search = request.args.get("search", "")
+    page = request.args.get("page", 1, type=int)
+    per_page = 10  # number of work orders per page
+
+    query = WorkOrder.query
+
+    if search:
+        search_term = f"%{search}%"
+        # Search across multiple fields
+        query = query.filter(
+            db.or_(
+                WorkOrder.WorkOrderNo.like(search_term),
+                WorkOrder.CustID.like(search_term),
+                WorkOrder.WOName.like(search_term),
+                WorkOrder.Storage.like(search_term),
+                WorkOrder.RackNo.like(search_term),
+                WorkOrder.ShipTo.like(search_term),
+                WorkOrder.SpecialInstructions.like(search_term),
+                WorkOrder.RepairsNeeded.like(search_term),
+            )
+        )
+
+    pagination = query.order_by(WorkOrder.DateIn.desc()).paginate(
+        page=page, per_page=per_page
     )
+    work_orders = pagination.items
 
-
-@work_orders_bp.route("/new")
-@work_orders_bp.route("/new/<int:customer_id>")
-@login_required
-def new_work_order(customer_id=None):
-    """Create new work order form - placeholder implementation"""
-    # TODO: Implement when Customer and WorkOrder models are available
-    flash("New work order feature is currently unavailable", "info")
     return render_template(
-        "placeholder.html",
-        title="New Work Order",
-        message="New work order functionality will be available once models are restored.",
+        "work_orders/list.html",
+        work_orders=work_orders,
+        pagination=pagination,
+        search=search,
     )
-
-
-@work_orders_bp.route("/create", methods=["POST"])
-@login_required
-def create_work_order():
-    """Create work order - placeholder implementation"""
-    # TODO: Implement when WorkOrder model is available
-    flash("Work order creation is currently unavailable", "warning")
-    return redirect(url_for("work_orders.list_work_orders"))
 
 
 @work_orders_bp.route("/<work_order_no>")
-@login_required
 def view_work_order(work_order_no):
-    """View work order details - placeholder implementation"""
-    # TODO: Implement when WorkOrder model is available
-    flash(f"Cannot view work order {work_order_no} - feature unavailable", "info")
-    return render_template(
-        "placeholder.html",
-        title=f"Work Order {work_order_no}",
-        message="Work order viewing functionality will be available once models are restored.",
-    )
-
-
-# Additional placeholder routes that might be referenced elsewhere
-@work_orders_bp.route("/edit/<work_order_no>")
-@login_required
-def edit_work_order(work_order_no):
-    """Edit work order - placeholder implementation"""
-    flash("Edit work order feature is currently unavailable", "info")
-    return redirect(url_for("work_orders.list_work_orders"))
-
-
-@work_orders_bp.route("/delete/<work_order_no>", methods=["POST"])
-@login_required
-def delete_work_order(work_order_no):
-    """Delete work order - placeholder implementation"""
-    flash("Delete work order feature is currently unavailable", "info")
-    return redirect(url_for("work_orders.list_work_orders"))
+    work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
+    return render_template("work_orders/detail.html", work_order=work_order)

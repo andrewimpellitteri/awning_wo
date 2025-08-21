@@ -31,6 +31,11 @@ class Customer(db.Model):
     # Relationship to Source
     source_info = db.relationship("Source", foreign_keys=[Source], backref="customers")
 
+    # Relationship to WorkOrders
+    work_orders = db.relationship(
+        "WorkOrder", back_populates="customer", lazy="dynamic"
+    )
+
     def to_dict(self):
         """Convert model instance to dictionary"""
         return {

@@ -22,14 +22,15 @@ def create_app(config_class=Config):
 
     # Comment out all the problematic ones for now
     from routes.customers import customers_bp
-    # from routes.work_orders import work_orders_bp
+    from routes.work_orders import work_orders_bp
     # from routes.repair_orders import repair_orders_bp
     # from routes.reports import reports_bp
     # from routes.api import api_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(source_bp, url_prefix="/sources")
-    app.register_blueprint(customers_bp, url_prefix="/customers")  # ADD THIS LINE
+    app.register_blueprint(customers_bp, url_prefix="/customers")
+    app.register_blueprint(work_orders_bp, url_prefix="/work_orders")
 
     # Comment out all the problematic registrations
     # app.register_blueprint(customers_bp, url_prefix="/customers")

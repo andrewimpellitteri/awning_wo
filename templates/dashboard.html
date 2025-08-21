@@ -36,17 +36,18 @@
                 </div>
                 
                 <div class="col-md-4">
-                    <div class="card">
+                    <div class="card shadow-sm">
                         <div class="card-body text-center">
                             <i class="fas fa-tools fa-3x text-secondary mb-3"></i>
                             <h5 class="card-title">Work Orders</h5>
-                            <p class="card-text">Coming soon...</p>
-                            <button class="btn btn-secondary" disabled>
-                                Under Development
-                            </button>
+                            <p class="card-text">Manage all work orders</p>
+                            <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-primary">
+                                View Work Orders
+                            </a>
                         </div>
                     </div>
                 </div>
+                
                 
                 <div class="col-md-4">
                     <div class="card">

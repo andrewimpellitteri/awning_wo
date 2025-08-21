@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Work Order {{ work_order.WorkOrderNo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+            <!-- Work Order Header Card -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-0">Work Order #{{ work_order.WorkOrderNo }}</h4>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-3">Customer ID</dt>
+                        <dd class="col-sm-9">{{ work_order.CustID }}</dd>
+
+                        <dt class="col-sm-3">Work Order Name</dt>
+                        <dd class="col-sm-9">{{ work_order.WOName or '-' }}</dd>
+
+                        <dt class="col-sm-3">Storage</dt>
+                        <dd class="col-sm-9">{{ work_order.Storage or '-' }}</dd>
+
+                        <dt class="col-sm-3">Storage Time</dt>
+                        <dd class="col-sm-9">{{ work_order.StorageTime or '-' }}</dd>
+
+                        <dt class="col-sm-3">Rack#</dt>
+                        <dd class="col-sm-9">{{ work_order.RackNo or '-' }}</dd>
+
+                        <dt class="col-sm-3">Special Instructions</dt>
+                        <dd class="col-sm-9">{{ work_order.SpecialInstructions or '-' }}</dd>
+
+                        <dt class="col-sm-3">Repairs Needed</dt>
+                        <dd class="col-sm-9">{{ work_order.RepairsNeeded or '-' }}</dd>
+
+                        <dt class="col-sm-3">See Repair</dt>
+                        <dd class="col-sm-9">{{ work_order.SeeRepair or '-' }}</dd>
+
+                        <dt class="col-sm-3">Return Status</dt>
+                        <dd class="col-sm-9">{{ work_order.ReturnStatus or '-' }}</dd>
+
+                        <dt class="col-sm-3">Date Completed</dt>
+                        <dd class="col-sm-9">{{ work_order.DateCompleted or '-' }}</dd>
+
+                        <dt class="col-sm-3">Quote</dt>
+                        <dd class="col-sm-9">{{ work_order.Quote or '-' }}</dd>
+
+                        <dt class="col-sm-3">Clean</dt>
+                        <dd class="col-sm-9">{{ work_order.Clean or '-' }}</dd>
+
+                        <dt class="col-sm-3">Treat</dt>
+                        <dd class="col-sm-9">{{ work_order.Treat or '-' }}</dd>
+
+                        <dt class="col-sm-3">Rush Order</dt>
+                        <dd class="col-sm-9">{{ work_order.RushOrder or '-' }}</dd>
+
+                        <dt class="col-sm-3">Date Required</dt>
+                        <dd class="col-sm-9">{{ work_order.DateRequired or '-' }}</dd>
+
+                        <dt class="col-sm-3">Date In</dt>
+                        <dd class="col-sm-9">{{ work_order.DateIn or '-' }}</dd>
+
+                        <dt class="col-sm-3">Ship To</dt>
+                        <dd class="col-sm-9">
+                            <div class="mb-3">
+                                <p class="form-control-plaintext">
+                                    {% if work_order.customer.source_info %}
+                                        <a href="{{ url_for('source.source_detail', source_name=work_order.customer.source_info.SSource) }}">
+                                            <span class="badge bg-info fs-6">{{ work_order.customer.source_info.SSource }}</span>
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">Not assigned</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </dd>
+
+                        <dt class="col-sm-3">Firm Rush</dt>
+                        <dd class="col-sm-9">{{ work_order.FirmRush or '-' }}</dd>
+
+                        <dt class="col-sm-3">Clean First WO</dt>
+                        <dd class="col-sm-9">{{ work_order.CleanFirstWO or '-' }}</dd>
+
+                        <dt class="col-sm-3">Created At</dt>
+                        <dd class="col-sm-9">{{ work_order.created_at }}</dd>
+
+                        <dt class="col-sm-3">Updated At</dt>
+                        <dd class="col-sm-9">{{ work_order.updated_at }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Work Order Items Card -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Items</h5>
+                </div>
+                <div class="card-body">
+                    {% if work_order.items %}
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Qty</th>
+                                <th>Description</th>
+                                <th>Material</th>
+                                <th>Condition</th>
+                                <th>Color</th>
+                                <th>Size/Weight</th>
+                                <th>Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in work_order.items %}
+                            <tr>
+                                <td>{{ item.Qty or '-' }}</td>
+                                <td>{{ item.Description or '-' }}</td>
+                                <td>{{ item.Material or '-' }}</td>
+                                <td>{{ item.Condition or '-' }}</td>
+                                <td>{{ item.Color or '-' }}</td>
+                                <td>{{ item.SizeWgt or '-' }}</td>
+                                <td>{{ item.Price or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                        <p class="text-muted">No items for this work order.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-secondary">
+                &larr; Back to Work Orders
+            </a>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, request, jsonify, flash, redirect,
 from flask_login import login_required
 from models.customer import Customer
 from models.source import Source
+from models.inventory import Inventory
+from models.work_order import WorkOrder
 from extensions import db
 from sqlalchemy import or_
 
@@ -79,7 +81,17 @@ def list_customers():
 def customer_detail(customer_id):
     """Display detailed view of a customer"""
     customer = Customer.query.get_or_404(customer_id)
-    return render_template("customers/detail.html", customer=customer)
+    inventory_items = Inventory.query.filter_by(CustID=customer_id).all()
+
+    # Get all work orders for this customer
+    work_orders = WorkOrder.query.filter_by(CustID=customer_id).all()
+
+    return render_template(
+        "customers/detail.html",
+        customer=customer,
+        inventory_items=inventory_items,
+        work_orders=work_orders,
+    )
 
 
 @customers_bp.route("/new", methods=["GET", "POST"])
