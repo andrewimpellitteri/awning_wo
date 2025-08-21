@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    {% block styles %}{% endblock %}
 </head>
 <body>
     <!-- Minimal Navigation - ONLY WORKING FEATURES -->
@@ -37,7 +38,13 @@
 
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('work_orders.list_work_orders') }}">
-                            <i class="fas fa-wrench"></i> Work Orders
+                            <i class="fas fa-broom"></i> Work Orders
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('repair_work_orders.list_repair_work_orders') }}">
+                            <i class="fas fa-scissors"></i> Repair Orders
                         </a>
                     </li>
                 </ul>

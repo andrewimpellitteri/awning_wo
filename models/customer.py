@@ -36,6 +36,9 @@ class Customer(db.Model):
         "WorkOrder", back_populates="customer", lazy="dynamic"
     )
 
+    # Relationship to Repair
+    repair_work_orders = db.relationship("RepairWorkOrder", back_populates="customer")
+
     def to_dict(self):
         """Convert model instance to dictionary"""
         return {

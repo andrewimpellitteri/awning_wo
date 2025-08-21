@@ -5,7 +5,8 @@ from models.source import Source
 from models.inventory import Inventory
 from models.work_order import WorkOrder
 from extensions import db
-from sqlalchemy import or_
+from sqlalchemy import or_, func, cast, Integer
+
 
 customers_bp = Blueprint("customers", __name__)
 
@@ -101,28 +102,21 @@ def create_customer():
     if request.method == "POST":
         data = request.form
 
-        if not data.get("CustID"):
-            flash("Customer ID is required", "error")
-            return render_template(
-                "customers/form.html", form_data=data, sources=Source.query.all()
-            )
-
         if not data.get("Name"):
             flash("Customer name is required", "error")
             return render_template(
                 "customers/form.html", form_data=data, sources=Source.query.all()
             )
 
-        # Check if customer already exists
-        if Customer.query.get(data["CustID"]):
-            flash("Customer ID already exists", "error")
-            return render_template(
-                "customers/form.html", form_data=data, sources=Source.query.all()
-            )
-
         try:
+            # Auto-generate the new customer ID
+            max_cust_id = db.session.query(
+                func.max(cast(Customer.CustID, Integer))
+            ).scalar()
+            new_cust_id = str(max_cust_id + 1) if max_cust_id else "1"
+
             customer = Customer(
-                CustID=data["CustID"],
+                CustID=new_cust_id,
                 Name=data.get("Name"),
                 Contact=data.get("Contact"),
                 Address=data.get("Address"),

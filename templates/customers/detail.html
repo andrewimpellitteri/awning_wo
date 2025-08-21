@@ -284,18 +284,38 @@
                         </div>
                         <div class="card-body text-center">
                             <div class="row">
-                                <div class="col-6">
-                                    <h4 class="text-muted mb-0">0</h4>
-                                    <small>Work Orders</small>
+                                <div class="col-4">
+                                    <h4 class="text-primary mb-0">
+                                        {% set open_count = [] %}
+                                        {% for wo in customer.work_orders %}
+                                            {% if not wo.DateCompleted %}
+                                                {% set _ = open_count.append(1) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ open_count|length }}
+                                    </h4>
+                                    <small>Open Orders</small>
                                 </div>
-                                <div class="col-6">
-                                    <h4 class="text-muted mb-0">0</h4>
+                                <div class="col-4">
+                                    <h4 class="text-success mb-0">
+                                        {% set closed_count = [] %}
+                                        {% for wo in customer.work_orders %}
+                                            {% if wo.DateCompleted %}
+                                                {% set _ = closed_count.append(1) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ closed_count|length }}
+                                    </h4>
+                                    <small>Closed Orders</small>
+                                </div>
+                                <div class="col-4">
+                                    <h4 class="text-warning mb-0">0</h4>
                                     <small>Repairs</small>
                                 </div>
                             </div>
-                            <small class="text-muted d-block mt-2">Coming Soon</small>
                         </div>
                     </div>
+                    
                 </div>
             </div>
 
@@ -309,7 +329,7 @@
                     <ul class="list-group list-group-flush">
                         {% for wo in customer.work_orders %}
                         <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Work Order #{{ wo.WorkOrderNo }} – {{ wo.DateIn or "No Date" }}
+                            Work Order #{{ wo.WorkOrderNo }} – {{ (wo.DateIn | date_format) or "No Date" }}
                             <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo) }}" class="btn btn-sm btn-primary">
                                 View
                             </a>
@@ -334,22 +354,25 @@
                         <div class="table-responsive">
                             <table class="table table-sm table-striped align-middle">
                                 <thead>
-                                    <tr>
+                                    <tr>                                        
+                                        <th>Qty</th>
                                         <th>Description</th>
                                         <th>Material</th>
                                         <th>Color</th>
                                         <th>Condition</th>
-                                        <th>Qty</th>
+                                        <th>Size/Weight</th>
+
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for item in inventory_items %}
                                     <tr>
+                                        <td>{{ item.Qty or '0' }}</td>
                                         <td>{{ item.Description }}</td>
                                         <td>{{ item.Material or '-' }}</td>
                                         <td>{{ item.Color or '-' }}</td>
                                         <td>{{ item.Condition or '-' }}</td>
-                                        <td>{{ item.Qty or '0' }}</td>
+                                        <th>{{ item.SizeWgt or '-' }}</th>
                                     </tr>
                                     {% endfor %}
                                 </tbody>

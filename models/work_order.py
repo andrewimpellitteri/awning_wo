@@ -51,6 +51,7 @@ class WorkOrder(db.Model):
 class WorkOrderItem(db.Model):
     __tablename__ = "tblOrdDetCustAwngs"
 
+    # FIXED: Create a composite primary key to handle multiple items per work order
     WorkOrderNo = db.Column(
         db.String,
         db.ForeignKey("tblCustWorkOrderDetail.WorkOrderNo"),
@@ -59,9 +60,12 @@ class WorkOrderItem(db.Model):
     )
     CustID = db.Column(db.String, db.ForeignKey("tblCustomers.CustID"), nullable=False)
 
+    # Add Description and Material to primary key to allow multiple items per work order
+    Description = db.Column(db.String, primary_key=True)
+    Material = db.Column(db.String, primary_key=True)
+
+    # Rest of the columns
     Qty = db.Column(db.String)
-    Description = db.Column(db.String)
-    Material = db.Column(db.String)
     Condition = db.Column(db.String)
     Color = db.Column(db.String)
     SizeWgt = db.Column(db.String)
@@ -69,3 +73,9 @@ class WorkOrderItem(db.Model):
 
     # relationships
     work_order = db.relationship("WorkOrder", back_populates="items")
+
+    def __repr__(self):
+        return f"<WorkOrderItem {self.WorkOrderNo}: {self.Description}>"
+
+    def __str__(self):
+        return f"{self.Description} ({self.Material}) - Qty: {self.Qty}"

@@ -48,21 +48,20 @@
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
+                                        {% if edit_mode %}
                                         <div class="mb-3">
                                             <label for="CustID" class="form-label">
-                                                Customer ID <span class="text-danger">*</span>
+                                                Customer ID
                                             </label>
                                             <input type="text" 
                                                    class="form-control" 
                                                    id="CustID" 
                                                    name="CustID"
-                                                   value="{{ customer.CustID if edit_mode else (form_data.CustID if form_data else '') }}"
-                                                   {% if edit_mode %}readonly{% endif %}
-                                                   required>
-                                            {% if edit_mode %}
-                                                <div class="form-text">Customer ID cannot be changed</div>
-                                            {% endif %}
+                                                   value="{{ customer.CustID }}"
+                                                   readonly>
+                                            <div class="form-text">Customer ID cannot be changed</div>
                                         </div>
+                                        {% endif %}
                                         
                                         <div class="mb-3">
                                             <label for="Name" class="form-label">
@@ -306,15 +305,13 @@
                             <div class="card-body">
                                 <h6>Required Fields</h6>
                                 <ul class="list-unstyled">
-                                    <li><i class="fas fa-check text-success"></i> Customer ID</li>
                                     <li><i class="fas fa-check text-success"></i> Customer Name</li>
                                 </ul>
-                                
                                 <h6 class="mt-3">Tips</h6>
                                 <ul class="small">
                                     <li>Use a unique, memorable ID for each customer</li>
                                     <li>Phone numbers can be entered with or without formatting</li>
-                                    <li>Select a source to track how you found this customer</li>
+                                    <li>Select a source associated with this customer</li>
                                     <li>Mailing address is optional if same as physical address</li>
                                 </ul>
                             </div>
@@ -341,6 +338,7 @@
 
 {% block scripts %}
 <script>
+
 // Phone number formatting
 function formatPhoneInput(input) {
     input.addEventListener('input', function(e) {
@@ -402,10 +400,20 @@ document.getElementById('Source').addEventListener('change', function() {
 document.querySelector('form').addEventListener('submit', function(e) {
     const custId = document.getElementById('CustID').value.trim();
     const custName = document.getElementById('Name').value.trim();
+    const sourceElement = document.getElementById('Source');
+
+        // 👇 ADD THIS DEBUG STATEMENT
+    console.log('--- Form Submission Debug ---');
+    console.log('Customer ID:', custId);
+    console.log('Customer Name:', custName);
+    console.log('Source Value:', sourceElement.value.trim());
+    console.log('---------------------------');
+
     
     if (!custId) {
         e.preventDefault();
         alert('Customer ID is required.');
+        console.log('fail');
         document.getElementById('CustID').focus();
         return false;
     }
@@ -414,6 +422,15 @@ document.querySelector('form').addEventListener('submit', function(e) {
         e.preventDefault();
         alert('Customer name is required.');
         document.getElementById('Name').focus();
+        return false;
+    }
+
+
+    // Validate Source
+    if (!sourceElement.value.trim()) {
+        e.preventDefault();
+        alert('Source is required.');
+        sourceElement.focus();
         return false;
     }
     

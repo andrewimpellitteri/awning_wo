@@ -4,6 +4,7 @@ from config import Config
 from extensions import db, login_manager
 import os
 from sqlalchemy import inspect
+from datetime import datetime, date
 
 
 def create_app(config_class=Config):
@@ -16,6 +17,66 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
 
+    @app.template_filter("price_format")
+    def format_price(price):
+        """
+        Formats a number to a price string with a dollar sign and two decimal places.
+
+        Args:
+            price: A number (integer or float).
+
+        Returns:
+            A string formatted as a price (e.g., "$123.45").
+        """
+        try:
+            # Use an f-string to format the number to two decimal places.
+            return f"${float(price):.2f}"
+        except (ValueError, TypeError) as e:
+            # Handle cases where the input is not a valid number.
+            print(f"Error: Invalid input '{price}'. Please provide a number.")
+            return None
+
+    @app.template_filter("yesdash")
+    def yesdash(value):
+        """Render booleans as 'Yes' or '-'."""
+        if value is True:
+            return "Yes"
+        return "-"
+
+    @app.template_filter("date_format")
+    def format_date(value):
+        """Formats datetime/date/custom string to MM/DD/YYYY."""
+        print("\n[DEBUG] date_format called with:", repr(value), "of type", type(value))
+
+        if not value:
+            return "-"
+
+        try:
+            # Case 1: Already a datetime or date
+            if isinstance(value, (datetime, date)):
+                formatted = value.strftime("%m/%d/%Y")
+                print("[DEBUG] Parsed as datetime/date ->", formatted)
+                return formatted
+
+            # Case 2: String already in MM/DD/YY HH:MM:SS format
+            try:
+                dt_object = datetime.strptime(value, "%m/%d/%y %H:%M:%S")
+                formatted = dt_object.strftime("%m/%d/%Y")
+                print("[DEBUG] Parsed as custom string ->", formatted)
+                return formatted
+            except ValueError:
+                pass  # not that format, fall through
+
+            # Case 3: Try ISO string
+            dt_object = datetime.fromisoformat(value)
+            formatted = dt_object.strftime("%m/%d/%Y")
+            print("[DEBUG] Parsed as ISO string ->", formatted)
+            return formatted
+
+        except Exception as e:
+            print("[DEBUG] Exception in date_format:", e)
+            return str(value)
+
     # Import and register ONLY working blueprints
     from routes.auth import auth_bp
     from routes.source import source_bp
@@ -23,6 +84,8 @@ def create_app(config_class=Config):
     # Comment out all the problematic ones for now
     from routes.customers import customers_bp
     from routes.work_orders import work_orders_bp
+    from routes.repair_order import repair_work_orders_bp
+
     # from routes.repair_orders import repair_orders_bp
     # from routes.reports import reports_bp
     # from routes.api import api_bp
@@ -31,6 +94,7 @@ def create_app(config_class=Config):
     app.register_blueprint(source_bp, url_prefix="/sources")
     app.register_blueprint(customers_bp, url_prefix="/customers")
     app.register_blueprint(work_orders_bp, url_prefix="/work_orders")
+    app.register_blueprint(repair_work_orders_bp, url_prefix="/repair_work_orders")
 
     # Comment out all the problematic registrations
     # app.register_blueprint(customers_bp, url_prefix="/customers")

@@ -35,10 +35,21 @@
                 {% for wo in work_orders %}
                 <tr>
                     <td>{{ wo.WorkOrderNo }}</td>
-                    <td>{{ wo.CustID }}</td>
+                    <td>
+                        {% if wo.customer %}
+                            <a href="{{ url_for('customers.customer_detail', customer_id=wo.customer.CustID) }}"
+                            class="text-decoration-none">
+                                <span class="badge bg-primary fs-6">
+                                    {{ wo.CustID }}
+                                </span>
+                            </a>
+                        {% else %}
+                            <span class="text-muted">Not assigned</span>
+                        {% endif %}
+                    </td>
                     <td>{{ wo.WOName or "-" }}</td>
-                    <td>{{ wo.DateIn or "-" }}</td>
-                    <td>{{ wo.DateRequired or "-" }}</td>
+                    <td>{{ (wo.DateIn | date_format) or "-" }}</td>
+                    <td>{{ (wo.DateRequired | date_format) or "-" }}</td>
                     <td>
                         {% if wo.customer.source_info %}
                             <a href="{{ url_for('source.source_detail', source_name=wo.customer.source_info.SSource) }}">

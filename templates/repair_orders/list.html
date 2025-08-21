@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if current_status %}
+    {{ current_status.title() }} Repair Orders
+  {% elif is_rush_view %}
+    Rush Repair Orders
+  {% else %}
+    Repair Work Orders
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">
+          {% if current_status %}
+            {{ current_status.title() }} Repair Orders
+          {% elif is_rush_view %}
+            <i class="fas fa-clock text-danger"></i> Rush Repair Orders
+          {% else %}
+            Repair Work Orders
+          {% endif %}
+        </h1>
+        
+        <div class="d-flex gap-2">
+          <a href="{{ url_for('repair_work_orders.pending_repairs') }}" 
+            class="btn btn-outline-warning btn-sm">
+            <i class="fas fa-hourglass-half"></i> Pending
+          </a>
+
+          <a href="{{ url_for('repair_work_orders.rush_orders') }}" 
+            class="btn btn-outline-danger btn-sm">
+            <i class="fas fa-clock"></i> Rush Orders
+          </a>
+
+          <a href="{{ url_for('repair_work_orders.completed_repairs') }}" 
+            class="btn btn-outline-success btn-sm">
+            <i class="fas fa-check-circle"></i> Completed
+          </a>
+
+          <a href="{{ url_for('repair_work_orders.list_repair_work_orders') }}" 
+            class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-list"></i> All Orders
+          </a>
+
+        </div>
+      </div>
+
+      <!-- Search Form -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <form method="GET" class="row g-3">
+            <div class="col-md-10">
+              <input type="text" 
+                     class="form-control" 
+                     name="search" 
+                     value="{{ search }}" 
+                     placeholder="Search by Order No, Customer ID, Name, Repair Type, Location...">
+            </div>
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="fas fa-search"></i> Search
+              </button>
+            </div>
+            {% if search %}
+            <div class="col-12">
+              <a href="{{ request.endpoint and url_for(request.endpoint) }}" 
+                 class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-times"></i> Clear Search
+              </a>
+            </div>
+            {% endif %}
+          </form>
+        </div>
+      </div>
+
+      <!-- Results Summary -->
+      <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        Showing {{ repair_work_orders|length }} of {{ pagination.total }} repair work orders
+        {% if search %}(filtered by "{{ search }}"){% endif %}
+      </div>
+
+      <!-- Repair Work Orders Table -->
+      <div class="card">
+        <div class="card-body p-0">
+          {% if repair_work_orders %}
+          <div class="table-responsive">
+            <table class="table table-striped table-hover mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th>Order No</th>
+                  <th>Customer ID</th>
+                  <th>Name</th>
+                  <th>Item Type</th>
+                  <th>Repair Type</th>
+                  <th>Status</th>
+                  <th>Date In</th>
+                  <th>Date Required</th>
+                  <th>Location</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for order in repair_work_orders %}
+                <tr>
+                  <td>
+                    <strong>{{ order.RepairOrderNo }}</strong>
+                    {% if order.RushOrder == "YES" or order.FirmRush == "YES" %}
+                    <span class="badge bg-danger ms-1">RUSH</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ order.CustID or '-' }}</td>
+                  <td>{{ order.ROName or '-' }}</td>
+                  <td>{{ order.ITEM_TYPE or '-' }}</td>
+                  <td>{{ order.TYPE_OF_REPAIR or '-' }}</td>
+                  <td>
+                    {% if order.RETURNSTATUS == "COMPLETED" %}
+                    <span class="badge bg-success">{{ order.RETURNSTATUS }}</span>
+                    {% elif order.RETURNSTATUS == "PENDING" %}
+                    <span class="badge bg-warning">{{ order.RETURNSTATUS }}</span>
+                    {% else %}
+                    <span class="badge bg-secondary">{{ order.RETURNSTATUS or 'Unknown' }}</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ order.DateIn or '-' }}</td>
+                  <td>
+                    {% if order.DateRequired %}
+                      {{ order.DateRequired }}
+                      {% if order.RushOrder == "YES" or order.FirmRush == "YES" %}
+                      <i class="fas fa-exclamation-triangle text-danger"></i>
+                      {% endif %}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>{{ order.LOCATION or '-' }}</td>
+                  <td>
+                    <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=order.RepairOrderNo) }}" 
+                       class="btn btn-sm btn-outline-primary">
+                      <i class="fas fa-eye"></i> View
+                    </a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          {% if pagination.pages > 1 %}
+          <div class="card-footer">
+            <nav aria-label="Repair work orders pagination">
+              <ul class="pagination pagination-sm mb-0 justify-content-center">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                  <a class="page-link" href="{{ url_for(request.endpoint, page=pagination.prev_num, search=search) }}">
+                    Previous
+                  </a>
+                </li>
+                {% endif %}
+
+                {% for page_num in pagination.iter_pages() %}
+                  {% if page_num %}
+                    {% if page_num != pagination.page %}
+                    <li class="page-item">
+                      <a class="page-link" href="{{ url_for(request.endpoint, page=page_num, search=search) }}">
+                        {{ page_num }}
+                      </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item active">
+                      <span class="page-link">{{ page_num }}</span>
+                    </li>
+                    {% endif %}
+                  {% else %}
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                  {% endif %}
+                {% endfor %}
+
+                {% if pagination.has_next %}
+                <li class="page-item">
+                  <a class="page-link" href="{{ url_for(request.endpoint, page=pagination.next_num, search=search) }}">
+                    Next
+                  </a>
+                </li>
+                {% endif %}
+              </ul>
+            </nav>
+          </div>
+          {% endif %}
+
+          {% else %}
+          <div class="text-center py-5">
+            <i class="fas fa-tools fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No repair work orders found</h5>
+            {% if search %}
+            <p class="text-muted">Try adjusting your search terms</p>
+            <a href="{{ url_for('repair_work_orders.list_repair_work_orders') }}" 
+               class="btn btn-outline-primary">View All Orders</a>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

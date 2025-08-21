@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block title %}Repair Order {{ repair_work_order.RepairOrderNo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <!-- Header -->
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h1 class="h3">
+            <i class="fas fa-tools"></i> 
+            Repair Order {{ repair_work_order.RepairOrderNo }}
+            {% if repair_work_order.RushOrder == "YES" or repair_work_order.FirmRush == "YES" %}
+            <span class="badge bg-danger ms-2">RUSH ORDER</span>
+            {% endif %}
+          </h1>
+          <p class="text-muted mb-0">{{ repair_work_order.ROName or 'Unnamed Order' }}</p>
+        </div>
+        
+        <div>
+          <a href="{{ url_for('repair_work_orders.list_repair_work_orders') }}" 
+             class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+          </a>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Main Details -->
+        <div class="col-lg-8">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-info-circle"></i> Order Information
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <table class="table table-borderless table-sm">
+                    <tr>
+                      <th width="40%">Order Number:</th>
+                      <td><strong>{{ repair_work_order.RepairOrderNo }}</strong></td>
+                    </tr>
+                    <tr>
+                      <th>Customer ID:</th>
+                      <td>{{ repair_work_order.CustID or '-' }}</td>
+                    </tr>
+                    <tr>
+                      <th>Order Name:</th>
+                      <td>{{ repair_work_order.ROName or '-' }}</td>
+                    </tr>
+                    <tr>
+                      <th>Source:</th>
+                      <td>{{ repair_work_order.SOURCE or '-' }}</td>
+                    </tr>
+                    <tr>
+                      <th>Item Type:</th>
+                      <td>{{ repair_work_order.ITEM_TYPE or '-' }}</td>
+                    </tr>
+                    <tr>
+                      <th>Repair Type:</th>
+                      <td>{{ repair_work_order.TYPE_OF_REPAIR or '-' }}</td>
+                    </tr>
+                  </table>
+                </div>
+                <div class="col-md-6">
+                  <table class="table table-borderless table-sm">
+                    <tr>
+                      <th width="40%">Work Order Date:</th>
+                      <td>{{ repair_work_order.WO_DATE or '-' }}</td>
+                    </tr>
+                    <tr>
+                      <th>Date In:</th>
+                      <td>{{ repair_work_order.DateIn or '-' }}</td>
+                    </tr>
+                    <tr>
+                      <th>Date Required:</th>
+                      <td>
+                        {{ repair_work_order.DateRequired or '-' }}
+                        {% if repair_work_order.RushOrder == "YES" or repair_work_order.FirmRush == "YES" %}
+                        <i class="fas fa-exclamation-triangle text-danger ms-1"></i>
+                        {% endif %}
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>Date to Sub:</th>
+                      <td>{{ repair_work_order.DATE_TO_SUB or '-' }}</td>
+                    </tr>
+                    <tr>
+                      <th>Date Completed:</th>
+                      <td>{{ repair_work_order.DateCompleted or '-' }}</td>
+                    </tr>
+                    <tr>
+                      <th>Date Out:</th>
+                      <td>{{ repair_work_order.DATEOUT or '-' }}</td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Special Instructions & Repair Details -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-clipboard-list"></i> Repair Details
+              </h5>
+            </div>
+            <div class="card-body">
+              {% if repair_work_order.SPECIALINSTRUCTIONS %}
+              <div class="mb-3">
+                <h6>Special Instructions:</h6>
+                <div class="alert alert-info">
+                  {{ repair_work_order.SPECIALINSTRUCTIONS }}
+                </div>
+              </div>
+              {% endif %}
+              
+              {% if repair_work_order.MaterialList %}
+              <div class="mb-3">
+                <h6>Material List:</h6>
+                <div class="bg-light p-3 rounded">
+                  {{ repair_work_order.MaterialList }}
+                </div>
+              </div>
+              {% endif %}
+
+              <div class="row">
+                <div class="col-md-6">
+                  <h6>Repair Information:</h6>
+                  <ul class="list-unstyled">
+                    <li><strong>Repairs Done By:</strong> {{ repair_work_order.REPAIRSDONEBY or 'Not assigned' }}</li>
+                    <li><strong>Clean:</strong> {{ repair_work_order.CLEAN or 'No' }}</li>
+                    <li><strong>See Clean:</strong> {{ repair_work_order.SEECLEAN or 'No' }}</li>
+                    <li><strong>Clean First:</strong> {{ repair_work_order.CLEANFIRST or 'No' }}</li>
+                  </ul>
+                </div>
+                <div class="col-md-6">
+                  <h6>Location & Storage:</h6>
+                  <ul class="list-unstyled">
+                    <li><strong>Location:</strong> {{ repair_work_order.LOCATION or '-' }}</li>
+                    <li><strong>Storage:</strong> {{ repair_work_order.STORAGE or '-' }}</li>
+                    <li><strong>Rack #:</strong> {{ repair_work_order.RackNo or '-' }}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Order Items -->
+          {% if repair_work_order.items %}
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-list"></i> Order Items ({{ repair_work_order.items|length }})
+              </h5>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                  <thead class="table-dark">
+                    <tr>
+                      <th>Description</th>
+                      <th>Material</th>
+                      <th>Qty</th>
+                      <th>Condition</th>
+                      <th>Color</th>
+                      <th>Size/Weight</th>
+                      <th>Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for item in repair_work_order.items %}
+                    <tr>
+                      <td>{{ item.Description or '-' }}</td>
+                      <td>{{ item.Material or '-' }}</td>
+                      <td>{{ item.Qty or '-' }}</td>
+                      <td>{{ item.Condition or '-' }}</td>
+                      <td>{{ item.Color or '-' }}</td>
+                      <td>{{ item.SizeWgt or '-' }}</td>
+                      <td>{{ item.Price or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Status & Quote Sidebar -->
+        <div class="col-lg-4">
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-flag"></i> Status & Priority
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label class="form-label">Return Status:</label>
+                <div>
+                  {% if repair_work_order.RETURNSTATUS == "COMPLETED" %}
+                  <span class="badge bg-success fs-6">{{ repair_work_order.RETURNSTATUS }}</span>
+                  {% elif repair_work_order.RETURNSTATUS == "PENDING" %}
+                  <span class="badge bg-warning fs-6">{{ repair_work_order.RETURNSTATUS }}</span>
+                  {% else %}
+                  <span class="badge bg-secondary fs-6">{{ repair_work_order.RETURNSTATUS or 'Unknown' }}</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Priority:</label>
+                <div>
+                  {% if repair_work_order.RushOrder == "YES" %}
+                  <span class="badge bg-danger">Rush Order</span>
+                  {% endif %}
+                  {% if repair_work_order.FirmRush == "YES" %}
+                  <span class="badge bg-danger">Firm Rush</span>
+                  {% endif %}
+                  {% if repair_work_order.RushOrder != "YES" and repair_work_order.FirmRush != "YES" %}
+                  <span class="text-muted">Normal Priority</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              {% if repair_work_order.RETURNDATE %}
+              <div class="mb-3">
+                <label class="form-label">Return Date:</label>
+                <div>{{ repair_work_order.RETURNDATE }}</div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-dollar-sign"></i> Quote & Pricing
+              </h5>
+            </div>
+            <div class="card-body">
+              <table class="table table-borderless table-sm">
+                <tr>
+                  <th>Quote:</th>
+                  <td>{{ repair_work_order.QUOTE or 'Not provided' }}</td>
+                </tr>
+                <tr>
+                  <th>Quote By:</th>
+                  <td>{{ repair_work_order.QUOTE_BY or '-' }}</td>
+                </tr>
+                <tr>
+                  <th>Approved:</th>
+                  <td>
+                    {% if repair_work_order.APPROVED == "YES" %}
+                    <span class="text-success"><i class="fas fa-check"></i> Yes</span>
+                    {% elif repair_work_order.APPROVED == "NO" %}
+                    <span class="text-danger"><i class="fas fa-times"></i> No</span>
+                    {% else %}
+                    <span class="text-muted">{{ repair_work_order.APPROVED or 'Pending' }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                <tr>
+                  <th>Customer Price:</th>
+                  <td><strong>{{ repair_work_order.CUSTOMERPRICE or 'TBD' }}</strong></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <!-- Timestamps -->
+          <div class="card">
+            <div class="card-header">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-clock"></i> System Information
+              </h5>
+            </div>
+            <div class="card-body">
+              <small class="text-muted">
+                <div>Created: {{ repair_work_order.created_at or 'Unknown' }}</div>
+                <div>Updated: {{ repair_work_order.updated_at or 'Unknown' }}</div>
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
