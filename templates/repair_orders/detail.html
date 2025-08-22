@@ -46,7 +46,18 @@
                     </tr>
                     <tr>
                       <th>Customer ID:</th>
-                      <td>{{ repair_work_order.CustID or '-' }}</td>
+                      <td>
+                        {% if repair_work_order.customer %}
+                            <a href="{{ url_for('customers.customer_detail', customer_id=repair_work_order.customer.CustID) }}"
+                            class="text-decoration-none">
+                                <span class="badge bg-primary fs-6">
+                                    {{ repair_work_order.CustID }}
+                                </span>
+                            </a>
+                        {% else %}
+                            <span class="text-muted">Not assigned</span>
+                        {% endif %}
+                      </td>
                     </tr>
                     <tr>
                       <th>Order Name:</th>
@@ -70,16 +81,16 @@
                   <table class="table table-borderless table-sm">
                     <tr>
                       <th width="40%">Work Order Date:</th>
-                      <td>{{ repair_work_order.WO_DATE or '-' }}</td>
+                      <td>{{ (repair_work_order.WO_DATE | date_format) or '-' }}</td>
                     </tr>
                     <tr>
                       <th>Date In:</th>
-                      <td>{{ repair_work_order.DateIn or '-' }}</td>
+                      <td>{{ (repair_work_order.DateIn | date_format) or '-' }}</td>
                     </tr>
                     <tr>
                       <th>Date Required:</th>
                       <td>
-                        {{ repair_work_order.DateRequired or '-' }}
+                        {{ (repair_work_order.DateRequired | date_format) or '-' }}
                         {% if repair_work_order.RushOrder == "YES" or repair_work_order.FirmRush == "YES" %}
                         <i class="fas fa-exclamation-triangle text-danger ms-1"></i>
                         {% endif %}
@@ -87,15 +98,15 @@
                     </tr>
                     <tr>
                       <th>Date to Sub:</th>
-                      <td>{{ repair_work_order.DATE_TO_SUB or '-' }}</td>
+                      <td>{{ (repair_work_order.DATE_TO_SUB | date_format) or '-' }}</td>
                     </tr>
                     <tr>
                       <th>Date Completed:</th>
-                      <td>{{ repair_work_order.DateCompleted or '-' }}</td>
+                      <td>{{ (repair_work_order.DateCompleted | date_format) or '-' }}</td>
                     </tr>
                     <tr>
                       <th>Date Out:</th>
-                      <td>{{ repair_work_order.DATEOUT or '-' }}</td>
+                      <td>{{ (repair_work_order.DATEOUT | date_format) or '-' }}</td>
                     </tr>
                   </table>
                 </div>
@@ -233,7 +244,7 @@
               {% if repair_work_order.RETURNDATE %}
               <div class="mb-3">
                 <label class="form-label">Return Date:</label>
-                <div>{{ repair_work_order.RETURNDATE }}</div>
+                <div>{{ (repair_work_order.RETURNDATE | date_format) or '-' }}</div>
               </div>
               {% endif %}
             </div>
@@ -284,8 +295,8 @@
             </div>
             <div class="card-body">
               <small class="text-muted">
-                <div>Created: {{ repair_work_order.created_at or 'Unknown' }}</div>
-                <div>Updated: {{ repair_work_order.updated_at or 'Unknown' }}</div>
+                <div>Created: {{ (repair_work_order.created_at | date_format) or 'Unknown' }}</div>
+                <div>Updated: {{ (repair_work_order.updated_at | date_format) or 'Unknown' }}</div>
               </small>
             </div>
           </div>

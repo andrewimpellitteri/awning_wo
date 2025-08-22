@@ -203,7 +203,7 @@
                             </div>
                             
                             <div class="detail-row">
-                                <div class="detail-label">Ship To</div>
+                                <div class="detail-label">Source</div>
                                 <div class="detail-value">
                                     {% if work_order.customer.source_info %}
                                         <a href="{{ url_for('source.source_detail', source_name=work_order.customer.source_info.SSource) }}" 

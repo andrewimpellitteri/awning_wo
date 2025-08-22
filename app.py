@@ -38,8 +38,8 @@ def create_app(config_class=Config):
 
     @app.template_filter("yesdash")
     def yesdash(value):
-        """Render booleans as 'Yes' or '-'."""
-        if value is True:
+        """Render truthy values as 'Yes' or '-'."""
+        if str(value).upper() in ("1", "YES", "TRUE"):
             return "Yes"
         return "-"
 

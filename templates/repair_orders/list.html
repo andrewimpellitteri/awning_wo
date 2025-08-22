@@ -97,7 +97,7 @@
                   <th>Name</th>
                   <th>Item Type</th>
                   <th>Repair Type</th>
-                  <th>Status</th>
+                  <th>Return Status</th>
                   <th>Date In</th>
                   <th>Date Required</th>
                   <th>Location</th>
@@ -113,7 +113,18 @@
                     <span class="badge bg-danger ms-1">RUSH</span>
                     {% endif %}
                   </td>
-                  <td>{{ order.CustID or '-' }}</td>
+                  <td>
+                    {% if order.customer %}
+                        <a href="{{ url_for('customers.customer_detail', customer_id=order.customer.CustID) }}"
+                        class="text-decoration-none">
+                            <span class="badge bg-primary fs-6">
+                                {{ order.CustID }}
+                            </span>
+                        </a>
+                    {% else %}
+                        <span class="text-muted">Not assigned</span>
+                    {% endif %}
+                  </td>
                   <td>{{ order.ROName or '-' }}</td>
                   <td>{{ order.ITEM_TYPE or '-' }}</td>
                   <td>{{ order.TYPE_OF_REPAIR or '-' }}</td>
@@ -126,10 +137,10 @@
                     <span class="badge bg-secondary">{{ order.RETURNSTATUS or 'Unknown' }}</span>
                     {% endif %}
                   </td>
-                  <td>{{ order.DateIn or '-' }}</td>
+                  <td>{{ (order.DateIn | date_format) or '-' }}</td>
                   <td>
                     {% if order.DateRequired %}
-                      {{ order.DateRequired }}
+                      {{ (order.DateRequired | date_format) }}
                       {% if order.RushOrder == "YES" or order.FirmRush == "YES" %}
                       <i class="fas fa-exclamation-triangle text-danger"></i>
                       {% endif %}
