@@ -5,7 +5,8 @@ from models.source import Source
 from models.inventory import Inventory
 from models.work_order import WorkOrder
 from extensions import db
-from sqlalchemy import or_, func, cast, Integer
+from sqlalchemy import or_, func, cast, Integer, desc, asc
+import json
 
 
 customers_bp = Blueprint("customers", __name__)
@@ -14,38 +15,10 @@ customers_bp = Blueprint("customers", __name__)
 @customers_bp.route("/")
 @login_required
 def list_customers():
-    """Display all customers with search functionality"""
+    """Render the customer list page with filters"""
     search_query = request.args.get("search", "").strip()
     source_filter = request.args.get("source", "").strip()
     state_filter = request.args.get("state", "").strip()
-    page = request.args.get("page", 1, type=int)
-    per_page = 10
-
-    query = Customer.query
-
-    # Apply search filter
-    if search_query:
-        query = query.filter(
-            or_(
-                Customer.Name.contains(search_query),
-                Customer.CustID.contains(search_query),
-                Customer.Contact.contains(search_query),
-                Customer.City.contains(search_query),
-                Customer.EmailAddress.contains(search_query),
-            )
-        )
-
-    # Apply source filter
-    if source_filter:
-        query = query.filter(Customer.Source.ilike(f"%{source_filter}%"))
-
-    # Apply state filter
-    if state_filter:
-        query = query.filter(Customer.State.ilike(f"%{state_filter}%"))
-
-    customers = query.order_by(Customer.Name).paginate(
-        page=page, per_page=per_page, error_out=False
-    )
 
     # Get unique sources and states for filter dropdowns
     sources = (
@@ -68,12 +41,162 @@ def list_customers():
 
     return render_template(
         "customers/list.html",
-        customers=customers,
         search_query=search_query,
         source_filter=source_filter,
         state_filter=state_filter,
         unique_sources=unique_sources,
         unique_states=unique_states,
+    )
+
+
+@customers_bp.route("/api/customers")
+@login_required
+def api_customers():
+    """API endpoint for the customers table with server-side filtering, sorting, and pagination"""
+
+    # Get pagination parameters
+    page = request.args.get("page", 1, type=int)
+    size = request.args.get("size", 25, type=int)
+
+    # Start with base query
+    query = Customer.query
+
+    # Apply global filters
+    search = request.args.get("search", "").strip()
+    source_filter = request.args.get("source", "").strip()
+    state_filter = request.args.get("state", "").strip()
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                Customer.Name.ilike(search_term),
+                Customer.CustID.ilike(search_term),
+                Customer.Contact.ilike(search_term),
+                Customer.City.ilike(search_term),
+                Customer.State.ilike(search_term),
+                Customer.HomePhone.ilike(search_term),
+                Customer.EmailAddress.ilike(search_term),
+                Customer.Source.ilike(search_term),
+            )
+        )
+
+    if source_filter:
+        query = query.filter(Customer.Source == source_filter)
+
+    if state_filter:
+        query = query.filter(Customer.State == state_filter)
+
+    # Apply column-specific filters
+    filter_mapping = {
+        "filter_CustID": Customer.CustID,
+        "filter_Name": Customer.Name,
+        "filter_Contact": Customer.Contact,
+        "filter_Location": Customer.City,  # Assuming Location maps to City
+        "filter_Phone": Customer.HomePhone,
+        "filter_EmailAddress": Customer.EmailAddress,
+        "filter_Source": Customer.Source,
+    }
+
+    for filter_key, column in filter_mapping.items():
+        filter_value = request.args.get(filter_key, "").strip()
+        if filter_value:
+            filter_term = f"%{filter_value}%"
+            query = query.filter(column.ilike(filter_term))
+
+    # Handle Tabulator's sorting format: sort[0][field]=Location&sort[0][dir]=asc
+    field_mapping = {
+        "CustID": Customer.CustID,
+        "Name": Customer.Name,
+        "Contact": Customer.Contact,
+        "Location": Customer.City,
+        "Phone": Customer.HomePhone,
+        "EmailAddress": Customer.EmailAddress,
+        "Source": Customer.Source,
+    }
+
+    # Look for sort parameters in the format sort[0][field], sort[0][dir], etc.
+    sort_applied = False
+    i = 0
+    while True:
+        field_param = f"sort[{i}][field]"
+        dir_param = f"sort[{i}][dir]"
+
+        field = request.args.get(field_param)
+        direction = request.args.get(dir_param, "asc")
+
+        if not field:
+            break
+
+        if field in field_mapping:
+            column = field_mapping[field]
+            if direction == "desc":
+                query = query.order_by(desc(column))
+            else:
+                query = query.order_by(asc(column))
+            sort_applied = True
+            print(f"Applied sort: {field} {direction}")  # Debug log
+
+        i += 1
+
+    # Default sorting if no sort was applied
+    if not sort_applied:
+        query = query.order_by(Customer.CustID)
+
+    # Get total count before pagination
+    total = query.count()
+
+    # Apply pagination
+    customers = query.paginate(page=page, per_page=size, error_out=False)
+
+    # Format data for response
+    data = []
+    for customer in customers.items:
+        # Build location string
+        location_parts = []
+        if customer.City:
+            location_parts.append(customer.City)
+        if customer.State:
+            location_parts.append(customer.State)
+        location = ", ".join(location_parts) if location_parts else None
+
+        data.append(
+            {
+                "CustID": customer.CustID,
+                "Name": customer.Name,
+                "Contact": customer.Contact,
+                "Location": location,
+                "Phone": customer.get_primary_phone()
+                if hasattr(customer, "get_primary_phone")
+                else customer.Phone,
+                "EmailAddress": customer.EmailAddress,
+                "Source": customer.Source,
+                "detail_url": url_for(
+                    "customers.customer_detail", customer_id=customer.CustID
+                ),
+                "edit_url": url_for(
+                    "customers.edit_customer", customer_id=customer.CustID
+                ),
+            }
+        )
+
+    # Calculate pagination info
+    last_page = customers.pages
+
+    # Debug log
+    print(f"Query executed: {query}")
+    print(f"Total results: {total}")
+
+    return jsonify(
+        {
+            "data": data,
+            "total": total,
+            "page": page,
+            "size": size,
+            "last_page": last_page,
+            "has_next": customers.has_next,
+            "has_prev": customers.has_prev,
+        }
     )
 
 
@@ -242,59 +365,3 @@ def delete_customer(customer_id):
         flash(f"Error deleting customer: {str(e)}", "error")
 
     return redirect(url_for("customers.list_customers"))
-
-
-# API endpoints
-@customers_bp.route("/api/search")
-@login_required
-def api_search():
-    """API endpoint for searching customers"""
-    query = request.args.get("q", "").strip()
-
-    if not query:
-        return jsonify([])
-
-    customers = (
-        Customer.query.filter(
-            or_(
-                Customer.Name.contains(query),
-                Customer.CustID.contains(query),
-                Customer.Contact.contains(query),
-                Customer.City.contains(query),
-            )
-        )
-        .limit(10)
-        .all()
-    )
-
-    return jsonify(
-        [
-            {
-                "id": customer.CustID,
-                "name": customer.Name,
-                "contact": customer.Contact,
-                "city": customer.City,
-                "state": customer.State,
-                "phone": customer.get_primary_phone(),
-                "source": customer.Source,
-            }
-            for customer in customers
-        ]
-    )
-
-
-@customers_bp.route("/api/source-info/<source_name>")
-@login_required
-def api_source_info(source_name):
-    """API endpoint to get source information for auto-population"""
-    source = Source.query.get(source_name)
-    if source:
-        return jsonify(
-            {
-                "address": source.SourceAddress,
-                "city": source.SourceCity,
-                "state": source.SourceState,
-                "zip": source.SourceZip,
-            }
-        )
-    return jsonify({})
