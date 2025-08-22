@@ -3,7 +3,7 @@ from flask_login import login_required
 from models.work_order import WorkOrder, WorkOrderItem
 from models.customer import Customer
 from models.source import Source
-from sqlalchemy import or_, func, desc
+from sqlalchemy import or_, func, desc, cast, Integer
 from extensions import db
 from datetime import datetime
 
@@ -145,8 +145,9 @@ def rush_work_orders():
 
 
 @work_orders_bp.route("/new", methods=["GET", "POST"])
+@work_orders_bp.route("/new/<int:prefill_cust_id>", methods=["GET", "POST"])
 @login_required
-def create_work_order():
+def create_work_order(prefill_cust_id=None):
     """Create a new work order"""
     if request.method == "POST":
         try:
@@ -282,8 +283,17 @@ def create_work_order():
     customers = Customer.query.order_by(Customer.CustID).all()
     sources = Source.query.order_by(Source.SSource).all()
 
+    form_data = {}
+    if prefill_cust_id:
+        form_data["CustID"] = str(
+            prefill_cust_id
+        )  # convert to string for comparison in template
+
     return render_template(
-        "work_orders/create.html", customers=customers, sources=sources
+        "work_orders/create.html",
+        customers=customers,
+        sources=sources,
+        form_data=form_data,  # pass the prefilled data
     )
 
 
@@ -335,13 +345,12 @@ def get_customer_inventory(cust_id):
 @login_required
 def get_next_wo_number():
     """Get the next work order number"""
-    latest_wo = WorkOrder.query.order_by(desc(WorkOrder.WorkOrderNo)).first()
-    if latest_wo:
-        try:
-            latest_num = int(latest_wo.WorkOrderNo)
-            next_wo_no = str(latest_num + 1)
-        except ValueError:
-            next_wo_no = str(int(datetime.now().timestamp()))
+    latest_num = db.session.query(
+        func.max(cast(WorkOrder.WorkOrderNo, Integer))
+    ).scalar()
+
+    if latest_num is not None:
+        next_wo_no = str(latest_num + 1)
     else:
         next_wo_no = "1"
 

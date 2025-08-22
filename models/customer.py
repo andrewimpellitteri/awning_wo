@@ -1,42 +1,45 @@
 from extensions import db
-# from models.source import Source
 
 
 class Customer(db.Model):
-    __tablename__ = "tblCustomers"
+    __tablename__ = "tblcustomers"
 
-    CustID = db.Column(db.Text, primary_key=True, nullable=False)
-    Name = db.Column(db.Text)
-    Contact = db.Column(db.Text)
-    Address = db.Column(db.Text)
-    Address2 = db.Column(db.Text)
-    City = db.Column(db.Text)
-    State = db.Column(db.Text)
-    ZipCode = db.Column(db.Text)
-    HomePhone = db.Column(db.Text)
-    WorkPhone = db.Column(db.Text)
-    CellPhone = db.Column(db.Text)
-    EmailAddress = db.Column(db.Text)
-    MailAddress = db.Column(db.Text)
-    MailCity = db.Column(db.Text)
-    MailState = db.Column(db.Text)
-    MailZip = db.Column(db.Text)
-    SourceOld = db.Column(db.Text)
-    Source = db.Column(db.Text, db.ForeignKey("tblSource.SSource"))
-    SourceAddress = db.Column(db.Text)
-    SourceState = db.Column(db.Text)
-    SourceCity = db.Column(db.Text)
-    SourceZip = db.Column(db.Text)
+    # Update to use lowercase column names to match PostgreSQL
+    CustID = db.Column("custid", db.Text, primary_key=True, nullable=False)
+    Name = db.Column("name", db.Text)
+    Contact = db.Column("contact", db.Text)
+    Address = db.Column("address", db.Text)
+    Address2 = db.Column("address2", db.Text)
+    City = db.Column("city", db.Text)
+    State = db.Column("state", db.Text)
+    ZipCode = db.Column("zipcode", db.Text)
+    HomePhone = db.Column("homephone", db.Text)
+    WorkPhone = db.Column("workphone", db.Text)
+    CellPhone = db.Column("cellphone", db.Text)
+    EmailAddress = db.Column("emailaddress", db.Text)
+    MailAddress = db.Column("mailaddress", db.Text)
+    MailCity = db.Column("mailcity", db.Text)
+    MailState = db.Column("mailstate", db.Text)
+    MailZip = db.Column("mailzip", db.Text)
+    SourceOld = db.Column("sourceold", db.Text)
+    # FIXED: Updated foreign key reference to use lowercase column name
+    Source = db.Column(
+        "source", db.Text, db.ForeignKey("tblsource.ssource"), nullable=True
+    )
+    SourceAddress = db.Column("sourceaddress", db.Text)
+    SourceState = db.Column("sourcestate", db.Text)
+    SourceCity = db.Column("sourcecity", db.Text)
+    SourceZip = db.Column("sourcezip", db.Text)
 
     # Relationship to Source
-    source_info = db.relationship("Source", foreign_keys=[Source], backref="customers")
+    source_info = db.relationship("Source", back_populates="customers")
 
     # Relationship to WorkOrders
     work_orders = db.relationship(
         "WorkOrder", back_populates="customer", lazy="dynamic"
     )
 
-    # Relationship to Repair
+    # Relationship to RepairWorkOrders
     repair_work_orders = db.relationship("RepairWorkOrder", back_populates="customer")
 
     def to_dict(self):

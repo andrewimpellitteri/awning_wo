@@ -2,17 +2,18 @@ from extensions import db
 
 
 class Inventory(db.Model):
-    __tablename__ = "tblCustAwngs"
+    __tablename__ = "tblcustawngs"
 
-    Description = db.Column(db.Text)
-    Material = db.Column(db.Text)
-    Condition = db.Column(db.Text)
-    Color = db.Column(db.Text)
-    SizeWgt = db.Column(db.Text)
-    Price = db.Column(db.Text)
-    CustID = db.Column(db.Text)
-    Qty = db.Column(db.Text)
-    InventoryKey = db.Column(db.Text, primary_key=True)
+    # Map Python attributes to actual lowercase database columns
+    Description = db.Column("description", db.Text)
+    Material = db.Column("material", db.Text)
+    Condition = db.Column("condition", db.Text)
+    Color = db.Column("color", db.Text)
+    SizeWgt = db.Column("sizewgt", db.Text)
+    Price = db.Column("price", db.Text)
+    CustID = db.Column("custid", db.Text)
+    Qty = db.Column("qty", db.Text)
+    InventoryKey = db.Column("inventorykey", db.Text, primary_key=True)
 
     def to_dict(self):
         """Convert model instance to dictionary"""

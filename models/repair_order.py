@@ -3,41 +3,51 @@ from extensions import db
 
 
 class RepairWorkOrder(db.Model):
-    __tablename__ = "tblRepairWorkOrderDetail"
+    __tablename__ = "tblrepairworkorderdetail"
 
-    RepairOrderNo = db.Column(db.String, primary_key=True, nullable=False)
-    CustID = db.Column(db.String, db.ForeignKey("tblCustomers.CustID"), nullable=False)
+    # Map Python attributes to actual lowercase database columns
+    RepairOrderNo = db.Column(
+        "repairorderno", db.String, primary_key=True, nullable=False
+    )
+    CustID = db.Column(
+        "custid", db.String, db.ForeignKey("tblcustomers.custid"), nullable=False
+    )
 
-    ROName = db.Column(db.String)
-    SOURCE = db.Column(db.String)
-    WO_DATE = db.Column("WO DATE", db.String)
-    DATE_TO_SUB = db.Column("DATE TO SUB", db.String)
-    DateRequired = db.Column(db.String)
-    RushOrder = db.Column(db.String)
-    FirmRush = db.Column(db.String)
-    QUOTE = db.Column(db.String)
-    QUOTE_BY = db.Column("QUOTE  BY", db.String)
-    APPROVED = db.Column(db.String)
-    RackNo = db.Column("RACK#", db.String)
-    STORAGE = db.Column(db.String)
-    ITEM_TYPE = db.Column("ITEM TYPE", db.String)
-    TYPE_OF_REPAIR = db.Column("TYPE OF REPAIR", db.String)
-    SPECIALINSTRUCTIONS = db.Column(db.Text)
-    CLEAN = db.Column(db.String)
-    SEECLEAN = db.Column(db.String)
-    CLEANFIRST = db.Column(db.String)
-    REPAIRSDONEBY = db.Column(db.String)
-    DateCompleted = db.Column(db.String)
-    MaterialList = db.Column(db.Text)
-    CUSTOMERPRICE = db.Column(db.String)
-    RETURNSTATUS = db.Column(db.String)
-    RETURNDATE = db.Column(db.String)
-    LOCATION = db.Column(db.String)
-    DATEOUT = db.Column(db.String)
-    DateIn = db.Column(db.String)
+    ROName = db.Column("roname", db.String)
+    SOURCE = db.Column("source", db.String)
+    WO_DATE = db.Column("WO DATE", db.String)  # Uppercase with space
+    DATE_TO_SUB = db.Column("DATE TO SUB", db.String)  # Uppercase with spaces
+    DateRequired = db.Column("daterequired", db.String)
+    RushOrder = db.Column("rushorder", db.String)
+    FirmRush = db.Column("firmrush", db.String)
+    QUOTE = db.Column("quote", db.String)
+    QUOTE_BY = db.Column(
+        "QUOTE  BY", db.String
+    )  # Note: TWO spaces between QUOTE and BY
+    APPROVED = db.Column("approved", db.String)
+    RackNo = db.Column("RACK#", db.String)  # Uppercase
+    STORAGE = db.Column("storage", db.String)
+    ITEM_TYPE = db.Column("ITEM TYPE", db.String)  # Uppercase with space
+    TYPE_OF_REPAIR = db.Column("TYPE OF REPAIR", db.String)  # Uppercase with spaces
+    SPECIALINSTRUCTIONS = db.Column("specialinstructions", db.Text)
+    CLEAN = db.Column("clean", db.String)
+    SEECLEAN = db.Column("seeclean", db.String)
+    CLEANFIRST = db.Column("cleanfirst", db.String)
+    REPAIRSDONEBY = db.Column("repairsdoneby", db.String)
+    DateCompleted = db.Column("datecompleted", db.String)
+    MaterialList = db.Column("materiallist", db.Text)
+    CUSTOMERPRICE = db.Column("customerprice", db.String)
+    RETURNSTATUS = db.Column("returnstatus", db.String)
+    RETURNDATE = db.Column("returndate", db.String)
+    LOCATION = db.Column("location", db.String)
+    DATEOUT = db.Column("dateout", db.String)
+    DateIn = db.Column("datein", db.String)
 
-    created_at = db.Column(db.String, default=lambda: datetime.utcnow().isoformat())
+    created_at = db.Column(
+        "created_at", db.String, default=lambda: datetime.utcnow().isoformat()
+    )
     updated_at = db.Column(
+        "updated_at",
         db.String,
         default=lambda: datetime.utcnow().isoformat(),
         onupdate=lambda: datetime.utcnow().isoformat(),
@@ -51,6 +61,42 @@ class RepairWorkOrder(db.Model):
         cascade="all, delete-orphan",
     )
 
+    def to_dict(self):
+        """Convert model instance to dictionary"""
+        return {
+            "RepairOrderNo": self.RepairOrderNo,
+            "CustID": self.CustID,
+            "ROName": self.ROName,
+            "SOURCE": self.SOURCE,
+            "WO_DATE": self.WO_DATE,
+            "DATE_TO_SUB": self.DATE_TO_SUB,
+            "DateRequired": self.DateRequired,
+            "RushOrder": self.RushOrder,
+            "FirmRush": self.FirmRush,
+            "QUOTE": self.QUOTE,
+            "QUOTE_BY": self.QUOTE_BY,
+            "APPROVED": self.APPROVED,
+            "RackNo": self.RackNo,
+            "STORAGE": self.STORAGE,
+            "ITEM_TYPE": self.ITEM_TYPE,
+            "TYPE_OF_REPAIR": self.TYPE_OF_REPAIR,
+            "SPECIALINSTRUCTIONS": self.SPECIALINSTRUCTIONS,
+            "CLEAN": self.CLEAN,
+            "SEECLEAN": self.SEECLEAN,
+            "CLEANFIRST": self.CLEANFIRST,
+            "REPAIRSDONEBY": self.REPAIRSDONEBY,
+            "DateCompleted": self.DateCompleted,
+            "MaterialList": self.MaterialList,
+            "CUSTOMERPRICE": self.CUSTOMERPRICE,
+            "RETURNSTATUS": self.RETURNSTATUS,
+            "RETURNDATE": self.RETURNDATE,
+            "LOCATION": self.LOCATION,
+            "DATEOUT": self.DATEOUT,
+            "DateIn": self.DateIn,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
     def __repr__(self):
         return f"<RepairWorkOrder {self.RepairOrderNo}: {self.ROName}>"
 
@@ -59,30 +105,50 @@ class RepairWorkOrder(db.Model):
 
 
 class RepairWorkOrderItem(db.Model):
-    __tablename__ = "tblRepOrdDetCustAwngs"
+    __tablename__ = "tblreporddetcustawngs"
 
-    # Composite primary key to handle multiple items per repair order
+    # Map to lowercase database column names
     RepairOrderNo = db.Column(
+        "repairorderno",
         db.String,
-        db.ForeignKey("tblRepairWorkOrderDetail.RepairOrderNo"),
+        db.ForeignKey(
+            "tblrepairworkorderdetail.repairorderno"
+        ),  # Updated foreign key reference
         nullable=False,
         primary_key=True,
     )
-    CustID = db.Column(db.String, db.ForeignKey("tblCustomers.CustID"), nullable=False)
+    CustID = db.Column(
+        "custid", db.String, db.ForeignKey("tblcustomers.custid"), nullable=False
+    )
 
-    # Add Description and Material to primary key to allow multiple items per repair order
-    Description = db.Column(db.String, primary_key=True)
-    Material = db.Column(db.String, primary_key=True)
+    # Add Description and Material to primary key
+    Description = db.Column("description", db.String, primary_key=True)
+    Material = db.Column("material", db.String, primary_key=True)
 
     # Rest of the columns
-    Qty = db.Column(db.String)
-    Condition = db.Column(db.String)
-    Color = db.Column(db.String)
-    SizeWgt = db.Column(db.String)
-    Price = db.Column(db.String)
+    Qty = db.Column("qty", db.String)
+    Condition = db.Column("condition", db.String)
+    Color = db.Column("color", db.String)
+    SizeWgt = db.Column("sizewgt", db.String)
+    Price = db.Column("price", db.String)
 
     # relationships
     repair_work_order = db.relationship("RepairWorkOrder", back_populates="items")
+    customer = db.relationship("Customer")
+
+    def to_dict(self):
+        """Convert model instance to dictionary"""
+        return {
+            "RepairOrderNo": self.RepairOrderNo,
+            "CustID": self.CustID,
+            "Description": self.Description,
+            "Material": self.Material,
+            "Qty": self.Qty,
+            "Condition": self.Condition,
+            "Color": self.Color,
+            "SizeWgt": self.SizeWgt,
+            "Price": self.Price,
+        }
 
     def __repr__(self):
         return f"<RepairWorkOrderItem {self.RepairOrderNo}: {self.Description}>"

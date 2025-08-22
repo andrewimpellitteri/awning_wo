@@ -2,9 +2,12 @@ from flask import Flask, render_template, request, jsonify
 from flask_login import login_required, current_user
 from config import Config
 from extensions import db, login_manager
+from flask_migrate import Migrate
 
 from sqlalchemy import inspect
 from datetime import datetime, date
+
+migrate = Migrate()
 
 
 def create_app(config_class=Config):
@@ -14,6 +17,7 @@ def create_app(config_class=Config):
 
     # Initialize extensions
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
 
@@ -133,6 +137,9 @@ app = create_app()
 with app.app_context():
     inspector = inspect(db.engine)
     tables = inspector.get_table_names()
+
+    print("engine url", db.engine.url)
+
     print(f"Available tables: {tables}")
 
     print(f"\nAvailable routes:")

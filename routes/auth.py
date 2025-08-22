@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from models.user import User
+from models.invite_token import InviteToken
 from extensions import db  # instead of from app import db
 
 auth_bp = Blueprint("auth", __name__)
@@ -38,12 +39,18 @@ def logout():
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
+        token_str = request.form.get("token")
+        invite = InviteToken.query.filter_by(token=token_str, used=False).first()
+
+        if not invite:
+            flash("Invalid or already used invitation token", "error")
+            return redirect(url_for("auth.register"))
+
         username = request.form.get("username")
         email = request.form.get("email")
         password = request.form.get("password")
-        role = request.form.get("role", "user")  # default user if not set
 
-        # Check if username or email already exists
+        # Prevent duplicate accounts
         if User.query.filter_by(username=username).first():
             flash("Username already exists", "error")
             return redirect(url_for("auth.register"))
@@ -51,15 +58,17 @@ def register():
             flash("Email already registered", "error")
             return redirect(url_for("auth.register"))
 
-        # Create new user
+        # Create user with role tied to invite token
         user = User(
             username=username,
             email=email,
             password_hash=generate_password_hash(password),
-            role=role,
+            role=invite.role,
         )
-
         db.session.add(user)
+
+        # Mark invite as used
+        invite.used = True
         db.session.commit()
 
         flash("Registration successful! Please log in.", "success")

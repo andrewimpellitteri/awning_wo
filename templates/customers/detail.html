@@ -221,9 +221,11 @@
                                     </a>
                                 {% endif %}
                                 
-                                <a href="{{ url_for('work_orders.create_work_order') }}" class="btn btn-outline-info">
+                                <a href="{{ url_for('work_orders.create_work_order', prefill_cust_id=customer.CustID) }}" 
+                                class="btn btn-outline-info">
                                     <i class="fas fa-clipboard-list"></i> New Work Order
                                 </a>
+
                                 
                             </div>
                         </div>
