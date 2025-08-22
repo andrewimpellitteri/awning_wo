@@ -1,0 +1,769 @@
+{% extends "base.html" %}
+
+{% block title %}Create New Work Order{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .detail-row {
+        border-bottom: 1px solid #f8f9fa;
+        padding: 0.75rem 0;
+        transition: background-color 0.2s ease;
+    }
+    .detail-row:hover {
+        background-color: #f8f9fa;
+        margin: 0 -1rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        border-radius: 0.375rem;
+    }
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    .detail-label {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+    .detail-value {
+        color: #212529;
+        font-weight: 500;
+    }
+    .badge {
+        font-size: 0.8rem !important;
+        padding: 0.5rem 0.75rem;
+    }
+    .inventory-item {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+        background-color: #fff;
+    }
+    .inventory-item:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateY(-1px);
+    }
+    .inventory-item.selected {
+        border-color: #0d6efd;
+        background-color: #f0f8ff;
+        box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
+    }
+    .new-item-row {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+    .new-item-row:hover {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .qty-input {
+        width: 80px;
+    }
+    .btn-add-item {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+    }
+    .btn-add-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+        color: white;
+    }
+    #customer-inventory {
+        max-height: 500px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        background-color: #fff;
+    }
+    .form-section {
+        margin-bottom: 25px;
+    }
+    .card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: 1px solid rgba(0,0,0,.125);
+    }
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .status-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+    }
+    .loading-spinner {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+    }
+    .inventory-empty {
+        text-align: center;
+        padding: 3rem;
+        color: #6c757d;
+    }
+    .inventory-empty i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3">
+                        <i class="fas fa-plus-circle me-2"></i>Create New Work Order
+                    </h1>
+                    <p class="text-muted mb-0">Create a new work order and manage inventory items</p>
+                </div>
+                
+                <div>
+                    <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to List
+                    </a>
+                </div>
+            </div>
+
+            <form method="POST" id="workOrderForm">
+                <div class="row">
+                    <!-- Main Form -->
+                    <div class="col-lg-8">
+                        <!-- Work Order Details -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>Work Order Information
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Customer <span class="text-danger">*</span></div>
+                                            <div class="detail-value">
+                                                <select class="form-select" id="CustID" name="CustID" required>
+                                                    <option value="">Select Customer</option>
+                                                    {% for customer in customers %}
+                                                    <option value="{{ customer.CustID }}" 
+                                                            {% if form_data and form_data.get('CustID') == customer.CustID %}selected{% endif %}>
+                                                        {{ customer.CustID }} - {{ customer.CompanyName or '' }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Work Order Number</div>
+                                            <div class="detail-value">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-hashtag"></i>
+                                                    </span>
+                                                    <input type="text" class="form-control" id="next_wo_number" readonly 
+                                                           placeholder="Auto-generated">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Work Order Name</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" id="WOName" name="WOName" 
+                                                       value="{{ form_data.get('WOName', '') if form_data else '' }}">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Storage</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" id="Storage" name="Storage"
+                                                       value="{{ form_data.get('Storage', '') if form_data else '' }}">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Rack Number</div>
+                                            <div class="detail-value">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-layer-group"></i>
+                                                    </span>
+                                                    <input type="text" class="form-control" id="RackNo" name="RackNo"
+                                                           value="{{ form_data.get('RackNo', '') if form_data else '' }}">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Date Required</div>
+                                            <div class="detail-value">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-calendar-check text-danger"></i>
+                                                    </span>
+                                                    <input type="date" class="form-control" id="DateRequired" name="DateRequired"
+                                                           value="{{ form_data.get('DateRequired', '') if form_data else '' }}">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Ship To</div>
+                                            <div class="detail-value">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-shipping-fast"></i>
+                                                    </span>
+                                                    <select class="form-select" id="ShipTo" name="ShipTo">
+                                                        <option value="">Select Shipping Location</option>
+                                                        {% for source in sources %}
+                                                        <option value="{{ source.SSource }}"
+                                                                {% if form_data and form_data.get('ShipTo') == source.SSource %}selected{% endif %}>
+                                                            {{ source.SSource }}
+                                                        </option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Storage Time</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" id="StorageTime" name="StorageTime"
+                                                       value="{{ form_data.get('StorageTime', '') if form_data else '' }}">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Return Status</div>
+                                            <div class="detail-value">
+                                                <select class="form-select" id="ReturnStatus" name="ReturnStatus">
+                                                    <option value="">Select Status</option>
+                                                    <option value="PENDING" {% if form_data and form_data.get('ReturnStatus') == 'PENDING' %}selected{% endif %}>Pending</option>
+                                                    <option value="IN PROGRESS" {% if form_data and form_data.get('ReturnStatus') == 'IN PROGRESS' %}selected{% endif %}>In Progress</option>
+                                                    <option value="READY" {% if form_data and form_data.get('ReturnStatus') == 'READY' %}selected{% endif %}>Ready</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Priority Options</div>
+                                            <div class="detail-value">
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="RushOrder" name="RushOrder" value="1"
+                                                           {% if form_data and form_data.get('RushOrder') == '1' %}checked{% endif %}>
+                                                    <label class="form-check-label" for="RushOrder">
+                                                        <span class="badge bg-warning text-dark">
+                                                            <i class="fas fa-bolt me-1"></i>Rush Order
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="FirmRush" name="FirmRush" value="1"
+                                                           {% if form_data and form_data.get('FirmRush') == '1' %}checked{% endif %}>
+                                                    <label class="form-check-label" for="FirmRush">
+                                                        <span class="badge bg-danger">
+                                                            <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Instructions & Details -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-clipboard-list me-2"></i>Instructions & Details
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Special Instructions</div>
+                                            <div class="detail-value">
+                                                <textarea class="form-control" id="SpecialInstructions" name="SpecialInstructions" rows="4" 
+                                                          placeholder="Enter any special instructions...">{{ form_data.get('SpecialInstructions', '') if form_data else '' }}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Repairs Needed</div>
+                                            <div class="detail-value">
+                                                <textarea class="form-control" id="RepairsNeeded" name="RepairsNeeded" rows="4"
+                                                          placeholder="Describe repairs needed...">{{ form_data.get('RepairsNeeded', '') if form_data else '' }}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Quote</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" id="Quote" name="Quote"
+                                                       value="{{ form_data.get('Quote', '') if form_data else '' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Clean</div>
+                                            <div class="detail-value">
+                                                <select class="form-select" id="Clean" name="Clean">
+                                                    <option value="">Select</option>
+                                                    <option value="YES" {% if form_data and form_data.get('Clean') == 'YES' %}selected{% endif %}>Yes</option>
+                                                    <option value="NO" {% if form_data and form_data.get('Clean') == 'NO' %}selected{% endif %}>No</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Treat</div>
+                                            <div class="detail-value">
+                                                <select class="form-select" id="Treat" name="Treat">
+                                                    <option value="">Select</option>
+                                                    <option value="YES" {% if form_data and form_data.get('Treat') == 'YES' %}selected{% endif %}>Yes</option>
+                                                    <option value="NO" {% if form_data and form_data.get('Treat') == 'NO' %}selected{% endif %}>No</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Customer Inventory -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-boxes me-2"></i>Customer Item History
+                                    <span class="badge bg-secondary ms-2" id="inventory-count">0</span>
+                                </h5>
+                                <small class="text-muted">Items from previous work orders for this customer</small>
+                            </div>
+                            <div class="card-body">
+                                <div id="customer-inventory">
+                                    <div class="inventory-empty">
+                                        <i class="fas fa-boxes"></i>
+                                        <p>Select a customer to view their inventory items</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Add New Items -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-plus me-2"></i>Add New Items to Inventory
+                                    <span class="badge bg-secondary ms-2" id="new-items-count">0</span>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="new-items-container">
+                                    <!-- New items will be added here -->
+                                </div>
+                                <button type="button" class="btn btn-add-item" onclick="addNewItem()">
+                                    <i class="fas fa-plus me-2"></i>Add New Item
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="col-lg-4">
+                        <!-- Order Summary -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-flag me-2"></i>Order Summary
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="detail-row">
+                                    <div class="detail-label">Selected Items</div>
+                                    <div class="detail-value">
+                                        <span class="badge bg-primary" id="selected-count">0</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="detail-row">
+                                    <div class="detail-label">New Items</div>
+                                    <div class="detail-value">
+                                        <span class="badge bg-success" id="new-count">0</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="detail-row">
+                                    <div class="detail-label">Total Items</div>
+                                    <div class="detail-value">
+                                        <span class="badge bg-info" id="total-count">0</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="detail-row" id="rush-status" style="display: none;">
+                                    <div class="detail-label">Priority</div>
+                                    <div class="detail-value">
+                                        <span class="badge bg-warning text-dark" id="rush-badge" style="display: none;">
+                                            <i class="fas fa-bolt me-1"></i>Rush Order
+                                        </span>
+                                        <span class="badge bg-danger" id="firm-rush-badge" style="display: none;">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="card shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-cogs me-2"></i>Actions
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-save me-2"></i>Create Work Order
+                                    </button>
+                                    <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Cancel
+                                    </a>
+                                </div>
+                                
+                                <hr class="my-3">
+                                
+                                <div class="detail-row">
+                                    <div class="detail-label">Auto-generated ID</div>
+                                    <div class="detail-value">
+                                        <small class="text-muted" id="wo-number-display">Loading...</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let newItemCounter = 0;
+    let selectedItemsCount = 0;
+    let newItemsCount = 0;
+
+    // Load next work order number on page load
+    window.addEventListener('DOMContentLoaded', function() {
+        fetch('/work_orders/api/next_wo_number')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('next_wo_number').value = data.next_wo_number;
+                document.getElementById('wo-number-display').textContent = `WO-${data.next_wo_number}`;
+            })
+            .catch(error => {
+                console.error('Error loading next WO number:', error);
+                document.getElementById('wo-number-display').textContent = 'Error loading';
+            });
+    });
+
+    // Load customer inventory when customer is selected
+    document.getElementById('CustID').addEventListener('change', function() {
+        const custId = this.value;
+        const inventoryContainer = document.getElementById('customer-inventory');
+        
+        if (!custId) {
+            inventoryContainer.innerHTML = `
+                <div class="inventory-empty">
+                    <i class="fas fa-boxes"></i>
+                    <p>Select a customer to view their inventory items</p>
+                </div>
+            `;
+            updateInventoryCount(0);
+            return;
+        }
+
+        // Show loading
+        inventoryContainer.innerHTML = `
+            <div class="inventory-empty">
+                <div class="spinner-border text-primary loading-spinner" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p>Loading inventory items...</p>
+            </div>
+        `;
+
+        fetch(`/work_orders/api/customer_inventory/${custId}`)
+            .then(response => response.json())
+            .then(data => {
+                updateInventoryCount(data.length);
+                
+                if (data.length === 0) {
+                    inventoryContainer.innerHTML = `
+                        <div class="inventory-empty">
+                            <i class="fas fa-box-open"></i>
+                            <p>No items found in previous work orders for this customer</p>
+                            <small class="text-muted">Add new items below to get started</small>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                data.forEach(item => {
+                    html += `
+                        <div class="inventory-item" onclick="toggleItem(this, ${item.id})">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="selected_items[]" value="${item.id}" id="item_${item.id}">
+                                <label class="form-check-label w-100" for="item_${item.id}">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-5">
+                                            <div class="detail-label">${item.description}</div>
+                                            <small class="text-muted">${item.material || 'No material specified'}</small>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <span class="badge bg-secondary">${item.condition || 'Unknown'}</span>
+                                            <br><small class="text-muted">${item.color || 'No color'}</small>
+                                        </div>
+                                        <div class="col-md-2 text-center">
+                                            <small class="text-muted">Size:</small><br>
+                                            <small>${item.size_wgt || '-'}</small><br>
+                                            <strong>$${item.price || '0'}</strong>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label small">Qty:</label>
+                                            <input type="number" class="form-control form-control-sm qty-input" 
+                                                   name="item_qty_${item.id}" value="${item.qty || 1}" min="1" 
+                                                   onclick="event.stopPropagation()">
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                });
+                inventoryContainer.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error loading inventory:', error);
+                inventoryContainer.innerHTML = `
+                    <div class="inventory-empty">
+                        <i class="fas fa-exclamation-triangle text-danger"></i>
+                        <p class="text-danger">Error loading previous work order items</p>
+                    </div>
+                `;
+            });
+    });
+
+    function toggleItem(element, itemId) {
+        const checkbox = element.querySelector('input[type="checkbox"]');
+        if (event.target.type !== 'checkbox' && event.target.type !== 'number') {
+            checkbox.checked = !checkbox.checked;
+        }
+        
+        if (checkbox.checked) {
+            element.classList.add('selected');
+            selectedItemsCount++;
+        } else {
+            element.classList.remove('selected');
+            selectedItemsCount--;
+        }
+        
+        updateCounts();
+    }
+
+    function addNewItem() {
+        const container = document.getElementById('new-items-container');
+        const itemHtml = `
+            <div class="new-item-row" id="new-item-${newItemCounter}">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">
+                        <i class="fas fa-box me-2"></i>New Item ${newItemCounter + 1}
+                    </h6>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeNewItem(${newItemCounter})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label detail-label">Description *</label>
+                        <input type="text" class="form-control" name="new_item_description[]" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label detail-label">Material</label>
+                        <input type="text" class="form-control" name="new_item_material[]">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label detail-label">Quantity</label>
+                        <input type="number" class="form-control" name="new_item_qty[]" value="1" min="1">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label detail-label">Condition</label>
+                        <select class="form-select" name="new_item_condition[]">
+                            <option value="">Select</option>
+                            <option value="Excellent">Excellent</option>
+                            <option value="Good">Good</option>
+                            <option value="Fair">Fair</option>
+                            <option value="Poor">Poor</option>
+                            <option value="Damaged">Damaged</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label detail-label">Color</label>
+                        <input type="text" class="form-control" name="new_item_color[]">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label detail-label">Size/Weight</label>
+                        <input type="text" class="form-control" name="new_item_size[]">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label detail-label">Price</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" name="new_item_price[]" step="0.01" min="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', itemHtml);
+        newItemCounter++;
+        newItemsCount++;
+        updateCounts();
+    }
+
+    function removeNewItem(itemId) {
+        const element = document.getElementById(`new-item-${itemId}`);
+        if (element) {
+            element.remove();
+            newItemsCount--;
+            updateCounts();
+        }
+    }
+
+    function updateInventoryCount(count) {
+        document.getElementById('inventory-count').textContent = count;
+    }
+
+    function updateCounts() {
+        document.getElementById('selected-count').textContent = selectedItemsCount;
+        document.getElementById('new-count').textContent = newItemsCount;
+        document.getElementById('new-items-count').textContent = newItemsCount;
+        document.getElementById('total-count').textContent = selectedItemsCount + newItemsCount;
+    }
+
+    // Monitor rush order checkboxes
+    document.getElementById('RushOrder').addEventListener('change', updateRushStatus);
+    document.getElementById('FirmRush').addEventListener('change', updateRushStatus);
+
+    function updateRushStatus() {
+        const rushOrder = document.getElementById('RushOrder').checked;
+        const firmRush = document.getElementById('FirmRush').checked;
+        const rushStatus = document.getElementById('rush-status');
+        const rushBadge = document.getElementById('rush-badge');
+        const firmRushBadge = document.getElementById('firm-rush-badge');
+
+        if (rushOrder || firmRush) {
+            rushStatus.style.display = 'block';
+            rushBadge.style.display = rushOrder ? 'inline' : 'none';
+            firmRushBadge.style.display = firmRush ? 'inline' : 'none';
+        } else {
+            rushStatus.style.display = 'none';
+        }
+    }
+
+    // Form validation
+    document.getElementById('workOrderForm').addEventListener('submit', function(e) {
+        const custId = document.getElementById('CustID').value;
+        if (!custId) {
+            e.preventDefault();
+            alert('Please select a customer.');
+            document.getElementById('CustID').focus();
+            return;
+        }
+
+        // Check if at least one item is selected or added
+        const selectedItems = document.querySelectorAll('input[name="selected_items[]"]:checked').length;
+        const newItems = document.querySelectorAll('input[name="new_item_description[]"]').length;
+        
+        if (selectedItems === 0 && newItems === 0) {
+            e.preventDefault();
+            alert('Please select at least one inventory item or add a new item.');
+            return;
+        }
+
+        // Validate new items have descriptions
+        const newItemDescriptions = document.querySelectorAll('input[name="new_item_description[]"]');
+        let hasEmptyDescription = false;
+        newItemDescriptions.forEach(input => {
+            if (!input.value.trim()) {
+                hasEmptyDescription = true;
+                input.focus();
+            }
+        });
+
+        if (hasEmptyDescription) {
+            e.preventDefault();
+            alert('Please provide descriptions for all new items.');
+            return;
+        }
+
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
+        submitBtn.disabled = true;
+
+        // Re-enable button after 10 seconds in case of issues
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 10000);
+    });
+
+    // Initialize counts
+    updateCounts();

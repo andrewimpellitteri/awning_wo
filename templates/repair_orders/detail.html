@@ -2,6 +2,50 @@
 
 {% block title %}Repair Order {{ repair_work_order.RepairOrderNo }}{% endblock %}
 
+{% block styles %}
+{{ super() }}
+<style>
+    .detail-row {
+        border-bottom: 1px solid #f8f9fa;
+        padding: 0.75rem 0;
+        transition: background-color 0.2s ease;
+    }
+    .detail-row:hover {
+        background-color: #f8f9fa;
+        margin: 0 -1rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        border-radius: 0.375rem;
+    }
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    .detail-label {
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    .detail-value {
+        color: #212529;
+        font-weight: 500;
+    }
+    .badge {
+        font-size: 0.8rem !important;
+        padding: 0.5rem 0.75rem;
+    }
+    .status-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+    }
+    .status-completed { background-color: #198754; }
+    .status-pending { background-color: #ffc107; }
+    .status-unknown { background-color: #6c757d; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
   <div class="row">
@@ -10,10 +54,12 @@
       <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1 class="h3">
-            <i class="fas fa-tools"></i> 
+            <i class="fas fa-scissors me-2"></i> 
             Repair Order {{ repair_work_order.RepairOrderNo }}
             {% if repair_work_order.RushOrder == "YES" or repair_work_order.FirmRush == "YES" %}
-            <span class="badge bg-danger ms-2">RUSH ORDER</span>
+            <span class="badge bg-danger ms-2">
+              <i class="fas fa-bolt me-1"></i>RUSH ORDER
+            </span>
             {% endif %}
           </h1>
           <p class="text-muted mb-0">{{ repair_work_order.ROName or 'Unnamed Order' }}</p>
@@ -22,7 +68,7 @@
         <div>
           <a href="{{ url_for('repair_work_orders.list_repair_work_orders') }}" 
              class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Back to List
+            <i class="fas fa-arrow-left me-1"></i> Back to List
           </a>
         </div>
       </div>
@@ -30,101 +76,139 @@
       <div class="row">
         <!-- Main Details -->
         <div class="col-lg-8">
-          <div class="card mb-4">
+          <div class="card mb-4 shadow-sm">
             <div class="card-header">
               <h5 class="card-title mb-0">
-                <i class="fas fa-info-circle"></i> Order Information
+                <i class="fas fa-info-circle me-2"></i> Order Information
               </h5>
             </div>
             <div class="card-body">
               <div class="row">
                 <div class="col-md-6">
-                  <table class="table table-borderless table-sm">
-                    <tr>
-                      <th width="40%">Order Number:</th>
-                      <td><strong>{{ repair_work_order.RepairOrderNo }}</strong></td>
-                    </tr>
-                    <tr>
-                      <th>Customer ID:</th>
-                      <td>
-                        {% if repair_work_order.customer %}
-                            <a href="{{ url_for('customers.customer_detail', customer_id=repair_work_order.customer.CustID) }}"
+                  <div class="detail-row">
+                    <div class="detail-label">Order Number</div>
+                    <div class="detail-value">
+                      <span class="badge bg-primary">
+                        <i class="fas fa-hashtag me-1"></i>{{ repair_work_order.RepairOrderNo }}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Customer ID</div>
+                    <div class="detail-value">
+                      {% if repair_work_order.customer %}
+                          <a href="{{ url_for('customers.customer_detail', customer_id=repair_work_order.customer.CustID) }}"
+                          class="text-decoration-none">
+                              <span class="badge bg-primary">
+                                  <i class="fas fa-user me-1"></i>{{ repair_work_order.CustID }}
+                              </span>
+                          </a>
+                      {% else %}
+                          <span class="text-muted fst-italic">Not assigned</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Order Name</div>
+                    <div class="detail-value">{{ repair_work_order.ROName or '<span class="text-muted">-</span>' | safe }}</div>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Source</div>
+                    <div class="detail-value">
+                      {% if repair_work_order.customer.source_info %}
+                          <a href="{{ url_for('source.source_detail', source_name=repair_work_order.customer.source_info.SSource) }}" 
                             class="text-decoration-none">
-                                <span class="badge bg-primary fs-6">
-                                    {{ repair_work_order.CustID }}
-                                </span>
-                            </a>
-                        {% else %}
-                            <span class="text-muted">Not assigned</span>
-                        {% endif %}
-                      </td>
-                    </tr>
-                    <tr>
-                      <th>Order Name:</th>
-                      <td>{{ repair_work_order.ROName or '-' }}</td>
-                    </tr>
-                    <tr>
-                      <th>Source:</th>
-                      <td>{{ repair_work_order.SOURCE or '-' }}</td>
-                    </tr>
-                    <tr>
-                      <th>Item Type:</th>
-                      <td>{{ repair_work_order.ITEM_TYPE or '-' }}</td>
-                    </tr>
-                    <tr>
-                      <th>Repair Type:</th>
-                      <td>{{ repair_work_order.TYPE_OF_REPAIR or '-' }}</td>
-                    </tr>
-                  </table>
+                              <span class="badge bg-info">
+                                  <i class="fas fa-shipping-fast me-1"></i>{{ repair_work_order.customer.source_info.SSource }}
+                              </span>
+                          </a>
+                      {% else %}
+                          <span class="text-muted fst-italic">Not assigned</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Item Type</div>
+                    <div class="detail-value">{{ repair_work_order.ITEM_TYPE or '<span class="text-muted">-</span>' | safe }}</div>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Repair Type</div>
+                    <div class="detail-value">{{ repair_work_order.TYPE_OF_REPAIR or '<span class="text-muted">-</span>' | safe }}</div>
+                  </div>
                 </div>
+                
                 <div class="col-md-6">
-                  <table class="table table-borderless table-sm">
-                    <tr>
-                      <th width="40%">Work Order Date:</th>
-                      <td>{{ (repair_work_order.WO_DATE | date_format) or '-' }}</td>
-                    </tr>
-                    <tr>
-                      <th>Date In:</th>
-                      <td>{{ (repair_work_order.DateIn | date_format) or '-' }}</td>
-                    </tr>
-                    <tr>
-                      <th>Date Required:</th>
-                      <td>
-                        {{ (repair_work_order.DateRequired | date_format) or '-' }}
-                        {% if repair_work_order.RushOrder == "YES" or repair_work_order.FirmRush == "YES" %}
-                        <i class="fas fa-exclamation-triangle text-danger ms-1"></i>
-                        {% endif %}
-                      </td>
-                    </tr>
-                    <tr>
-                      <th>Date to Sub:</th>
-                      <td>{{ (repair_work_order.DATE_TO_SUB | date_format) or '-' }}</td>
-                    </tr>
-                    <tr>
-                      <th>Date Completed:</th>
-                      <td>{{ (repair_work_order.DateCompleted | date_format) or '-' }}</td>
-                    </tr>
-                    <tr>
-                      <th>Date Out:</th>
-                      <td>{{ (repair_work_order.DATEOUT | date_format) or '-' }}</td>
-                    </tr>
-                  </table>
+                  <div class="detail-row">
+                    <div class="detail-label">Work Order Date</div>
+                    <div class="detail-value">
+                      <i class="fas fa-calendar-alt text-primary me-2"></i>
+                      {{ (repair_work_order.WO_DATE | date_format) or '<span class="text-muted">-</span>' | safe }}
+                    </div>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Date In</div>
+                    <div class="detail-value">
+                      <i class="fas fa-calendar-plus text-success me-2"></i>
+                      {{ (repair_work_order.DateIn | date_format) or '<span class="text-muted">-</span>' | safe }}
+                    </div>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Date Required</div>
+                    <div class="detail-value">
+                      <i class="fas fa-calendar-check text-danger me-2"></i>
+                      {{ (repair_work_order.DateRequired | date_format) or '<span class="text-muted">-</span>' | safe }}
+                      {% if repair_work_order.RushOrder == "YES" or repair_work_order.FirmRush == "YES" %}
+                      <i class="fas fa-exclamation-triangle text-danger ms-1"></i>
+                      {% endif %}
+                    </div>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Date to Sub</div>
+                    <div class="detail-value">
+                      <i class="fas fa-calendar text-muted me-2"></i>
+                      {{ (repair_work_order.DATE_TO_SUB | date_format) or '<span class="text-muted">-</span>' | safe }}
+                    </div>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Date Completed</div>
+                    <div class="detail-value">
+                      <i class="fas fa-calendar-check text-primary me-2"></i>
+                      {{ (repair_work_order.DateCompleted | date_format) or '<span class="text-muted">-</span>' | safe }}
+                    </div>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Date Out</div>
+                    <div class="detail-value">
+                      <i class="fas fa-calendar-minus text-info me-2"></i>
+                      {{ (repair_work_order.DATEOUT | date_format) or '<span class="text-muted">-</span>' | safe }}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           <!-- Special Instructions & Repair Details -->
-          <div class="card mb-4">
+          <div class="card mb-4 shadow-sm">
             <div class="card-header">
               <h5 class="card-title mb-0">
-                <i class="fas fa-clipboard-list"></i> Repair Details
+                <i class="fas fa-clipboard-list me-2"></i> Repair Details
               </h5>
             </div>
             <div class="card-body">
               {% if repair_work_order.SPECIALINSTRUCTIONS %}
               <div class="mb-3">
-                <h6>Special Instructions:</h6>
+                <h6><i class="fas fa-exclamation-circle text-warning me-1"></i>Special Instructions:</h6>
                 <div class="alert alert-info">
                   {{ repair_work_order.SPECIALINSTRUCTIONS }}
                 </div>
@@ -133,7 +217,7 @@
               
               {% if repair_work_order.MaterialList %}
               <div class="mb-3">
-                <h6>Material List:</h6>
+                <h6><i class="fas fa-list text-primary me-1"></i>Material List:</h6>
                 <div class="bg-light p-3 rounded">
                   {{ repair_work_order.MaterialList }}
                 </div>
@@ -142,21 +226,80 @@
 
               <div class="row">
                 <div class="col-md-6">
-                  <h6>Repair Information:</h6>
-                  <ul class="list-unstyled">
-                    <li><strong>Repairs Done By:</strong> {{ repair_work_order.REPAIRSDONEBY or 'Not assigned' }}</li>
-                    <li><strong>Clean:</strong> {{ repair_work_order.CLEAN or 'No' }}</li>
-                    <li><strong>See Clean:</strong> {{ repair_work_order.SEECLEAN or 'No' }}</li>
-                    <li><strong>Clean First:</strong> {{ repair_work_order.CLEANFIRST or 'No' }}</li>
-                  </ul>
+                  <h6><i class="fas fa-scissors text-secondary me-1"></i>Repair Information:</h6>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Repairs Done By</div>
+                    <div class="detail-value">{{ repair_work_order.REPAIRSDONEBY or '<span class="text-muted">Not assigned</span>' | safe }}</div>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Clean</div>
+                    <div class="detail-value">
+                      {% if repair_work_order.CLEAN == "YES" %}
+                        <span class="badge bg-success">
+                          <i class="fas fa-check me-1"></i>Yes
+                        </span>
+                      {% else %}
+                        <span class="text-muted">No</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">See Clean</div>
+                    <div class="detail-value">
+                      {% if repair_work_order.SEECLEAN %}
+                        <a href="{{ url_for('work_orders.view_work_order', work_order_no=repair_work_order.SEECLEAN) }}" class="text-decoration-none">
+                          <span class="badge bg-success">
+                            <i class="fas fa-check me-1"></i>{{ repair_work_order.SEECLEAN }}
+                          </span>
+                        </a>
+                      {% else %}
+                        <span class="text-muted">No</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Clean First</div>
+                    <div class="detail-value">
+                      {% if repair_work_order.CLEANFIRST == "YES" %}
+                        <span class="badge bg-success">
+                          <i class="fas fa-check me-1"></i>Yes
+                        </span>
+                      {% else %}
+                        <span class="text-muted">No</span>
+                      {% endif %}
+                    </div>
+                  </div>
                 </div>
+                
                 <div class="col-md-6">
-                  <h6>Location & Storage:</h6>
-                  <ul class="list-unstyled">
-                    <li><strong>Location:</strong> {{ repair_work_order.LOCATION or '-' }}</li>
-                    <li><strong>Storage:</strong> {{ repair_work_order.STORAGE or '-' }}</li>
-                    <li><strong>Rack #:</strong> {{ repair_work_order.RackNo or '-' }}</li>
-                  </ul>
+                  <h6><i class="fas fa-map-marker-alt text-secondary me-1"></i>Location & Storage:</h6>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Location</div>
+                    <div class="detail-value">{{ repair_work_order.LOCATION or '<span class="text-muted">-</span>' | safe }}</div>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Storage</div>
+                    <div class="detail-value">{{ repair_work_order.STORAGE or '<span class="text-muted">-</span>' | safe }}</div>
+                  </div>
+                  
+                  <div class="detail-row">
+                    <div class="detail-label">Rack #</div>
+                    <div class="detail-value">
+                      {% if repair_work_order.RackNo %}
+                        <span class="badge bg-secondary">
+                          <i class="fas fa-layer-group me-1"></i>{{ repair_work_order.RackNo }}
+                        </span>
+                      {% else %}
+                        <span class="text-muted">-</span>
+                      {% endif %}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -164,16 +307,20 @@
 
           <!-- Order Items -->
           {% if repair_work_order.items %}
-          <div class="card mb-4">
+          <div class="card mb-4 shadow-sm">
             <div class="card-header">
               <h5 class="card-title mb-0">
-                <i class="fas fa-list"></i> Order Items ({{ repair_work_order.items|length }})
+                <i class="fas fa-list me-2"></i> Order Items 
+                <span class="badge bg-secondary ms-2">{{ repair_work_order.items|length }}</span>
               </h5>
             </div>
             <div class="card-body p-0">
               <div class="table-responsive">
-                <table class="table table-striped mb-0">
-                  <thead class="table-dark">
+                <table class="table table-striped table-hover mb-0">
+                  <thead class="bg-light" style="border-bottom: 1px solid #adb5bd;">
+
+
+
                     <tr>
                       <th>Description</th>
                       <th>Material</th>
@@ -206,34 +353,41 @@
 
         <!-- Status & Quote Sidebar -->
         <div class="col-lg-4">
-          <div class="card mb-4">
+          <div class="card mb-4 shadow-sm">
             <div class="card-header">
               <h5 class="card-title mb-0">
-                <i class="fas fa-flag"></i> Status & Priority
+                <i class="fas fa-flag me-2"></i> Status & Priority
               </h5>
             </div>
             <div class="card-body">
-              <div class="mb-3">
-                <label class="form-label">Return Status:</label>
-                <div>
+              <div class="detail-row">
+                <div class="detail-label">Return Status</div>
+                <div class="detail-value">
                   {% if repair_work_order.RETURNSTATUS == "COMPLETED" %}
-                  <span class="badge bg-success fs-6">{{ repair_work_order.RETURNSTATUS }}</span>
+                  <span class="status-indicator status-completed"></span>
+                  <span class="badge bg-success">{{ repair_work_order.RETURNSTATUS }}</span>
                   {% elif repair_work_order.RETURNSTATUS == "PENDING" %}
-                  <span class="badge bg-warning fs-6">{{ repair_work_order.RETURNSTATUS }}</span>
+                  <span class="status-indicator status-pending"></span>
+                  <span class="badge bg-warning">{{ repair_work_order.RETURNSTATUS }}</span>
                   {% else %}
-                  <span class="badge bg-secondary fs-6">{{ repair_work_order.RETURNSTATUS or 'Unknown' }}</span>
+                  <span class="status-indicator status-unknown"></span>
+                  <span class="badge bg-secondary">{{ repair_work_order.RETURNSTATUS or 'Unknown' }}</span>
                   {% endif %}
                 </div>
               </div>
 
-              <div class="mb-3">
-                <label class="form-label">Priority:</label>
-                <div>
+              <div class="detail-row">
+                <div class="detail-label">Priority</div>
+                <div class="detail-value">
                   {% if repair_work_order.RushOrder == "YES" %}
-                  <span class="badge bg-danger">Rush Order</span>
+                  <span class="badge bg-warning text-dark">
+                    <i class="fas fa-bolt me-1"></i>Rush Order
+                  </span>
                   {% endif %}
                   {% if repair_work_order.FirmRush == "YES" %}
-                  <span class="badge bg-danger">Firm Rush</span>
+                  <span class="badge bg-danger">
+                    <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
+                  </span>
                   {% endif %}
                   {% if repair_work_order.RushOrder != "YES" and repair_work_order.FirmRush != "YES" %}
                   <span class="text-muted">Normal Priority</span>
@@ -242,62 +396,85 @@
               </div>
 
               {% if repair_work_order.RETURNDATE %}
-              <div class="mb-3">
-                <label class="form-label">Return Date:</label>
-                <div>{{ (repair_work_order.RETURNDATE | date_format) or '-' }}</div>
+              <div class="detail-row">
+                <div class="detail-label">Return Date</div>
+                <div class="detail-value">
+                  <i class="fas fa-calendar text-primary me-2"></i>
+                  {{ (repair_work_order.RETURNDATE | date_format) or '<span class="text-muted">-</span>' | safe }}
+                </div>
               </div>
               {% endif %}
             </div>
           </div>
 
-          <div class="card mb-4">
+          <div class="card mb-4 shadow-sm">
             <div class="card-header">
               <h5 class="card-title mb-0">
-                <i class="fas fa-dollar-sign"></i> Quote & Pricing
+                <i class="fas fa-dollar-sign me-2"></i> Quote & Pricing
               </h5>
             </div>
             <div class="card-body">
-              <table class="table table-borderless table-sm">
-                <tr>
-                  <th>Quote:</th>
-                  <td>{{ repair_work_order.QUOTE or 'Not provided' }}</td>
-                </tr>
-                <tr>
-                  <th>Quote By:</th>
-                  <td>{{ repair_work_order.QUOTE_BY or '-' }}</td>
-                </tr>
-                <tr>
-                  <th>Approved:</th>
-                  <td>
-                    {% if repair_work_order.APPROVED == "YES" %}
-                    <span class="text-success"><i class="fas fa-check"></i> Yes</span>
-                    {% elif repair_work_order.APPROVED == "NO" %}
-                    <span class="text-danger"><i class="fas fa-times"></i> No</span>
-                    {% else %}
-                    <span class="text-muted">{{ repair_work_order.APPROVED or 'Pending' }}</span>
-                    {% endif %}
-                  </td>
-                </tr>
-                <tr>
-                  <th>Customer Price:</th>
-                  <td><strong>{{ repair_work_order.CUSTOMERPRICE or 'TBD' }}</strong></td>
-                </tr>
-              </table>
+              <div class="detail-row">
+                <div class="detail-label">Quote</div>
+                <div class="detail-value">{{ repair_work_order.QUOTE or '<span class="text-muted">Not provided</span>' | safe }}</div>
+              </div>
+              
+              <div class="detail-row">
+                <div class="detail-label">Quote By</div>
+                <div class="detail-value">{{ repair_work_order.QUOTE_BY or '<span class="text-muted">-</span>' | safe }}</div>
+              </div>
+              
+              <div class="detail-row">
+                <div class="detail-label">Approved</div>
+                <div class="detail-value">
+                  {% if repair_work_order.APPROVED == "YES" %}
+                  <span class="badge bg-success">
+                    <i class="fas fa-check me-1"></i> Yes
+                  </span>
+                  {% elif repair_work_order.APPROVED == "NO" %}
+                  <span class="badge bg-danger">
+                    <i class="fas fa-times me-1"></i> No
+                  </span>
+                  {% else %}
+                  <span class="badge bg-warning">
+                    {{ repair_work_order.APPROVED or 'Pending' }}
+                  </span>
+                  {% endif %}
+                </div>
+              </div>
+              
+              <div class="detail-row">
+                <div class="detail-label">Customer Price</div>
+                <div class="detail-value">
+                  <strong>{{ repair_work_order.CUSTOMERPRICE or 'TBD' }}</strong>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- Timestamps -->
-          <div class="card">
+          <div class="card shadow-sm">
             <div class="card-header">
               <h5 class="card-title mb-0">
-                <i class="fas fa-clock"></i> System Information
+                <i class="fas fa-clock me-2"></i> System Information
               </h5>
             </div>
             <div class="card-body">
-              <small class="text-muted">
-                <div>Created: {{ (repair_work_order.created_at | date_format) or 'Unknown' }}</div>
-                <div>Updated: {{ (repair_work_order.updated_at | date_format) or 'Unknown' }}</div>
-              </small>
+              <div class="detail-row">
+                <div class="detail-label">Created</div>
+                <div class="detail-value">
+                  <i class="fas fa-plus-circle text-success me-2"></i>
+                  <small>{{ (repair_work_order.created_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
+                </div>
+              </div>
+              
+              <div class="detail-row">
+                <div class="detail-label">Updated</div>
+                <div class="detail-value">
+                  <i class="fas fa-edit text-info me-2"></i>
+                  <small>{{ (repair_work_order.updated_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
+                </div>
+              </div>
             </div>
           </div>
         </div>

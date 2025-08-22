@@ -5,17 +5,6 @@
 {% block styles %}
 {{ super() }}
 <style>
-    .section-header {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-left: 4px solid #0d6efd;
-        margin: 1.5rem -1rem 1rem -1rem;
-        padding: 0.75rem 1rem;
-        font-weight: 600;
-        color: #495057;
-        text-transform: uppercase;
-        font-size: 0.875rem;
-        letter-spacing: 0.5px;
-    }
     .detail-row {
         border-bottom: 1px solid #f8f9fa;
         padding: 0.75rem 0;
@@ -44,9 +33,6 @@
         font-size: 0.8rem !important;
         padding: 0.5rem 0.75rem;
     }
-    .card-body {
-        padding: 1.5rem;
-    }
     .status-indicator {
         display: inline-block;
         width: 8px;
@@ -56,7 +42,7 @@
     }
     .status-completed { background-color: #198754; }
     .status-pending { background-color: #ffc107; }
-    .status-urgent { background-color: #dc3545; }
+    .status-unknown { background-color: #6c757d; }
 </style>
 {% endblock %}
 
@@ -64,240 +50,340 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-
-            <!-- Work Order Header Card -->
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header">
-                    <h4 class="mb-0">Work Order #{{ work_order.WorkOrderNo }}</h4>
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3">
+                        <i class="fas fa-clipboard-list me-2"></i>
+                        Work Order {{ work_order.WorkOrderNo }}
+                        {% if work_order.RushOrder == "YES" or work_order.FirmRush == "YES" %}
+                        <span class="badge bg-danger ms-2">
+                            <i class="fas fa-bolt me-1"></i>RUSH ORDER
+                        </span>
+                        {% endif %}
+                    </h1>
+                    <p class="text-muted mb-0">{{ work_order.WOName or 'Unnamed Order' }}</p>
                 </div>
-                <div class="card-body">
-                    <div class="row">
-                        <!-- Left Column -->
-                        <div class="col-md-6">
-                            <div class="detail-row">
-                                <div class="detail-label">Customer ID</div>
-                                <div class="detail-value">
-                                    {% if work_order.customer %}
-                                        <a href="{{ url_for('customers.customer_detail', customer_id=work_order.customer.CustID) }}" 
-                                           class="text-decoration-none">
+                
+                <div>
+                    <a href="{{ url_for('work_orders.list_work_orders') }}" 
+                       class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to List
+                    </a>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Main Details -->
+                <div class="col-lg-8">
+                    <!-- Work Order Header Card -->
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-info-circle me-2"></i> Work Order Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <!-- Left Column -->
+                                <div class="col-md-6">
+                                    <div class="detail-row">
+                                        <div class="detail-label">Work Order Number</div>
+                                        <div class="detail-value">
                                             <span class="badge bg-primary">
-                                                <i class="fas fa-user me-1"></i>{{ work_order.CustID }}
+                                                <i class="fas fa-hashtag me-1"></i>{{ work_order.WorkOrderNo }}
                                             </span>
-                                        </a>
-                                    {% else %}
-                                        <span class="text-muted fst-italic">Not assigned</span>
-                                    {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">Customer ID</div>
+                                        <div class="detail-value">
+                                            {% if work_order.customer %}
+                                                <a href="{{ url_for('customers.customer_detail', customer_id=work_order.customer.CustID) }}" 
+                                                   class="text-decoration-none">
+                                                    <span class="badge bg-primary">
+                                                        <i class="fas fa-user me-1"></i>{{ work_order.CustID }}
+                                                    </span>
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted fst-italic">Not assigned</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">Work Order Name</div>
+                                        <div class="detail-value">{{ work_order.WOName or '<span class="text-muted">-</span>' | safe }}</div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">Storage</div>
+                                        <div class="detail-value">{{ work_order.Storage or '<span class="text-muted">-</span>' | safe }}</div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">Storage Time</div>
+                                        <div class="detail-value">{{ work_order.StorageTime or '<span class="text-muted">-</span>' | safe }}</div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">Rack #</div>
+                                        <div class="detail-value">
+                                            {% if work_order.RackNo %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="fas fa-layer-group me-1"></i>{{ work_order.RackNo }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">Special Instructions</div>
+                                        <div class="detail-value">{{ work_order.SpecialInstructions or '<span class="text-muted">-</span>' | safe }}</div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">Repairs Needed</div>
+                                        <div class="detail-value">{{ work_order.RepairsNeeded or '<span class="text-muted">-</span>' | safe }}</div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">See Repair</div>
+                                        <div class="detail-value">{{ work_order.SeeRepair or '<span class="text-muted">-</span>' | safe }}</div>
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <div class="detail-row">
-                                <div class="detail-label">Work Order Name</div>
-                                <div class="detail-value">{{ work_order.WOName or '<span class="text-muted">-</span>' | safe }}</div>
-                            </div>
-                            
-                            <div class="detail-row">
-                                <div class="detail-label">Storage</div>
-                                <div class="detail-value">{{ work_order.Storage or '<span class="text-muted">-</span>' | safe }}</div>
-                            </div>
-                            
-                            <div class="detail-row">
-                                <div class="detail-label">Storage Time</div>
-                                <div class="detail-value">{{ work_order.StorageTime or '<span class="text-muted">-</span>' | safe }}</div>
-                            </div>
-                            
-                            <div class="detail-row">
-                                <div class="detail-label">Rack#</div>
-                                <div class="detail-value">
-                                    {% if work_order.RackNo %}
-                                        <span class="badge bg-secondary">
-                                            <i class="fas fa-layer-group me-1"></i>{{ work_order.RackNo }}
-                                        </span>
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            
-                            <div class="detail-row">
-                                <div class="detail-label">Special Instructions</div>
-                                <div class="detail-value">{{ work_order.SpecialInstructions or '<span class="text-muted">-</span>' | safe }}</div>
-                            </div>
-                            
-                            <div class="detail-row">
-                                <div class="detail-label">Repairs Needed</div>
-                                <div class="detail-value">{{ work_order.RepairsNeeded or '<span class="text-muted">-</span>' | safe }}</div>
-                            </div>
-                            
-                            <div class="detail-row">
-                                <div class="detail-label">See Repair</div>
-                                <div class="detail-value">{{ work_order.SeeRepair or '<span class="text-muted">-</span>' | safe }}</div>
-                            </div>
-                            
-                            <div class="detail-row">
-                                <div class="detail-label">Return Status</div>
-                                <div class="detail-value">
-                                    <span class="status-indicator status-completed"></span>
-                                    {{ work_order.ReturnStatus or '<span class="text-muted">-</span>' | safe }}
-                                </div>
-                            </div>
-                            
-                            <div class="detail-row">
-                                <div class="detail-label">Date Completed</div>
-                                <div class="detail-value">
-                                    <i class="fas fa-calendar-check text-primary me-2"></i>
-                                    {{ (work_order.DateCompleted | date_format) }}
-                                </div>
-                            </div>
-                            
-                            <div class="detail-row">
-                                <div class="detail-label">Quote</div>
-                                <div class="detail-value">{{ work_order.Quote or '<span class="text-muted">-</span>' | safe }}</div>
-                            </div>
-                            
-                            <div class="detail-row">
-                                <div class="detail-label">Clean</div>
-                                <div class="detail-value">
-                                    <i class="fas fa-calendar-alt text-muted me-2"></i>
-                                    {{ (work_order.Clean | date_format) or '<span class="text-muted">-</span>' | safe }}
+                                
+                                <!-- Right Column -->
+                                <div class="col-md-6">
+                                    <div class="detail-row">
+                                        <div class="detail-label">Date Required</div>
+                                        <div class="detail-value">
+                                            <i class="fas fa-calendar-check text-danger me-2"></i>
+                                            {{ (work_order.DateRequired | date_format) or '<span class="text-muted">-</span>' | safe }}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">Date In</div>
+                                        <div class="detail-value">
+                                            <i class="fas fa-calendar-plus text-success me-2"></i>
+                                            {{ (work_order.DateIn | date_format) or '<span class="text-muted">-</span>' | safe }}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">Date Completed</div>
+                                        <div class="detail-value">
+                                            <i class="fas fa-calendar-check text-primary me-2"></i>
+                                            {{ (work_order.DateCompleted | date_format) or '<span class="text-muted">-</span>' | safe }}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">Source</div>
+                                        <div class="detail-value">
+                                            {% if work_order.customer.source_info %}
+                                                <a href="{{ url_for('source.source_detail', source_name=work_order.customer.source_info.SSource) }}" 
+                                                   class="text-decoration-none">
+                                                    <span class="badge bg-info">
+                                                        <i class="fas fa-shipping-fast me-1"></i>{{ work_order.customer.source_info.SSource }}
+                                                    </span>
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted fst-italic">Not assigned</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">Rush Order</div>
+                                        <div class="detail-value">
+                                            {% if (work_order.RushOrder | yesdash) != '-' %}
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="fas fa-bolt me-1"></i>{{ (work_order.RushOrder | yesdash) }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">Firm Rush</div>
+                                        <div class="detail-value">
+                                            {% if (work_order.FirmRush | yesdash) != '-' %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ (work_order.FirmRush | yesdash) }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">Clean</div>
+                                        <div class="detail-value">
+                                            <i class="fas fa-calendar-alt text-muted me-2"></i>
+                                            {{ (work_order.Clean | date_format) or '<span class="text-muted">-</span>' | safe }}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">Treat</div>
+                                        <div class="detail-value">
+                                            <i class="fas fa-calendar-alt text-muted me-2"></i>
+                                            {{ (work_order.Treat | date_format) or '<span class="text-muted">-</span>' | safe }}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="detail-row">
+                                        <div class="detail-label">Clean First WO</div>
+                                        <div class="detail-value">{{ work_order.CleanFirstWO or '<span class="text-muted">-</span>' | safe }}</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Right Column -->
-                        <div class="col-md-6">
-                            <div class="detail-row">
-                                <div class="detail-label">Treat</div>
-                                <div class="detail-value">
-                                    <i class="fas fa-calendar-alt text-muted me-2"></i>
-                                    {{ (work_order.Treat | date_format) or '<span class="text-muted">-</span>' | safe }}
-                                </div>
+                    </div>
+
+                    <!-- Work Order Items Card -->
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-list me-2"></i> Order Items
+                                {% if work_order.items %}
+                                <span class="badge bg-secondary ms-2">{{ work_order.items|length }}</span>
+                                {% endif %}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if work_order.items %}
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover mb-0">
+                                    <thead class="bg-light" style="border-bottom: 1px solid #adb5bd;">
+
+                                        <tr>
+                                            <th>Qty</th>
+                                            <th>Description</th>
+                                            <th>Material</th>
+                                            <th>Condition</th>
+                                            <th>Color</th>
+                                            <th>Size/Weight</th>
+                                            <th>Price</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for item in work_order.items %}
+                                        <tr>
+                                            <td>{{ item.Qty or '-' }}</td>
+                                            <td>{{ item.Description or '-' }}</td>
+                                            <td>{{ item.Material or '-' }}</td>
+                                            <td>{{ item.Condition or '-' }}</td>
+                                            <td>{{ item.Color or '-' }}</td>
+                                            <td>{{ item.SizeWgt or '-' }}</td>
+                                            <td>{{ (item.Price | price_format) or '-' }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
                             </div>
-                            
+                            {% else %}
+                                <p class="text-muted mb-0">No items for this work order.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status & Quote Sidebar -->
+                <div class="col-lg-4">
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-flag me-2"></i> Status & Priority
+                            </h5>
+                        </div>
+                        <div class="card-body">
                             <div class="detail-row">
-                                <div class="detail-label">Rush Order</div>
+                                <div class="detail-label">Return Status</div>
                                 <div class="detail-value">
-                                    {% if (work_order.RushOrder | yesdash) != '-' %}
-                                        <span class="badge bg-warning text-dark">
-                                            <i class="fas fa-bolt me-1"></i>{{ (work_order.RushOrder | yesdash) }}
-                                        </span>
+                                    {% if work_order.ReturnStatus == "COMPLETED" %}
+                                    <span class="status-indicator status-completed"></span>
+                                    <span class="badge bg-success">{{ work_order.ReturnStatus }}</span>
+                                    {% elif work_order.ReturnStatus == "PENDING" %}
+                                    <span class="status-indicator status-pending"></span>
+                                    <span class="badge bg-warning">{{ work_order.ReturnStatus }}</span>
                                     {% else %}
-                                        <span class="text-muted">-</span>
+                                    <span class="status-indicator status-unknown"></span>
+                                    <span class="badge bg-secondary">{{ work_order.ReturnStatus or 'Unknown' }}</span>
                                     {% endif %}
                                 </div>
                             </div>
-                            
+
                             <div class="detail-row">
-                                <div class="detail-label">Date Required</div>
+                                <div class="detail-label">Priority</div>
                                 <div class="detail-value">
-                                    <i class="fas fa-calendar-check text-danger me-2"></i>
-                                    {{ (work_order.DateRequired | date_format) }}
-                                </div>
-                            </div>
-                            
-                            <div class="detail-row">
-                                <div class="detail-label">Date In</div>
-                                <div class="detail-value">
-                                    <i class="fas fa-calendar-plus text-success me-2"></i>
-                                    {{ (work_order.DateIn | date_format) }}
-                                </div>
-                            </div>
-                            
-                            <div class="detail-row">
-                                <div class="detail-label">Source</div>
-                                <div class="detail-value">
-                                    {% if work_order.customer.source_info %}
-                                        <a href="{{ url_for('source.source_detail', source_name=work_order.customer.source_info.SSource) }}" 
-                                           class="text-decoration-none">
-                                            <span class="badge bg-info">
-                                                <i class="fas fa-shipping-fast me-1"></i>{{ work_order.customer.source_info.SSource }}
-                                            </span>
-                                        </a>
-                                    {% else %}
-                                        <span class="text-muted fst-italic">Not assigned</span>
+                                    {% if work_order.RushOrder == "YES" %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-bolt me-1"></i>Rush Order
+                                    </span>
+                                    {% endif %}
+                                    {% if work_order.FirmRush == "YES" %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
+                                    </span>
+                                    {% endif %}
+                                    {% if work_order.RushOrder != "YES" and work_order.FirmRush != "YES" %}
+                                    <span class="text-muted">Normal Priority</span>
                                     {% endif %}
                                 </div>
                             </div>
-                            
+                        </div>
+                    </div>
+
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-dollar-sign me-2"></i> Quote Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
                             <div class="detail-row">
-                                <div class="detail-label">Firm Rush</div>
-                                <div class="detail-value">
-                                    {% if (work_order.FirmRush | yesdash) != '-' %}
-                                        <span class="badge bg-danger">
-                                            <i class="fas fa-exclamation-triangle me-1"></i>{{ (work_order.FirmRush | yesdash) }}
-                                        </span>
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </div>
+                                <div class="detail-label">Quote</div>
+                                <div class="detail-value">{{ work_order.Quote or '<span class="text-muted">Not provided</span>' | safe }}</div>
                             </div>
-                            
+                        </div>
+                    </div>
+
+                    <!-- Timestamps -->
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-clock me-2"></i> System Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
                             <div class="detail-row">
-                                <div class="detail-label">Clean First WO</div>
-                                <div class="detail-value">{{ work_order.CleanFirstWO or '<span class="text-muted">-</span>' | safe }}</div>
-                            </div>
-                            
-                            <div class="detail-row">
-                                <div class="detail-label">Created At</div>
+                                <div class="detail-label">Created</div>
                                 <div class="detail-value">
                                     <i class="fas fa-plus-circle text-success me-2"></i>
-                                    {{ (work_order.created_at | date_format) }}
+                                    <small>{{ (work_order.created_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
                                 </div>
                             </div>
                             
                             <div class="detail-row">
-                                <div class="detail-label">Updated At</div>
+                                <div class="detail-label">Updated</div>
                                 <div class="detail-value">
                                     <i class="fas fa-edit text-info me-2"></i>
-                                    {{ (work_order.updated_at | date_format) }}
+                                    <small>{{ (work_order.updated_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-            <!-- Work Order Items Card -->
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0">Items</h5>
-                </div>
-                <div class="card-body">
-                    {% if work_order.items %}
-                    <table class="table table-striped table-hover">
-                        <thead>
-                            <tr>
-                                <th>Qty</th>
-                                <th>Description</th>
-                                <th>Material</th>
-                                <th>Condition</th>
-                                <th>Color</th>
-                                <th>Size/Weight</th>
-                                <th>Price</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in work_order.items %}
-                            <tr>
-                                <td>{{ item.Qty or '-' }}</td>
-                                <td>{{ item.Description or '-' }}</td>
-                                <td>{{ item.Material or '-' }}</td>
-                                <td>{{ item.Condition or '-' }}</td>
-                                <td>{{ item.Color or '-' }}</td>
-                                <td>{{ item.SizeWgt or '-' }}</td>
-                                <td>{{ (item.Price | price_format) or '-' }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% else %}
-                        <p class="text-muted">No items for this work order.</p>
-                    {% endif %}
-                </div>
             </div>
-
-            <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-secondary">
-                &larr; Back to Work Orders
-            </a>
-
         </div>
     </div>
 </div>
