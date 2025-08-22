@@ -1,4 +1,3 @@
-# models/invite_token.py
 from extensions import db
 import secrets
 from datetime import datetime
@@ -6,6 +5,7 @@ from datetime import datetime
 
 class InviteToken(db.Model):
     __tablename__ = "invite_tokens"
+
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String(64), unique=True, nullable=False, index=True)
     role = db.Column(db.String(20), nullable=False, default="user")
@@ -13,9 +13,13 @@ class InviteToken(db.Model):
     used = db.Column(db.Boolean, default=False)
 
     @staticmethod
-    def generate(role="user"):
-        token = secrets.token_urlsafe(16)  # short but secure
-        invite = InviteToken(token=token, role=role)
+    def generate_token(role="user"):
+        """
+        Create an invite token but do not mark it used.
+        Returns the token object (not committed yet).
+        """
+        token_str = secrets.token_urlsafe(16)
+        invite = InviteToken(token=token_str, role=role)
         db.session.add(invite)
-        db.session.commit()
+        db.session.flush()  # assign ID without committing
         return invite

@@ -1,0 +1,4 @@
+- create user table with script 
+- add role column to user table
+- add invite token table 
+- rename rack# column to stop postgres error

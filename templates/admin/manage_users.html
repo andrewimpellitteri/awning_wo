@@ -45,32 +45,37 @@
         </tbody>
     </table>
 
-    <div class="container mt-4">
-        <h2>Invite Tokens</h2>
-        <form method="POST" class="mb-3 d-flex">
-          <select name="role" class="form-select me-2" style="max-width: 200px;">
+    <hr class="my-5">
+
+    <h2>Invite Tokens</h2>
+    <form method="POST" class="mb-3 d-flex">
+        <select name="role" class="form-select me-2" style="max-width: 200px;">
             <option value="user">User</option>
             <option value="manager">Manager</option>
             <option value="admin">Admin</option>
-          </select>
-          <button type="submit" class="btn btn-success">Generate Token</button>
-        </form>
-      
-        <table class="table table-striped">
-          <thead>
-            <tr><th>Token</th><th>Role</th><th>Used</th><th>Created</th></tr>
-          </thead>
-          <tbody>
-          {% for t in tokens %}
+        </select>
+        <button type="submit" class="btn btn-success">Generate Token</button>
+    </form>
+
+    <table class="table table-striped">
+        <thead>
             <tr>
-              <td><code>{{ t.token }}</code></td>
-              <td>{{ t.role }}</td>
-              <td>{% if t.used %}✔{% else %}❌{% endif %}</td>
-              <td>{{ t.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                <th>Token</th>
+                <th>Role</th>
+                <th>Used</th>
+                <th>Created</th>
             </tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      </div>
+        </thead>
+        <tbody>
+        {% for t in tokens %}
+            <tr>
+                <td><code>{{ t.token }}</code></td>
+                <td>{{ t.role }}</td>
+                <td>{% if t.used %}✔{% else %}❌{% endif %}</td>
+                <td>{{ t.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

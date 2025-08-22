@@ -50,7 +50,6 @@ def register():
         email = request.form.get("email")
         password = request.form.get("password")
 
-        # Prevent duplicate accounts
         if User.query.filter_by(username=username).first():
             flash("Username already exists", "error")
             return redirect(url_for("auth.register"))
@@ -58,7 +57,7 @@ def register():
             flash("Email already registered", "error")
             return redirect(url_for("auth.register"))
 
-        # Create user with role tied to invite token
+        # Create user
         user = User(
             username=username,
             email=email,
@@ -67,7 +66,7 @@ def register():
         )
         db.session.add(user)
 
-        # Mark invite as used
+        # Mark invite as used only here
         invite.used = True
         db.session.commit()
 
