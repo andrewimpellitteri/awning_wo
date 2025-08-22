@@ -1,8 +1,8 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
-from flask_login import login_required
+from flask import Flask, render_template, request, jsonify
+from flask_login import login_required, current_user
 from config import Config
 from extensions import db, login_manager
-import os
+
 from sqlalchemy import inspect
 from datetime import datetime, date
 
@@ -85,6 +85,7 @@ def create_app(config_class=Config):
     from routes.customers import customers_bp
     from routes.work_orders import work_orders_bp
     from routes.repair_order import repair_work_orders_bp
+    from routes.admin import admin_bp
 
     # from routes.repair_orders import repair_orders_bp
     # from routes.reports import reports_bp
@@ -95,6 +96,7 @@ def create_app(config_class=Config):
     app.register_blueprint(customers_bp, url_prefix="/customers")
     app.register_blueprint(work_orders_bp, url_prefix="/work_orders")
     app.register_blueprint(repair_work_orders_bp, url_prefix="/repair_work_orders")
+    app.register_blueprint(admin_bp)
 
     # Comment out all the problematic registrations
     # app.register_blueprint(customers_bp, url_prefix="/customers")

@@ -41,10 +41,14 @@ def register():
         username = request.form.get("username")
         email = request.form.get("email")
         password = request.form.get("password")
+        role = request.form.get("role", "user")  # default user if not set
 
-        # Check if user exists
+        # Check if username or email already exists
         if User.query.filter_by(username=username).first():
             flash("Username already exists", "error")
+            return redirect(url_for("auth.register"))
+        if User.query.filter_by(email=email).first():
+            flash("Email already registered", "error")
             return redirect(url_for("auth.register"))
 
         # Create new user
@@ -52,6 +56,7 @@ def register():
             username=username,
             email=email,
             password_hash=generate_password_hash(password),
+            role=role,
         )
 
         db.session.add(user)

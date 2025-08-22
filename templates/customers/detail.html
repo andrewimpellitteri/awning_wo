@@ -284,7 +284,8 @@
                         </div>
                         <div class="card-body text-center">
                             <div class="row">
-                                <div class="col-4">
+                                <!-- Open Orders -->
+                                <div class="col-3">
                                     <h4 class="text-primary mb-0">
                                         {% set open_count = [] %}
                                         {% for wo in customer.work_orders %}
@@ -296,7 +297,9 @@
                                     </h4>
                                     <small>Open Orders</small>
                                 </div>
-                                <div class="col-4">
+                        
+                                <!-- Closed Orders -->
+                                <div class="col-3">
                                     <h4 class="text-success mb-0">
                                         {% set closed_count = [] %}
                                         {% for wo in customer.work_orders %}
@@ -308,12 +311,38 @@
                                     </h4>
                                     <small>Closed Orders</small>
                                 </div>
-                                <div class="col-4">
-                                    <h4 class="text-warning mb-0">0</h4>
-                                    <small>Repairs</small>
+                        
+                                <!-- Open Repairs -->
+                                <div class="col-3">
+                                    <h4 class="text-warning mb-0">
+                                        {% set open_repairs = [] %}
+                                        {% for ro in customer.repair_work_orders %}
+                                            {% if not ro.DateCompleted %}
+                                                {% set _ = open_repairs.append(1) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ open_repairs|length }}
+                                    </h4>
+                                    <small>Open Repairs</small>
+                                </div>
+                        
+                                <!-- Closed Repairs -->
+                                <div class="col-3">
+                                    <h4 class="text-danger mb-0">
+                                        {% set closed_repairs = [] %}
+                                        {% for ro in customer.repair_work_orders %}
+                                            {% if ro.DateCompleted %}
+                                                {% set _ = closed_repairs.append(1) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ closed_repairs|length }}
+                                    </h4>
+                                    <small>Closed Repairs</small>
                                 </div>
                             </div>
                         </div>
+                        
+                        
                     </div>
                     
                 </div>
@@ -342,8 +371,32 @@
                 </div>
             </div>
 
+            <!-- Repairs Card -->
+            <div class="card mt-4 shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Repairs</h5>
+                </div>
+                <div class="card-body">
+                    {% if customer.repair_work_orders|length > 0 %}
+                    <ul class="list-group list-group-flush">
+                        {% for ro in customer.repair_work_orders %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            Repair Order #{{ ro.RepairOrderNo }} – {{ (ro.DateIn | date_format) or "No Date" }}
+                            <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=ro.RepairOrderNo) }}" class="btn btn-sm btn-primary">
+                                View
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted">No repair orders for this customer.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+
             <!-- Inventory Card -->
-            <div class="card mb-4">
+            <div class="card mt-4 mb-4">
                 <div class="card-header">
                     <h6 class="card-title mb-0">
                         <i class="fas fa-warehouse"></i> Customer Inventory

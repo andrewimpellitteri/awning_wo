@@ -15,5 +15,12 @@ class User(UserMixin, db.Model):
     # created_at = db.Column(db.DateTime, default=datetime.utcnow)
     # last_login = db.Column(db.DateTime)
 
+    # Add role/user type
+    role = db.Column(db.String(20), default="user")
+    # Examples: "admin", "manager", "staff", "user"
+
+    def __repr__(self):
+        return f"<User {self.username} ({self.role})>"
+
     def __repr__(self):
         return f"<User {self.username}>"
