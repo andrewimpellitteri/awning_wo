@@ -72,6 +72,7 @@ ipython_config.py
 
 # pyenv
 .python-version
+.platform/
 
 # celery beat schedule file
 celerybeat-schedule
@@ -122,3 +123,6 @@ data/*.csv
 *.sqlite
 csv_export/
 tempdb/
+aws_info.txt
+.ebextensions/
+.elasticbeanstalk/

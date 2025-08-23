@@ -1,49 +1,61 @@
 import os
-from dotenv import load_dotenv
-
-basedir = os.path.abspath(os.path.dirname(__file__))
-
-load_dotenv()
+from datetime import timedelta
 
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-secret-key-change-in-production"
+    SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-key-change-in-production"
+    FLASK_ENV = os.environ.get("FLASK_ENV", "production")
+    DEBUG = os.environ.get("FLASK_DEBUG", "False").lower() == "true"
 
-    # PostgreSQL connection (use environment variables)
-    POSTGRES_USER = os.environ.get("POSTGRES_USER", "pguser")
-    POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "password")
-    POSTGRES_DB = os.environ.get("POSTGRES_DB", "Clean_Repair")
-    POSTGRES_HOST = os.environ.get("POSTGRES_HOST", "localhost")
-    POSTGRES_PORT = os.environ.get("POSTGRES_PORT", "5432")
-    POSTGRES_SOCKET_DIR = os.environ.get(
-        "POSTGRES_SOCKET_DIR"
-    )  # optional unix socket path
+    UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "uploads")
+    CSV_DATA_PATH = os.environ.get("CSV_DATA_PATH", "data")
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
 
-    if POSTGRES_SOCKET_DIR:
-        SQLALCHEMY_DATABASE_URI = (
-            f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@"
-            f"{POSTGRES_HOST}/{POSTGRES_DB}?host={POSTGRES_SOCKET_DIR}"
-        )
-    else:
-        SQLALCHEMY_DATABASE_URI = (
-            f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@"
-            f"{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
-        )
-
-    # Fallback to SQLite if DATABASE_URL is not set or PostgreSQL fails
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
-    # if not SQLALCHEMY_DATABASE_URI:
-    #     SQLALCHEMY_DATABASE_URI = "sqlite:///" + os.path.join(
-    #         basedir, "Clean_Repair.sqlite"
-    #     )
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=24)
+    SESSION_COOKIE_SECURE = FLASK_ENV == "production"
+    SESSION_COOKIE_HTTPONLY = True
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER") or "uploads"
-    CSV_DATA_PATH = os.environ.get("CSV_DATA_PATH") or "data"
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+        "connect_args": {"connect_timeout": 10},
+    }
 
-    # Pagination
-    ITEMS_PER_PAGE = 50
+    # Compute database URI immediately
+    SQLALCHEMY_DATABASE_URI = (
+        os.environ.get("RDS_HOSTNAME")
+        and f"postgresql://{os.environ.get('RDS_USERNAME')}:{os.environ.get('RDS_PASSWORD')}@"
+        f"{os.environ.get('RDS_HOSTNAME')}:{os.environ.get('RDS_PORT', 5432)}/"
+        f"{os.environ.get('RDS_DB_NAME')}"
+        or os.environ.get("DATABASE_URL")
+        or f"postgresql://{os.environ.get('POSTGRES_USER', 'postgres')}:"
+        f"{os.environ.get('POSTGRES_PASSWORD', 'password')}@"
+        f"{os.environ.get('POSTGRES_HOST', 'localhost')}:"
+        f"{os.environ.get('POSTGRES_PORT', '5432')}/"
+        f"{os.environ.get('POSTGRES_DB', 'Clean_Repair')}"
+    )
 
-    # Photo settings
-    ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
+
+class DevelopmentConfig(Config):
+    DEBUG = True
+    FLASK_ENV = "development"
+
+
+class ProductionConfig(Config):
+    DEBUG = False
+    FLASK_ENV = "production"
+
+
+class TestingConfig(Config):
+    TESTING = True
+    WTF_CSRF_ENABLED = False
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+
+
+config = {
+    "development": DevelopmentConfig,
+    "production": ProductionConfig,
+    "testing": TestingConfig,
+    "default": ProductionConfig,
+}

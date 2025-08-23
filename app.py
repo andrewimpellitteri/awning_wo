@@ -1,11 +1,10 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, jsonify
 from flask_login import login_required, current_user
 from config import Config
 from extensions import db, login_manager
-
-
 from sqlalchemy import inspect
 from datetime import datetime, date
+import os
 
 
 def create_app(config_class=Config):
@@ -22,18 +21,10 @@ def create_app(config_class=Config):
     def format_price(price):
         """
         Formats a number to a price string with a dollar sign and two decimal places.
-
-        Args:
-            price: A number (integer or float).
-
-        Returns:
-            A string formatted as a price (e.g., "$123.45").
         """
         try:
-            # Use an f-string to format the number to two decimal places.
             return f"${float(price):.2f}"
         except (ValueError, TypeError) as e:
-            # Handle cases where the input is not a valid number.
             print(f"Error: Invalid input '{price}'. Please provide a number.")
             return None
 
@@ -66,7 +57,7 @@ def create_app(config_class=Config):
                 print("[DEBUG] Parsed as custom string ->", formatted)
                 return formatted
             except ValueError:
-                pass  # not that format, fall through
+                pass
 
             # Case 3: Try ISO string
             dt_object = datetime.fromisoformat(value)
@@ -78,19 +69,13 @@ def create_app(config_class=Config):
             print("[DEBUG] Exception in date_format:", e)
             return str(value)
 
-    # Import and register ONLY working blueprints
+    # Import and register blueprints
     from routes.auth import auth_bp
     from routes.source import source_bp
-
-    # Comment out all the problematic ones for now
     from routes.customers import customers_bp
     from routes.work_orders import work_orders_bp
     from routes.repair_order import repair_work_orders_bp
     from routes.admin import admin_bp
-
-    # from routes.repair_orders import repair_orders_bp
-    # from routes.reports import reports_bp
-    # from routes.api import api_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(source_bp, url_prefix="/sources")
@@ -98,13 +83,6 @@ def create_app(config_class=Config):
     app.register_blueprint(work_orders_bp, url_prefix="/work_orders")
     app.register_blueprint(repair_work_orders_bp, url_prefix="/repair_work_orders")
     app.register_blueprint(admin_bp)
-
-    # Comment out all the problematic registrations
-    # app.register_blueprint(customers_bp, url_prefix="/customers")
-    # app.register_blueprint(work_orders_bp, url_prefix="/work-orders")
-    # app.register_blueprint(repair_orders_bp, url_prefix="/repair-orders")
-    # app.register_blueprint(reports_bp, url_prefix="/reports")
-    # app.register_blueprint(api_bp, url_prefix="/api")
 
     # Register routes
     @app.route("/")
@@ -115,8 +93,13 @@ def create_app(config_class=Config):
 
     @app.route("/health")
     def health_check():
-        """Health check endpoint"""
-        return jsonify({"status": "healthy"})
+        """Health check endpoint for AWS"""
+        return jsonify(
+            {
+                "status": "healthy",
+                "environment": os.environ.get("FLASK_ENV", "production"),
+            }
+        )
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -130,19 +113,27 @@ def create_app(config_class=Config):
 # Create app instance
 app = create_app()
 
-# Debug routes - should only show auth, source, dashboard, and health_check
-with app.app_context():
-    inspector = inspect(db.engine)
-    tables = inspector.get_table_names()
+# Debug info (only show in development)
+if os.environ.get("FLASK_ENV") == "development":
+    with app.app_context():
+        try:
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
 
-    print("engine url", db.engine.url)
+            print("Database URL:", db.engine.url)
+            print(f"Available tables: {tables}")
 
-    print(f"Available tables: {tables}")
-
-    print(f"\nAvailable routes:")
-    for rule in app.url_map.iter_rules():
-        methods = ", ".join(rule.methods - {"HEAD", "OPTIONS"})
-        print(f"  {rule.endpoint:30} {rule.rule:30} [{methods}]")
+            print("\nAvailable routes:")
+            for rule in app.url_map.iter_rules():
+                methods = ", ".join(rule.methods - {"HEAD", "OPTIONS"})
+                print(f"  {rule.endpoint:30} {rule.rule:30} [{methods}]")
+        except Exception as e:
+            print(f"Database connection error: {e}")
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    # Local development server
+    app.run(
+        debug=os.environ.get("FLASK_DEBUG", "False").lower() == "true",
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 5000)),
+    )
