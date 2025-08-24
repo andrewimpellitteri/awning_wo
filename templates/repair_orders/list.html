@@ -7,7 +7,7 @@
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800">Repair Work Orders</h1>
-        <a href="#" class="btn btn-primary btn-sm disabled">
+        <a href="{{ url_for('work_orders.create_repair_order') }}" class="btn btn-primary btn-sm disabled">
             <i class="fas fa-plus me-1"></i> Add Repair Order
         </a>
     </div>
@@ -69,6 +69,24 @@
 <script src="https://unpkg.com/tabulator-tables@6.2.5/dist/js/tabulator.min.js"></script>
 
 <script>
+
+  // Add this function to your JavaScript file
+function dateSorter(a, b, aRow, bRow, column, dir, sorterParams) {
+    const dateA = new Date(a);
+    const dateB = new Date(b);
+
+    const timeA = dateA.getTime();
+    const timeB = dateB.getTime();
+
+    // Handle invalid dates
+    if (isNaN(timeA) && isNaN(timeB)) return 0;
+    if (isNaN(timeA)) return -1;
+    if (isNaN(timeB)) return 1;
+
+    // Sort based on timestamps
+    return timeA - timeB;
+}
+
 
 /**
  * Formats a date object or a date string into MM/DD/YYYY format.
@@ -149,8 +167,18 @@ document.addEventListener("DOMContentLoaded", function() {
             { title: "Name", field: "ROName", headerFilter: "input" },
             { title: "Item Type", field: "ITEM_TYPE", headerFilter: "input" },
             { title: "Repair Type", field: "TYPE_OF_REPAIR", headerFilter: "input" },
-            { title: "Date In", field: "DateIn", width: 120, headerFilter: "input", formatter: (cell) => formatDate(cell.getValue())},
-            { title: "Date Req.", field: "DateRequired", width: 120, headerFilter: "input", formatter: (cell) => formatDate(cell.getValue())},
+            { title: "Date In", field: "DateIn", width: 120, headerFilter: "input",
+            sorter: dateSorter,
+            sorterParams: {
+                format: "YYYY-MM-DD" // Tabulator will parse dates in this format
+            },
+            formatter: (cell) => formatDate(cell.getValue())},
+            { title: "Date Req.", field: "DateRequired", width: 120, headerFilter: "input", 
+            sorter: dateSorter,
+            sorterParams: {
+                format: "YYYY-MM-DD" // Tabulator will parse dates in this format
+            },
+            formatter: (cell) => formatDate(cell.getValue())},
             { title: "Location", field: "LOCATION", width: 140, headerFilter: "input" },
             { 
                 title: "Actions", field: "actions", width: 100, hozAlign: "center", headerFilter: false, headerSort: false,
