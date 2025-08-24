@@ -47,14 +47,14 @@ def create_app(config_class=Config):
             # Case 1: Already a datetime or date
             if isinstance(value, (datetime, date)):
                 formatted = value.strftime("%m/%d/%Y")
-                print("[DEBUG] Parsed as datetime/date ->", formatted)
+                # print("[DEBUG] Parsed as datetime/date ->", formatted)
                 return formatted
 
             # Case 2: String already in MM/DD/YY HH:MM:SS format
             try:
                 dt_object = datetime.strptime(value, "%m/%d/%y %H:%M:%S")
                 formatted = dt_object.strftime("%m/%d/%Y")
-                print("[DEBUG] Parsed as custom string ->", formatted)
+                # print("[DEBUG] Parsed as custom string ->", formatted)
                 return formatted
             except ValueError:
                 pass
@@ -76,6 +76,7 @@ def create_app(config_class=Config):
     from routes.work_orders import work_orders_bp
     from routes.repair_order import repair_work_orders_bp
     from routes.admin import admin_bp
+    from routes.analytics import analytics_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(source_bp, url_prefix="/sources")
@@ -83,6 +84,7 @@ def create_app(config_class=Config):
     app.register_blueprint(work_orders_bp, url_prefix="/work_orders")
     app.register_blueprint(repair_work_orders_bp, url_prefix="/repair_work_orders")
     app.register_blueprint(admin_bp)
+    app.register_blueprint(analytics_bp, url_prefix="/analytics")
 
     # Register routes
     @app.route("/")

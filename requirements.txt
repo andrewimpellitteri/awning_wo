@@ -28,3 +28,5 @@ WTForms==3.0.1
 gunicorn
 psycopg2-binary
 python-decouple  # for environment variables
+polars
+plotly

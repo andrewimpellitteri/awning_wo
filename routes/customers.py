@@ -350,6 +350,20 @@ def edit_customer(customer_id):
     )
 
 
+@customers_bp.route("/api/source_info/<source_name>")
+@login_required
+def api_source_info(source_name):
+    source = Source.query.filter_by(SSource=source_name).first_or_404()
+    return jsonify(
+        {
+            "address": source.SourceAddress,
+            "city": source.SourceCity,
+            "state": source.SourceState,
+            "zip": source.SourceZip,
+        }
+    )
+
+
 @customers_bp.route("/delete/<customer_id>", methods=["POST"])
 @login_required
 def delete_customer(customer_id):

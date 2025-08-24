@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Create New Work Order{% endblock %}
+{% block title %}Edit Work Order {{ work_order.WorkOrderNo }}{% endblock %}
 
 {% block styles %}
 {{ super() }}
@@ -50,6 +50,23 @@
         border-color: #0d6efd;
         background-color: #f0f8ff;
         box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
+    }
+    .existing-item {
+        border: 1px solid #28a745;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+        background-color: #f8fff8;
+    }
+    .existing-item:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        transform: translateY(-1px);
+    }
+    .existing-item.selected {
+        border-color: #28a745;
+        background-color: #f0fff0;
+        box-shadow: 0 0 0 0.2rem rgba(40,167,69,.25);
     }
     .new-item-row {
         background-color: #f8f9fa;
@@ -131,12 +148,26 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h1 class="h3">
-                        <i class="fas fa-plus-circle me-2"></i>Create New Work Order
+                        <i class="fas fa-edit me-2"></i>Edit Work Order {{ work_order.WorkOrderNo }}
                     </h1>
-                    <p class="text-muted mb-0">Create a new work order and manage inventory items</p>
+                    <p class="text-muted mb-0">
+                        Edit work order details and manage inventory items
+                        {% if work_order.DateCompleted %}
+                            <span class="badge bg-success ms-2">
+                                <i class="fas fa-check me-1"></i>Completed
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark ms-2">
+                                <i class="fas fa-clock me-1"></i>Pending
+                            </span>
+                        {% endif %}
+                    </p>
                 </div>
                 
                 <div>
+                    <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-eye me-1"></i>View
+                    </a>
                     <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-1"></i>Back to List
                     </a>
@@ -158,17 +189,27 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="detail-row">
-                                            <div class="detail-row">
-                                                <div class="detail-label">Customer <span class="text-danger">*</span></div>
-                                                <div class="detail-value">
-                                                    <input type="text" 
-                                                           class="form-control" 
-                                                           id="CustID" 
-                                                           name="CustID" 
-                                                           required
-                                                           value="{% if form_data and form_data.get('CustID') %}{{ form_data.get('CustID') }}{% endif %}">
-                                                </div>
+                                            <div class="detail-label">Customer <span class="text-danger">*</span></div>
+                                            <div class="detail-value">
+                                                <input type="text" 
+                                                       class="form-control" 
+                                                       id="CustID" 
+                                                       name="CustID" 
+                                                       required
+                                                       value="{{ work_order.CustID or '' }}">
                                             </div>
+
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Quote</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" id="Quote" name="Quote"
+                                                       value="{{ work_order.Quote or '' }}" placeholder="Enter quote amount or details">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                         </div>
                                         
                                         <div class="detail-row">
@@ -178,18 +219,16 @@
                                                     <span class="input-group-text">
                                                         <i class="fas fa-hashtag"></i>
                                                     </span>
-                                                    <input type="text" class="form-control" id="next_wo_number" readonly placeholder="Auto-generated">
+                                                    <input type="text" class="form-control" value="{{ work_order.WorkOrderNo }}" readonly>
                                                 </div>
-                                                <small id="wo-number-display" class="text-muted"></small>
                                             </div>
                                         </div>
-                                        
                                         
                                         <div class="detail-row">
                                             <div class="detail-label">Work Order Name</div>
                                             <div class="detail-value">
                                                 <input type="text" class="form-control" id="WOName" name="WOName" 
-                                                       value="{{ form_data.get('WOName', '') if form_data else '' }}">
+                                                       value="{{ work_order.WOName or '' }}">
                                             </div>
                                         </div>
                                         
@@ -197,7 +236,7 @@
                                             <div class="detail-label">Storage</div>
                                             <div class="detail-value">
                                                 <input type="text" class="form-control" id="Storage" name="Storage"
-                                                       value="{{ form_data.get('Storage', '') if form_data else '' }}">
+                                                       value="{{ work_order.Storage or '' }}">
                                             </div>
                                         </div>
                                         
@@ -209,7 +248,7 @@
                                                         <i class="fas fa-layer-group"></i>
                                                     </span>
                                                     <input type="text" class="form-control" id="RackNo" name="RackNo"
-                                                           value="{{ form_data.get('RackNo', '') if form_data else '' }}">
+                                                           value="{{ work_order.RackNo or '' }}">
                                                 </div>
                                             </div>
                                         </div>
@@ -224,7 +263,20 @@
                                                         <i class="fas fa-calendar-check text-danger"></i>
                                                     </span>
                                                     <input type="date" class="form-control" id="DateRequired" name="DateRequired"
-                                                           value="{{ form_data.get('DateRequired', '') if form_data else '' }}">
+                                                           value="{{ work_order.DateRequired or '' }}">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Date Completed</div>
+                                            <div class="detail-value">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-calendar-check text-success"></i>
+                                                    </span>
+                                                    <input type="date" class="form-control" id="DateCompleted" name="DateCompleted"
+                                                           value="{{ work_order.DateCompleted or '' }}">
                                                 </div>
                                             </div>
                                         </div>
@@ -240,7 +292,7 @@
                                                         <option value="">Select Shipping Location</option>
                                                         {% for source in sources %}
                                                         <option value="{{ source.SSource }}"
-                                                                {% if form_data and form_data.get('ShipTo') == source.SSource %}selected{% endif %}>
+                                                                {% if work_order.ShipTo == source.SSource %}selected{% endif %}>
                                                             {{ source.SSource }}
                                                         </option>
                                                         {% endfor %}
@@ -253,26 +305,25 @@
                                             <div class="detail-label">Storage Time</div>
                                             <div class="detail-value">
                                                 <input type="text" class="form-control" id="StorageTime" name="StorageTime"
-                                                       value="{{ form_data.get('StorageTime', '') if form_data else '' }}">
+                                                       value="{{ work_order.StorageTime or '' }}">
                                             </div>
                                         </div>
                                         
-                                        <!-- Replace this section in your create.html template -->
                                         <div class="detail-row">
                                             <div class="detail-label">Return Status</div>
                                             <div class="detail-value">
                                                 <input type="text" class="form-control" id="ReturnStatus" name="ReturnStatus"
-                                                       value="{{ form_data.get('ReturnStatus', '') if form_data else '' }}" 
+                                                       value="{{ work_order.ReturnStatus or '' }}" 
                                                        placeholder="Enter return status (e.g., Pick Up, Ship, Re-Hang)">
                                             </div>
                                         </div>
-                                                                                
+                                        
                                         <div class="detail-row">
                                             <div class="detail-label">Priority Options</div>
                                             <div class="detail-value">
                                                 <div class="form-check form-check-inline">
                                                     <input class="form-check-input" type="checkbox" id="RushOrder" name="RushOrder" value="1"
-                                                           {% if form_data and form_data.get('RushOrder') == '1' %}checked{% endif %}>
+                                                           {% if work_order.RushOrder == '1' %}checked{% endif %}>
                                                     <label class="form-check-label" for="RushOrder">
                                                         <span class="badge bg-warning text-dark">
                                                             <i class="fas fa-bolt me-1"></i>Rush Order
@@ -281,7 +332,7 @@
                                                 </div>
                                                 <div class="form-check form-check-inline">
                                                     <input class="form-check-input" type="checkbox" id="FirmRush" name="FirmRush" value="1"
-                                                           {% if form_data and form_data.get('FirmRush') == '1' %}checked{% endif %}>
+                                                           {% if work_order.FirmRush == '1' %}checked{% endif %}>
                                                     <label class="form-check-label" for="FirmRush">
                                                         <span class="badge bg-danger">
                                                             <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
@@ -309,7 +360,7 @@
                                             <div class="detail-label">Special Instructions</div>
                                             <div class="detail-value">
                                                 <textarea class="form-control" id="SpecialInstructions" name="SpecialInstructions" rows="4" 
-                                                          placeholder="Enter any special instructions...">{{ form_data.get('SpecialInstructions', '') if form_data else '' }}</textarea>
+                                                          placeholder="Enter any special instructions...">{{ work_order.SpecialInstructions or '' }}</textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -319,7 +370,7 @@
                                             <div class="detail-label">Repairs Needed</div>
                                             <div class="detail-value">
                                                 <textarea class="form-control" id="RepairsNeeded" name="RepairsNeeded" rows="4"
-                                                          placeholder="Describe repairs needed...">{{ form_data.get('RepairsNeeded', '') if form_data else '' }}</textarea>
+                                                          placeholder="Describe repairs needed...">{{ work_order.RepairsNeeded or '' }}</textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -328,42 +379,101 @@
                                 <div class="row">
                                     <div class="col-md-4">
                                         <div class="detail-row">
-                                            <div class="detail-label">Quote</div>
+                                            <div class="detail-label">Date In</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" id="Quote" name="Quote"
-                                                       value="{{ form_data.get('Quote', '') if form_data else '' }}">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-calendar text-primary"></i>
+                                                    </span>
+                                                    <input type="date" class="form-control" id="DateIn" name="DateIn"
+                                                           value="{{ work_order.DateIn or '' }}">
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                     
                                     <div class="col-md-4">
                                         <div class="detail-row">
-                                            <div class="detail-label">Clean</div>
+                                            <div class="detail-label">Clean Date</div>
                                             <div class="detail-value">
-                                                <select class="form-select" id="Clean" name="Clean">
-                                                    <option value="">Select</option>
-                                                    <option value="YES" {% if form_data and form_data.get('Clean') == 'YES' %}selected{% endif %}>Yes</option>
-                                                    <option value="NO" {% if form_data and form_data.get('Clean') == 'NO' %}selected{% endif %}>No</option>
-                                                </select>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-calendar text-info"></i>
+                                                    </span>
+                                                    <input type="date" class="form-control" id="Clean" name="Clean"
+                                                           value="{{ work_order.Clean or '' }}">
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                     
                                     <div class="col-md-4">
                                         <div class="detail-row">
-                                            <div class="detail-label">Treat</div>
+                                            <div class="detail-label">Treat Date</div>
                                             <div class="detail-value">
-                                                <select class="form-select" id="Treat" name="Treat">
-                                                    <option value="">Select</option>
-                                                    <option value="YES" {% if form_data and form_data.get('Treat') == 'YES' %}selected{% endif %}>Yes</option>
-                                                    <option value="NO" {% if form_data and form_data.get('Treat') == 'NO' %}selected{% endif %}>No</option>
-                                                </select>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-calendar text-success"></i>
+                                                    </span>
+                                                    <input type="date" class="form-control" id="Treat" name="Treat"
+                                                           value="{{ work_order.Treat or '' }}">
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Current Work Order Items -->
+                        {% if work_order_items %}
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-boxes me-2"></i>Current Work Order Items
+                                    <span class="badge bg-success ms-2" id="existing-items-count">{{ work_order_items|length }}</span>
+                                </h5>
+                                <small class="text-muted">Items currently in this work order</small>
+                            </div>
+                            <div class="card-body">
+                                <div id="existing-items">
+                                    {% for item in work_order_items %}
+                                    <div class="existing-item selected" onclick="toggleExistingItem(this, '{{ item.id if item.id else loop.index }}')">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="existing_item_id[]" 
+                                                   value="{{ item.id if item.id else loop.index }}" 
+                                                   id="existing_item_{{ item.id if item.id else loop.index }}" checked>
+                                            <label class="form-check-label w-100" for="existing_item_{{ item.id if item.id else loop.index }}">
+                                                <div class="row align-items-center">
+                                                    <div class="col-md-5">
+                                                        <div class="detail-label">{{ item.Description or 'No Description' }}</div>
+                                                        <small class="text-muted">{{ item.Material or 'No material specified' }}</small>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <span class="badge bg-secondary">{{ item.Condition or 'Unknown' }}</span>
+                                                        <br><small class="text-muted">{{ item.Color or 'No color' }}</small>
+                                                    </div>
+                                                    <div class="col-md-2 text-center">
+                                                        <small class="text-muted">Size:</small><br>
+                                                        <small>{{ item.SizeWgt or '-' }}</small><br>
+                                                        <strong>${{ "%.2f"|format(item.Price|float) if item.Price else "0.00" }}</strong>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label small">Qty:</label>
+                                                        <input type="number" class="form-control form-control-sm qty-input" 
+                                                            name="existing_item_qty_{{ item.id if item.id else loop.index }}" 
+                                                            value="{{ item.Qty or 1 }}" min="1" 
+                                                            onclick="event.stopPropagation()">
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
 
                         <!-- Customer Inventory -->
                         <div class="card mb-4 shadow-sm">
@@ -378,7 +488,7 @@
                                 <div id="customer-inventory">
                                     <div class="inventory-empty">
                                         <i class="fas fa-boxes"></i>
-                                        <p>Select a customer to view their inventory items</p>
+                                        <p>Loading customer inventory...</p>
                                     </div>
                                 </div>
                             </div>
@@ -414,6 +524,13 @@
                             </div>
                             <div class="card-body">
                                 <div class="detail-row">
+                                    <div class="detail-label">Current Items</div>
+                                    <div class="detail-value">
+                                        <span class="badge bg-success" id="existing-count">{{ work_order_items|length }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="detail-row">
                                     <div class="detail-label">Selected Items</div>
                                     <div class="detail-value">
                                         <span class="badge bg-primary" id="selected-count">0</span>
@@ -423,26 +540,41 @@
                                 <div class="detail-row">
                                     <div class="detail-label">New Items</div>
                                     <div class="detail-value">
-                                        <span class="badge bg-success" id="new-count">0</span>
+                                        <span class="badge bg-info" id="new-count">0</span>
                                     </div>
                                 </div>
                                 
                                 <div class="detail-row">
                                     <div class="detail-label">Total Items</div>
                                     <div class="detail-value">
-                                        <span class="badge bg-info" id="total-count">0</span>
+                                        <span class="badge bg-dark" id="total-count">{{ work_order_items|length }}</span>
                                     </div>
                                 </div>
                                 
-                                <div class="detail-row" id="rush-status" style="display: none;">
+                                <div class="detail-row" id="rush-status" {% if work_order.RushOrder != '1' and work_order.FirmRush != '1' %}style="display: none;"{% endif %}>
                                     <div class="detail-label">Priority</div>
                                     <div class="detail-value">
-                                        <span class="badge bg-warning text-dark" id="rush-badge" style="display: none;">
+                                        <span class="badge bg-warning text-dark" id="rush-badge" {% if work_order.RushOrder != '1' %}style="display: none;"{% endif %}>
                                             <i class="fas fa-bolt me-1"></i>Rush Order
                                         </span>
-                                        <span class="badge bg-danger" id="firm-rush-badge" style="display: none;">
+                                        <span class="badge bg-danger" id="firm-rush-badge" {% if work_order.FirmRush != '1' %}style="display: none;"{% endif %}>
                                             <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
                                         </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="detail-row">
+                                    <div class="detail-label">Status</div>
+                                    <div class="detail-value">
+                                        {% if work_order.DateCompleted %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Completed
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-clock me-1"></i>Pending
+                                            </span>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -458,8 +590,11 @@
                             <div class="card-body">
                                 <div class="d-grid gap-2">
                                     <button type="submit" class="btn btn-primary btn-lg">
-                                        <i class="fas fa-save me-2"></i>Create Work Order
+                                        <i class="fas fa-save me-2"></i>Update Work Order
                                     </button>
+                                    <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}" class="btn btn-outline-success">
+                                        <i class="fas fa-eye me-2"></i>View Work Order
+                                    </a>
                                     <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-outline-secondary">
                                         <i class="fas fa-arrow-left me-2"></i>Cancel
                                     </a>
@@ -467,7 +602,18 @@
                                 
                                 <hr class="my-3">
                                 
-
+                                <div class="text-muted small">
+                                    <div class="detail-row">
+                                        <div class="detail-label">Created</div>
+                                        <div class="detail-value">{{ work_order.DateIn or 'Not specified' }}</div>
+                                    </div>
+                                    {% if work_order.DateCompleted %}
+                                    <div class="detail-row">
+                                        <div class="detail-label">Completed</div>
+                                        <div class="detail-value">{{ work_order.DateCompleted }}</div>
+                                    </div>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -481,11 +627,12 @@
     let newItemCounter = 0;
     let selectedItemsCount = 0;
     let newItemsCount = 0;
+    let existingItemsCount = {{ work_order_items|length if work_order_items else 0 }};
 
     function formatPrice(price) {
         let num = parseFloat(price);
         if (isNaN(num)) return "$0.00";
-        return `$${num.toFixed(2)}`;
+        return `${num.toFixed(2)}`;
     }
 
     function loadCustomerInventory(custId) {
@@ -531,7 +678,7 @@
                 let html = '';
                 data.forEach(item => {
                     html += `
-                        <div class="inventory-item" onclick="toggleItem(this, ${item.id})">
+                        <div class="inventory-item" onclick="toggleItem(this, '${item.id}')">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" name="selected_items[]" value="${item.id}" id="item_${item.id}">
                                 <label class="form-check-label w-100" for="item_${item.id}">
@@ -574,41 +721,21 @@
             });
     }
 
-
-
-    // Load next work order number on page load
-    window.addEventListener('DOMContentLoaded', function() {
-        const woInput = document.getElementById('next_wo_number');
-        const woDisplay = document.getElementById('wo-number-display');
-
-        // Hide the display until we fetch
-        woDisplay.textContent = '';
-
-        fetch('/work_orders/api/next_wo_number')
-            .then(response => response.json())
-            .then(data => {
-                woInput.value = data.next_wo_number;
-                woDisplay.textContent = `WO-${data.next_wo_number}`;
-            })
-            .catch(error => {
-                console.error('Error loading next WO number:', error);
-                woDisplay.textContent = 'Error loading WO number';
-            });
-    });
-
-
-    document.getElementById('CustID').addEventListener('change', function() {
-        loadCustomerInventory(this.value);
-    });
-
-    window.addEventListener('DOMContentLoaded', function() {
-        const custInput = document.getElementById('CustID');
-        if (custInput.value) {
-            loadCustomerInventory(custInput.value);
+    function toggleExistingItem(element, itemId) {
+        const checkbox = element.querySelector('input[type="checkbox"]');
+        if (event.target.type !== 'checkbox' && event.target.type !== 'number') {
+            checkbox.checked = !checkbox.checked;
         }
-    });
-
-
+        
+        if (checkbox.checked) {
+            element.classList.add('selected');
+        } else {
+            element.classList.remove('selected');
+            existingItemsCount--;
+        }
+        
+        updateCounts();
+    }
 
     function toggleItem(element, itemId) {
         const checkbox = element.querySelector('input[type="checkbox"]');
@@ -709,10 +836,11 @@
     }
 
     function updateCounts() {
+        document.getElementById('existing-count').textContent = existingItemsCount;
         document.getElementById('selected-count').textContent = selectedItemsCount;
         document.getElementById('new-count').textContent = newItemsCount;
         document.getElementById('new-items-count').textContent = newItemsCount;
-        document.getElementById('total-count').textContent = selectedItemsCount + newItemsCount;
+        document.getElementById('total-count').textContent = existingItemsCount + selectedItemsCount + newItemsCount;
     }
 
     // Monitor rush order checkboxes
@@ -735,6 +863,24 @@
         }
     }
 
+    // Customer change handler
+    document.getElementById('CustID').addEventListener('change', function() {
+        loadCustomerInventory(this.value);
+    });
+
+    // Load customer inventory on page load
+    window.addEventListener('DOMContentLoaded', function() {
+        const custInput = document.getElementById('CustID');
+        if (custInput.value) {
+            loadCustomerInventory(custInput.value);
+        }
+        
+        // Initialize existing items count
+        const existingItemCheckboxes = document.querySelectorAll('input[name="existing_item_id[]"]');
+        existingItemsCount = existingItemCheckboxes.length;
+        updateCounts();
+    });
+
     // Form validation
     document.getElementById('workOrderForm').addEventListener('submit', function(e) {
         const custId = document.getElementById('CustID').value;
@@ -742,16 +888,6 @@
             e.preventDefault();
             alert('Please select a customer.');
             document.getElementById('CustID').focus();
-            return;
-        }
-
-        // Check if at least one item is selected or added
-        const selectedItems = document.querySelectorAll('input[name="selected_items[]"]:checked').length;
-        const newItems = document.querySelectorAll('input[name="new_item_description[]"]').length;
-        
-        if (selectedItems === 0 && newItems === 0) {
-            e.preventDefault();
-            alert('Please select at least one inventory item or add a new item.');
             return;
         }
 
@@ -774,7 +910,7 @@
         // Show loading state
         const submitBtn = this.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
         submitBtn.disabled = true;
 
         // Re-enable button after 10 seconds in case of issues
@@ -784,7 +920,8 @@
         }, 10000);
     });
 
-    // Initialize counts
+    // Initialize counts and rush status
     updateCounts();
+    updateRushStatus();
 </script>
 {% endblock %}

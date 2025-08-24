@@ -66,6 +66,10 @@
                 </div>
                 
                 <div>
+                    <a href="{{ url_for('work_orders.edit_work_order', work_order_no=work_order.WorkOrderNo) }}" 
+                    class="btn btn-primary me-2">
+                        <i class="fas fa-edit me-1"></i>Edit
+                    </a>
                     <a href="{{ url_for('work_orders.list_work_orders') }}" 
                        class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-1"></i> Back to List
@@ -306,19 +310,11 @@
                             </h5>
                         </div>
                         <div class="card-body">
+                            <!-- Replace this section in your detail.html template -->
                             <div class="detail-row">
                                 <div class="detail-label">Return Status</div>
                                 <div class="detail-value">
-                                    {% if work_order.ReturnStatus == "COMPLETED" %}
-                                    <span class="status-indicator status-completed"></span>
-                                    <span class="badge bg-success">{{ work_order.ReturnStatus }}</span>
-                                    {% elif work_order.ReturnStatus == "PENDING" %}
-                                    <span class="status-indicator status-pending"></span>
-                                    <span class="badge bg-warning">{{ work_order.ReturnStatus }}</span>
-                                    {% else %}
-                                    <span class="status-indicator status-unknown"></span>
-                                    <span class="badge bg-secondary">{{ work_order.ReturnStatus or 'Unknown' }}</span>
-                                    {% endif %}
+                                    <span class="badge bg-info">{{ work_order.ReturnStatus or 'Not Set' }}</span>
                                 </div>
                             </div>
 
