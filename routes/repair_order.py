@@ -213,6 +213,7 @@ def create_repair_order(prefill_cust_id=None):
             latest_order = RepairWorkOrder.query.order_by(
                 desc(RepairWorkOrder.RepairOrderNo)
             ).first()
+            print(latest_order, type(latest_order))
             if latest_order:
                 try:
                     next_num = int(latest_order.RepairOrderNo) + 1

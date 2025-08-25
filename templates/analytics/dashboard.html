@@ -1,270 +1,317 @@
-{% extends "base.html" %}
-
-{% block title %}Analytics Dashboard{% endblock %}
-
-{% block extra_head %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
-<style>
-    .dashboard-container {
-        padding: 20px;
-        background-color: #f8f9fa;
-        min-height: 100vh;
-    }
-    
-    .dashboard-header {
-        text-align: center;
-        margin-bottom: 40px;
-    }
-    
-    .dashboard-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #2c3e50;
-        margin-bottom: 10px;
-    }
-    
-    .dashboard-subtitle {
-        color: #6c757d;
-        font-size: 1.1rem;
-    }
-    
-    .kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 20px;
-        margin-bottom: 40px;
-    }
-    
-    .kpi-card {
-        background: white;
-        border-radius: 12px;
-        padding: 25px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        transition: transform 0.2s ease;
-        border-left: 4px solid;
-    }
-    
-    .kpi-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-    }
-    
-    .kpi-card.primary { border-left-color: #3498db; }
-    .kpi-card.success { border-left-color: #2ecc71; }
-    .kpi-card.warning { border-left-color: #f39c12; }
-    .kpi-card.info { border-left-color: #9b59b6; }
-    
-    .kpi-number {
-        font-size: 2.2rem;
-        font-weight: bold;
-        color: #2c3e50;
-        margin-bottom: 8px;
-    }
-    
-    .kpi-label {
-        font-size: 1rem;
-        color: #6c757d;
-        font-weight: 500;
-    }
-    
-    .kpi-subtitle {
-        font-size: 0.9rem;
-        color: #95a5a6;
-        margin-top: 5px;
-    }
-    
-    .charts-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-        gap: 30px;
-        margin-bottom: 40px;
-    }
-    
-    .chart-container {
-        background: white;
-        border-radius: 12px;
-        padding: 25px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        transition: box-shadow 0.2s ease;
-    }
-    
-    .chart-container:hover {
-        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-    }
-    
-    .chart-title {
-        font-size: 1.3rem;
-        font-weight: 600;
-        color: #2c3e50;
-        margin-bottom: 20px;
-        text-align: center;
-    }
-    
-    .error-message {
-        background-color: #f8d7da;
-        color: #721c24;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        border: 1px solid #f5c6cb;
-    }
-    
-    .info-message {
-        background-color: #d1ecf1;
-        color: #0c5460;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        border: 1px solid #bee5eb;
-    }
-    
-    .loading {
-        text-align: center;
-        padding: 40px;
-        color: #6c757d;
-    }
-    
-    @media (max-width: 768px) {
-        .kpi-grid {
-            grid-template-columns: 1fr;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard</title>
+    <!-- Plotly.js CDN -->
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <style>
+        :root {
+            --primary: #3498db;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --info: #1abc9c;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --gray: #95a5a6;
+            --danger: #e74c3c;
         }
         
-        .charts-grid {
-            grid-template-columns: 1fr;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        
+        .dashboard-header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
         
         .dashboard-title {
-            font-size: 2rem;
+            font-size: 2.2em;
+            color: var(--dark);
+            margin-bottom: 5px;
         }
+        
+        .dashboard-subtitle {
+            font-size: 1.1em;
+            color: var(--gray);
+        }
+        
+        .info-message {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .error-message {
+            background: #ffebee;
+            color: var(--danger);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--danger);
+        }
+        
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .kpi-card {
+            padding: 25px 20px;
+            border-radius: 10px;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .kpi-card.primary { background: linear-gradient(135deg, var(--primary), #2980b9); }
+        .kpi-card.success { background: linear-gradient(135deg, var(--success), #27ae60); }
+        .kpi-card.warning { background: linear-gradient(135deg, var(--warning), #e67e22); }
+        .kpi-card.info { background: linear-gradient(135deg, var(--info), #16a085); }
         
         .kpi-number {
-            font-size: 1.8rem;
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
-    }
-</style>
-{% endblock %}
+        
+        .kpi-label {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .kpi-subtitle {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .chart-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .chart-placeholder {
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray);
+            font-style: italic;
+        }
+        
+        .loading {
+            text-align: center;
+            color: var(--gray);
+            padding: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-container {
+                padding: 10px;
+            }
+            
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Analytics Dashboard</h1>
+            <p class="dashboard-subtitle">Business Performance Overview</p>
+        </div>
 
-{% block content %}
-<div class="dashboard-container">
-    <div class="dashboard-header">
-        <h1 class="dashboard-title">Analytics Dashboard</h1>
-        <p class="dashboard-subtitle">Business Performance Overview</p>
-    </div>
-    
-    {% if error_message %}
-    <div class="error-message">
-        <strong>Error:</strong> {{ error_message }}
-        <br><small>Showing default values. Please check your database connection and data format.</small>
-    </div>
-    {% endif %}
-    
-    <div class="info-message">
-        <strong>Data Summary:</strong> Loaded {{ total_records }} records from database
-    </div>
-    
-    <!-- KPI Cards -->
-    <div class="kpi-grid">
-        <div class="kpi-card primary">
-            <div class="kpi-number">{{ kpis.total_orders }}</div>
-            <div class="kpi-label">Total Orders</div>
-            <div class="kpi-subtitle">All work orders in system</div>
+        {% if error_message %}
+        <div class="error-message">
+            <strong>Error:</strong> {{ error_message }}
         </div>
-        
-        <div class="kpi-card success">
-            <div class="kpi-number">{{ kpis.completed_orders }}</div>
-            <div class="kpi-label">Completed Orders</div>
-            <div class="kpi-subtitle">{{ kpis.completion_rate }}% completion rate</div>
+        {% endif %}
+
+        <div class="info-message">
+            <strong>Data Summary:</strong> Loaded {{ total_records }} records
         </div>
-        
-        <div class="kpi-card warning">
-            <div class="kpi-number">${{ "%.2f"|format(kpis.total_revenue) }}</div>
-            <div class="kpi-label">Total Revenue</div>
-            <div class="kpi-subtitle">${{ "%.2f"|format(kpis.avg_revenue) }} average</div>
-        </div>
-        
-        <div class="kpi-card info">
-            <div class="kpi-number">{{ kpis.unique_customers }}</div>
-            <div class="kpi-label">Unique Customers</div>
-            <div class="kpi-subtitle">Customer base size</div>
-        </div>
-    </div>
-    
-    <!-- Charts -->
-    <div class="charts-grid">
-        <div class="chart-container">
-            <div class="chart-title">Monthly Orders Trend</div>
-            <div id="monthly-chart" style="height: 400px;">
-                <div class="loading">Loading chart...</div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card primary">
+                <div class="kpi-number">{{ kpis.total_orders }}</div>
+                <div class="kpi-label">Total Orders</div>
+                <div class="kpi-subtitle">All work orders in system</div>
+            </div>
+            <div class="kpi-card success">
+                <div class="kpi-number">{{ kpis.completed_orders }}</div>
+                <div class="kpi-label">Completed Orders</div>
+                <div class="kpi-subtitle">{{ kpis.completion_rate }}% completion rate</div>
+            </div>
+            <div class="kpi-card warning">
+                <div class="kpi-number">${{ "%.2f"|format(kpis.total_revenue) }}</div>
+                <div class="kpi-label">Total Revenue</div>
+                <div class="kpi-subtitle">${{ "%.2f"|format(kpis.avg_revenue) }} average</div>
+            </div>
+            <div class="kpi-card info">
+                <div class="kpi-number">{{ kpis.unique_customers }}</div>
+                <div class="kpi-label">Unique Customers</div>
+                <div class="kpi-subtitle">Customer base size</div>
             </div>
         </div>
-        
-        <div class="chart-container">
-            <div class="chart-title">Order Status Distribution</div>
-            <div id="status-chart" style="height: 400px;">
-                <div class="loading">Loading chart...</div>
+
+        <!-- Charts -->
+        <div class="charts-grid">
+            <div class="chart-container">
+                <div class="chart-title">Monthly Orders Trend</div>
+                <div id="monthly-chart" class="chart-placeholder">Loading chart...</div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Order Status Distribution</div>
+                <div id="status-chart" class="chart-placeholder">Loading chart...</div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Daily Cleaning Throughput</div>
+                <div id="throughput-chart" class="chart-placeholder">Loading chart...</div>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Cumulative Uncleaned Sq Ft</div>
+                <div id="cumulative-chart" class="chart-placeholder">Loading chart...</div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Get chart data from Flask
-    const monthlyChartData = {{ monthly_chart | safe }};
-    const statusChartData = {{ status_chart | safe }};
-    
-    // Render monthly trend chart
-    if (monthlyChartData && Object.keys(monthlyChartData).length > 0) {
-        try {
-            Plotly.newPlot('monthly-chart', monthlyChartData.data, monthlyChartData.layout, {
-                responsive: true,
-                displayModeBar: false
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Parse data from Flask
+            const monthlyChartData = {{ monthly_chart | safe }};
+            const statusChartData = {{ status_chart | safe }};
+            const throughputData = {{ throughput | tojson | safe }};
+            const cumulativeData = {{ cumulative | tojson | safe }};
+
+            console.log("Monthly chart data:", monthlyChartData);
+            console.log("Status chart data:", statusChartData);
+            console.log("Throughput data:", throughputData);
+            console.log("Cumulative data:", cumulativeData);
+
+            function renderPlotlyChart(containerId, data) {
+                if (data && data.data) {
+                    try {
+                        // Parse if it's a JSON string
+                        const chartData = typeof data === 'string' ? JSON.parse(data) : data;
+                        Plotly.newPlot(containerId, chartData.data, chartData.layout || {}, {
+                            responsive: true,
+                            displayModeBar: true
+                        });
+                    } catch (e) {
+                        console.error("Error rendering chart:", e);
+                        document.getElementById(containerId).innerHTML = '<div class="loading">Error rendering chart</div>';
+                    }
+                } else {
+                    document.getElementById(containerId).innerHTML = '<div class="loading">No data available</div>';
+                }
+            }
+
+            // Render main charts
+            renderPlotlyChart('monthly-chart', monthlyChartData);
+            renderPlotlyChart('status-chart', statusChartData);
+
+            // Throughput chart
+            if (throughputData && throughputData.length > 0) {
+                const trace = {
+                    x: throughputData.map(d => d.datecompleted),
+                    y: throughputData.map(d => d.totalsize),
+                    mode: 'lines+markers',
+                    name: 'Daily Throughput',
+                    line: { color: '#3498db', width: 3 },
+                    marker: { size: 6 }
+                };
+                const layout = { 
+                    title: 'Daily Cleaning Throughput', 
+                    xaxis: { title: 'Date' }, 
+                    yaxis: { title: 'Sq Ft' }, 
+                    template: 'plotly_white' 
+                };
+                Plotly.newPlot('throughput-chart', [trace], layout, { responsive: true, displayModeBar: true });
+            } else {
+                document.getElementById('throughput-chart').innerHTML = '<div class="loading">No throughput data available</div>';
+            }
+
+            // Cumulative uncleaned chart
+            if (cumulativeData && cumulativeData.length > 0) {
+                const trace = {
+                    x: cumulativeData.map(d => d.date),
+                    y: cumulativeData.map(d => d.cumulative_uncleaned_sqft),
+                    mode: 'lines+markers',
+                    name: 'Cumulative Uncleaned',
+                    line: { color: '#e74c3c', width: 3 },
+                    marker: { size: 6 }
+                };
+                const layout = { 
+                    title: 'Cumulative Uncleaned Sq Ft', 
+                    xaxis: { title: 'Date' }, 
+                    yaxis: { title: 'Sq Ft' }, 
+                    template: 'plotly_white' 
+                };
+                Plotly.newPlot('cumulative-chart', [trace], layout, { responsive: true, displayModeBar: true });
+            } else {
+                document.getElementById('cumulative-chart').innerHTML = '<div class="loading">No cumulative data available</div>';
+            }
+
+            // Resize charts on window resize
+            window.addEventListener('resize', () => {
+                ['monthly-chart','status-chart','throughput-chart','cumulative-chart'].forEach(id => {
+                    Plotly.Plots.resize(document.getElementById(id));
+                });
             });
-        } catch (error) {
-            console.error('Error rendering monthly chart:', error);
-            document.getElementById('monthly-chart').innerHTML = 
-                '<div class="loading" style="color: #e74c3c;">Error loading chart</div>';
-        }
-    } else {
-        document.getElementById('monthly-chart').innerHTML = 
-            '<div class="loading">No data available for monthly trend</div>';
-    }
-    
-    // Render status pie chart
-    if (statusChartData && Object.keys(statusChartData).length > 0) {
-        try {
-            Plotly.newPlot('status-chart', statusChartData.data, statusChartData.layout, {
-                responsive: true,
-                displayModeBar: false
-            });
-        } catch (error) {
-            console.error('Error rendering status chart:', error);
-            document.getElementById('status-chart').innerHTML = 
-                '<div class="loading" style="color: #e74c3c;">Error loading chart</div>';
-        }
-    } else {
-        document.getElementById('status-chart').innerHTML = 
-            '<div class="loading">No data available for status distribution</div>';
-    }
-    
-    // Handle window resize
-    window.addEventListener('resize', function() {
-        try {
-            Plotly.Plots.resize('monthly-chart');
-            Plotly.Plots.resize('status-chart');
-        } catch (error) {
-            console.log('Resize handling error:', error);
-        }
-    });
-    
-    // Debug information
-    console.log('Dashboard loaded with:', {
-        totalRecords: {{ total_records }},
-        hasError: {{ 'true' if error_message else 'false' }},
-        monthlyDataAvailable: Object.keys(monthlyChartData || {}).length > 0,
-        statusDataAvailable: Object.keys(statusChartData || {}).length > 0
-    });
-});
-</script>
-{% endblock %}
+        });
+    </script>
+</body>
+</html>

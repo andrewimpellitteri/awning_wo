@@ -92,10 +92,10 @@
                                             </div>
                                         </div>
                                         <div class="detail-row">
-                                            <div class="detail-label">Ship To</div>
+                                            <div class="detail-label">Source</div>
                                             <div class="detail-value">
                                                 <select class="form-select" name="ShipTo">
-                                                    <option value="">Select Shipping Location</option>
+                                                    <option value="">Select Source</option>
                                                     {% for source in sources %}
                                                     <option value="{{ source.SSource }}" {% if form_data and form_data.get('ShipTo') == source.SSource %}selected{% endif %}>{{ source.SSource }}</option>
                                                     {% endfor %}
