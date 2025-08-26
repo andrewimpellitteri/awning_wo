@@ -94,3 +94,32 @@ This phase focuses on migrating the application from SQLite to PostgreSQL and de
     - Set up monitoring and alerting to be notified of any issues in the production environment.
 - **Documentation:**
     - Create detailed documentation for the application, including setup instructions, API documentation, and user guides.
+
+
+- add inventory item to customer page
+    - edit button for items in both inventory page and create work order
+
+- in add wo auto populate name of customer
+- storage time field is seasonal/temp 
+
+- rack should be location in add wo 
+ 
+- need rack and storage time
+
+- storage and rack number are redunadant --> make one field "location"
+
+- storage time to drop down
+ - seasonal or tempor
+
+
+-return status should be drop down
+    - ship deliver pickup rehang unknown 
+
+- change clean treat to dates from yes/ no
+- quote (yes/done/approved)
+
+- remove clean/treat from create wo
+
+- debug selected item no adding from create wo
+
+- debug inventory item add + edit in wo create/edit (not adding items already in inventory)
