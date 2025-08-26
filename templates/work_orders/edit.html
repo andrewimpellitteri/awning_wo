@@ -204,8 +204,12 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Quote</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" id="Quote" name="Quote"
-                                                       value="{{ work_order.Quote or '' }}" placeholder="Enter quote amount or details">
+                                                <select class="form-select" id="Quote" name="Quote">
+                                                    <option value="">Select</option>
+                                                    <option value="yes" {{ 'selected' if form_data and form_data.get('Quote') == 'yes' else '' }}>Yes</option>
+                                                    <option value="done" {{ 'selected' if form_data and form_data.get('Quote') == 'done' else '' }}>Done</option>
+                                                    <option value="approved" {{ 'selected' if form_data and form_data.get('Quote') == 'approved' else '' }}>Approved</option>
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
@@ -232,16 +236,10 @@
                                             </div>
                                         </div>
                                         
-                                        <div class="detail-row">
-                                            <div class="detail-label">Storage</div>
-                                            <div class="detail-value">
-                                                <input type="text" class="form-control" id="Storage" name="Storage"
-                                                       value="{{ work_order.Storage or '' }}">
-                                            </div>
-                                        </div>
+
                                         
                                         <div class="detail-row">
-                                            <div class="detail-label">Rack Number</div>
+                                            <div class="detail-label">Storage</div>
                                             <div class="detail-value">
                                                 <div class="input-group">
                                                     <span class="input-group-text">
@@ -304,17 +302,26 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Storage Time</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" id="StorageTime" name="StorageTime"
-                                                       value="{{ work_order.StorageTime or '' }}">
+                                                <select class="form-control" id="StorageTime" name="StorageTime">
+                                                    <option value="">Select</option>
+                                                    <option value="Seasonal" {% if form_data and form_data.get('StorageTime') == 'Seasonal' %}selected{% endif %}>Seasonal</option>
+                                                    <option value="Temporary" {% if form_data and form_data.get('StorageTime') == 'Temporary' %}selected{% endif %}>Temporary</option>
+                                                </select>
                                             </div>
                                         </div>
+                                        
                                         
                                         <div class="detail-row">
                                             <div class="detail-label">Return Status</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" id="ReturnStatus" name="ReturnStatus"
-                                                       value="{{ work_order.ReturnStatus or '' }}" 
-                                                       placeholder="Enter return status (e.g., Pick Up, Ship, Re-Hang)">
+                                                <select class="form-control" id="ReturnStatus" name="ReturnStatus">
+                                                    <option value="">-- Select --</option>
+                                                    <option value="Ship" {% if form_data and form_data.get('ReturnStatus') == 'Ship' %}selected{% endif %}>Ship</option>
+                                                    <option value="Deliver" {% if form_data and form_data.get('ReturnStatus') == 'Deliver' %}selected{% endif %}>Deliver</option>
+                                                    <option value="Pickup" {% if form_data and form_data.get('ReturnStatus') == 'Pickup' %}selected{% endif %}>Pickup</option>
+                                                    <option value="Re-Hang" {% if form_data and form_data.get('ReturnStatus') == 'Re-Hang' %}selected{% endif %}>Re-hang</option>
+                                                    <option value="Unknown" {% if form_data and form_data.get('ReturnStatus') == 'Unknown' %}selected{% endif %}>Unknown</option>
+                                                </select>
                                             </div>
                                         </div>
                                         

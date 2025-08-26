@@ -4,6 +4,7 @@ from models.customer import Customer
 from models.source import Source
 from models.inventory import Inventory
 from models.work_order import WorkOrder
+from models.repair_order import RepairWorkOrder
 from extensions import db
 from sqlalchemy import or_, func, cast, Integer, desc, asc
 import json
@@ -207,14 +208,25 @@ def customer_detail(customer_id):
     customer = Customer.query.get_or_404(customer_id)
     inventory_items = Inventory.query.filter_by(CustID=customer_id).all()
 
-    # Get all work orders for this customer
-    work_orders = WorkOrder.query.filter_by(CustID=customer_id).all()
+    # Work Orders: newest first by date
+    work_orders = (
+        WorkOrder.query.filter_by(CustID=customer_id)
+        .order_by(desc(cast(WorkOrder.WorkOrderNo, Integer)))
+        .all()
+    )
 
+    # Repair Orders: newest first by numeric RepairOrderNo
+    repair_orders = (
+        RepairWorkOrder.query.filter_by(CustID=customer_id)
+        .order_by(desc(cast(RepairWorkOrder.RepairOrderNo, Integer)))
+        .all()
+    )
     return render_template(
         "customers/detail.html",
         customer=customer,
         inventory_items=inventory_items,
         work_orders=work_orders,
+        repair_work_orders=repair_orders,
     )
 
 

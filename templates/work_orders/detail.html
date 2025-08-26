@@ -5,13 +5,14 @@
 {% block styles %}
 {{ super() }}
 <style>
+    /* Remove hardcoded colors - let CSS variables handle theming */
     .detail-row {
-        border-bottom: 1px solid #f8f9fa;
+        border-bottom: 1px solid var(--border-color);
         padding: 0.75rem 0;
         transition: background-color 0.2s ease;
     }
     .detail-row:hover {
-        background-color: #f8f9fa;
+        background-color: var(--bg-primary);
         margin: 0 -1rem;
         padding-left: 1rem;
         padding-right: 1rem;
@@ -22,16 +23,76 @@
     }
     .detail-label {
         font-weight: 600;
-        color: #6c757d;
+        color: var(--text-muted);
         font-size: 0.9rem;
+        margin-bottom: 0.25rem;
     }
     .detail-value {
-        color: #212529;
+        color: var(--text-primary);
         font-weight: 500;
     }
     .badge {
         font-size: 0.8rem !important;
         padding: 0.5rem 0.75rem;
+    }
+    .inventory-item {
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+    .inventory-item:hover {
+        box-shadow: 0 4px 8px var(--shadow-color);
+        transform: translateY(-1px);
+    }
+    .inventory-item.selected {
+        border-color: #0d6efd;
+        background-color: var(--bg-primary);
+        box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
+    }
+    .new-item-row {
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+        color: var(--text-primary);
+    }
+    .new-item-row:hover {
+        box-shadow: 0 2px 4px var(--shadow-color);
+    }
+    .qty-input {
+        width: 80px;
+    }
+    .btn-add-item {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+    }
+    .btn-add-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+        color: white;
+    }
+    #customer-inventory {
+        max-height: 500px;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 15px;
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+    .form-section {
+        margin-bottom: 25px;
     }
     .status-indicator {
         display: inline-block;
@@ -40,6 +101,22 @@
         border-radius: 50%;
         margin-right: 0.5rem;
     }
+    .loading-spinner {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+    }
+    .inventory-empty {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-muted);
+    }
+    .inventory-empty i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
     .status-completed { background-color: #198754; }
     .status-pending { background-color: #ffc107; }
     .status-unknown { background-color: #6c757d; }
@@ -164,8 +241,22 @@
                                     
                                     <div class="detail-row">
                                         <div class="detail-label">See Repair</div>
-                                        <div class="detail-value">{{ work_order.SeeRepair or '<span class="text-muted">-</span>' | safe }}</div>
+                                        <div class="detail-value">
+                                            {% if work_order.SeeRepair %}
+                                                {% set repair_num = work_order.SeeRepair %}
+                                                {% if repair_num.startswith('R') %}
+                                                    {% set repair_num = repair_num[1:] %}
+                                                {% endif %}
+                                                <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=repair_num) }}" class="badge bg-primary">
+                                                    {{ work_order.SeeRepair }}
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </div>
                                     </div>
+                                    
+                                    
                                 </div>
                                 
                                 <!-- Right Column -->

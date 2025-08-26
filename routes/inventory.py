@@ -235,3 +235,69 @@ def api_bulk_update_inventory():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+
+@inventory_bp.route("/add_ajax", methods=["POST"])
+@login_required
+def add_inventory_ajax():
+    data = request.form
+    customer_id = data.get("CustID")
+    inventory_key = f"INV_{uuid.uuid4().hex[:8].upper()}"
+
+    try:
+        item = Inventory(
+            InventoryKey=inventory_key,
+            Description=data.get("Description"),
+            Material=data.get("Material"),
+            Condition=data.get("Condition"),
+            Color=data.get("Color"),
+            SizeWgt=data.get("SizeWgt"),
+            Price=data.get("Price"),
+            CustID=customer_id,
+            Qty=data.get("Qty", "0"),
+        )
+        db.session.add(item)
+        db.session.commit()
+
+        # Return the new item as JSON
+        return jsonify({"success": True, "item": item.to_dict()})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@inventory_bp.route("/edit_ajax/<inventory_key>", methods=["POST"])
+@login_required
+def edit_inventory_ajax(inventory_key):
+    item = Inventory.query.get_or_404(inventory_key)
+    data = request.form
+
+    try:
+        item.Description = data.get("Description")
+        item.Material = data.get("Material")
+        item.Condition = data.get("Condition")
+        item.Color = data.get("Color")
+        item.SizeWgt = data.get("SizeWgt")
+        item.Price = data.get("Price")
+        item.Qty = data.get("Qty")
+
+        db.session.commit()
+        return jsonify({"success": True, "item": item.to_dict()})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@inventory_bp.route("/delete_ajax/<inventory_key>", methods=["POST"])
+@login_required
+def delete_inventory_ajax(inventory_key):
+    """Delete an inventory item via AJAX"""
+    item = Inventory.query.get_or_404(inventory_key)
+
+    try:
+        db.session.delete(item)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Item deleted successfully"})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500

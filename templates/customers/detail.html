@@ -355,93 +355,344 @@
                 </div>
             </div>
 
-            <!-- Work Orders Card -->
-            <div class="card mt-4 shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0">Work Orders</h5>
-                </div>
-                <div class="card-body">
-                    {% if customer.work_orders.count() > 0 %}
-                    <ul class="list-group list-group-flush">
-                        {% for wo in customer.work_orders %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Work Order #{{ wo.WorkOrderNo }} – {{ (wo.DateIn | date_format) or "No Date" }}
-                            <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo) }}" class="btn btn-sm btn-primary">
-                                View
-                            </a>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% else %}
-                    <p class="text-muted">No work orders for this customer.</p>
-                    {% endif %}
-                </div>
+            {% if work_orders|length > 0 %}
+            <div class="mb-4">
+                <h5 class="mb-3">Work Orders</h5>
+                <ul class="list-group">
+                    {% for wo in work_orders %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center mb-2 rounded shadow-sm">
+                        <div>
+                            <strong>#{{ wo.WorkOrderNo }}</strong> – {{ (wo.DateIn | date_format) or "No Date" }}
+                        </div>
+                        <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo) }}" class="btn btn-sm btn-primary">
+                            View
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
             </div>
+            {% else %}
+            <p class="text-muted mb-4">No work orders for this customer.</p>
+            {% endif %}
 
-            <!-- Repairs Card -->
-            <div class="card mt-4 shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0">Repairs</h5>
-                </div>
-                <div class="card-body">
-                    {% if customer.repair_work_orders|length > 0 %}
-                    <ul class="list-group list-group-flush">
-                        {% for ro in customer.repair_work_orders %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Repair Order #{{ ro.RepairOrderNo }} – {{ (ro.DateIn | date_format) or "No Date" }}
-                            <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=ro.RepairOrderNo) }}" class="btn btn-sm btn-primary">
-                                View
-                            </a>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% else %}
-                    <p class="text-muted">No repair orders for this customer.</p>
-                    {% endif %}
-                </div>
+            {% if repair_work_orders|length > 0 %}
+            <div class="mb-4">
+                <h5 class="mb-3">Repair Orders</h5>
+                <ul class="list-group">
+                    {% for ro in repair_work_orders %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center mb-2 rounded shadow-sm">
+                        <div>
+                            <strong>#{{ ro.RepairOrderNo }}</strong> – {{ (ro.DateIn | date_format) or "No Date" }}
+                        </div>
+                        <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=ro.RepairOrderNo) }}" class="btn btn-sm btn-primary">
+                            View
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
             </div>
-
+            {% else %}
+            <p class="text-muted">No repair orders for this customer.</p>
+            {% endif %}
 
             <!-- Inventory Card -->
-            <div class="card mt-4 mb-4">
-                <div class="card-header">
-                    <h6 class="card-title mb-0">
-                        <i class="fas fa-warehouse"></i> Customer Inventory
-                    </h6>
-                </div>
-                <div class="card-body">
-                    {% if inventory_items %}
-                        <div class="table-responsive">
-                            <table class="table table-sm table-striped align-middle">
-                                <thead>
-                                    <tr>                                        
-                                        <th>Qty</th>
-                                        <th>Description</th>
-                                        <th>Material</th>
-                                        <th>Color</th>
-                                        <th>Condition</th>
-                                        <th>Size/Weight</th>
+<div class="card mt-4 mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="card-title mb-0">
+            <i class="fas fa-warehouse"></i> Customer Inventory Catalog
+        </h6>
+        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addInventoryModal">
+            <i class="fas fa-plus"></i> Add Item
+        </button>
+    </div>
+    <div class="card-body">
+        <p class="text-muted small mb-3">
+            <i class="fas fa-info-circle"></i> 
+            This catalog shows all items this customer has ever brought to you. Quantities represent total amounts received over time.
+        </p>
+        
+        {% if inventory_items %}
+        <div class="table-responsive">
+            <table class="table table-sm table-striped align-middle" id="inventoryTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Total Qty</th>
+                        <th>Description</th>
+                        <th>Material</th>
+                        <th>Color</th>
+                        <th>Condition</th>
+                        <th>Size/Weight</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in inventory_items %}
+                    <tr data-key="{{ item.InventoryKey }}">
+                        <td class="qty">
+                            <span class="badge bg-primary">{{ item.Qty or '0' }}</span>
+                        </td>
+                        <td class="description fw-medium">{{ item.Description }}</td>
+                        <td class="material">{{ item.Material or '-' }}</td>
+                        <td class="color">{{ item.Color or '-' }}</td>
+                        <td class="condition">{{ item.Condition or '-' }}</td>
+                        <td class="sizewgt">{{ item.SizeWgt or '-' }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary edit-item" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#editInventoryModal"
+                                        data-key="{{ item.InventoryKey }}"
+                                        data-description="{{ item.Description }}"
+                                        data-qty="{{ item.Qty }}"
+                                        data-material="{{ item.Material }}"
+                                        data-color="{{ item.Color }}"
+                                        data-condition="{{ item.Condition }}"
+                                        data-sizewgt="{{ item.SizeWgt }}"
+                                        title="Edit item details">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-item" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteInventoryModal"
+                                        data-key="{{ item.InventoryKey }}"
+                                        data-description="{{ item.Description }}"
+                                        title="Delete item">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+            <p class="text-muted mb-0">No inventory items recorded for this customer yet.</p>
+            <p class="text-muted small">Click "Add Item" to record items they've brought to you.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
 
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in inventory_items %}
-                                    <tr>
-                                        <td>{{ item.Qty or '0' }}</td>
-                                        <td>{{ item.Description }}</td>
-                                        <td>{{ item.Material or '-' }}</td>
-                                        <td>{{ item.Color or '-' }}</td>
-                                        <td>{{ item.Condition or '-' }}</td>
-                                        <th>{{ item.SizeWgt or '-' }}</th>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <p class="text-muted mb-0">No inventory assigned to this customer.</p>
-                    {% endif %}
+<!-- Add Inventory Modal -->
+<div class="modal fade" id="addInventoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="addInventoryForm">
+                <input type="hidden" name="CustID" value="{{ customer.CustID }}">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-plus-circle"></i> Add Inventory Item
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="DescriptionAdd" class="form-label">
+                                    <i class="fas fa-tag"></i> Description *
+                                </label>
+                                <input type="text" name="Description" id="DescriptionAdd" 
+                                       class="form-control" placeholder="Enter item description" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="QtyAdd" class="form-label">
+                                    <i class="fas fa-hashtag"></i> Total Quantity *
+                                </label>
+                                <input type="number" name="Qty" id="QtyAdd" 
+                                       class="form-control" value="1" min="1" required>
+                                <div class="form-text">Total amount brought to you</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="MaterialAdd" class="form-label">
+                                    <i class="fas fa-layer-group"></i> Material
+                                </label>
+                                <input type="text" name="Material" id="MaterialAdd" 
+                                       class="form-control" placeholder="e.g., Canvas, Vinyl">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ColorAdd" class="form-label">
+                                    <i class="fas fa-palette"></i> Color
+                                </label>
+                                <input type="text" name="Color" id="ColorAdd" 
+                                       class="form-control" placeholder="e.g., Navy Blue">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ConditionAdd" class="form-label">
+                                    <i class="fas fa-clipboard-check"></i> Condition
+                                </label>
+                                <select name="Condition" id="ConditionAdd" class="form-select">
+                                    <option value="">Select condition...</option>
+                                    <option value="Excellent">Excellent</option>
+                                    <option value="Good">Good</option>
+                                    <option value="Fair">Fair</option>
+                                    <option value="Poor">Poor</option>
+                                    <option value="Damaged">Damaged</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="SizeWgtAdd" class="form-label">
+                                    <i class="fas fa-ruler-combined"></i> Size / Weight
+                                </label>
+                                <input type="text" name="SizeWgt" id="SizeWgtAdd" 
+                                       class="form-control" placeholder="e.g., 12ft x 8ft">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Add Item
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Inventory Modal -->
+<div class="modal fade" id="editInventoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="editInventoryForm">
+                <input type="hidden" name="InventoryKey" id="editInventoryKey">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit"></i> Edit Inventory Item
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="DescriptionEdit" class="form-label">
+                                    <i class="fas fa-tag"></i> Description *
+                                </label>
+                                <input type="text" name="Description" id="DescriptionEdit" 
+                                       class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="QtyEdit" class="form-label">
+                                    <i class="fas fa-hashtag"></i> Total Quantity *
+                                </label>
+                                <input type="number" name="Qty" id="QtyEdit" 
+                                       class="form-control" min="0" required>
+                                <div class="form-text">Total amount brought to you</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="MaterialEdit" class="form-label">
+                                    <i class="fas fa-layer-group"></i> Material
+                                </label>
+                                <input type="text" name="Material" id="MaterialEdit" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ColorEdit" class="form-label">
+                                    <i class="fas fa-palette"></i> Color
+                                </label>
+                                <input type="text" name="Color" id="ColorEdit" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ConditionEdit" class="form-label">
+                                    <i class="fas fa-clipboard-check"></i> Condition
+                                </label>
+                                <select name="Condition" id="ConditionEdit" class="form-select">
+                                    <option value="">Select condition...</option>
+                                    <option value="Excellent">Excellent</option>
+                                    <option value="Good">Good</option>
+                                    <option value="Fair">Fair</option>
+                                    <option value="Poor">Poor</option>
+                                    <option value="Damaged">Damaged</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="SizeWgtEdit" class="form-label">
+                                    <i class="fas fa-ruler-combined"></i> Size / Weight
+                                </label>
+                                <input type="text" name="SizeWgt" id="SizeWgtEdit" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Inventory Modal -->
+<div class="modal fade" id="deleteInventoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle"></i> Confirm Delete
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Are you sure you want to delete this inventory item?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Item:</strong> <span id="deleteItemDescription"></span>
+                </div>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-exclamation-circle"></i>
+                    This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="fas fa-trash"></i> Delete Item
+                </button>
             </div>
         </div>
     </div>
@@ -479,5 +730,217 @@ function confirmDelete(customerId, customerName) {
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
     deleteModal.show();
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+
+// --- Add Inventory ---
+const addForm = document.getElementById('addInventoryForm');
+addForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(addForm);
+
+    try {
+        const response = await fetch('{{ url_for("inventory.add_inventory_ajax") }}', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+        if(result.success){
+            const item = result.item;
+            const tableBody = document.querySelector('#inventoryTable tbody');
+            
+            // If this is the first item, remove the empty state and show table
+            const emptyState = document.querySelector('.text-center.py-4');
+            if (emptyState) {
+                emptyState.remove();
+                // Create table structure if it doesn't exist
+                const tableContainer = document.querySelector('.table-responsive') || 
+                    createInventoryTable();
+            }
+            
+            const row = document.createElement('tr');
+            row.setAttribute('data-key', item.InventoryKey);
+            row.innerHTML = `
+                <td class="qty"><span class="badge bg-primary">${item.Qty}</span></td>
+                <td class="description fw-medium">${item.Description}</td>
+                <td class="material">${item.Material || '-'}</td>
+                <td class="color">${item.Color || '-'}</td>
+                <td class="condition">${item.Condition || '-'}</td>
+                <td class="sizewgt">${item.SizeWgt || '-'}</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary edit-item" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#editInventoryModal"
+                                data-key="${item.InventoryKey}"
+                                data-description="${item.Description}"
+                                data-qty="${item.Qty}"
+                                data-material="${item.Material || ''}"
+                                data-color="${item.Color || ''}"
+                                data-condition="${item.Condition || ''}"
+                                data-sizewgt="${item.SizeWgt || ''}"
+                                title="Edit item details">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger delete-item" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#deleteInventoryModal"
+                                data-key="${item.InventoryKey}"
+                                data-description="${item.Description}"
+                                title="Delete item">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tableBody.appendChild(row);
+            addForm.reset();
+            bootstrap.Modal.getInstance(document.getElementById('addInventoryModal')).hide();
+            
+            // Show success message
+            showToast('Item added successfully!', 'success');
+        } else {
+            showToast('Error: ' + result.error, 'error');
+        }
+    } catch (error) {
+        showToast('Network error. Please try again.', 'error');
+    }
+});
+
+// --- Prefill Delete Modal ---
+const deleteModal = document.getElementById('deleteInventoryModal');
+let itemToDelete = null;
+
+deleteModal.addEventListener('show.bs.modal', function(e) {
+    const button = e.relatedTarget;
+    itemToDelete = button.dataset.key;
+    document.getElementById('deleteItemDescription').textContent = button.dataset.description;
+});
+
+// --- Handle Delete Confirmation ---
+document.getElementById('confirmDeleteBtn').addEventListener('click', async function() {
+    if (!itemToDelete) return;
+    
+    try {
+        const response = await fetch(`/inventory/delete_ajax/${itemToDelete}`, {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            // Remove the row from the table
+            const row = document.querySelector(`#inventoryTable tr[data-key="${itemToDelete}"]`);
+            if (row) {
+                row.remove();
+            }
+            
+            // Check if table is now empty and show empty state
+            const remainingRows = document.querySelectorAll('#inventoryTable tbody tr');
+            if (remainingRows.length === 0) {
+                const cardBody = document.querySelector('.card-body');
+                const tableContainer = document.querySelector('.table-responsive');
+                if (tableContainer) {
+                    tableContainer.remove();
+                }
+                cardBody.insertAdjacentHTML('beforeend', `
+                    <div class="text-center py-4">
+                        <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-0">No inventory items recorded for this customer yet.</p>
+                        <p class="text-muted small">Click "Add Item" to record items they've brought to you.</p>
+                    </div>
+                `);
+            }
+            
+            bootstrap.Modal.getInstance(deleteModal).hide();
+            showToast('Item deleted successfully!', 'success');
+            itemToDelete = null;
+        } else {
+            showToast('Error: ' + result.error, 'error');
+        }
+    } catch (error) {
+        showToast('Network error. Please try again.', 'error');
+    }
+});
+
+// --- Prefill Edit Modal ---
+const editModal = document.getElementById('editInventoryModal');
+editModal.addEventListener('show.bs.modal', function(e) {
+    const button = e.relatedTarget;
+    document.getElementById('editInventoryKey').value = button.dataset.key;
+    document.getElementById('DescriptionEdit').value = button.dataset.description;
+    document.getElementById('QtyEdit').value = button.dataset.qty;
+    document.getElementById('MaterialEdit').value = button.dataset.material;
+    document.getElementById('ColorEdit').value = button.dataset.color;
+    document.getElementById('ConditionEdit').value = button.dataset.condition;
+    document.getElementById('SizeWgtEdit').value = button.dataset.sizewgt;
+});
+
+// --- Save Edit via AJAX ---
+const editForm = document.getElementById('editInventoryForm');
+editForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(editForm);
+    const inventoryKey = document.getElementById('editInventoryKey').value;
+
+    try {
+        const response = await fetch(`/inventory/edit_ajax/${inventoryKey}`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+        if(result.success){
+            const item = result.item;
+            const row = document.querySelector(`#inventoryTable tr[data-key="${item.InventoryKey}"]`);
+            row.querySelector('.qty').innerHTML = `<span class="badge bg-primary">${item.Qty}</span>`;
+            row.querySelector('.description').textContent = item.Description;
+            row.querySelector('.material').textContent = item.Material || '-';
+            row.querySelector('.color').textContent = item.Color || '-';
+            row.querySelector('.condition').textContent = item.Condition || '-';
+            row.querySelector('.sizewgt').textContent = item.SizeWgt || '-';
+
+            // Update button dataset
+            const btn = row.querySelector('.edit-item');
+            btn.dataset.description = item.Description;
+            btn.dataset.qty = item.Qty;
+            btn.dataset.material = item.Material || '';
+            btn.dataset.color = item.Color || '';
+            btn.dataset.condition = item.Condition || '';
+            btn.dataset.sizewgt = item.SizeWgt || '';
+
+            bootstrap.Modal.getInstance(editModal).hide();
+            showToast('Item updated successfully!', 'success');
+        } else {
+            showToast('Error: ' + result.error, 'error');
+        }
+    } catch (error) {
+        showToast('Network error. Please try again.', 'error');
+    }
+});
+
+// Helper function to show toast notifications
+function showToast(message, type) {
+    // Simple toast implementation - you can enhance this
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        if (toast.parentNode) {
+            toast.remove();
+        }
+    }, 4000);
+}
+
+});
+
+
 </script>
 {% endblock %}

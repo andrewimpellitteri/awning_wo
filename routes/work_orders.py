@@ -156,27 +156,28 @@ def safe_int_conversion(value, default=0):
         return default
 
 
+# Corrected work order routes - Inventory as static catalog only:
+
+
 @work_orders_bp.route("/api/customer_inventory/<cust_id>")
 @login_required
 def get_customer_inventory(cust_id):
-    """Get actual inventory items for a specific customer"""
+    """Get all inventory items for a specific customer - static catalog"""
     items = Inventory.query.filter_by(CustID=cust_id).all()
 
     return jsonify(
         [
             {
-                "id": item.InventoryKey,  # Use InventoryKey as the ID
+                "id": item.InventoryKey,
                 "description": item.Description or "",
                 "material": item.Material or "",
                 "color": item.Color or "",
                 "condition": item.Condition or "",
                 "size_wgt": item.SizeWgt or "",
                 "price": item.Price or "",
-                "qty": item.Qty or "0",
-                "available_qty": item.Qty or "0",
+                "qty": item.Qty or "0",  # This is just for reference, not deducted
             }
             for item in items
-            if safe_int_conversion(item.Qty) > 0  # Only show items with quantity > 0
         ]
     )
 
@@ -185,7 +186,7 @@ def get_customer_inventory(cust_id):
 @work_orders_bp.route("/new/<int:prefill_cust_id>", methods=["GET", "POST"])
 @login_required
 def create_work_order(prefill_cust_id=None):
-    """Create a new work order with inventory tracking"""
+    """Create a new work order - inventory quantities never change"""
     if request.method == "POST":
         try:
             latest_num = db.session.query(
@@ -202,7 +203,6 @@ def create_work_order(prefill_cust_id=None):
                 WorkOrderNo=next_wo_no,
                 CustID=request.form.get("CustID"),
                 WOName=request.form.get("WOName"),
-                Storage=request.form.get("Storage"),
                 StorageTime=request.form.get("StorageTime"),
                 RackNo=request.form.get("RackNo"),
                 SpecialInstructions=request.form.get("SpecialInstructions"),
@@ -223,7 +223,7 @@ def create_work_order(prefill_cust_id=None):
             db.session.add(work_order)
             db.session.flush()
 
-            # Handle selected inventory items (FROM ACTUAL INVENTORY)
+            # Handle selected inventory items (REFERENCE ONLY - NO QUANTITY CHANGES)
             selected_items = request.form.getlist("selected_items[]")
             item_quantities = {}
 
@@ -234,7 +234,7 @@ def create_work_order(prefill_cust_id=None):
                     if item_id in selected_items and value:
                         item_quantities[item_id] = safe_int_conversion(value)
 
-            # Add selected inventory items to work order and UPDATE INVENTORY
+            # Add selected inventory items to work order (NO INVENTORY MODIFICATION)
             for inventory_key in selected_items:
                 if inventory_key in item_quantities:
                     requested_qty = item_quantities[inventory_key]
@@ -243,36 +243,24 @@ def create_work_order(prefill_cust_id=None):
                     inventory_item = Inventory.query.get(inventory_key)
 
                     if inventory_item:
-                        current_qty = safe_int_conversion(inventory_item.Qty)
+                        # Create work order item (copy data from inventory catalog)
+                        work_order_item = WorkOrderItem(
+                            WorkOrderNo=next_wo_no,
+                            CustID=request.form.get("CustID"),
+                            Description=inventory_item.Description,
+                            Material=inventory_item.Material,
+                            Qty=str(
+                                requested_qty
+                            ),  # Use requested quantity for work order
+                            Condition=inventory_item.Condition,
+                            Color=inventory_item.Color,
+                            SizeWgt=inventory_item.SizeWgt,
+                            Price=inventory_item.Price,
+                        )
+                        db.session.add(work_order_item)
+                        # NO inventory quantity modification - catalog stays the same
 
-                        # Check if enough quantity available
-                        if current_qty >= requested_qty:
-                            # Create work order item
-                            work_order_item = WorkOrderItem(
-                                WorkOrderNo=next_wo_no,
-                                CustID=request.form.get("CustID"),
-                                Description=inventory_item.Description,
-                                Material=inventory_item.Material,
-                                Qty=str(requested_qty),
-                                Condition=inventory_item.Condition,
-                                Color=inventory_item.Color,
-                                SizeWgt=inventory_item.SizeWgt,
-                                Price=inventory_item.Price,
-                            )
-                            db.session.add(work_order_item)
-
-                            # Update inventory quantity
-                            new_qty = current_qty - requested_qty
-                            inventory_item.Qty = str(new_qty)
-
-                        else:
-                            flash(
-                                f"Not enough inventory for {inventory_item.Description}. "
-                                f"Available: {current_qty}, Requested: {requested_qty}",
-                                "warning",
-                            )
-
-            # Handle new inventory items
+            # Handle new inventory items (items customer is bringing for first time)
             new_item_descriptions = request.form.getlist("new_item_description[]")
             new_item_materials = request.form.getlist("new_item_material[]")
             new_item_quantities = request.form.getlist("new_item_qty[]")
@@ -305,11 +293,7 @@ def create_work_order(prefill_cust_id=None):
                     )
                     db.session.add(work_order_item)
 
-                    # ALWAYS add new items to tblcustawngs (Inventory table)
-                    # Generate a unique inventory key
-                    inventory_key = f"INV_{uuid.uuid4().hex[:8].upper()}"
-
-                    # Check if this exact item already exists for this customer
+                    # Check if this exact item type already exists in catalog
                     existing_inventory = Inventory.query.filter_by(
                         CustID=request.form.get("CustID"),
                         Description=description,
@@ -324,19 +308,22 @@ def create_work_order(prefill_cust_id=None):
                     ).first()
 
                     if existing_inventory:
-                        # Update existing inventory quantity (reduce by work order quantity)
-                        current_qty = safe_int_conversion(existing_inventory.Qty)
-                        new_qty = max(
-                            1, current_qty + work_order_qty
-                        )  # Don't go below 0
-                        existing_inventory.Qty = str(new_qty)
+                        # Item type exists in catalog - UPDATE THE CATALOG QUANTITY
+                        # This represents the new total they've ever brought of this type
+                        current_catalog_qty = safe_int_conversion(
+                            existing_inventory.Qty
+                        )
+                        new_catalog_qty = current_catalog_qty + work_order_qty
+                        existing_inventory.Qty = str(new_catalog_qty)
 
                         flash(
-                            f"Updated existing inventory item '{description}' - increased quantity by {work_order_qty}",
+                            f"Updated catalog: Customer now has brought {new_catalog_qty} total of '{description}'",
                             "info",
                         )
                     else:
-                        # Create new inventory item in tblcustawngs
+                        # New item type - ADD TO CATALOG
+                        inventory_key = f"INV_{uuid.uuid4().hex[:8].upper()}"
+
                         new_inventory_item = Inventory(
                             InventoryKey=inventory_key,
                             CustID=request.form.get("CustID"),
@@ -356,12 +343,14 @@ def create_work_order(prefill_cust_id=None):
                             Price=new_item_prices[i]
                             if i < len(new_item_prices)
                             else "",
-                            Qty="1",  # Start with 0 since this quantity is being used in the work order
+                            Qty=str(
+                                work_order_qty
+                            ),  # Total quantity they've ever brought of this type
                         )
                         db.session.add(new_inventory_item)
 
                         flash(
-                            f"Added new awning '{description}' to customer inventory",
+                            f"New item type '{description}' added to catalog with quantity {work_order_qty}",
                             "success",
                         )
 
@@ -381,7 +370,7 @@ def create_work_order(prefill_cust_id=None):
                 form_data=request.form,
             )
 
-    # GET request - show the form
+    # GET request - show the form (unchanged)
     customers = Customer.query.order_by(Customer.CustID).all()
     sources = Source.query.order_by(Source.SSource).all()
 
@@ -393,6 +382,7 @@ def create_work_order(prefill_cust_id=None):
             form_data["CustID"] = str(prefill_cust_id)
             if customer.Source:
                 form_data["ShipTo"] = customer.Source
+            form_data["WOName"] = customer.Name
 
     return render_template(
         "work_orders/create.html",
@@ -405,21 +395,14 @@ def create_work_order(prefill_cust_id=None):
 @work_orders_bp.route("/edit/<work_order_no>", methods=["GET", "POST"])
 @login_required
 def edit_work_order(work_order_no):
-    """Edit an existing work order"""
+    """Edit an existing work order (NO INVENTORY ADJUSTMENTS EVER)"""
     work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
 
     if request.method == "POST":
         try:
-            # Store original quantities for inventory adjustment
-            original_items = {
-                f"{item.Description}_{item.Material}": safe_int_conversion(item.Qty)
-                for item in work_order.items
-            }
-
             # Update work order fields
             work_order.CustID = request.form.get("CustID")
             work_order.WOName = request.form.get("WOName")
-            work_order.Storage = request.form.get("Storage")
             work_order.StorageTime = request.form.get("StorageTime")
             work_order.RackNo = request.form.get("RackNo")
             work_order.SpecialInstructions = request.form.get("SpecialInstructions")
@@ -436,12 +419,12 @@ def edit_work_order(work_order_no):
             work_order.CleanFirstWO = request.form.get("CleanFirstWO")
             work_order.DateCompleted = request.form.get("DateCompleted")
 
-            # Handle existing work order items
+            # Handle existing work order items (NO INVENTORY IMPACT)
             existing_items = WorkOrderItem.query.filter_by(
                 WorkOrderNo=work_order_no
             ).all()
 
-            # Create composite keys for existing items
+            # Get updated items from form
             updated_items = request.form.getlist("existing_item_key[]")
             updated_quantities = {}
 
@@ -452,46 +435,18 @@ def edit_work_order(work_order_no):
                     if item_key in updated_items and value:
                         updated_quantities[item_key] = safe_int_conversion(value)
 
-            # Update or remove existing items
+            # Update or remove existing items (NO INVENTORY CHANGES)
             for item in existing_items:
                 item_key = f"{item.Description}_{item.Material}"
                 if item_key in updated_items:
-                    # Update quantity if provided
+                    # Update quantity in work order only
                     if item_key in updated_quantities:
-                        old_qty = safe_int_conversion(item.Qty)
-                        new_qty = updated_quantities[item_key]
-                        item.Qty = str(new_qty)
-
-                        # Adjust inventory if quantity changed
-                        qty_change = old_qty - new_qty
-                        if qty_change != 0:
-                            # Find matching inventory item and adjust quantity
-                            inventory_item = Inventory.query.filter_by(
-                                CustID=work_order.CustID,
-                                Description=item.Description,
-                                Material=item.Material,
-                            ).first()
-                            if inventory_item:
-                                current_inventory = safe_int_conversion(
-                                    inventory_item.Qty
-                                )
-                                inventory_item.Qty = str(current_inventory + qty_change)
+                        item.Qty = str(updated_quantities[item_key])
                 else:
-                    # Return quantity to inventory for removed items
-                    removed_qty = safe_int_conversion(item.Qty)
-                    inventory_item = Inventory.query.filter_by(
-                        CustID=work_order.CustID,
-                        Description=item.Description,
-                        Material=item.Material,
-                    ).first()
-                    if inventory_item:
-                        current_inventory = safe_int_conversion(inventory_item.Qty)
-                        inventory_item.Qty = str(current_inventory + removed_qty)
-
-                    # Remove the item from work order
+                    # Remove from work order only (catalog unchanged)
                     db.session.delete(item)
 
-            # Handle new inventory items
+            # Handle new items being added to this work order
             new_item_descriptions = request.form.getlist("new_item_description[]")
             new_item_materials = request.form.getlist("new_item_material[]")
             new_item_quantities = request.form.getlist("new_item_qty[]")
@@ -502,6 +457,11 @@ def edit_work_order(work_order_no):
 
             for i, description in enumerate(new_item_descriptions):
                 if description and i < len(new_item_materials):
+                    work_order_qty = safe_int_conversion(
+                        new_item_quantities[i] if i < len(new_item_quantities) else "1"
+                    )
+
+                    # Add to work order
                     work_order_item = WorkOrderItem(
                         WorkOrderNo=work_order_no,
                         CustID=work_order.CustID,
@@ -509,9 +469,7 @@ def edit_work_order(work_order_no):
                         Material=new_item_materials[i]
                         if i < len(new_item_materials)
                         else "",
-                        Qty=new_item_quantities[i]
-                        if i < len(new_item_quantities)
-                        else "1",
+                        Qty=str(work_order_qty),
                         Condition=new_item_conditions[i]
                         if i < len(new_item_conditions)
                         else "",
@@ -520,6 +478,53 @@ def edit_work_order(work_order_no):
                         Price=new_item_prices[i] if i < len(new_item_prices) else "",
                     )
                     db.session.add(work_order_item)
+
+                    # Add to catalog if new item type (same logic as create)
+                    existing_inventory = Inventory.query.filter_by(
+                        CustID=work_order.CustID,
+                        Description=description,
+                        Material=new_item_materials[i]
+                        if i < len(new_item_materials)
+                        else "",
+                        Condition=new_item_conditions[i]
+                        if i < len(new_item_conditions)
+                        else "",
+                        Color=new_item_colors[i] if i < len(new_item_colors) else "",
+                        SizeWgt=new_item_sizes[i] if i < len(new_item_sizes) else "",
+                    ).first()
+
+                    if existing_inventory:
+                        # Update catalog total
+                        current_catalog_qty = safe_int_conversion(
+                            existing_inventory.Qty
+                        )
+                        new_catalog_qty = current_catalog_qty + work_order_qty
+                        existing_inventory.Qty = str(new_catalog_qty)
+                    else:
+                        # Add new to catalog
+                        inventory_key = f"INV_{uuid.uuid4().hex[:8].upper()}"
+                        new_inventory_item = Inventory(
+                            InventoryKey=inventory_key,
+                            CustID=work_order.CustID,
+                            Description=description,
+                            Material=new_item_materials[i]
+                            if i < len(new_item_materials)
+                            else "",
+                            Condition=new_item_conditions[i]
+                            if i < len(new_item_conditions)
+                            else "",
+                            Color=new_item_colors[i]
+                            if i < len(new_item_colors)
+                            else "",
+                            SizeWgt=new_item_sizes[i]
+                            if i < len(new_item_sizes)
+                            else "",
+                            Price=new_item_prices[i]
+                            if i < len(new_item_prices)
+                            else "",
+                            Qty=str(work_order_qty),
+                        )
+                        db.session.add(new_inventory_item)
 
             db.session.commit()
             flash(f"Work Order {work_order_no} updated successfully!", "success")

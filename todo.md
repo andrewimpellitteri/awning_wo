@@ -96,30 +96,34 @@ This phase focuses on migrating the application from SQLite to PostgreSQL and de
     - Create detailed documentation for the application, including setup instructions, API documentation, and user guides.
 
 
-- add inventory item to customer page
-    - edit button for items in both inventory page and create work order
+- [ ]add inventory item to customer page
+    - [ ]edit button for items in both inventory page and create work order
 
-- in add wo auto populate name of customer
-- storage time field is seasonal/temp 
+- [ ] in add wo auto populate name of customer
+- [ ] storage time field is seasonal/temp 
 
-- rack should be location in add wo 
+- [ ] rack should be location in add wo 
  
-- need rack and storage time
+- [ ] need rack and storage time
 
-- storage and rack number are redunadant --> make one field "location"
+- [ ] storage and rack number are redunadant --> make one field "location"
 
-- storage time to drop down
- - seasonal or tempor
+- [x] storage time to drop down
+ - [x] seasonal or tempor
 
 
--return status should be drop down
+- [x] return status should be drop down
     - ship deliver pickup rehang unknown 
 
-- change clean treat to dates from yes/ no
-- quote (yes/done/approved)
+- [x] change clean treat to dates from yes/ no
+- [x] quote (yes/done/approved)
 
-- remove clean/treat from create wo
+- [x] remove clean/treat from create wo
 
-- debug selected item no adding from create wo
+- [ ] debug selected item not adding from create wo
 
-- debug inventory item add + edit in wo create/edit (not adding items already in inventory)
+- [ ] debug inventory item add + edit in wo create/edit (not adding items already in inventory)
+
+- [ ] sort customer WOs by WO# in customer detail page
+
+- [ ] show repair orders prefixed with "R"

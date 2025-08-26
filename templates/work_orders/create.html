@@ -5,13 +5,14 @@
 {% block styles %}
 {{ super() }}
 <style>
+    /* Remove hardcoded colors - let CSS variables handle theming */
     .detail-row {
-        border-bottom: 1px solid #f8f9fa;
+        border-bottom: 1px solid var(--border-color);
         padding: 0.75rem 0;
         transition: background-color 0.2s ease;
     }
     .detail-row:hover {
-        background-color: #f8f9fa;
+        background-color: var(--bg-primary);
         margin: 0 -1rem;
         padding-left: 1rem;
         padding-right: 1rem;
@@ -22,12 +23,12 @@
     }
     .detail-label {
         font-weight: 600;
-        color: #6c757d;
+        color: var(--text-muted);
         font-size: 0.9rem;
         margin-bottom: 0.25rem;
     }
     .detail-value {
-        color: #212529;
+        color: var(--text-primary);
         font-weight: 500;
     }
     .badge {
@@ -35,32 +36,34 @@
         padding: 0.5rem 0.75rem;
     }
     .inventory-item {
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--border-color);
         border-radius: 8px;
         padding: 15px;
         margin-bottom: 10px;
         transition: all 0.3s ease;
-        background-color: #fff;
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
     }
     .inventory-item:hover {
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 8px var(--shadow-color);
         transform: translateY(-1px);
     }
     .inventory-item.selected {
         border-color: #0d6efd;
-        background-color: #f0f8ff;
+        background-color: var(--bg-primary);
         box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
     }
     .new-item-row {
-        background-color: #f8f9fa;
-        border: 1px solid #dee2e6;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-color);
         border-radius: 8px;
         padding: 20px;
         margin-bottom: 15px;
         transition: all 0.3s ease;
+        color: var(--text-primary);
     }
     .new-item-row:hover {
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 4px var(--shadow-color);
     }
     .qty-input {
         width: 80px;
@@ -82,21 +85,14 @@
     #customer-inventory {
         max-height: 500px;
         overflow-y: auto;
-        border: 1px solid #dee2e6;
+        border: 1px solid var(--border-color);
         border-radius: 8px;
         padding: 15px;
-        background-color: #fff;
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
     }
     .form-section {
         margin-bottom: 25px;
-    }
-    .card {
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        border: 1px solid rgba(0,0,0,.125);
-    }
-    .card-header {
-        background-color: #f8f9fa;
-        border-bottom: 1px solid #dee2e6;
     }
     .status-indicator {
         display: inline-block;
@@ -113,13 +109,14 @@
     .inventory-empty {
         text-align: center;
         padding: 3rem;
-        color: #6c757d;
+        color: var(--text-muted);
     }
     .inventory-empty i {
         font-size: 3rem;
         margin-bottom: 1rem;
         opacity: 0.5;
     }
+
 </style>
 {% endblock %}
 
@@ -184,7 +181,7 @@
                                         
                                         
                                         <div class="detail-row">
-                                            <div class="detail-label">Work Order Name</div>
+                                            <div class="detail-label">Name</div>
                                             <div class="detail-value">
                                                 <input type="text" class="form-control" id="WOName" name="WOName" 
                                                        value="{{ form_data.get('WOName', '') if form_data else '' }}">
@@ -193,14 +190,6 @@
                                         
                                         <div class="detail-row">
                                             <div class="detail-label">Storage</div>
-                                            <div class="detail-value">
-                                                <input type="text" class="form-control" id="Storage" name="Storage"
-                                                       value="{{ form_data.get('Storage', '') if form_data else '' }}">
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="detail-row">
-                                            <div class="detail-label">Rack Number</div>
                                             <div class="detail-value">
                                                 <div class="input-group">
                                                     <span class="input-group-text">
@@ -238,20 +227,30 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Storage Time</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" id="StorageTime" name="StorageTime"
-                                                       value="{{ form_data.get('StorageTime', '') if form_data else '' }}">
+                                                <select class="form-control" id="StorageTime" name="StorageTime">
+                                                    <option value="">Select</option>
+                                                    <option value="Seasonal" {% if form_data and form_data.get('StorageTime') == 'Seasonal' %}selected{% endif %}>Seasonal</option>
+                                                    <option value="Temporary" {% if form_data and form_data.get('StorageTime') == 'Temporary' %}selected{% endif %}>Temporary</option>
+                                                </select>
                                             </div>
                                         </div>
+                                        
                                         
                                         <!-- Replace this section in your create.html template -->
                                         <div class="detail-row">
                                             <div class="detail-label">Return Status</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" id="ReturnStatus" name="ReturnStatus"
-                                                       value="{{ form_data.get('ReturnStatus', '') if form_data else '' }}" 
-                                                       placeholder="Enter return status (e.g., Pick Up, Ship, Re-Hang)">
+                                                <select class="form-control" id="ReturnStatus" name="ReturnStatus">
+                                                    <option value="">-- Select --</option>
+                                                    <option value="Ship" {% if form_data and form_data.get('ReturnStatus') == 'Ship' %}selected{% endif %}>Ship</option>
+                                                    <option value="Deliver" {% if form_data and form_data.get('ReturnStatus') == 'Deliver' %}selected{% endif %}>Deliver</option>
+                                                    <option value="Pickup" {% if form_data and form_data.get('ReturnStatus') == 'Pickup' %}selected{% endif %}>Pickup</option>
+                                                    <option value="Re-Hang" {% if form_data and form_data.get('ReturnStatus') == 'Re-Hang' %}selected{% endif %}>Re-hang</option>
+                                                    <option value="Unknown" {% if form_data and form_data.get('ReturnStatus') == 'Unknown' %}selected{% endif %}>Unknown</option>
+                                                </select>
                                             </div>
                                         </div>
+                                        
                                                                                 
                                         <div class="detail-row">
                                             <div class="detail-label">Priority Options</div>
@@ -330,37 +329,16 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Quote</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" id="Quote" name="Quote"
-                                                       value="{{ form_data.get('Quote', '') if form_data else '' }}">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-4">
-                                        <div class="detail-row">
-                                            <div class="detail-label">Clean</div>
-                                            <div class="detail-value">
-                                                <select class="form-select" id="Clean" name="Clean">
+                                                <select class="form-select" id="Quote" name="Quote">
                                                     <option value="">Select</option>
-                                                    <option value="YES" {% if form_data and form_data.get('Clean') == 'YES' %}selected{% endif %}>Yes</option>
-                                                    <option value="NO" {% if form_data and form_data.get('Clean') == 'NO' %}selected{% endif %}>No</option>
+                                                    <option value="yes" {{ 'selected' if form_data and form_data.get('Quote') == 'yes' else '' }}>Yes</option>
+                                                    <option value="done" {{ 'selected' if form_data and form_data.get('Quote') == 'done' else '' }}>Done</option>
+                                                    <option value="approved" {{ 'selected' if form_data and form_data.get('Quote') == 'approved' else '' }}>Approved</option>
                                                 </select>
                                             </div>
                                         </div>
                                     </div>
                                     
-                                    <div class="col-md-4">
-                                        <div class="detail-row">
-                                            <div class="detail-label">Treat</div>
-                                            <div class="detail-value">
-                                                <select class="form-select" id="Treat" name="Treat">
-                                                    <option value="">Select</option>
-                                                    <option value="YES" {% if form_data and form_data.get('Treat') == 'YES' %}selected{% endif %}>Yes</option>
-                                                    <option value="NO" {% if form_data and form_data.get('Treat') == 'NO' %}selected{% endif %}>No</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>

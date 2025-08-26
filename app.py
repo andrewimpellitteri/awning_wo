@@ -77,6 +77,7 @@ def create_app(config_class=Config):
     from routes.repair_order import repair_work_orders_bp
     from routes.admin import admin_bp
     from routes.analytics import analytics_bp
+    from routes.inventory import inventory_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(source_bp, url_prefix="/sources")
@@ -85,6 +86,7 @@ def create_app(config_class=Config):
     app.register_blueprint(repair_work_orders_bp, url_prefix="/repair_work_orders")
     app.register_blueprint(admin_bp)
     app.register_blueprint(analytics_bp, url_prefix="/analytics")
+    app.register_blueprint(inventory_bp, url_prefix="/inventory")
 
     # Register routes
     @app.route("/")
