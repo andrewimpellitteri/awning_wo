@@ -19,6 +19,8 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
         "pool_recycle": 300,
+        "pool_size": 10,  # Keep 10 persistent connections
+        "max_overflow": 20,  # Allow up to 20 extra connections if needed
         "connect_args": {"connect_timeout": 10},
     }
 
