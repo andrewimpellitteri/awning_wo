@@ -25,6 +25,67 @@
     --focus-shadow: rgba(102, 179, 255, 0.25);
 }
 
+/* Ensure table text is white in dark mode */
+[data-theme="dark"] .table,
+[data-theme="dark"] .table td,
+[data-theme="dark"] .table th {
+    color: var(--text-primary) !important;
+    background-color: var(--bg-secondary);
+}
+
+/* Fix striped rows in dark mode */
+[data-theme="dark"] .table-striped tbody tr:nth-of-type(odd) {
+    background-color: var(--bg-primary);
+}
+[data-theme="dark"] .table-striped tbody tr:nth-of-type(even) {
+    background-color: var(--bg-secondary);
+}
+
+/* Ensure list group items (like work order cards) are dark */
+[data-theme="dark"] .list-group-item {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+/* Make labels and muted text readable in dark mode */
+[data-theme="dark"] .form-label,
+[data-theme="dark"] .form-control-plaintext,
+[data-theme="dark"] .text-muted {
+    color: var(--text-primary) !important;
+}
+
+/* Optional: if you still want muted text to be slightly dimmer */
+[data-theme="dark"] .text-muted {
+    color: var(--text-secondary) !important;
+}
+
+/* Theme Toggle Button Styles */
+#theme-toggle-btn {
+    width: 36px; /* Fixed width */
+    height: 36px; /* Fixed height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 0.5rem; /* Rounded corners */
+}
+
+/* Hide the moon icon by default (in light mode) */
+.moon-icon {
+    display: none;
+}
+
+/* When in dark mode, hide the sun and show the moon */
+[data-theme="dark"] .sun-icon {
+    display: none;
+}
+
+[data-theme="dark"] .moon-icon {
+    display: block;
+}
+
+
 /* Form switch (for navbar toggle) */
 .form-switch .form-check-input {
     background-color: var(--bg-primary);
@@ -49,7 +110,7 @@ body {
 
 .navbar-brand {
     font-weight: bold;
-    color: var(--text-primary);
+    color: var(--text-primary) !important;
 }
 
 .card {
@@ -285,18 +346,16 @@ body {
     }
 }
 
-/* Tabulator main container */
+/* Tabulator table theming */
 .tabulator {
     background-color: var(--bg-secondary) !important;
-    color: var(--text-primary) !important;
     border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
 }
 
-/* Header */
 .tabulator .tabulator-header {
     background-color: var(--bg-primary) !important;
     border-bottom: 1px solid var(--border-color) !important;
-    color: var(--text-secondary) !important;
 }
 
 .tabulator .tabulator-header .tabulator-col {
@@ -307,50 +366,39 @@ body {
 
 .tabulator .tabulator-header .tabulator-col:hover {
     background-color: var(--bg-secondary) !important;
-    color: var(--text-primary) !important;
 }
 
-/* Rows */
-.tabulator .tabulator-row {
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row {
     background-color: var(--bg-secondary) !important;
     border-bottom: 1px solid var(--border-color) !important;
     color: var(--text-primary) !important;
 }
 
-.tabulator .tabulator-row:hover {
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row:hover {
     background-color: var(--bg-primary) !important;
-    color: var(--text-primary) !important;
 }
 
-/* Cells */
-.tabulator .tabulator-cell {
+.tabulator .tabulator-tableholder .tabulator-table .tabulator-row .tabulator-cell {
     border-right: 1px solid var(--border-color) !important;
     color: var(--text-primary) !important;
-    background-color: transparent !important;
 }
 
-/* Footer */
 .tabulator .tabulator-footer {
     background-color: var(--bg-primary) !important;
     border-top: 1px solid var(--border-color) !important;
     color: var(--text-primary) !important;
 }
 
-/* Pagination */
-.tabulator .tabulator-paginator {
-    background-color: var(--bg-primary) !important;
-    color: var(--text-primary) !important;
-}
 
-.tabulator .tabulator-paginator .tabulator-page {
-    background-color: var(--bg-secondary) !important;
+/* NEW: Styles for header filter inputs (fixes search functionality) */
+.tabulator .tabulator-header .tabulator-col input {
     border: 1px solid var(--border-color) !important;
+    border-radius: 4px !important;
+    padding: 4px 8px !important;
+    font-size: 0.75rem !important;
+    background-color: var(--bg-secondary) !important;
     color: var(--text-primary) !important;
-}
-
-.tabulator .tabulator-paginator .tabulator-page.active {
-    background-color: #0d6efd !important;
-    color: #fff !important;
+    width: 100%;
 }
 
 /* Override any hardcoded colors in templates */
@@ -449,6 +497,181 @@ body {
     background-color: var(--bg-primary) !important;
     border-bottom: 1px solid var(--border-color) !important;
     color: var(--text-primary) !important;
+}
+
+/* Status filter buttons */
+.btn-group .btn.active {
+    background-color: var(--text-secondary) !important;
+    border-color: var(--text-secondary) !important;
+    color: var(--bg-secondary) !important;
+}
+
+.btn-outline-secondary {
+    color: var(--text-secondary) !important;
+    border-color: var(--border-color) !important;
+}
+
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus {
+    background-color: var(--text-secondary) !important;
+    border-color: var(--text-secondary) !important;
+    color: var(--bg-secondary) !important;
+}
+
+.btn-outline-warning {
+    color: #ffc107 !important;
+    border-color: #ffc107 !important;
+}
+
+.btn-outline-warning:hover,
+.btn-outline-warning:focus {
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.btn-outline-danger {
+    color: #dc3545 !important;
+    border-color: #dc3545 !important;
+}
+
+.btn-outline-danger:hover,
+.btn-outline-danger:focus {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: #fff !important;
+}
+
+.btn-outline-success {
+    color: #198754 !important;
+    border-color: #198754 !important;
+}
+
+.btn-outline-success:hover,
+.btn-outline-success:focus {
+    background-color: #198754 !important;
+    border-color: #198754 !important;
+    color: #fff !important;
+}
+
+/* Global filter section */
+.bg-white {
+    background-color: var(--bg-secondary) !important;
+}
+
+.border-bottom {
+    border-bottom-color: var(--border-color) !important;
+}
+
+.bg-light {
+    background-color: var(--bg-primary) !important;
+}
+
+.border-0 {
+    border: 1px solid var(--border-color) !important;
+}
+
+/* Form control overrides for filter section */
+.form-control-sm {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+.form-control-sm:focus {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--focus-color) !important;
+    box-shadow: 0 0 0 0.2rem var(--focus-shadow) !important;
+    color: var(--text-primary) !important;
+}
+
+.form-control-sm::placeholder {
+    color: var(--text-muted) !important;
+}
+
+/* Small text styling */
+.small {
+    color: var(--text-muted) !important;
+}
+
+/* Shadow override */
+.shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem var(--shadow-color) !important;
+}
+
+/* Override Bootstrap's table-dark class to work with themes */
+.table-dark th {
+    background-color: var(--bg-primary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-secondary) !important;
+}
+
+.table-dark td {
+    background-color: var(--bg-secondary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Override table hover effects */
+.table-hover tbody tr:hover {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+.table-hover tbody tr:hover td {
+    color: var(--text-primary) !important;
+}
+
+/* Links in tables */
+.table a {
+    color: #0d6efd !important;
+    text-decoration: none;
+}
+
+.table a:hover {
+    color: #0a58ca !important;
+    text-decoration: underline;
+}
+
+/* Badge styling in tables */
+.table .badge {
+    background-color: var(--text-muted) !important;
+    color: var(--bg-secondary) !important;
+}
+
+/* Button group styling in tables */
+.btn-group-sm .btn {
+    border-color: var(--border-color);
+}
+
+.btn-outline-primary {
+    color: #0d6efd !important;
+    border-color: #0d6efd !important;
+}
+
+.btn-outline-primary:hover {
+    background-color: #0d6efd !important;
+    color: #fff !important;
+}
+
+.btn-outline-warning {
+    color: #ffc107 !important;
+    border-color: #ffc107 !important;
+}
+
+.btn-outline-warning:hover {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.btn-outline-danger {
+    color: #dc3545 !important;
+    border-color: #dc3545 !important;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545 !important;
+    color: #fff !important;
 }
 
 /* Smooth transitions for theme switching */
