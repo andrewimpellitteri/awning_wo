@@ -181,6 +181,7 @@ document.addEventListener("DOMContentLoaded", function() {
             return { last_page: response.last_page, data: response.data };
         }
     });
+    
 
     // Print & CSV
     document.getElementById("print-table").addEventListener("click", () => table.print(false, true));
@@ -212,5 +213,8 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("btn-rush").addEventListener("click", e => setStatus("rush", e.target));
     document.getElementById("btn-completed").addEventListener("click", e => setStatus("completed", e.target));
 });
+
+
+
 </script>
 {% endblock %}

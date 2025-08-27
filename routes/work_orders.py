@@ -198,6 +198,14 @@ def create_work_order(prefill_cust_id=None):
             else:
                 next_wo_no = "1"
 
+            print("--- Form Data Received ---")
+            print(f"Request Form Keys: {request.form.keys()}")
+            print(f"Selected Items: {request.form.getlist('selected_items[]')}")
+            print(
+                f"New Item Descriptions: {request.form.getlist('new_item_description[]')}"
+            )
+            print("------------------------")
+
             # Create the work order
             work_order = WorkOrder(
                 WorkOrderNo=next_wo_no,
@@ -227,38 +235,48 @@ def create_work_order(prefill_cust_id=None):
             selected_items = request.form.getlist("selected_items[]")
             item_quantities = {}
 
+            print(f"--- Debug: Selected Items from Form ---\n{selected_items}")
+
             # Parse quantities for selected items
             for key, value in request.form.items():
+                print(f"{key}: {request.form[key]}")
                 if key.startswith("item_qty_"):
                     item_id = key.replace("item_qty_", "")
                     if item_id in selected_items and value:
                         item_quantities[item_id] = safe_int_conversion(value)
 
+            print(f"--- Debug: Parsed Item Quantities ---\n{item_quantities}")
+
             # Add selected inventory items to work order (NO INVENTORY MODIFICATION)
             for inventory_key in selected_items:
-                if inventory_key in item_quantities:
-                    requested_qty = item_quantities[inventory_key]
+                requested_qty = item_quantities.get(
+                    inventory_key, 1
+                )  # default to 1 if not specified
 
-                    # Find the inventory item by InventoryKey
-                    inventory_item = Inventory.query.get(inventory_key)
+                # Find the inventory item by InventoryKey (primary key must match type)
+                inventory_item = Inventory.query.get(inventory_key)
 
-                    if inventory_item:
-                        # Create work order item (copy data from inventory catalog)
-                        work_order_item = WorkOrderItem(
-                            WorkOrderNo=next_wo_no,
-                            CustID=request.form.get("CustID"),
-                            Description=inventory_item.Description,
-                            Material=inventory_item.Material,
-                            Qty=str(
-                                requested_qty
-                            ),  # Use requested quantity for work order
-                            Condition=inventory_item.Condition,
-                            Color=inventory_item.Color,
-                            SizeWgt=inventory_item.SizeWgt,
-                            Price=inventory_item.Price,
-                        )
-                        db.session.add(work_order_item)
-                        # NO inventory quantity modification - catalog stays the same
+                if inventory_item:
+                    print(
+                        f"Adding Inventory Item to Work Order: {inventory_item.Description} x {requested_qty}"
+                    )
+
+                    work_order_item = WorkOrderItem(
+                        WorkOrderNo=next_wo_no,
+                        CustID=request.form.get("CustID"),
+                        Description=inventory_item.Description,
+                        Material=inventory_item.Material,
+                        Qty=str(requested_qty),
+                        Condition=inventory_item.Condition,
+                        Color=inventory_item.Color,
+                        SizeWgt=inventory_item.SizeWgt,
+                        Price=inventory_item.Price,
+                    )
+                    db.session.add(work_order_item)
+                else:
+                    print(
+                        f"Warning: Inventory item with key '{inventory_key}' not found in catalog."
+                    )
 
             # Handle new inventory items (items customer is bringing for first time)
             new_item_descriptions = request.form.getlist("new_item_description[]")
@@ -617,7 +635,10 @@ def api_work_orders():
     ]:
         filter_val = request.args.get(f"filter_{field}")
         if filter_val:
-            if field == "Source":
+            if field in ["WorkOrderNo", "CustID"]:
+                query = query.filter(getattr(WorkOrder, field) == filter_val)
+
+            elif field == "Source":
                 query = (
                     query.join(Customer)
                     .join(Source)
@@ -649,32 +670,50 @@ def api_work_orders():
         if not field:
             break
         direction = request.args.get(f"sort[{i}][dir]", "asc")
-        column = getattr(WorkOrder, field, None)
 
-        if column:
-            if field in ["DateIn", "DateRequired"]:
-                cast_column = case(
-                    (
-                        column.op("~")(
-                            "^[0-1][0-9]/[0-3][0-9]/[0-9]{2} [0-2][0-9]:[0-5][0-9]:[0-5][0-9]$"
-                        ),
-                        func.to_date(column, "MM/DD/YY HH24:MI:SS"),
-                    ),
-                    (
-                        column.op("~")("^[0-2][0-9]{3}-[0-1][0-9]-[0-3][0-9]$"),
-                        func.to_date(column, "YYYY-MM-DD"),
-                    ),
-                    else_=literal(None),
-                )
-                if direction == "desc":
-                    order_by_clauses.append(cast_column.desc().nulls_last())
-                else:
-                    order_by_clauses.append(cast_column.asc().nulls_last())
+        # Check for the special case of 'Source'
+        if field == "Source":
+            # Sort by the 'SSource' column on the 'Source' model via the 'Customer' model
+            column_to_sort = Source.SSource
+            if direction == "desc":
+                order_by_clauses.append(column_to_sort.desc())
             else:
-                if direction == "desc":
-                    order_by_clauses.append(column.desc())
+                order_by_clauses.append(column_to_sort.asc())
+
+        else:
+            # Handle all other fields on the WorkOrder model
+            column = getattr(WorkOrder, field, None)
+            if column:
+                if field in ["WorkOrderNo", "CustID"]:
+                    cast_column = cast(column, Integer)
+                    if direction == "desc":
+                        order_by_clauses.append(cast_column.desc())
+                    else:
+                        order_by_clauses.append(cast_column.asc())
+
+                elif field in ["DateIn", "DateRequired"]:
+                    cast_column = case(
+                        (
+                            column.op("~")(
+                                "^[0-1][0-9]/[0-3][0-9]/[0-9]{2} [0-2][0-9]:[0-5][0-9]:[0-5][0-9]$"
+                            ),
+                            func.to_date(column, "MM/DD/YY HH24:MI:SS"),
+                        ),
+                        (
+                            column.op("~")("^[0-2][0-9]{3}-[0-1][0-9]-[0-3][0-9]$"),
+                            func.to_date(column, "YYYY-MM-DD"),
+                        ),
+                        else_=literal(None),
+                    )
+                    if direction == "desc":
+                        order_by_clauses.append(cast_column.desc().nulls_last())
+                    else:
+                        order_by_clauses.append(cast_column.asc().nulls_last())
                 else:
-                    order_by_clauses.append(column.asc())
+                    if direction == "desc":
+                        order_by_clauses.append(column.desc())
+                    else:
+                        order_by_clauses.append(column.asc())
         i += 1
 
     if order_by_clauses:

@@ -90,7 +90,7 @@ def api_customers():
 
     # Apply column-specific filters
     filter_mapping = {
-        "filter_CustID": Customer.CustID,
+        "filter_CustID": cast(Customer.CustID, Integer),
         "filter_Name": Customer.Name,
         "filter_Contact": Customer.Contact,
         "filter_Location": Customer.City,  # Assuming Location maps to City
@@ -102,8 +102,11 @@ def api_customers():
     for filter_key, column in filter_mapping.items():
         filter_value = request.args.get(filter_key, "").strip()
         if filter_value:
-            filter_term = f"%{filter_value}%"
-            query = query.filter(column.ilike(filter_term))
+            if filter_key == "filter_CustID":
+                query = query.filter(column == filter_value)
+            else:
+                filter_term = f"%{filter_value}%"
+                query = query.filter(column.ilike(filter_term))
 
     # Handle Tabulator's sorting format: sort[0][field]=Location&sort[0][dir]=asc
     field_mapping = {

@@ -3,7 +3,7 @@ from flask_login import login_required
 from models.repair_order import RepairWorkOrder, RepairWorkOrderItem
 from models.customer import Customer  # Assuming you might need this for joins
 from models.source import Source
-from sqlalchemy import or_, case, func, literal, desc
+from sqlalchemy import or_, case, func, literal, desc, cast, Integer
 from datetime import datetime
 from extensions import db
 
@@ -96,13 +96,20 @@ def api_repair_work_orders():
         "ITEM_TYPE",
         "TYPE_OF_REPAIR",
         "DateIn",
-        "DateRequired",
+        "DateCompleted",
         "LOCATION",
     ]
     for col in filterable_columns:
         filter_val = request.args.get(f"filter_{col}")
         if filter_val:
-            query = query.filter(getattr(RepairWorkOrder, col).ilike(f"%{filter_val}%"))
+            # Check for exact match on RepairOrderNo and CustID
+            if col in ["RepairOrderNo", "CustID"]:
+                query = query.filter(getattr(RepairWorkOrder, col) == filter_val)
+            else:
+                # Use partial match for all other columns
+                query = query.filter(
+                    getattr(RepairWorkOrder, col).ilike(f"%{filter_val}%")
+                )
 
     # ↕️ Sorting logic with date parsing
     order_by_clauses = []
@@ -115,7 +122,13 @@ def api_repair_work_orders():
         column = getattr(RepairWorkOrder, field, None)
 
         if column:
-            if field in ["DateIn", "DateRequired"]:
+            if field in ["RepairOrderNo", "CustID"]:
+                cast_column = cast(column, Integer)
+                order_by_clauses.append(
+                    cast_column.desc() if direction == "desc" else cast_column.asc()
+                )
+
+            elif field in ["DateIn", "DateCompleted"]:
                 # Use CASE with multiple formats for dates
                 cast_column = case(
                     (
@@ -177,7 +190,7 @@ def api_repair_work_orders():
             "ITEM_TYPE": order.ITEM_TYPE,
             "TYPE_OF_REPAIR": order.TYPE_OF_REPAIR,
             "DateIn": format_date_from_str(order.DateIn),
-            "DateRequired": format_date_from_str(order.DateRequired),
+            "DateCompleted": format_date_from_str(order.DateCompleted),
             "LOCATION": order.LOCATION,
             "is_rush": order.RushOrder == "YES" or order.FirmRush == "YES",
             "detail_url": url_for(

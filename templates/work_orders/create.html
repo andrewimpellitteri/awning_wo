@@ -532,10 +532,10 @@
                 let html = '';
                 data.forEach(item => {
                     html += `
-                        <div class="inventory-item" onclick="toggleItem(this, ${item.InventoryKey})">
+                        <div class="inventory-item" onclick="toggleItem(this, '${item.id}')">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="selected_items[]" value="${item.InventoryKey}" id="item_${item.InventoryKey}">
-                                <label class="form-check-label w-100" for="item_${item.InventoryKey}">
+                                <input class="form-check-input" type="checkbox" name="selected_items[]" value="${item.id}" id="item_${item.id}">
+                                <label class="form-check-label w-100" for="item_${item.id}">
                                     <div class="row align-items-center">
                                         <div class="col-md-5">
                                             <div class="detail-label">${item.description}</div>
@@ -553,7 +553,7 @@
                                         <div class="col-md-2">
                                             <label class="form-label small">Qty:</label>
                                             <input type="number" class="form-control form-control-sm qty-input" 
-                                                name="item_qty_${item.InventoryKey}" value="${item.qty || 1}" min="1" 
+                                                name="item_qty_${item.id}" value="${item.qty || 1}" min="1" 
                                                 onclick="event.stopPropagation()">
                                         </div>
                                     </div>

@@ -85,7 +85,7 @@
                                             <td>{{ source.SourceCity or '-' }}</td>
                                             <td>
                                                 {% if source.SourceState %}
-                                                    <span class="badge bg-secondary">{{ source.SourceState }}</span>
+                                                    <span class="badge bg-secondary">{{ source.SourceState | upper }}</span>
                                                 {% else %}
                                                     -
                                                 {% endif %}
