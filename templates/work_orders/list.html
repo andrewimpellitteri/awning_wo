@@ -166,13 +166,18 @@ document.addEventListener("DOMContentLoaded", function() {
                 format: "YYYY-MM-DD" // Tabulator will parse dates in this format
             },
              formatter: (cell) => formatDate(cell.getValue()) },
-            { title: "Source", field: "Source", width: 140, headerFilter: "input",
+            { title: "Source", 
+            field: "Source", 
+            width: 140, 
+            headerFilter: "input",
+            sorter: "string",
               formatter: cell => cell.getValue() ? `<span class="badge bg-info">${cell.getValue()}</span>` : `<span class="text-muted">—</span>` },
             { title: "Actions", field: "actions", width: 120, hozAlign: "center", headerFilter: false, headerSort: false,
               formatter: cell => {
                   const data = cell.getRow().getData();
                   return `<div class="btn-group btn-group-sm"><a href="${data.detail_url}" class="btn btn-outline-primary" title="View"><i class="fas fa-eye"></i></a></div>`;
-              }
+              },
+              print:false,
             }
         ],
         ajaxResponse: function(url, params, response) {

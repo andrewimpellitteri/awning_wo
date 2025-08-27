@@ -622,8 +622,23 @@ def api_work_orders():
     size = request.args.get("size", 25, type=int)
     status = request.args.get("status", "").lower()
 
+    # Start with base query
     query = WorkOrder.query
 
+    # Flag to check if we need to join the customer and source tables
+    needs_source_join = False
+
+    # Check for filters and sorting on the 'Source' field
+    if request.args.get("filter_Source") or any(
+        request.args.get(f"sort[{i}][field]") == "Source" for i in range(5)
+    ):
+        needs_source_join = True
+
+    # Apply joins if needed for Source filtering or sorting
+    if needs_source_join:
+        query = query.join(Customer).join(Source)
+
+    # --- Start of Filter Logic ---
     # Per-column filters
     for field in [
         "WorkOrderNo",
@@ -637,13 +652,9 @@ def api_work_orders():
         if filter_val:
             if field in ["WorkOrderNo", "CustID"]:
                 query = query.filter(getattr(WorkOrder, field) == filter_val)
-
             elif field == "Source":
-                query = (
-                    query.join(Customer)
-                    .join(Source)
-                    .filter(Source.SSource.ilike(f"%{filter_val}%"))
-                )
+                # Filter on the correct column from the joined table
+                query = query.filter(Source.SSource.ilike(f"%{filter_val}%"))
             else:
                 query = query.filter(getattr(WorkOrder, field).ilike(f"%{filter_val}%"))
 
@@ -661,8 +672,9 @@ def api_work_orders():
             or_(WorkOrder.RushOrder == "1", WorkOrder.FirmRush == "1"),
             or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""),
         )
+    # --- End of Filter Logic ---
 
-    # Sorting
+    # --- Start of Sorting Logic ---
     order_by_clauses = []
     i = 0
     while True:
@@ -671,15 +683,14 @@ def api_work_orders():
             break
         direction = request.args.get(f"sort[{i}][dir]", "asc")
 
-        # Check for the special case of 'Source'
+        # Handle the special case of 'Source'
         if field == "Source":
-            # Sort by the 'SSource' column on the 'Source' model via the 'Customer' model
+            # The query is already joined, so we can sort on the joined table's column
             column_to_sort = Source.SSource
             if direction == "desc":
                 order_by_clauses.append(column_to_sort.desc())
             else:
                 order_by_clauses.append(column_to_sort.asc())
-
         else:
             # Handle all other fields on the WorkOrder model
             column = getattr(WorkOrder, field, None)
@@ -690,8 +701,8 @@ def api_work_orders():
                         order_by_clauses.append(cast_column.desc())
                     else:
                         order_by_clauses.append(cast_column.asc())
-
                 elif field in ["DateIn", "DateRequired"]:
+                    # Your existing date sorting logic (which is fine)
                     cast_column = case(
                         (
                             column.op("~")(
@@ -716,10 +727,12 @@ def api_work_orders():
                         order_by_clauses.append(column.asc())
         i += 1
 
+    # Apply sorting
     if order_by_clauses:
         query = query.order_by(*order_by_clauses)
     else:
         query = query.order_by(WorkOrder.WorkOrderNo.desc())
+    # --- End of Sorting Logic ---
 
     total = query.count()
     work_orders = query.paginate(page=page, per_page=size, error_out=False)
