@@ -55,7 +55,7 @@
         <div>
           <h1 class="h3">
             <i class="fas fa-scissors me-2"></i> 
-            Repair Order {{ repair_work_order.RepairOrderNo }}
+            Repair Order R{{ repair_work_order.RepairOrderNo }}
             {% if repair_work_order.RushOrder == "YES" or repair_work_order.FirmRush == "YES" %}
             <span class="badge bg-danger ms-2">
               <i class="fas fa-bolt me-1"></i>RUSH ORDER
@@ -104,7 +104,7 @@
                     <div class="detail-label">Order Number</div>
                     <div class="detail-value">
                       <span class="badge bg-primary">
-                        <i class="fas fa-hashtag me-1"></i>{{ repair_work_order.RepairOrderNo }}
+                        <i class="fas fa-hashtag me-1"></i>R{{ repair_work_order.RepairOrderNo }}
                       </span>
                     </div>
                   </div>
