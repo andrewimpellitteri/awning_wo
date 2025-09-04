@@ -460,3 +460,43 @@ def edit_repair_order(repair_order_no):
         customers=customers,
         sources=sources,
     )
+
+
+@repair_work_orders_bp.route("/<repair_order_no>/delete", methods=["POST"])
+@login_required
+def delete_repair_order(repair_order_no):
+    """Delete a repair work order and all associated items"""
+    try:
+        repair_order = RepairWorkOrder.query.filter_by(
+            RepairOrderNo=repair_order_no
+        ).first_or_404()
+
+        # Optional: Add business logic checks
+        # For example, prevent deletion of completed orders
+        # if repair_order.DateCompleted:
+        #     flash("Cannot delete completed repair orders", "error")
+        #     return redirect(url_for('repair_work_orders.view_repair_work_order',
+        #                           repair_order_no=repair_order_no))
+
+        # Delete associated items first (if cascade is not set up)
+        RepairWorkOrderItem.query.filter_by(RepairOrderNo=repair_order_no).delete()
+
+        # Delete the repair order
+        db.session.delete(repair_order)
+        db.session.commit()
+
+        flash(
+            f"Repair Work Order #{repair_order_no} has been deleted successfully",
+            "success",
+        )
+        return redirect(url_for("repair_work_orders.list_repair_work_orders"))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting repair work order: {str(e)}", "error")
+        return redirect(
+            url_for(
+                "repair_work_orders.view_repair_work_order",
+                repair_order_no=repair_order_no,
+            )
+        )
