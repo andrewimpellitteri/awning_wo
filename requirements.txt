@@ -30,3 +30,5 @@ psycopg2-binary
 python-decouple  # for environment variables
 polars
 plotly
+scikit-learn
+lightgbm

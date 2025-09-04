@@ -328,3 +328,135 @@ def create_repair_order(prefill_cust_id=None):
         sources=sources,
         form_data=form_data,
     )
+
+
+@repair_work_orders_bp.route("/<repair_order_no>/edit", methods=["GET", "POST"])
+@login_required
+def edit_repair_order(repair_order_no):
+    """Edit an existing repair work order"""
+    repair_order = RepairWorkOrder.query.filter_by(
+        RepairOrderNo=repair_order_no
+    ).first_or_404()
+
+    if request.method == "POST":
+        try:
+            # Update the repair work order fields
+            repair_order.CustID = request.form.get("CustID")
+            repair_order.ROName = request.form.get("ROName")
+            repair_order.SOURCE = request.form.get("SOURCE")
+            repair_order.WO_DATE = request.form.get("WO_DATE")
+            repair_order.DATE_TO_SUB = request.form.get("DATE_TO_SUB")
+            repair_order.DateRequired = request.form.get("DateRequired")
+            repair_order.RushOrder = "YES" if request.form.get("RushOrder") else "NO"
+            repair_order.FirmRush = "YES" if request.form.get("FirmRush") else "NO"
+            repair_order.QUOTE = request.form.get("QUOTE")
+            repair_order.QUOTE_BY = request.form.get("QUOTE_BY")
+            repair_order.APPROVED = request.form.get("APPROVED")
+            repair_order.RackNo = request.form.get("RackNo")
+            repair_order.STORAGE = request.form.get("STORAGE")
+            repair_order.ITEM_TYPE = request.form.get("ITEM_TYPE")
+            repair_order.TYPE_OF_REPAIR = request.form.get("TYPE_OF_REPAIR")
+            repair_order.SPECIALINSTRUCTIONS = request.form.get("SPECIALINSTRUCTIONS")
+            repair_order.CLEAN = request.form.get("CLEAN")
+            repair_order.SEECLEAN = request.form.get("SEECLEAN")
+            repair_order.CLEANFIRST = request.form.get("CLEANFIRST")
+            repair_order.REPAIRSDONEBY = request.form.get("REPAIRSDONEBY")
+            repair_order.DateCompleted = request.form.get("DateCompleted")
+            repair_order.MaterialList = request.form.get("MaterialList")
+            repair_order.CUSTOMERPRICE = request.form.get("CUSTOMERPRICE")
+            repair_order.RETURNSTATUS = request.form.get("RETURNSTATUS")
+            repair_order.RETURNDATE = request.form.get("RETURNDATE")
+            repair_order.LOCATION = request.form.get("LOCATION")
+            repair_order.DATEOUT = request.form.get("DATEOUT")
+
+            # Handle existing items updates
+            existing_item_ids = request.form.getlist("existing_item_id[]")
+            existing_descriptions = request.form.getlist("existing_description[]")
+            existing_materials = request.form.getlist("existing_material[]")
+            existing_qtys = request.form.getlist("existing_qty[]")
+            existing_conditions = request.form.getlist("existing_condition[]")
+            existing_colors = request.form.getlist("existing_color[]")
+            existing_sizes = request.form.getlist("existing_size[]")
+            existing_prices = request.form.getlist("existing_price[]")
+            items_to_delete = request.form.getlist("delete_item[]")
+
+            # Delete marked items
+            if items_to_delete:
+                RepairWorkOrderItem.query.filter(
+                    RepairWorkOrderItem.id.in_(items_to_delete)
+                ).delete(synchronize_session=False)
+
+            # Update existing items
+            for i, item_id in enumerate(existing_item_ids):
+                if item_id and i < len(existing_descriptions):
+                    item = RepairWorkOrderItem.query.get(item_id)
+                    if item:
+                        item.Description = existing_descriptions[i]
+                        item.Material = (
+                            existing_materials[i] if i < len(existing_materials) else ""
+                        )
+                        item.Qty = existing_qtys[i] if i < len(existing_qtys) else "1"
+                        item.Condition = (
+                            existing_conditions[i]
+                            if i < len(existing_conditions)
+                            else ""
+                        )
+                        item.Color = (
+                            existing_colors[i] if i < len(existing_colors) else ""
+                        )
+                        item.SizeWgt = (
+                            existing_sizes[i] if i < len(existing_sizes) else ""
+                        )
+                        item.Price = (
+                            existing_prices[i] if i < len(existing_prices) else ""
+                        )
+
+            # Handle new items
+            new_descriptions = request.form.getlist("new_description[]")
+            new_materials = request.form.getlist("new_material[]")
+            new_qtys = request.form.getlist("new_qty[]")
+            new_conditions = request.form.getlist("new_condition[]")
+            new_colors = request.form.getlist("new_color[]")
+            new_sizes = request.form.getlist("new_size[]")
+            new_prices = request.form.getlist("new_price[]")
+
+            for i, descrip in enumerate(new_descriptions):
+                if descrip and descrip.strip():
+                    repair_item = RepairWorkOrderItem(
+                        RepairOrderNo=repair_order_no,
+                        CustID=request.form.get("CustID"),
+                        Description=descrip,
+                        Material=new_materials[i] if i < len(new_materials) else "",
+                        Qty=new_qtys[i] if i < len(new_qtys) else "1",
+                        Condition=new_conditions[i] if i < len(new_conditions) else "",
+                        Color=new_colors[i] if i < len(new_colors) else "",
+                        SizeWgt=new_sizes[i] if i < len(new_sizes) else "",
+                        Price=new_prices[i] if i < len(new_prices) else "",
+                    )
+                    db.session.add(repair_item)
+
+            db.session.commit()
+            flash(
+                f"Repair Work Order {repair_order_no} updated successfully!", "success"
+            )
+            return redirect(
+                url_for(
+                    "repair_work_orders.view_repair_work_order",
+                    repair_order_no=repair_order_no,
+                )
+            )
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error updating repair work order: {str(e)}", "error")
+
+    # GET request - show form with existing data
+    customers = Customer.query.order_by(Customer.CustID).all()
+    sources = Source.query.order_by(Source.SSource).all()
+
+    return render_template(
+        "repair_orders/edit.html",
+        repair_order=repair_order,
+        customers=customers,
+        sources=sources,
+    )

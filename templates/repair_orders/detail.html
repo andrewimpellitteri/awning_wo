@@ -66,6 +66,10 @@
         </div>
         
         <div>
+          <a href="{{ url_for('repair_work_orders.edit_repair_order', repair_order_no=repair_work_order.RepairOrderNo) }}" 
+           class="btn btn-warning me-2">
+            <i class="fas fa-edit me-1"></i>Edit Order
+          </a>
           <a href="{{ url_for('repair_work_orders.list_repair_work_orders') }}" 
              class="btn btn-outline-secondary">
             <i class="fas fa-arrow-left me-1"></i> Back to List

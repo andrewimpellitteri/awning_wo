@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Repair Work Order #{{ repair_order.RepairOrderNo }}{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .detail-row { border-bottom: 1px solid #f8f9fa; padding: 0.75rem 0; transition: background-color 0.2s ease; }
+    .detail-row:hover { background-color: #f8f9fa; margin: 0 -1rem; padding-left: 1rem; padding-right: 1rem; border-radius: 0.375rem; }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label { font-weight: 600; color: #6c757d; font-size: 0.9rem; margin-bottom: 0.25rem; }
+    .detail-value { color: #212529; font-weight: 500; }
+    .badge { font-size: 0.8rem !important; padding: 0.5rem 0.75rem; }
+    .item-row { border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 15px; background-color: #fff; transition: all 0.3s ease; }
+    .item-row:hover { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .item-row.marked-for-deletion { background-color: #f8d7da; border-color: #dc3545; opacity: 0.7; }
+    .new-item-row { background-color: #d1ecf1; border: 1px solid #bee5eb; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+    .qty-input { width: 80px; }
+    .btn-add-item { background: linear-gradient(135deg, #28a745, #20c997); border: none; color: white; padding: 10px 20px; border-radius: 6px; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2); }
+    .btn-add-item:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3); color: white; }
+    .form-section { margin-bottom: 25px; }
+    .card { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); border: 1px solid rgba(0,0,0,.125); }
+    .card-header { background-color: #f8f9fa; border-bottom: 1px solid #dee2e6; }
+    .status-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.5rem; }
+    .text-strike { text-decoration: line-through; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3"><i class="fas fa-edit me-2"></i>Edit Work Order #{{ repair_order.RepairOrderNo }}</h1>
+                    <p class="text-muted mb-0">Modify work order details and manage items</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=repair_order.RepairOrderNo) }}" class="btn btn-outline-secondary me-2">
+                        <i class="fas fa-eye me-1"></i>View Order
+                    </a>
+                    <a href="{{ url_for('repair_work_orders.list_repair_work_orders') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to List
+                    </a>
+                </div>
+            </div>
+
+            <form method="POST" id="editOrderForm">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <!-- Work Order Details Card -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>Work Order Information
+                                    {% if repair_order.RushOrder == "YES" %}
+                                        <span class="badge bg-warning text-dark ms-2"><i class="fas fa-bolt me-1"></i>Rush</span>
+                                    {% endif %}
+                                    {% if repair_order.FirmRush == "YES" %}
+                                        <span class="badge bg-danger ms-2"><i class="fas fa-exclamation-triangle me-1"></i>Firm Rush</span>
+                                    {% endif %}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Customer ID <span class="text-danger">*</span></div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="CustID" value="{{ repair_order.CustID or '' }}" required>
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Work Order Number</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" value="{{ repair_order.RepairOrderNo }}" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">RO Name</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="ROName" value="{{ repair_order.ROName or '' }}">
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Storage/Rack No</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="RackNo" value="{{ repair_order.RackNo or '' }}">
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Item Type</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="ITEM_TYPE" value="{{ repair_order.ITEM_TYPE or '' }}">
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Type of Repair</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="TYPE_OF_REPAIR" value="{{ repair_order.TYPE_OF_REPAIR or '' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Date Required</div>
+                                            <div class="detail-value">
+                                                <input type="date" class="form-control" name="DateRequired" value="{{ repair_order.DateRequired or '' }}">
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Date Completed</div>
+                                            <div class="detail-value">
+                                                <input type="date" class="form-control" name="DateCompleted" value="{{ repair_order.DateCompleted or '' }}">
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Source</div>
+                                            <div class="detail-value">
+                                                <select class="form-select" name="SOURCE">
+                                                    <option value="">Select Source</option>
+                                                    {% for source in sources %}
+                                                    <option value="{{ source.SSource }}" {% if repair_order.SOURCE == source.SSource %}selected{% endif %}>{{ source.SSource }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Location</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="LOCATION" value="{{ repair_order.LOCATION or '' }}">
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Priority Options</div>
+                                            <div class="detail-value">
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="RushOrder" name="RushOrder" value="1" {% if repair_order.RushOrder == "YES" %}checked{% endif %}>
+                                                    <label class="form-check-label" for="RushOrder">
+                                                        <span class="badge bg-warning text-dark"><i class="fas fa-bolt me-1"></i>Rush Order</span>
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="FirmRush" name="FirmRush" value="1" {% if repair_order.FirmRush == "YES" %}checked{% endif %}>
+                                                    <label class="form-check-label" for="FirmRush">
+                                                        <span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Firm Rush</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Customer Price</div>
+                                            <div class="detail-value">
+                                                <input type="number" step="0.01" class="form-control" name="CUSTOMERPRICE" value="{{ repair_order.CUSTOMERPRICE or '' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <div class="detail-row">
+                                            <div class="detail-label">Special Instructions</div>
+                                            <div class="detail-value">
+                                                <textarea class="form-control" name="SPECIALINSTRUCTIONS" rows="3">{{ repair_order.SPECIALINSTRUCTIONS or '' }}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Existing Items Card -->
+                        {% if repair_order.items %}
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-list me-2"></i>Existing Items 
+                                    <span class="badge bg-secondary ms-2" id="existing-items-count">{{ repair_order.items|length }}</span>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="existing-items-container">
+                                    {% for item in repair_order.items %}
+                                    <div class="item-row" data-item-id="{{ item.id }}">
+                                        <input type="hidden" name="existing_item_id[]" value="{{ item.id }}">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Description</label>
+                                                <input type="text" class="form-control" name="existing_description[]" value="{{ item.Description or '' }}" required>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label">Material</label>
+                                                <input type="text" class="form-control" name="existing_material[]" value="{{ item.Material or '' }}">
+                                            </div>
+                                            <div class="col-md-1">
+                                                <label class="form-label">Qty</label>
+                                                <input type="number" class="form-control qty-input" name="existing_qty[]" value="{{ item.Qty or '1' }}" min="1">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label">Condition</label>
+                                                <input type="text" class="form-control" name="existing_condition[]" value="{{ item.Condition or '' }}">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label">Color</label>
+                                                <input type="text" class="form-control" name="existing_color[]" value="{{ item.Color or '' }}">
+                                            </div>
+                                            <div class="col-md-1">
+                                                <label class="form-label">Actions</label>
+                                                <div>
+                                                    <button type="button" class="btn btn-danger btn-sm" onclick="toggleDeleteItem({{ item.id }}, this)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Size/Weight</label>
+                                                <input type="text" class="form-control" name="existing_size[]" value="{{ item.SizeWgt or '' }}">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label">Price</label>
+                                                <input type="number" step="0.01" class="form-control" name="existing_price[]" value="{{ item.Price or '' }}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Add New Items Card -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-plus me-2"></i>Add New Items 
+                                    <span class="badge bg-success ms-2" id="new-items-count">0</span>
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="new-items-container"></div>
+                                <button type="button" class="btn btn-add-item" onclick="addNewItem()">
+                                    <i class="fas fa-plus me-2"></i>Add New Item
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <!-- Order Summary -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0"><i class="fas fa-chart-bar me-2"></i>Order Summary</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="detail-row">
+                                    <div class="detail-label">Existing Items</div>
+                                    <div class="detail-value">
+                                        <span class="badge bg-primary" id="summary-existing">{{ repair_order.items|length if repair_order.items else 0 }}</span>
+                                    </div>
+                                </div>
+                                <div class="detail-row">
+                                    <div class="detail-label">Items to Delete</div>
+                                    <div class="detail-value">
+                                        <span class="badge bg-danger" id="summary-delete">0</span>
+                                    </div>
+                                </div>
+                                <div class="detail-row">
+                                    <div class="detail-label">New Items</div>
+                                    <div class="detail-value">
+                                        <span class="badge bg-success" id="summary-new">0</span>
+                                    </div>
+                                </div>
+                                <div class="detail-row" id="rush-status">
+                                    <div class="detail-label">Priority</div>
+                                    <div class="detail-value">
+                                        <span class="badge bg-warning text-dark" id="rush-badge" {% if repair_order.RushOrder != "YES" %}style="display: none;"{% endif %}>
+                                            <i class="fas fa-bolt me-1"></i>Rush Order
+                                        </span>
+                                        <span class="badge bg-danger" id="firm-rush-badge" {% if repair_order.FirmRush != "YES" %}style="display: none;"{% endif %}>
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="detail-row">
+                                    <div class="detail-label">Date In</div>
+                                    <div class="detail-value">{{ repair_order.DateIn or 'Not set' }}</div>
+                                </div>
+                                <div class="detail-row">
+                                    <div class="detail-label">Status</div>
+                                    <div class="detail-value">
+                                        {% if repair_order.DateCompleted %}
+                                            <span class="badge bg-success"><i class="fas fa-check me-1"></i>Completed</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pending</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="card shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0"><i class="fas fa-cogs me-2"></i>Actions</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-save me-2"></i>Update Work Order
+                                    </button>
+                                    <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=repair_order.RepairOrderNo) }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times me-2"></i>Cancel Changes
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let newItemCounter = 0;
+let newItemsCount = 0;
+let deletedItemsCount = 0;
+
+function updateCounts() {
+    document.getElementById('new-items-count').textContent = newItemsCount;
+    document.getElementById('summary-new').textContent = newItemsCount;
+    document.getElementById('summary-delete').textContent = deletedItemsCount;
+
+    // Update rush badges
+    const rush = document.getElementById('RushOrder').checked;
+    const firmRush = document.getElementById('FirmRush').checked;
+    document.getElementById('rush-badge').style.display = rush ? 'inline-block' : 'none';
+    document.getElementById('firm-rush-badge').style.display = firmRush ? 'inline-block' : 'none';
+}
+
+function toggleDeleteItem(itemId, button) {
+    const itemRow = button.closest('.item-row');
+    const isMarked = itemRow.classList.contains('marked-for-deletion');
+    
+    if (isMarked) {
+        // Unmark for deletion
+        itemRow.classList.remove('marked-for-deletion');
+        button.innerHTML = '<i class="fas fa-trash"></i>';
+        button.className = 'btn btn-danger btn-sm';
+        
+        // Remove hidden delete input if exists
+        const deleteInput = itemRow.querySelector('input[name="delete_item[]"]');
+        if (deleteInput) {
+            deleteInput.remove();
+        }
+        deletedItemsCount--;
+    } else {
+        // Mark for deletion
+        itemRow.classList.add('marked-for-deletion');
+        button.innerHTML = '<i class="fas fa-undo"></i>';
+        button.className = 'btn btn-warning btn-sm';
+        
+        // Add hidden input to track deletion
+        const deleteInput = document.createElement('input');
+        deleteInput.type = 'hidden';
+        deleteInput.name = 'delete_item[]';
+        deleteInput.value = itemId;
+        itemRow.appendChild(deleteInput);
+        deletedItemsCount++;
+    }
+    
+    updateCounts();
+}
+
+function addNewItem() {
+    newItemCounter++;
+    newItemsCount++;
+    updateCounts();
+
+    const container = document.getElementById('new-items-container');
+    const div = document.createElement('div');
+    div.className = 'new-item-row';
+    div.innerHTML = `
+        <div class="mb-2"><strong>New Item #${newItemCounter}</strong></div>
+        <div class="row">
+            <div class="col-md-6">
+                <label class="form-label">Description *</label>
+                <input type="text" name="new_description[]" class="form-control" placeholder="Item Description" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Material</label>
+                <input type="text" name="new_material[]" class="form-control" placeholder="Material">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Qty</label>
+                <input type="number" name="new_qty[]" class="form-control qty-input" placeholder="1" min="1" value="1" required>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">Actions</label>
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeNewItem(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-md-3">
+                <label class="form-label">Condition</label>
+                <input type="text" name="new_condition[]" class="form-control" placeholder="Condition">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Color</label>
+                <input type="text" name="new_color[]" class="form-control" placeholder="Color">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Size/Weight</label>
+                <input type="text" name="new_size[]" class="form-control" placeholder="Size/Weight">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Price</label>
+                <input type="number" step="0.01" name="new_price[]" class="form-control" placeholder="0.00">
+            </div>
+        </div>
+    `;
+    container.appendChild(div);
+}
+
+function removeNewItem(button) {
+    button.closest('.new-item-row').remove();
+    newItemsCount--;
+    updateCounts();
+}
+
+// Update counts if priority checkboxes change
+document.getElementById('RushOrder').addEventListener('change', updateCounts);
+document.getElementById('FirmRush').addEventListener('change', updateCounts);
+
+// Form validation
+document.getElementById('editOrderForm').addEventListener('submit', function(e) {
+    const custId = document.querySelector('input[name="CustID"]').value;
+    if (!custId.trim()) {
+        e.preventDefault();
+        alert('Customer ID is required');
+        return;
+    }
+    
+    // Check if any new items have descriptions
+    const newDescriptions = document.querySelectorAll('input[name="new_description[]"]');
+    let hasValidNewItems = true;
+    newDescriptions.forEach(input => {
+        if (input.value.trim() === '') {
+            hasValidNewItems = false;
+        }
+    });
+    
+    if (newDescriptions.length > 0 && !hasValidNewItems) {
+        e.preventDefault();
+        alert('Please fill in descriptions for all new items or remove empty items');
+        return;
+    }
+});
+
+// Initialize counts on load
+updateCounts();
+</script>
+{% endblock %}
