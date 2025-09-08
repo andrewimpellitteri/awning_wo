@@ -28,6 +28,8 @@
     .loading-spinner { display: inline-block; width: 1rem; height: 1rem; }
     .inventory-empty { text-align: center; padding: 3rem; color: #6c757d; }
     .inventory-empty i { font-size: 3rem; margin-bottom: 1rem; opacity: 0.5; }
+    .item-table input { border: 1px solid #dee2e6; padding: 0.375rem 0.5rem; border-radius: 0.375rem; width: 100%; }
+    .item-table th { background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; padding: 0.75rem 0.5rem; }
 </style>
 {% endblock %}
 
@@ -38,80 +40,109 @@
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h1 class="h3"><i class="fas fa-plus-circle me-2"></i>Create New Work Order</h1>
-                    <p class="text-muted mb-0">Create a new work order and manage inventory items</p>
+                    <h1 class="h3"><i class="fas fa-scissors me-2"></i>Create New Repair Work Order</h1>
+                    <p class="text-muted mb-0">Create a new repair work order and manage inventory items</p>
                 </div>
                 <div>
-                    <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('repair_work_orders.list_repair_work_orders') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-1"></i>Back to List
                     </a>
                 </div>
             </div>
 
-            <form method="POST" id="workOrderForm">
+            <form method="POST" id="repairOrderForm">
                 <div class="row">
                     <div class="col-lg-8">
-                        <!-- Work Order Details Card -->
+                        <!-- Order Information Card -->
                         <div class="card mb-4 shadow-sm">
-                            <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-info-circle me-2"></i>Work Order Information</h5></div>
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>Order Information
+                                </h5>
+                            </div>
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="detail-row">
-                                            <div class="detail-label">Customer <span class="text-danger">*</span></div>
+                                            <div class="detail-label">Customer ID <span class="text-danger">*</span></div>
                                             <div class="detail-value">
                                                 <input type="text" class="form-control" id="CustID" name="CustID" required
                                                        value="{{ form_data.get('CustID', '') if form_data else '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">
-                                            <div class="detail-label">Work Order Number</div>
+                                            <div class="detail-label">Order Number</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" id="next_wo_number" readonly placeholder="Auto-generated">
-                                                <small id="wo-number-display" class="text-muted"></small>
+                                                <input type="text" class="form-control" id="next_ro_number" readonly placeholder="Auto-generated">
+                                                <small id="ro-number-display" class="text-muted"></small>
                                             </div>
                                         </div>
                                         <div class="detail-row">
-                                            <div class="detail-label">Work Order Name</div>
+                                            <div class="detail-label">Order Name</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" name="WOName" value="{{ form_data.get('WOName', '') if form_data else '' }}">
+                                                <input type="text" class="form-control" name="ROName" 
+                                                       value="{{ form_data.get('ROName', '') if form_data else '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">
-                                            <div class="detail-label">Storage</div>
+                                            <div class="detail-label">Item Type</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" name="Storage" value="{{ form_data.get('Storage', '') if form_data else '' }}">
+                                                <input type="text" class="form-control" name="ITEM_TYPE" 
+                                                       value="{{ form_data.get('ITEM_TYPE', '') if form_data else '' }}"
+                                                       placeholder="e.g., Curtains, Drapes, etc.">
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Repair Type</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="TYPE_OF_REPAIR" 
+                                                       value="{{ form_data.get('TYPE_OF_REPAIR', '') if form_data else '' }}"
+                                                       placeholder="e.g., Hemming, Cleaning, etc.">
                                             </div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="detail-row">
-                                            <div class="detail-label">Date Required</div>
+                                            <div class="detail-label">Date In</div>
                                             <div class="detail-value">
-                                                <input type="date" class="form-control" name="DateRequired" value="{{ form_data.get('DateRequired', '') if form_data else '' }}">
+                                                <input type="date" class="form-control" name="DateIn" 
+                                                       value="{{ form_data.get('DateIn', '') if form_data else '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">
-                                            <div class="detail-label">Source</div>
+                                            <div class="detail-label">Date Required</div>
                                             <div class="detail-value">
-                                                <select class="form-select" name="ShipTo">
-                                                    <option value="">Select Source</option>
-                                                    {% for source in sources %}
-                                                    <option value="{{ source.SSource }}" {% if form_data and form_data.get('ShipTo') == source.SSource %}selected{% endif %}>{{ source.SSource }}</option>
-                                                    {% endfor %}
-                                                </select>
+                                                <input type="date" class="form-control" name="DateRequired" 
+                                                       value="{{ form_data.get('DateRequired', '') if form_data else '' }}">
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Date to Sub</div>
+                                            <div class="detail-value">
+                                                <input type="date" class="form-control" name="DATE_TO_SUB" 
+                                                       value="{{ form_data.get('DATE_TO_SUB', '') if form_data else '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">Priority Options</div>
                                             <div class="detail-value">
                                                 <div class="form-check form-check-inline">
-                                                    <input class="form-check-input" type="checkbox" id="RushOrder" name="RushOrder" value="1" {% if form_data and form_data.get('RushOrder') == '1' %}checked{% endif %}>
-                                                    <label class="form-check-label" for="RushOrder"><span class="badge bg-warning text-dark"><i class="fas fa-bolt me-1"></i>Rush Order</span></label>
+                                                    <input class="form-check-input" type="checkbox" id="RushOrder" name="RushOrder" value="YES" 
+                                                           {% if form_data and form_data.get('RushOrder') == 'YES' %}checked{% endif %}>
+                                                    <label class="form-check-label" for="RushOrder">
+                                                        <span class="badge bg-warning text-dark">
+                                                            <i class="fas fa-bolt me-1"></i>Rush Order
+                                                        </span>
+                                                    </label>
                                                 </div>
                                                 <div class="form-check form-check-inline">
-                                                    <input class="form-check-input" type="checkbox" id="FirmRush" name="FirmRush" value="1" {% if form_data and form_data.get('FirmRush') == '1' %}checked{% endif %}>
-                                                    <label class="form-check-label" for="FirmRush"><span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Firm Rush</span></label>
+                                                    <input class="form-check-input" type="checkbox" id="FirmRush" name="FirmRush" value="YES" 
+                                                           {% if form_data and form_data.get('FirmRush') == 'YES' %}checked{% endif %}>
+                                                    <label class="form-check-label" for="FirmRush">
+                                                        <span class="badge bg-danger">
+                                                            <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
+                                                        </span>
+                                                    </label>
                                                 </div>
                                             </div>
                                         </div>
@@ -120,37 +151,245 @@
                             </div>
                         </div>
 
-                        <!-- Customer Inventory Card -->
+                        <!-- Repair Details Card -->
                         <div class="card mb-4 shadow-sm">
-                            <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-boxes me-2"></i>Customer Item History <span class="badge bg-secondary ms-2" id="inventory-count">0</span></h5></div>
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-clipboard-list me-2"></i>Repair Details
+                                </h5>
+                            </div>
                             <div class="card-body">
-                                <div id="customer-inventory"><div class="inventory-empty"><i class="fas fa-boxes"></i><p>Select a customer to view their inventory items</p></div></div>
+                                <!-- Special Instructions -->
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <div class="detail-row">
+                                            <div class="detail-label">
+                                                <i class="fas fa-exclamation-circle text-warning me-1"></i>Special Instructions
+                                            </div>
+                                            <div class="detail-value">
+                                                <textarea class="form-control" name="SPECIALINSTRUCTIONS" rows="3" 
+                                                          placeholder="Enter any special instructions or notes for this repair work order..."
+                                                          >{{ form_data.get('SPECIALINSTRUCTIONS', '') if form_data else '' }}</textarea>
+                                                <small class="form-text text-muted">Provide detailed instructions for the repair team</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Material List -->
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <div class="detail-row">
+                                            <div class="detail-label">
+                                                <i class="fas fa-list text-primary me-1"></i>Material List
+                                            </div>
+                                            <div class="detail-value">
+                                                <textarea class="form-control" name="MaterialList" rows="3" 
+                                                          placeholder="List materials needed for this repair..."
+                                                          >{{ form_data.get('MaterialList', '') if form_data else '' }}</textarea>
+                                                <small class="form-text text-muted">Materials and supplies required for the repair</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-scissors text-secondary me-1"></i>Repair Information:</h6>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Repairs Done By</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="REPAIRSDONEBY" 
+                                                       value="{{ form_data.get('REPAIRSDONEBY', '') if form_data else '' }}"
+                                                       placeholder="Enter technician name">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Clean</div>
+                                            <div class="detail-value">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="CLEAN" name="CLEAN" value="YES"
+                                                           {% if form_data and form_data.get('CLEAN') == 'YES' %}checked{% endif %}>
+                                                    <label class="form-check-label" for="CLEAN">
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-check me-1"></i>Yes
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">See Clean (WO #)</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="SEECLEAN" 
+                                                       value="{{ form_data.get('SEECLEAN', '') if form_data else '' }}"
+                                                       placeholder="Enter work order number">
+                                                <small class="form-text text-muted">Reference to cleaning work order</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Clean First</div>
+                                            <div class="detail-value">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="CLEANFIRST" name="CLEANFIRST" value="YES"
+                                                           {% if form_data and form_data.get('CLEANFIRST') == 'YES' %}checked{% endif %}>
+                                                    <label class="form-check-label" for="CLEANFIRST">
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-check me-1"></i>Yes
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                                <small class="form-text text-muted">Item must be cleaned before repair</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-map-marker-alt text-secondary me-1"></i>Location & Storage:</h6>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Location</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="LOCATION" 
+                                                       value="{{ form_data.get('LOCATION', '') if form_data else '' }}"
+                                                       placeholder="Current location">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Storage</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="STORAGE" 
+                                                       value="{{ form_data.get('STORAGE', '') if form_data else '' }}"
+                                                       placeholder="Storage location">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Rack #</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="RackNo" 
+                                                       value="{{ form_data.get('RackNo', '') if form_data else '' }}"
+                                                       placeholder="Rack number">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Add New Items Card -->
+                        <!-- Order Items -->
                         <div class="card mb-4 shadow-sm">
-                            <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-plus me-2"></i>Add New Items <span class="badge bg-secondary ms-2" id="new-items-count">0</span></h5></div>
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-list me-2"></i>Order Items 
+                                    <span class="badge bg-secondary ms-2" id="items-count">0</span>
+                                </h5>
+                            </div>
                             <div class="card-body">
-                                <div id="new-items-container"></div>
-                                <button type="button" class="btn btn-add-item" onclick="addNewItem()"><i class="fas fa-plus me-2"></i>Add New Item</button>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered item-table" id="items-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Description</th>
+                                                <th>Material</th>
+                                                <th>Qty</th>
+                                                <th>Condition</th>
+                                                <th>Color</th>
+                                                <th>Size/Weight</th>
+                                                <th>Price</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="items-tbody">
+                                            <!-- Items will be added here dynamically -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button type="button" class="btn btn-add-item" onclick="addItemRow()">
+                                    <i class="fas fa-plus me-2"></i>Add Item
+                                </button>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-lg-4">
+                        <!-- Quote & Pricing -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-dollar-sign me-2"></i>Quote & Pricing
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="detail-row">
+                                    <div class="detail-label">Quote</div>
+                                    <div class="detail-value">
+                                        <textarea class="form-control" name="QUOTE" rows="2" 
+                                                  placeholder="Enter quote details..."
+                                                  >{{ form_data.get('QUOTE', '') if form_data else '' }}</textarea>
+                                    </div>
+                                </div>
+                                
+                                <div class="detail-row">
+                                    <div class="detail-label">Quote By</div>
+                                    <div class="detail-value">
+                                        <input type="text" class="form-control" name="QUOTE_BY" 
+                                               value="{{ form_data.get('QUOTE_BY', '') if form_data else '' }}"
+                                               placeholder="Name of quoter">
+                                    </div>
+                                </div>
+                                
+                                <div class="detail-row">
+                                    <div class="detail-label">Approved</div>
+                                    <div class="detail-value">
+                                        <select class="form-select" name="APPROVED">
+                                            <option value="">Select status</option>
+                                            <option value="YES" {% if form_data and form_data.get('APPROVED') == 'YES' %}selected{% endif %}>Yes</option>
+                                            <option value="NO" {% if form_data and form_data.get('APPROVED') == 'NO' %}selected{% endif %}>No</option>
+                                            <option value="PENDING" {% if form_data and form_data.get('APPROVED') == 'PENDING' %}selected{% endif %}>Pending</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="detail-row">
+                                    <div class="detail-label">Customer Price</div>
+                                    <div class="detail-value">
+                                        <input type="number" step="0.01" class="form-control" name="CUSTOMERPRICE" 
+                                               value="{{ form_data.get('CUSTOMERPRICE', '') if form_data else '' }}"
+                                               placeholder="0.00">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Order Summary -->
                         <div class="card mb-4 shadow-sm">
-                            <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-flag me-2"></i>Order Summary</h5></div>
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-flag me-2"></i>Order Summary
+                                </h5>
+                            </div>
                             <div class="card-body">
-                                <div class="detail-row"><div class="detail-label">Selected Items</div><div class="detail-value"><span class="badge bg-primary" id="selected-count">0</span></div></div>
-                                <div class="detail-row"><div class="detail-label">New Items</div><div class="detail-value"><span class="badge bg-success" id="new-count">0</span></div></div>
-                                <div class="detail-row"><div class="detail-label">Total Items</div><div class="detail-value"><span class="badge bg-info" id="total-count">0</span></div></div>
+                                <div class="detail-row">
+                                    <div class="detail-label">Total Items</div>
+                                    <div class="detail-value">
+                                        <span class="badge bg-primary" id="total-items">0</span>
+                                    </div>
+                                </div>
                                 <div class="detail-row" id="rush-status" style="display: none;">
                                     <div class="detail-label">Priority</div>
                                     <div class="detail-value">
-                                        <span class="badge bg-warning text-dark" id="rush-badge" style="display: none;"><i class="fas fa-bolt me-1"></i>Rush Order</span>
-                                        <span class="badge bg-danger" id="firm-rush-badge" style="display: none;"><i class="fas fa-exclamation-triangle me-1"></i>Firm Rush</span>
+                                        <span class="badge bg-warning text-dark" id="rush-badge" style="display: none;">
+                                            <i class="fas fa-bolt me-1"></i>Rush Order
+                                        </span>
+                                        <span class="badge bg-danger" id="firm-rush-badge" style="display: none;">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -158,11 +397,19 @@
 
                         <!-- Actions -->
                         <div class="card shadow-sm">
-                            <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-cogs me-2"></i>Actions</h5></div>
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-cogs me-2"></i>Actions
+                                </h5>
+                            </div>
                             <div class="card-body">
                                 <div class="d-grid gap-2">
-                                    <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save me-2"></i>Create Work Order</button>
-                                    <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i>Cancel</a>
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-save me-2"></i>Create Repair Order
+                                    </button>
+                                    <a href="{{ url_for('repair_work_orders.list_repair_work_orders') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i>Cancel
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -174,14 +421,12 @@
 </div>
 
 <script>
-let newItemCounter = 0;
-let selectedItemsCount = 0;
-let newItemsCount = 0;
+let itemCounter = 0;
 
 function updateCounts() {
-    document.getElementById('selected-count').textContent = selectedItemsCount;
-    document.getElementById('new-count').textContent = newItemsCount;
-    document.getElementById('total-count').textContent = selectedItemsCount + newItemsCount;
+    const itemCount = document.querySelectorAll('#items-tbody tr').length;
+    document.getElementById('items-count').textContent = itemCount;
+    document.getElementById('total-items').textContent = itemCount;
 
     // Update rush badges
     const rush = document.getElementById('RushOrder').checked;
@@ -191,71 +436,35 @@ function updateCounts() {
     document.getElementById('firm-rush-badge').style.display = firmRush ? 'inline-block' : 'none';
 }
 
-function toggleInventorySelection(el) {
-    el.classList.toggle('selected');
-    selectedItemsCount = document.querySelectorAll('#customer-inventory .inventory-item.selected').length;
-    updateCounts();
-}
-
-function addNewItem() {
-    newItemCounter++;
-    newItemsCount++;
-    updateCounts();
-
-    const container = document.getElementById('new-items-container');
-    const div = document.createElement('div');
-    div.className = 'new-item-row';
-    div.innerHTML = `
-        <div class="mb-2"><strong>Item #${newItemCounter}</strong></div>
-        <div class="mb-2"><input type="text" name="NewItemName[]" class="form-control" placeholder="Item Name" required></div>
-        <div class="mb-2"><input type="number" name="NewItemQty[]" class="form-control qty-input" placeholder="Quantity" min="1" required></div>
-        <button type="button" class="btn btn-danger btn-sm" onclick="removeNewItem(this)">Remove</button>
+function addItemRow() {
+    itemCounter++;
+    const tbody = document.getElementById('items-tbody');
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td><input type="text" name="item_description[]" class="form-control" placeholder="Item description"></td>
+        <td><input type="text" name="item_material[]" class="form-control" placeholder="Material"></td>
+        <td><input type="number" name="item_qty[]" class="form-control" placeholder="1" min="1"></td>
+        <td><input type="text" name="item_condition[]" class="form-control" placeholder="Condition"></td>
+        <td><input type="text" name="item_color[]" class="form-control" placeholder="Color"></td>
+        <td><input type="text" name="item_size_wgt[]" class="form-control" placeholder="Size/Weight"></td>
+        <td><input type="number" name="item_price[]" class="form-control" placeholder="0.00" step="0.01"></td>
+        <td><button type="button" class="btn btn-danger btn-sm" onclick="removeItemRow(this)">Remove</button></td>
     `;
-    container.appendChild(div);
-}
-
-function removeNewItem(button) {
-    button.parentElement.remove();
-    newItemsCount--;
+    tbody.appendChild(row);
     updateCounts();
 }
 
-// Fetch customer inventory dynamically
-document.getElementById('CustID').addEventListener('change', function() {
-    const custID = this.value;
-    const container = document.getElementById('customer-inventory');
-    container.innerHTML = '<div class="inventory-empty"><i class="fas fa-spinner fa-spin"></i><p>Loading...</p></div>';
-    
-    fetch(`/customers/api/inventory/${custID}`)
-        .then(res => res.json())
-        .then(data => {
-            if (!data.items || data.items.length === 0) {
-                container.innerHTML = '<div class="inventory-empty"><i class="fas fa-boxes"></i><p>No items found for this customer.</p></div>';
-                document.getElementById('inventory-count').textContent = 0;
-                selectedItemsCount = 0;
-                updateCounts();
-                return;
-            }
-            container.innerHTML = '';
-            data.items.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'inventory-item';
-                div.innerHTML = `<strong>${item.name}</strong> - Qty: ${item.qty}`;
-                div.addEventListener('click', () => toggleInventorySelection(div));
-                container.appendChild(div);
-            });
-            document.getElementById('inventory-count').textContent = data.items.length;
-            selectedItemsCount = 0;
-            updateCounts();
-        })
-        .catch(err => {
-            container.innerHTML = '<div class="inventory-empty"><i class="fas fa-exclamation-triangle"></i><p>Error loading inventory.</p></div>';
-        });
-});
+function removeItemRow(button) {
+    button.closest('tr').remove();
+    updateCounts();
+}
 
 // Update counts if priority checkboxes change
 document.getElementById('RushOrder').addEventListener('change', updateCounts);
 document.getElementById('FirmRush').addEventListener('change', updateCounts);
+
+// Initialize with one item row
+addItemRow();
 
 // Initialize counts on load
 updateCounts();
