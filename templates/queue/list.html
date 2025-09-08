@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}Cleaning Queue{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Cleaning Queue</h2>
+                <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-secondary">
+                    <i class="fas fa-list"></i> All Work Orders
+                </a>
+            </div>
+
+            <!-- Queue Stats -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card border-start border-danger shadow-sm">
+                        <div class="card-body text-center">
+                            <h4 class="fw-bold">{{ queue_counts.firm_rush }}</h4>
+                            <small class="text-muted text-uppercase">Firm Rush</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-start border-warning shadow-sm">
+                        <div class="card-body text-center">
+                            <h4 class="fw-bold">{{ queue_counts.rush }}</h4>
+                            <small class="text-muted text-uppercase">Rush</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-start border-success shadow-sm">
+                        <div class="card-body text-center">
+                            <h4 class="fw-bold">{{ queue_counts.regular }}</h4>
+                            <small class="text-muted text-uppercase">Regular</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-start border-primary shadow-sm">
+                        <div class="card-body text-center">
+                            <h4 class="fw-bold">{{ queue_counts.total }}</h4>
+                            <small class="text-muted text-uppercase">Total</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Controls -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3 align-items-center">
+                        <div class="col-md-6">
+                            <input type="text" 
+                                   name="search" 
+                                   value="{{ search }}" 
+                                   placeholder="Search work orders..." 
+                                   class="form-control">
+                        </div>
+                        <div class="col-md-2">
+                            <select name="per_page" class="form-select" onchange="this.form.submit()">
+                                <option value="10" {% if per_page == 10 %}selected{% endif %}>10 per page</option>
+                                <option value="25" {% if per_page == 25 %}selected{% endif %}>25 per page</option>
+                                <option value="50" {% if per_page == 50 %}selected{% endif %}>50 per page</option>
+                                <option value="100" {% if per_page == 100 %}selected{% endif %}>100 per page</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            {% if search %}
+                                <a href="{{ url_for('cleaning_queue.cleaning_queue') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Queue Container -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Work Orders in Cleaning Queue</h5>
+                    <small class="text-muted">Drag and drop to reorder • Total: {{ queue_counts.total }} items</small>
+                </div>
+                <div class="card-body p-0">
+                    {% if work_orders %}
+                        <ul class="list-group list-group-flush" id="sortable-queue">
+                            {% for work_order in work_orders %}
+                            <li class="list-group-item d-flex align-items-center" data-wo-id="{{ work_order.WorkOrderNo }}">
+                                <span class="me-3 text-muted drag-handle" style="cursor: grab;">⋮⋮</span>
+                                <span class="badge bg-light text-dark me-3 queue-position">
+                                    {{ loop.index + (pagination.page - 1) * pagination.per_page }}
+                                </span>
+                                <span class="badge me-3 
+                                    {% if work_order.priority_class == 'priority-firm-rush' %} bg-danger
+                                    {% elif work_order.priority_class == 'priority-rush' %} bg-warning text-dark
+                                    {% else %} bg-success
+                                    {% endif %}">
+                                    {{ work_order.priority_label }}
+                                </span>
+                                <div class="flex-grow-1 row">
+                                    <div class="col-md-2 fw-bold text-primary">
+                                        <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}">
+                                            WO-{{ work_order.WorkOrderNo }}
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3">{{ work_order.WOName or 'Untitled' }}</div>
+                                    <div class="col-md-2 text-muted">{{ work_order.CustID }}</div>
+                                    <div class="col-md-3 text-muted small">
+                                        <div>In: {{ work_order.DateIn or 'N/A' }}</div>
+                                        {% if work_order.DateRequired %}
+                                            <div>Req: {{ work_order.DateRequired }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2 d-flex gap-1">
+                                        <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                           <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('work_orders.edit_work_order', work_order_no=work_order.WorkOrderNo) }}" 
+                                           class="btn btn-sm btn-outline-warning">
+                                           <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-check-circle fa-3x text-muted mb-3"></i>
+                            <h4>No work orders in cleaning queue</h4>
+                            <p class="text-muted">All caught up! No work orders currently need cleaning.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <nav aria-label="Queue pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('cleaning_queue.cleaning_queue', page=pagination.prev_num, search=search, per_page=per_page) }}">
+                                Previous
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for page_num in range(1, pagination.pages + 1) %}
+                        {% if page_num == pagination.page %}
+                            <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('cleaning_queue.cleaning_queue', page=page_num, search=search, per_page=per_page) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('cleaning_queue.cleaning_queue', page=pagination.next_num, search=search, per_page=per_page) }}">
+                                Next
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<script>
+    const sortableQueue = document.getElementById('sortable-queue');
+    if (sortableQueue) {
+        new Sortable(sortableQueue, {
+            animation: 150,
+            handle: '.drag-handle',
+            onEnd: function(evt) {
+                const workOrderIds = Array.from(sortableQueue.children).map(item => item.dataset.woId);
+                fetch('api/cleaning-queue/reorder', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ work_order_ids: workOrderIds })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) updatePositionNumbers();
+                    else console.error('Error reordering queue:', data.message);
+                })
+                .catch(err => console.error('Error:', err));
+            }
+        });
+    }
+
+    function updatePositionNumbers() {
+        const items = document.querySelectorAll('.queue-item');
+        const currentPage = {{ pagination.page }};
+        const perPage = {{ pagination.per_page }};
+        const startIndex = (currentPage - 1) * perPage;
+        items.forEach((item, i) => {
+            item.querySelector('.queue-position').textContent = startIndex + i + 1;
+        });
+    }
+
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+        if (!document.hidden) location.reload();
+    }, 30000);
+</script>
+{% endblock %}
