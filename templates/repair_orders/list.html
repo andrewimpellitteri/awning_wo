@@ -154,7 +154,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 formatter: (cell) => {
                     const rowData = cell.getRow().getData();
                     let rushBadge = rowData.is_rush ? ' <span class="badge bg-danger ms-1">RUSH</span>' : '';
-                    return `<a href="${rowData.detail_url}">${cell.getValue()}</a>${rushBadge}`;
+                    return `<a href="${rowData.detail_url}">R${cell.getValue()}</a>${rushBadge}`;
                 }
             },
             { 
