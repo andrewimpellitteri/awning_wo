@@ -148,6 +148,16 @@ document.addEventListener("DOMContentLoaded", function() {
         filterMode: "remote",
         sortMode: "remote",
         multiSort: true,
+
+        persistence: {
+            sort: true, // persist column sorting
+            headerFilter: true, // persist header filters  
+            page: true, // persist current page and page size
+        },
+        
+        // Use a unique ID for this table's persistence
+        persistenceID: "repair_table",
+
         columns: [
             { 
                 title: "Order #", field: "RepairOrderNo", width: 120, headerFilter: "input",
@@ -165,8 +175,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             },
             { title: "Name", field: "ROName", headerFilter: "input" },
-            { title: "Item Type", field: "ITEM_TYPE", headerFilter: "input" },
-            { title: "Repair Type", field: "TYPE_OF_REPAIR", headerFilter: "input" },
             { title: "Date In", field: "DateIn", width: 120, headerFilter: "input",
             sorter: dateSorter,
             sorterParams: {
@@ -179,7 +187,12 @@ document.addEventListener("DOMContentLoaded", function() {
                 format: "YYYY-MM-DD" // Tabulator will parse dates in this format
             },
             formatter: (cell) => formatDate(cell.getValue())},
-            { title: "Location", field: "LOCATION", width: 140, headerFilter: "input" },
+            { title: "Source", 
+            field: "Source", 
+            width: 140,
+            headerFilter: "input",
+            sorter: "string",
+              formatter: cell => cell.getValue() ? `<span class="badge bg-info">${cell.getValue()}</span>` : `<span class="text-muted">—</span>` },
             { 
                 title: "Actions", field: "actions", width: 100, hozAlign: "center", headerFilter: false, headerSort: false,
                 formatter: (cell) => {

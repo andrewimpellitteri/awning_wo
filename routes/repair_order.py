@@ -52,6 +52,19 @@ def api_repair_work_orders():
 
     query = RepairWorkOrder.query
 
+    # Flag to check if we need to join the customer and source tables
+    needs_source_join = False
+
+    # Check for filters and sorting on the 'Source' field
+    if request.args.get("filter_Source") or any(
+        request.args.get(f"sort[{i}][field]") == "Source" for i in range(5)
+    ):
+        needs_source_join = True
+
+    # Apply joins if needed for Source filtering or sorting
+    if needs_source_join:
+        query = query.join(Customer).join(Source)
+
     # ✅ Status quick filters
     if status == "pending":
         query = query.filter(
@@ -93,11 +106,9 @@ def api_repair_work_orders():
         "RepairOrderNo",
         "CustID",
         "ROName",
-        "ITEM_TYPE",
-        "TYPE_OF_REPAIR",
         "DateIn",
         "DateCompleted",
-        "LOCATION",
+        "Source",
     ]
     for col in filterable_columns:
         filter_val = request.args.get(f"filter_{col}")
@@ -105,6 +116,9 @@ def api_repair_work_orders():
             # Check for exact match on RepairOrderNo and CustID
             if col in ["RepairOrderNo", "CustID"]:
                 query = query.filter(getattr(RepairWorkOrder, col) == filter_val)
+            elif col == "Source":
+                # Filter on the correct column from the joined table
+                query = query.filter(Source.SSource.ilike(f"%{filter_val}%"))
             else:
                 # Use partial match for all other columns
                 query = query.filter(
@@ -119,39 +133,49 @@ def api_repair_work_orders():
         if not field:
             break
         direction = request.args.get(f"sort[{i}][dir]", "asc")
-        column = getattr(RepairWorkOrder, field, None)
 
-        if column:
-            if field in ["RepairOrderNo", "CustID"]:
-                cast_column = cast(column, Integer)
-                order_by_clauses.append(
-                    cast_column.desc() if direction == "desc" else cast_column.asc()
-                )
-
-            elif field in ["DateIn", "DateCompleted"]:
-                # Use CASE with multiple formats for dates
-                cast_column = case(
-                    (
-                        column.op("~")(
-                            "^[0-1][0-9]/[0-3][0-9]/[0-9]{2} [0-2][0-9]:[0-5][0-9]:[0-5][0-9]$"
-                        ),
-                        func.to_date(column, "MM/DD/YY HH24:MI:SS"),
-                    ),
-                    (
-                        column.op("~")("^[0-2][0-9]{3}-[0-1][0-9]-[0-3][0-9]$"),
-                        func.to_date(column, "YYYY-MM-DD"),
-                    ),
-                    else_=literal(None),
-                )
-                order_by_clauses.append(
-                    cast_column.desc().nulls_last()
-                    if direction == "desc"
-                    else cast_column.asc().nulls_last()
-                )
+        # Handle the special case of 'Source'
+        if field == "Source":
+            # The query is already joined, so we can sort on the joined table's column
+            column_to_sort = Source.SSource
+            if direction == "desc":
+                order_by_clauses.append(column_to_sort.desc())
             else:
-                order_by_clauses.append(
-                    column.desc() if direction == "desc" else column.asc()
-                )
+                order_by_clauses.append(column_to_sort.asc())
+        else:
+            # Handle all other fields on the RepairWorkOrder model
+            column = getattr(RepairWorkOrder, field, None)
+            if column:
+                if field in ["RepairOrderNo", "CustID"]:
+                    cast_column = cast(column, Integer)
+                    order_by_clauses.append(
+                        cast_column.desc() if direction == "desc" else cast_column.asc()
+                    )
+
+                elif field in ["DateIn", "DateCompleted"]:
+                    # Use CASE with multiple formats for dates
+                    cast_column = case(
+                        (
+                            column.op("~")(
+                                "^[0-1][0-9]/[0-3][0-9]/[0-9]{2} [0-2][0-9]:[0-5][0-9]:[0-5][0-9]$"
+                            ),
+                            func.to_date(column, "MM/DD/YY HH24:MI:SS"),
+                        ),
+                        (
+                            column.op("~")("^[0-2][0-9]{3}-[0-1][0-9]-[0-3][0-9]$"),
+                            func.to_date(column, "YYYY-MM-DD"),
+                        ),
+                        else_=literal(None),
+                    )
+                    order_by_clauses.append(
+                        cast_column.desc().nulls_last()
+                        if direction == "desc"
+                        else cast_column.asc().nulls_last()
+                    )
+                else:
+                    order_by_clauses.append(
+                        column.desc() if direction == "desc" else column.asc()
+                    )
         i += 1
 
     # Default sorting if none provided
@@ -187,11 +211,11 @@ def api_repair_work_orders():
             "RepairOrderNo": order.RepairOrderNo,
             "CustID": order.CustID,
             "ROName": order.ROName,
-            "ITEM_TYPE": order.ITEM_TYPE,
-            "TYPE_OF_REPAIR": order.TYPE_OF_REPAIR,
             "DateIn": format_date_from_str(order.DateIn),
             "DateCompleted": format_date_from_str(order.DateCompleted),
-            "LOCATION": order.LOCATION,
+            "Source": order.customer.source_info.SSource
+            if order.customer and order.customer.source_info
+            else None,
             "is_rush": order.RushOrder == "YES" or order.FirmRush == "YES",
             "detail_url": url_for(
                 "repair_work_orders.view_repair_work_order",

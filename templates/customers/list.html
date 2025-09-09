@@ -134,6 +134,16 @@ document.addEventListener("DOMContentLoaded", function() {
         filterMode: "remote",
         sortMode: "remote",
         multiSort: true,
+
+        persistence: {
+            sort: true, // persist column sorting
+            headerFilter: true, // persist header filters  
+            page: true, // persist current page and page size
+        },
+        
+        // Use a unique ID for this table's persistence
+        persistenceID: "customers_table",
+
         columns: [
             {
                 title: "ID",
@@ -301,6 +311,16 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById("filter-form")?.reset();
         table.clearHeaderFilter();
         table.clearSort();
+        
+        // Clear Tabulator's persisted data
+        const persistenceID = "customers_table";
+        if (localStorage) {
+            // Clear all persistence data for this table
+            localStorage.removeItem(persistenceID + "-sort");
+            localStorage.removeItem(persistenceID + "-headerFilter");
+            localStorage.removeItem(persistenceID + "-page");
+        }
+        
         table.setData();
     });
 });

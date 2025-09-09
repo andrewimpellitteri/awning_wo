@@ -144,6 +144,16 @@ document.addEventListener("DOMContentLoaded", function() {
         filterMode: "remote",
         sortMode: "remote",
         multiSort: true,
+
+        persistence: {
+            sort: true, // persist column sorting
+            headerFilter: true, // persist header filters  
+            page: true, // persist current page and page size
+        },
+        
+        // Use a unique ID for this table's persistence
+        persistenceID: "wo_table",
+
         columns: [
             { title: "WO #", field: "WorkOrderNo", width: 120, headerFilter: "input",
               formatter: cell => `<a href="${cell.getRow().getData().detail_url}">${cell.getValue()}</a>` },
