@@ -33,7 +33,7 @@
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h1 class="h3"><i class="fas fa-edit me-2"></i>Edit Work Order #{{ repair_order.RepairOrderNo }}</h1>
+                    <h1 class="h3"><i class="fas fa-edit me-2"></i>Edit Work Order #R{{ repair_order.RepairOrderNo }}</h1>
                     <p class="text-muted mb-0">Modify work order details and manage items</p>
                 </div>
                 <div>
@@ -74,7 +74,7 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Work Order Number</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" value="{{ repair_order.RepairOrderNo }}" readonly>
+                                                <input type="text" class="form-control" value="R{{ repair_order.RepairOrderNo }}" readonly>
                                             </div>
                                         </div>
                                         <div class="detail-row">
@@ -84,9 +84,22 @@
                                             </div>
                                         </div>
                                         <div class="detail-row">
-                                            <div class="detail-label">Storage/Rack No</div>
+                                            <div class="detail-label">Storage</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" name="RackNo" value="{{ repair_order.RackNo or '' }}">
+                                                <select class="form-select" name="STORAGE">
+                                                    <option value="">Select storage type</option>
+                                                    <option value="seasonal" {% if repair_order.STORAGE == 'seasonal' %}selected{% endif %}>Seasonal</option>
+                                                    <option value="temporary" {% if repair_order.STORAGE == 'temporary' %}selected{% endif %}>Temporary</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="detail-row">
+                                            <div class="detail-label">Location</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="LOCATION" 
+                                                       value="{{ repair_order.LOCATION or repair_order.RackNo or '' }}" 
+                                                       placeholder="Location/Rack number">
                                             </div>
                                         </div>
                                         <div class="detail-row">
@@ -124,12 +137,6 @@
                                                     <option value="{{ source.SSource }}" {% if repair_order.SOURCE == source.SSource %}selected{% endif %}>{{ source.SSource }}</option>
                                                     {% endfor %}
                                                 </select>
-                                            </div>
-                                        </div>
-                                        <div class="detail-row">
-                                            <div class="detail-label">Location</div>
-                                            <div class="detail-value">
-                                                <input type="text" class="form-control" name="LOCATION" value="{{ repair_order.LOCATION or '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">
@@ -291,7 +298,7 @@
                                 </div>
                                 <div class="detail-row">
                                     <div class="detail-label">Date In</div>
-                                    <div class="detail-value">{{ repair_order.DateIn or 'Not set' }}</div>
+                                    <div class="detail-value">{{ (repair_order.DateIn | date_format) or 'Not set' }}</div>
                                 </div>
                                 <div class="detail-row">
                                     <div class="detail-label">Status</div>

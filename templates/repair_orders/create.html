@@ -213,9 +213,7 @@
                                                     <input class="form-check-input" type="checkbox" id="CLEAN" name="CLEAN" value="YES"
                                                            {% if form_data and form_data.get('CLEAN') == 'YES' %}checked{% endif %}>
                                                     <label class="form-check-label" for="CLEAN">
-                                                        <span class="badge bg-success">
-                                                            <i class="fas fa-check me-1"></i>Yes
-                                                        </span>
+                                                        
                                                     </label>
                                                 </div>
                                             </div>
@@ -238,9 +236,7 @@
                                                     <input class="form-check-input" type="checkbox" id="CLEANFIRST" name="CLEANFIRST" value="YES"
                                                            {% if form_data and form_data.get('CLEANFIRST') == 'YES' %}checked{% endif %}>
                                                     <label class="form-check-label" for="CLEANFIRST">
-                                                        <span class="badge bg-success">
-                                                            <i class="fas fa-check me-1"></i>Yes
-                                                        </span>
+                                                        
                                                     </label>
                                                 </div>
                                                 <small class="form-text text-muted">Item must be cleaned before repair</small>
@@ -254,27 +250,20 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Location</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" name="LOCATION" 
+                                                <input type="text" class="form-control" name="LOCATION"
                                                        value="{{ form_data.get('LOCATION', '') if form_data else '' }}"
                                                        placeholder="Current location">
                                             </div>
                                         </div>
-                                        
+                                    
                                         <div class="detail-row">
                                             <div class="detail-label">Storage</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" name="STORAGE" 
-                                                       value="{{ form_data.get('STORAGE', '') if form_data else '' }}"
-                                                       placeholder="Storage location">
-                                            </div>
-                                        </div>
-                                        
-                                        <div class="detail-row">
-                                            <div class="detail-label">Rack #</div>
-                                            <div class="detail-value">
-                                                <input type="text" class="form-control" name="RackNo" 
-                                                       value="{{ form_data.get('RackNo', '') if form_data else '' }}"
-                                                       placeholder="Rack number">
+                                                <select class="form-control" name="STORAGE">
+                                                    <option value="">Select storage type</option>
+                                                    <option value="seasonal" {{ 'selected' if form_data and form_data.get('STORAGE') == 'seasonal' else '' }}>Seasonal</option>
+                                                    <option value="temporary" {{ 'selected' if form_data and form_data.get('STORAGE') == 'temporary' else '' }}>Temporary</option>
+                                                </select>
                                             </div>
                                         </div>
                                     </div>
