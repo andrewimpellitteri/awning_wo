@@ -1,4 +1,13 @@
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    jsonify,
+    flash,
+    redirect,
+    url_for,
+    send_file,
+)
 from flask_login import login_required
 from models.work_order import WorkOrder, WorkOrderItem
 from models.customer import Customer
@@ -10,6 +19,7 @@ from datetime import datetime, date
 from sqlalchemy.types import Date
 from sqlalchemy.dialects.postgresql import dialect as pg_dialect
 import uuid
+from work_order_pdf import generate_work_order_pdf
 
 work_orders_bp = Blueprint("work_orders", __name__, url_prefix="/work_orders")
 
@@ -785,3 +795,142 @@ def delete_work_order(work_order_no):
         flash(f"Error deleting work order: {str(e)}", "danger")
 
     return redirect(url_for("work_orders.list_work_orders"))
+
+
+@work_orders_bp.route("/<work_order_no>/pdf/download")
+@login_required
+def download_work_order_pdf(work_order_no):
+    """download PDF in browser for a work order"""
+    # Fetch work order + relationships in one query
+    work_order = (
+        WorkOrder.query.filter_by(WorkOrderNo=work_order_no)
+        .options(
+            db.joinedload(WorkOrder.customer), db.joinedload(WorkOrder.ship_to_source)
+        )
+        .first_or_404()
+    )
+
+    # Base dict from work order
+    wo_dict = work_order.to_dict()
+
+    # Enrich with customer info
+    if work_order.customer:
+        wo_dict["customer"] = work_order.customer.to_dict()
+        wo_dict["customer"]["PrimaryPhone"] = work_order.customer.get_primary_phone()
+        wo_dict["customer"]["FullAddress"] = work_order.customer.get_full_address()
+        wo_dict["customer"]["MailingAddress"] = (
+            work_order.customer.get_mailing_address()
+        )
+
+    if work_order.customer and work_order.customer.Source:
+        wo_dict["source"] = {
+            "Name": work_order.customer.Source,
+            "FullAddress": " ".join(
+                filter(
+                    None,
+                    [
+                        work_order.customer.SourceAddress,
+                        work_order.customer.SourceCity,
+                        work_order.customer.SourceState,
+                        work_order.customer.SourceZip,
+                    ],
+                )
+            ).strip(),
+        }
+    else:
+        # fallback to ShipTo relationship if no customer.Source
+        if work_order.ship_to_source:
+            wo_dict["source"] = work_order.ship_to_source.to_dict()
+        else:
+            wo_dict["source"] = {
+                "Name": work_order.ShipTo or "",
+                "FullAddress": "",
+                "Phone": "",
+                "Email": "",
+            }
+
+    print(wo_dict)
+
+    try:
+        pdf_buffer = generate_work_order_pdf(
+            wo_dict,
+            company_info={
+                "name": "Awning Cleaning Industries - In House Cleaning Work Order"
+            },
+        )
+
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name=f"WorkOrder_{work_order_no}.pdf",
+            mimetype="application/pdf",
+        )
+
+    except Exception as e:
+        flash(f"Error generating PDF: {str(e)}", "error")
+        return redirect(
+            url_for("work_orders.view_work_order", work_order_no=work_order_no)
+        )
+
+
+@work_orders_bp.route("/<work_order_no>/pdf/view")
+@login_required
+def view_work_order_pdf(work_order_no):
+    """View PDF in browser for a work order"""
+    # Fetch work order + relationships in one query
+    work_order = (
+        WorkOrder.query.filter_by(WorkOrderNo=work_order_no)
+        .options(
+            db.joinedload(WorkOrder.customer), db.joinedload(WorkOrder.ship_to_source)
+        )
+        .first_or_404()
+    )
+
+    # Base dict from work order
+    wo_dict = work_order.to_dict()
+
+    # Enrich with customer info
+    if work_order.customer:
+        wo_dict["customer"] = work_order.customer.to_dict()
+        wo_dict["customer"]["PrimaryPhone"] = work_order.customer.get_primary_phone()
+        wo_dict["customer"]["FullAddress"] = work_order.customer.get_full_address()
+        wo_dict["customer"]["MailingAddress"] = (
+            work_order.customer.get_mailing_address()
+        )
+
+    if work_order.ship_to_source:
+        wo_dict["source"] = work_order.ship_to_source.to_dict()
+        wo_dict["source"]["FullAddress"] = work_order.ship_to_source.get_full_address()
+        wo_dict["source"]["Phone"] = work_order.ship_to_source.clean_phone()
+        wo_dict["source"]["Email"] = work_order.ship_to_source.clean_email()
+
+    else:
+        # fallback if the relationship is broken / missing
+        wo_dict["source"] = {
+            "Name": work_order.ShipTo or "",
+            "FullAddress": "",
+            "Phone": "",
+            "Email": "",
+        }
+    print(wo_dict["source"])
+
+    try:
+        pdf_buffer = generate_work_order_pdf(
+            wo_dict,
+            company_info={
+                "name": "Awning Cleaning Industries - In House Cleaning Work Order"
+            },
+        )
+
+        return send_file(
+            pdf_buffer,
+            as_attachment=False,
+            download_name=f"WorkOrder_{work_order_no}.pdf",
+            mimetype="application/pdf",
+        )
+
+    except Exception as e:
+        flash(f"Error generating PDF: {str(e)}", "error")
+        return redirect(
+            url_for("work_orders.view_work_order", work_order_no=work_order_no)
+        )

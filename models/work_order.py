@@ -53,9 +53,8 @@ class WorkOrder(db.Model):
         uselist=False,
     )
 
-    def to_dict(self):
-        """Convert model instance to dictionary"""
-        return {
+    def to_dict(self, include_items=True):
+        data = {
             "WorkOrderNo": self.WorkOrderNo,
             "CustID": self.CustID,
             "WOName": self.WOName,
@@ -79,6 +78,9 @@ class WorkOrder(db.Model):
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
+        if include_items:
+            data["items"] = [item.to_dict() for item in self.items]
+        return data
 
     def __repr__(self):
         return f"<WorkOrder {self.WorkOrderNo}: {self.WOName}>"

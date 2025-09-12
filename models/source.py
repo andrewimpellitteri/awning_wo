@@ -20,6 +20,7 @@ class Source(db.Model):
     def to_dict(self):
         """Convert model instance to dictionary"""
         return {
+            "Name": self.SSource,
             "SSource": self.SSource,
             "SourceAddress": self.SourceAddress,
             "SourceState": self.SourceState,

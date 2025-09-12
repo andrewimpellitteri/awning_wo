@@ -32,3 +32,4 @@ polars
 plotly
 scikit-learn
 lightgbm
+reportlab
