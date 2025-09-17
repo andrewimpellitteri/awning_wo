@@ -47,7 +47,7 @@ class WorkOrderPDF:
         self._setup_custom_styles()
 
     def _setup_custom_styles(self):
-        # Company name style - larger and centered
+        # Company name style - modern and prominent
         self.styles.add(
             ParagraphStyle(
                 name="CompanyName",
@@ -55,56 +55,194 @@ class WorkOrderPDF:
                 fontSize=12,
                 spaceAfter=0.1 * inch,
                 alignment=TA_CENTER,
-                textColor=colors.black,
                 fontName="Helvetica-Bold",
             )
         )
 
-        # Small labels for field names
+        # Work Order Number - extra prominent
+        self.styles.add(
+            ParagraphStyle(
+                name="WONumber",
+                parent=self.styles["Normal"],
+                fontSize=16,
+                fontName="Helvetica-Bold",
+                alignment=TA_RIGHT,
+                textColor=colors.HexColor("#d32f2f"),  # Strong red
+                borderWidth=2,
+                borderColor=colors.HexColor("#d32f2f"),
+                borderPadding=6,
+            )
+        )
+
+        # Section headers - professional blue
+        self.styles.add(
+            ParagraphStyle(
+                name="SectionHeader",
+                parent=self.styles["Normal"],
+                fontSize=10,
+                fontName="Helvetica-Bold",
+                textColor=colors.HexColor("#1976d2"),  # Professional blue
+                spaceAfter=0.05 * inch,
+                leftIndent=2,
+            )
+        )
+
+        # Field labels - refined and consistent
         self.styles.add(
             ParagraphStyle(
                 name="SmallLabel",
                 parent=self.styles["Normal"],
                 fontSize=8,
-                textColor=colors.black,
+                textColor=colors.HexColor("#424242"),  # Dark grey
                 fontName="Helvetica",
+                spaceBefore=1,
+                spaceAfter=1,
             )
         )
 
-        # Values - slightly larger than labels
+        # Important labels (like Rush, Repairs) - standout
+        self.styles.add(
+            ParagraphStyle(
+                name="ImportantLabel",
+                parent=self.styles["Normal"],
+                fontSize=8,
+                textColor=colors.HexColor("#d32f2f"),  # Red
+                fontName="Helvetica-Bold",
+                spaceBefore=1,
+                spaceAfter=1,
+            )
+        )
+
+        # Values - clean and readable
         self.styles.add(
             ParagraphStyle(
                 name="SmallValue",
                 parent=self.styles["Normal"],
                 fontSize=9,
-                textColor=colors.black,
-                fontName="Helvetica-Bold",
+                textColor=colors.HexColor("#212121"),  # Rich black
+                fontName="Helvetica",
+                spaceBefore=1,
+                spaceAfter=1,
             )
         )
 
-        # Table header style
+        # Important values - emphasized
+        self.styles.add(
+            ParagraphStyle(
+                name="ImportantValue",
+                parent=self.styles["Normal"],
+                fontSize=9,
+                textColor=colors.HexColor("#212121"),
+                fontName="Helvetica-Bold",
+                spaceBefore=1,
+                spaceAfter=1,
+            )
+        )
+
+        # Table headers - professional and clean
         self.styles.add(
             ParagraphStyle(
                 name="TableHeader",
                 parent=self.styles["Normal"],
-                fontSize=8,
+                fontSize=9,
                 textColor=colors.black,
                 fontName="Helvetica-Bold",
                 alignment=TA_CENTER,
+                spaceBefore=2,
+                spaceAfter=2,
             )
         )
 
-        # Table cell style
+        # Table cells - alternating friendly
         self.styles.add(
             ParagraphStyle(
                 name="TableCell",
                 parent=self.styles["Normal"],
                 fontSize=8,
-                textColor=colors.black,
+                textColor=colors.HexColor("#424242"),
+                fontName="Helvetica",
+                alignment=TA_CENTER,
+                spaceBefore=1,
+                spaceAfter=1,
+            )
+        )
+
+        # Table cells for important data (like prices)
+        self.styles.add(
+            ParagraphStyle(
+                name="TableCellBold",
+                parent=self.styles["Normal"],
+                fontSize=8,
+                textColor=colors.HexColor("#212121"),
+                fontName="Helvetica-Bold",
+                alignment=TA_CENTER,
+                spaceBefore=1,
+                spaceAfter=1,
+            )
+        )
+
+        # Rush highlighting - urgent red
+        self.styles.add(
+            ParagraphStyle(
+                name="RushHighlight",
+                parent=self.styles["SmallValue"],
+                textColor=colors.HexColor("#d32f2f"),
+                fontName="Helvetica-Bold",
+                borderWidth=1,
+                borderColor=colors.HexColor("#ffcdd2"),  # Light red border
+                borderPadding=2,
+            )
+        )
+
+        # Condensed spacing for tight layouts
+        self.styles.add(
+            ParagraphStyle(
+                name="Condensed",
+                parent=self.styles["SmallValue"],
+                spaceBefore=0.5,
+                spaceAfter=0.5,
+                fontSize=8,
+            )
+        )
+
+        # Footer text - subtle and professional
+        self.styles.add(
+            ParagraphStyle(
+                name="Footer",
+                parent=self.styles["Normal"],
+                fontSize=7,
+                textColor=colors.HexColor("#212121"),  # Medium grey
                 fontName="Helvetica",
                 alignment=TA_CENTER,
             )
         )
+
+        # Special instructions - readable writing space
+        self.styles.add(
+            ParagraphStyle(
+                name="Instructions",
+                parent=self.styles["Normal"],
+                fontSize=9,
+                textColor=colors.HexColor("#212121"),
+                fontName="Helvetica",
+                leftIndent=4,
+                rightIndent=4,
+                spaceBefore=2,
+                spaceAfter=2,
+            )
+        )
+
+    def _calculate_dynamic_instruction_rows(self, items_count):
+        """Calculate number of instruction rows based on items count"""
+        # Base calculation: fewer items = more instruction space
+        if items_count <= 3:
+            return 12  # Lots of space for few items
+        elif items_count <= 6:
+            return 6  # Moderate space
+        elif items_count <= 10:
+            return 6  # Less space but still reasonable
+        else:
+            return 3  # Minimum space for many items
 
     def _format_date(self, date_str):
         if not date_str:
@@ -161,7 +299,7 @@ class WorkOrderPDF:
                         (-1, 0),
                         colors.lightblue,
                     ),  # Blue background
-                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),  # White text
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
                     ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                     ("ALIGN", (0, 0), (0, 0), "CENTER"),
                     ("ALIGN", (2, 0), (2, 0), "RIGHT"),
@@ -185,18 +323,15 @@ class WorkOrderPDF:
         wo = self.work_order
         customer = wo.get("customer", {})
 
-        # --- Top row: Date & Order Info ---
         date_order_data = [
             [
-                safe_paragraph("Customer ID", self.styles["SmallLabel"]),
-                safe_paragraph(str(wo.get("CustID", "")), self.styles["SmallValue"]),
                 safe_paragraph("Rush Order", self.styles["SmallLabel"]),
                 safe_paragraph(
                     "Yes" if wo.get("RushOrder") == "1" else "No",
-                    self.styles["SmallValue"],
+                    self.styles["RushHighlight"]
+                    if wo.get("RushOrder") == "1"
+                    else self.styles["SmallValue"],
                 ),
-            ],
-            [
                 safe_paragraph("Date Required", self.styles["SmallLabel"]),
                 safe_paragraph(
                     self._format_date(wo.get("DateRequired")), self.styles["SmallValue"]
@@ -204,28 +339,50 @@ class WorkOrderPDF:
                 safe_paragraph("Firm Rush", self.styles["SmallLabel"]),
                 safe_paragraph(
                     "Yes" if wo.get("FirmRush") == "1" else "No",
-                    self.styles["SmallValue"],
+                    self.styles["RushHighlight"]
+                    if wo.get("FirmRush") == "1"
+                    else self.styles["SmallValue"],
                 ),
-            ],
+            ]
         ]
 
         date_order_table = Table(
-            date_order_data, colWidths=[1.2 * inch, 2 * inch, 1.2 * inch, 2 * inch]
+            date_order_data,
+            colWidths=[
+                1 * inch,
+                1 * inch,
+                1 * inch,
+                1 * inch,
+                1 * inch,
+                1 * inch,
+            ],
         )
         date_order_table.setStyle(
             TableStyle(
                 [
                     ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ("ALIGN", (1, 0), (1, -1), "LEFT"),
-                    ("ALIGN", (3, 0), (3, -1), "LEFT"),
+                    ("ALIGN", (1, 0), (1, 0), "LEFT"),
+                    ("ALIGN", (3, 0), (3, 0), "LEFT"),
+                    ("ALIGN", (5, 0), (5, 0), "LEFT"),
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
                     ("TOPPADDING", (0, 0), (-1, -1), 4),
+                    (
+                        "LINEBELOW",
+                        (0, 0),
+                        (5, 0),
+                        1,
+                        colors.black,
+                    ),  # Add horizontal line below the row
                 ]
             )
         )
 
         # --- Customer Address ---
         address_data = [
+            [
+                safe_paragraph("Customer ID", self.styles["SmallLabel"]),
+                safe_paragraph(str(wo.get("CustID", "")), self.styles["SmallValue"]),
+            ],
             [
                 safe_paragraph("Name", self.styles["SmallLabel"]),
                 safe_paragraph(customer.get("Name", ""), self.styles["SmallValue"]),
@@ -257,7 +414,8 @@ class WorkOrderPDF:
         ]
 
         address_table = Table(
-            address_data, colWidths=[1 * inch, 2.2 * inch, 1 * inch, 2.2 * inch]
+            address_data,
+            colWidths=[1.8 * inch, 1.8 * inch, 1.8 * inch, 1.8 * inch, 1.8 * inch],
         )
         address_table.setStyle(
             TableStyle(
@@ -308,11 +466,11 @@ class WorkOrderPDF:
 
         return [
             date_order_table,
-            Spacer(1, 0.1 * inch),
+            Spacer(1, 0.05 * inch),
             address_table,
-            Spacer(1, 0.1 * inch),
+            Spacer(1, 0.05 * inch),
             phone_table,
-            Spacer(1, 0.2 * inch),
+            Spacer(1, 0.1 * inch),
         ]
 
     def _build_middle_section(self):
@@ -495,10 +653,14 @@ class WorkOrderPDF:
         return [items_table, Spacer(1, 0.2 * inch)]
 
     def _build_footer(self):
-        """Build footer with professional layout and space for notes"""
+        """Build footer with dynamic special instructions based on items count"""
         wo = self.work_order
+        items_count = len(wo.get("items", []))
 
-        # --- Special Instructions (no box, just blank space for notes) ---
+        # Calculate dynamic number of instruction rows
+        instruction_rows = self._calculate_dynamic_instruction_rows(items_count)
+
+        # --- Special Instructions with dynamic rows ---
         special_instructions = [
             [
                 safe_paragraph("Special<br/>Instructions", self.styles["SmallLabel"]),
@@ -507,19 +669,17 @@ class WorkOrderPDF:
                 ),
             ]
         ]
-        # Add extra blank rows for notes
-        for _ in range(6):
+
+        # Add calculated number of blank rows
+        for _ in range(instruction_rows):
             special_instructions.append(
                 ["", safe_paragraph("", self.styles["SmallValue"])]
             )
 
         special_instructions_table = Table(
             special_instructions,
-            colWidths=[
-                1.0 * inch,  # Reduced from 1.2
-                5.5 * inch,  # Increased writing space, fits within page margins
-            ],
-            rowHeights=[0.3 * inch] + [0.25 * inch] * 6,
+            colWidths=[1.0 * inch, 5.5 * inch],
+            rowHeights=[0.3 * inch] + [0.25 * inch] * instruction_rows,
         )
         special_instructions_table.setStyle(
             TableStyle(
@@ -532,8 +692,7 @@ class WorkOrderPDF:
             )
         )
 
-        # --- Repairs / Status Footer (Split into two rows for better fit) ---
-        # First row - Repairs section
+        # --- Repairs section ---
         repair_footer = [
             [
                 safe_paragraph("Repairs", self.styles["SmallLabel"]),
@@ -548,13 +707,13 @@ class WorkOrderPDF:
         repair_table = Table(
             repair_footer,
             colWidths=[
-                0.8 * inch,  # Repairs
-                1.2 * inch,  # Value
-                0.8 * inch,  # See Repair
-                1.0 * inch,  # Value
-                0.8 * inch,  # Repair First
-                1.0 * inch,  # Value
-            ],  # Total: ~5.6 inches
+                0.8 * inch,
+                1.2 * inch,
+                0.8 * inch,
+                1.0 * inch,
+                0.8 * inch,
+                1.0 * inch,
+            ],
         )
         repair_table.setStyle(
             TableStyle(
@@ -568,7 +727,7 @@ class WorkOrderPDF:
             )
         )
 
-        # Second row - Status section
+        # --- Status section ---
         status_footer = [
             [
                 safe_paragraph("Clean", self.styles["SmallLabel"]),
@@ -587,13 +746,13 @@ class WorkOrderPDF:
         status_table = Table(
             status_footer,
             colWidths=[
-                0.7 * inch,  # Clean
-                1.0 * inch,  # Date
-                0.7 * inch,  # Treat
-                1.0 * inch,  # Date
-                1.0 * inch,  # Return Status
-                1.2 * inch,  # Value
-            ],  # Total: ~5.6 inches
+                0.7 * inch,
+                1.0 * inch,
+                0.7 * inch,
+                1.0 * inch,
+                1.0 * inch,
+                1.2 * inch,
+            ],
         )
         status_table.setStyle(
             TableStyle(
@@ -607,7 +766,7 @@ class WorkOrderPDF:
             )
         )
 
-        # Third row - Date Completed (separate for better spacing)
+        # --- Completion section ---
         completion_footer = [
             [
                 safe_paragraph("Date Completed", self.styles["SmallLabel"]),
@@ -615,7 +774,7 @@ class WorkOrderPDF:
                     self._format_date(wo.get("DateCompleted", "")),
                     self.styles["SmallValue"],
                 ),
-                "",  # Empty cells for alignment
+                "",
                 "",
                 "",
                 "",
@@ -625,12 +784,12 @@ class WorkOrderPDF:
         completion_table = Table(
             completion_footer,
             colWidths=[
-                1.2 * inch,  # Date Completed
-                1.5 * inch,  # Value
-                0.9 * inch,  # Empty
-                1.0 * inch,  # Empty
-                1.0 * inch,  # Empty
-                1.2 * inch,  # Empty
+                1.2 * inch,
+                1.5 * inch,
+                0.9 * inch,
+                1.0 * inch,
+                1.0 * inch,
+                1.2 * inch,
             ],
         )
         completion_table.setStyle(
@@ -645,28 +804,28 @@ class WorkOrderPDF:
             )
         )
 
-        # --- Checkbox row ---
+        # --- Checkbox section ---
         bottom_footer = [
             [
                 safe_paragraph("Approved:", self.styles["SmallLabel"]),
-                "",  # checkbox
+                "",
                 safe_paragraph("Billed:", self.styles["SmallLabel"]),
-                "",  # checkbox
+                "",
                 safe_paragraph("Updated:", self.styles["SmallLabel"]),
-                "",  # checkbox
+                "",
             ]
         ]
 
         checkbox_table = Table(
             bottom_footer,
             colWidths=[
-                1.0 * inch,  # Reduced from 1.2
+                1.0 * inch,
                 0.3 * inch,
-                1.0 * inch,  # Reduced from 1.2
+                1.0 * inch,
                 0.3 * inch,
-                1.0 * inch,  # Reduced from 1.2
+                1.0 * inch,
                 0.3 * inch,
-            ],  # Total: 3.9 inches
+            ],
             rowHeights=0.25 * inch,
         )
         checkbox_table.setStyle(
@@ -684,9 +843,9 @@ class WorkOrderPDF:
         return [
             Spacer(1, 0.2 * inch),
             special_instructions_table,
-            Spacer(1, 0.1 * inch),  # Slightly less space
+            Spacer(1, 0.1 * inch),
             repair_table,
-            Spacer(1, 0.05 * inch),  # Small gap between related sections
+            Spacer(1, 0.05 * inch),
             status_table,
             Spacer(1, 0.05 * inch),
             completion_table,
