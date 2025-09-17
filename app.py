@@ -79,6 +79,7 @@ def create_app(config_class=Config):
     from routes.analytics import analytics_bp
     from routes.inventory import inventory_bp
     from routes.queue import queue_bp
+    from routes.ml import ml_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(source_bp, url_prefix="/sources")
@@ -89,6 +90,7 @@ def create_app(config_class=Config):
     app.register_blueprint(analytics_bp, url_prefix="/analytics")
     app.register_blueprint(inventory_bp, url_prefix="/inventory")
     app.register_blueprint(queue_bp, url_prefix="/cleaning_queue")
+    app.register_blueprint(ml_bp)
 
     # Register routes
     @app.route("/")

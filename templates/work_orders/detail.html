@@ -489,6 +489,18 @@
                                     <small>{{ (work_order.updated_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
                                 </div>
                             </div>
+                            <div class="card mt-3">
+                                <div class="card-header bg-primary text-white">
+                                  <i class="fas fa-robot me-1"></i> ML Estimate
+                                </div>
+                                <div class="card-body">
+                                  <div id="ml-estimate-card">
+                                    <span class="text-muted">Loading estimate...</span>
+                                  </div>
+                                </div>
+                            </div>
+                              
+
                         </div>
                     </div>
                 </div>
@@ -496,4 +508,43 @@
         </div>
     </div>
 </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const orderNo = "{{ work_order.WorkOrderNo }}";
+        const estimateUrl = "{{ url_for('ml.predict_work_order', work_order_no=work_order.WorkOrderNo) }}";
+    
+        fetch(estimateUrl)
+            .then(response => response.json())
+            .then(data => {
+                let html = "";
+                if (data.error) {
+                    html = `<span class="text-danger">${data.error}</span>`;
+                } else {
+                    html = `
+                        <div class="detail-row">
+                            <div class="detail-label">Predicted Days</div>
+                            <div class="detail-value">
+                                <span class="badge bg-success">
+                                    ${data.predicted_days} days
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Estimated Completion</div>
+                            <div class="detail-value">
+                                <span class="badge bg-info">
+                                    ${data.estimated_completion}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                }
+                document.getElementById("ml-estimate-card").innerHTML = html;
+            })
+            .catch(err => {
+                document.getElementById("ml-estimate-card").innerHTML =
+                    `<span class="text-danger">Failed to load estimate</span>`;
+            });
+    });
+</script>    
 {% endblock %}
