@@ -12,60 +12,67 @@ queue_bp = Blueprint("cleaning_queue", __name__)
 @queue_bp.route("/cleaning-queue")
 @login_required
 def cleaning_queue():
-    """Show work orders in cleaning queue with priority ordering"""
-    search = request.args.get("search", "")
+    """Show work orders in cleaning queue with priority ordering and search"""
+
+    search = request.args.get("search", "").strip()
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 25, type=int)
 
-    # Base query for uncompleted work orders that need cleaning
-    base_query = WorkOrder.query.filter(
-        or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""),
-    )
-
-    if search:
-        search_term = f"%{search}%"
-        base_query = base_query.filter(
+    # Helper: build search filter if search term is provided
+    def search_filter(query):
+        if not search:
+            return query
+        term = f"%{search}%"
+        return query.filter(
             or_(
-                WorkOrder.WorkOrderNo.like(search_term),
-                WorkOrder.CustID.like(search_term),
-                WorkOrder.WOName.like(search_term),
-                WorkOrder.ShipTo.like(search_term),
+                WorkOrder.WorkOrderNo.ilike(term),
+                WorkOrder.CustID.ilike(term),
+                WorkOrder.WOName.ilike(term),
+                WorkOrder.ShipTo.ilike(term),
             )
         )
 
-    # Create separate queries for each priority level
-    # Priority 1: Firm Rush orders (sorted by DateRequired)
-    firm_rush_query = base_query.filter(WorkOrder.FirmRush == "1").order_by(
-        WorkOrder.DateRequired.asc().nullslast(), WorkOrder.DateIn.asc().nullslast()
+    # Base filters: incomplete work orders
+    base_filter = or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == "")
+
+    # Priority 1: Firm Rush
+    firm_rush_query = search_filter(
+        WorkOrder.query.filter(WorkOrder.FirmRush == "1", base_filter).order_by(
+            WorkOrder.DateRequired.asc().nullslast(), WorkOrder.DateIn.asc().nullslast()
+        )
     )
-
-    # Priority 2: Regular Rush orders (sorted by DateIn)
-    rush_query = base_query.filter(
-        WorkOrder.RushOrder == "1",
-        or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != "1"),
-    ).order_by(WorkOrder.DateIn.asc().nullslast(), WorkOrder.WorkOrderNo.asc())
-
-    # Priority 3: Regular orders (FIFO by DateIn)
-    regular_query = base_query.filter(
-        or_(WorkOrder.RushOrder.is_(None), WorkOrder.RushOrder != "1"),
-        or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != "1"),
-    ).order_by(WorkOrder.DateIn.asc().nullslast(), WorkOrder.WorkOrderNo.asc())
-
-    # Get all work orders in priority order
     firm_rush_orders = firm_rush_query.all()
+
+    # Priority 2: Rush (excluding Firm Rush)
+    rush_query = search_filter(
+        WorkOrder.query.filter(
+            WorkOrder.RushOrder == "1",
+            or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != "1"),
+            base_filter,
+        ).order_by(WorkOrder.DateIn.asc().nullslast(), WorkOrder.WorkOrderNo.asc())
+    )
     rush_orders = rush_query.all()
+
+    # Priority 3: Regular (non-Rush, non-FirmRush)
+    regular_query = search_filter(
+        WorkOrder.query.filter(
+            or_(WorkOrder.RushOrder.is_(None), WorkOrder.RushOrder != "1"),
+            or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != "1"),
+            base_filter,
+        ).order_by(WorkOrder.DateIn.asc().nullslast(), WorkOrder.WorkOrderNo.asc())
+    )
     regular_orders = regular_query.all()
 
-    # Combine in priority order
+    # Combine all orders in priority order
     all_orders = firm_rush_orders + rush_orders + regular_orders
 
-    # Manual pagination since we combined queries
+    # Manual pagination
     total = len(all_orders)
     start = (page - 1) * per_page
     end = start + per_page
     paginated_orders = all_orders[start:end]
 
-    # Create pagination object manually
+    # Manual pagination object
     class ManualPagination:
         def __init__(self, items, page, per_page, total):
             self.items = items
@@ -80,7 +87,7 @@ def cleaning_queue():
 
     pagination = ManualPagination(paginated_orders, page, per_page, total)
 
-    # Add priority labels to each work order for display
+    # Add display priority labels
     for wo in paginated_orders:
         if wo.FirmRush == "1":
             wo.priority_label = "FIRM RUSH"
@@ -92,18 +99,21 @@ def cleaning_queue():
             wo.priority_label = "REGULAR"
             wo.priority_class = "priority-regular"
 
+    # Queue counts
+    queue_counts = {
+        "firm_rush": len(firm_rush_orders),
+        "rush": len(rush_orders),
+        "regular": len(regular_orders),
+        "total": total,
+    }
+
     return render_template(
         "queue/list.html",
         work_orders=paginated_orders,
         pagination=pagination,
         search=search,
         per_page=per_page,
-        queue_counts={
-            "firm_rush": len(firm_rush_orders),
-            "rush": len(rush_orders),
-            "regular": len(regular_orders),
-            "total": total,
-        },
+        queue_counts=queue_counts,
     )
 
 
