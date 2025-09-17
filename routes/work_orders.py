@@ -912,7 +912,8 @@ def view_work_order_pdf(work_order_no):
             "Phone": "",
             "Email": "",
         }
-    print(wo_dict["source"])
+
+    print(wo_dict)
 
     try:
         pdf_buffer = generate_work_order_pdf(
