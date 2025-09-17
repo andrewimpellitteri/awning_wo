@@ -501,7 +501,7 @@ def batch_predict():
                         "work_order": order.WorkOrderNo,
                         "customer": order.CustID,
                         "date_in": order.DateIn,
-                        "predicted_days": round(prediction, 1),
+                        "predicted_days": round(prediction),
                         "rush_order": bool(order.RushOrder),
                         "instructions": (order.SpecialInstructions or "")[:100],
                     }
@@ -573,7 +573,7 @@ def predict_work_order(work_order_no):
         return jsonify(
             {
                 "work_order": work_order_no,
-                "predicted_days": round(float(prediction), 1),
+                "predicted_days": round(float(prediction)),
                 "estimated_completion": completion_date.strftime("%Y-%m-%d"),
                 "confidence_interval": {
                     "lower": round(float(prediction) - 1.5, 2),

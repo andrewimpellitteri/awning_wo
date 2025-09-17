@@ -226,6 +226,14 @@ def api_repair_work_orders():
             )
             if order.customer
             else None,
+            "edit_url": url_for(
+                "repair_work_orders.edit_repair_order",
+                repair_order_no=order.RepairOrderNo,
+            ),
+            "delete_url": url_for(
+                "repair_work_orders.delete_repair_order",
+                repair_order_no=order.RepairOrderNo,
+            ),
         }
         for order in pagination.items
     ]
