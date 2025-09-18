@@ -155,8 +155,25 @@ document.addEventListener("DOMContentLoaded", function() {
         persistenceID: "wo_table",
 
         columns: [
-            { title: "WO #", field: "WorkOrderNo", width: 120, headerFilter: "input",
-              formatter: cell => `<a href="${cell.getRow().getData().detail_url}">${cell.getValue()}</a>` },
+            { 
+                title: "WO #", 
+                field: "WorkOrderNo", 
+                width: 120, 
+                headerFilter: function(cell, onRendered, success, cancel, editorParams){
+                    const input = document.createElement("input");
+                    input.type = "text";
+                    input.classList.add("form-control", "form-control-sm", "border-0", "bg-light");
+                    input.placeholder = "WO # or range (e.g. 100-200)";
+                    
+                    onRendered(() => input.focus());
+                    
+                    input.addEventListener("input", () => success(input.value));
+                    return input;
+                },
+                // Remove headerFilterFunc since we're using remote filtering
+                formatter: cell => `<a href="${cell.getRow().getData().detail_url}">${cell.getValue()}</a>`
+            },
+
             { title: "Customer", field: "CustID", width: 120, headerFilter: "input",
               formatter: cell => {
                   const row = cell.getRow().getData();

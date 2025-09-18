@@ -660,12 +660,46 @@ def api_work_orders():
     ]:
         filter_val = request.args.get(f"filter_{field}")
         if filter_val:
-            if field in ["WorkOrderNo", "CustID"]:
-                query = query.filter(getattr(WorkOrder, field) == filter_val)
+            filter_val = filter_val.strip()
+
+            if field == "WorkOrderNo":
+                # Handle range or exact match with casting
+                if "-" in filter_val:
+                    try:
+                        start, end = map(
+                            int, filter_val.split("-", 1)
+                        )  # Only split on first dash
+                        query = query.filter(
+                            cast(WorkOrder.WorkOrderNo, Integer) >= start,
+                            cast(WorkOrder.WorkOrderNo, Integer) <= end,
+                        )
+                    except ValueError:
+                        # If parsing fails, ignore this filter
+                        pass
+                else:
+                    try:
+                        val = int(filter_val)
+                        query = query.filter(
+                            cast(WorkOrder.WorkOrderNo, Integer) == val
+                        )
+                    except ValueError:
+                        # If parsing fails, ignore this filter
+                        pass
+
+            elif field == "CustID":
+                # exact match only
+                try:
+                    val = int(filter_val)
+                    query = query.filter(WorkOrder.CustID == val)
+                except ValueError:
+                    pass
+
             elif field == "Source":
                 # Filter on the correct column from the joined table
                 query = query.filter(Source.SSource.ilike(f"%{filter_val}%"))
+
             else:
+                # For other text fields (WOName, DateIn, DateRequired)
                 query = query.filter(getattr(WorkOrder, field).ilike(f"%{filter_val}%"))
 
     # Status quick filters
