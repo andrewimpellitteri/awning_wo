@@ -15,6 +15,10 @@ import json
 
 from flask import Flask
 
+from app import create_app
+from extensions import db
+from test_config import TestingConfig
+
 
 # Add project root to Python path
 project_root = Path(__file__).parent.parent
@@ -23,6 +27,16 @@ sys.path.insert(0, str(project_root))
 # Set environment for testing
 os.environ["FLASK_ENV"] = "testing"
 os.environ["TESTING"] = "True"
+
+
+@pytest.fixture(scope="function")
+def app():
+    app = create_app(config_class=TestingConfig)
+    with app.app_context():
+        db.create_all()  # create tables
+        yield app
+        db.session.remove()
+        db.drop_all()  # clean up after test
 
 
 @pytest.mark.unit

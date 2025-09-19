@@ -9,6 +9,7 @@ import sys
 import os
 from pathlib import Path
 from unittest.mock import Mock, patch
+from config import Config
 
 # Add project root to Python path
 project_root = Path(__file__).parent.parent
@@ -145,6 +146,15 @@ class TestDatabaseConnection:
                 pytest.skip("No development config found")
         except ImportError:
             pytest.skip("psycopg2 not installed")
+
+
+# config.py (or test_config.py)
+class TestingConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"  # in-memory DB
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    WTF_CSRF_ENABLED = False
+    SECRET_KEY = "test-secret-key"
 
 
 if __name__ == "__main__":
