@@ -20,6 +20,7 @@ from sqlalchemy.types import Date
 from sqlalchemy.dialects.postgresql import dialect as pg_dialect
 import uuid
 from work_order_pdf import generate_work_order_pdf
+from decorators import role_required
 
 work_orders_bp = Blueprint("work_orders", __name__, url_prefix="/work_orders")
 
@@ -575,6 +576,39 @@ def edit_work_order(work_order_no):
         work_order_items=work_order_items,
         customers=customers,
         sources=sources,
+    )
+
+
+@work_orders_bp.route("/cleaning-room/edit/<work_order_no>", methods=["GET", "POST"])
+@role_required("user")
+def cleaning_room_edit_work_order(work_order_no):
+    """Restricted edit for cleaning room staff - can only edit Clean, Treat, and SpecialInstructions"""
+    work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
+
+    if request.method == "POST":
+        try:
+            # Only allow updating Clean, Treat, and SpecialInstructions
+            work_order.Clean = request.form.get("Clean")
+            work_order.Treat = request.form.get("Treat")
+            work_order.SpecialInstructions = request.form.get("SpecialInstructions")
+
+            db.session.commit()
+            flash(
+                f"Work Order {work_order_no} (cleaning room update) saved successfully!",
+                "success",
+            )
+            return redirect(
+                url_for("work_orders.view_work_order", work_order_no=work_order_no)
+            )
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error updating work order: {str(e)}", "error")
+
+    # GET request - show limited edit form
+    return render_template(
+        "work_orders/cleaning_room_edit.html",
+        work_order=work_order,
     )
 
 
