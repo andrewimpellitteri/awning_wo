@@ -4,7 +4,12 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>User Management</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>User Management</h2>
+        <a href="{{ url_for('ml.dashboard') }}" class="btn btn-outline-primary">
+            <i class="fas fa-brain me-1"></i>ML Dashboard
+        </a>
+    </div>
     <table class="table table-striped table-hover mt-3">
         <thead class="table-dark">
             <tr>
