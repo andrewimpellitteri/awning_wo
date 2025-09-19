@@ -208,12 +208,6 @@
                         </div>
                         <div class="card-body">
                             <div class="d-grid gap-2">
-                                {% if customer.get_primary_phone() %}
-                                    <a href="tel:{{ customer.get_primary_phone().replace('(', '').replace(')', '').replace(' ', '').replace('-', '') }}" 
-                                       class="btn btn-outline-success">
-                                        <i class="fas fa-phone"></i> Call {{ customer.get_primary_phone() }}
-                                    </a>
-                                {% endif %}
                                 
                                 {% if customer.clean_email() %}
                                     <a href="mailto:{{ customer.clean_email() }}" class="btn btn-outline-primary">
