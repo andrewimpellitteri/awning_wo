@@ -39,6 +39,11 @@ def app():
         db.drop_all()  # clean up after test
 
 
+@pytest.fixture(scope="function")
+def client(app):
+    return app.test_client()
+
+
 @pytest.mark.unit
 class TestWorkOrderUtilities:
     """Test utility functions used in work orders."""
@@ -381,14 +386,30 @@ class TestWorkOrderAPIMocking:
 
 @pytest.mark.integration
 class TestWorkOrderIntegrationMocked:
-    """Integration-style tests with full mocking."""
+    """Integration-style tests with full mocking. These need the Flask app context."""
+
+    # Add the 'app' fixture to the test methods. Pytest will automatically inject it.
 
     @patch("extensions.db.session")
     @patch("models.work_order.WorkOrder.query")
-    def test_work_order_creation_integration(self, mock_wo_query, mock_db_session):
+    def test_work_order_creation_integration(self, mock_wo_query, mock_db_session, app):
         """Test complete work order creation flow."""
         # Mock database operations
-        mock_db_session.query.return_value.scalar.return_value = 1000
+        # This test relies on the WorkOrder.query being called.
+        # Since WorkOrder.query itself is an InstrumentedAttribute that
+        # internally tries to get a session from db, which requires an app context,
+        # we need the app fixture here.
+
+        # The app fixture (defined globally) ensures app.app_context() is active.
+        # So, no need for an explicit `with app.app_context():` block here
+        # unless you need a *separate* app context, which is unlikely for this.
+
+        # Correctly mock a scalar return for a query like db.session.query(func.max(WorkOrder.WorkOrderNo)).scalar()
+        # You need to mock the entire query chain up to scalar.
+        mock_max_result = Mock()
+        mock_max_result.scalar.return_value = 1000  # Simulate the current max WO No
+        mock_db_session.query.return_value = mock_max_result
+
         mock_db_session.add = Mock()
         mock_db_session.commit = Mock()
         mock_db_session.flush = Mock()
@@ -419,8 +440,21 @@ class TestWorkOrderIntegrationMocked:
                 "ShipTo": "TEST_SOURCE",
             }
 
-            # Test work order creation logic
-            next_wo_no = "1001"  # Would be calculated from latest_num + 1
+            # --- THE ACTUAL LOGIC YOU'RE TESTING IN YOUR APPLICATION ---
+            # This is where your Flask route code would typically run.
+            # Here, we're simulating the *effects* of that code based on the mocks.
+
+            # Get next WO No (this would typically involve db.session.query(func.max(...)).scalar())
+            # With mock_db_session.query.return_value = mock_max_result,
+            # and mock_max_result.scalar.return_value = 1000,
+            # this logic should now work without a RuntimeError.
+            # Assuming your app logic calculates next_wo_no from this.
+            latest_wo_no = mock_db_session.query(
+                None
+            ).scalar()  # Call the mocked scalar
+            next_wo_no = str(int(latest_wo_no) + 1) if latest_wo_no else "1"
+
+            assert next_wo_no == "1001"  # Verify next_wo_no calculation
 
             # Test selected items processing
             selected_items = form_data.get("selected_items[]", [])
@@ -447,15 +481,34 @@ class TestWorkOrderIntegrationMocked:
             assert len(new_descriptions) == 1
             assert new_descriptions[0] == "New Item"
 
-            # Verify mock calls would be made
-            assert mock_db_session.add.call_count == 0  # Not actually called in test
-            assert mock_db_session.commit.call_count == 0  # Not actually called in test
+            # Verify mock calls would be made if you were instantiating and adding
+            # a WorkOrder and WorkOrderItem objects.
+            # For a true integration test, you would likely instantiate these objects
+            # and then assert that mock_db_session.add was called with instances
+            # of WorkOrder and WorkOrderItem.
+            # Example:
+            # new_wo = WorkOrder(WorkOrderNo=next_wo_no, CustID=form_data["CustID"], ...)
+            # mock_db_session.add(new_wo)
+            # mock_db_session.commit()
+            # Then you'd assert:
+            # mock_db_session.add.assert_called_once_with(new_wo) # or check args if multiple adds
+            # mock_db_session.commit.assert_called_once()
+            assert (
+                mock_db_session.add.call_count == 0
+            )  # Still 0 as we aren't adding here, just simulating the *environment*
+            assert (
+                mock_db_session.commit.call_count == 0
+            )  # Still 0 as we aren't committing here
 
     @patch("models.work_order.WorkOrder.query")
     @patch("models.work_order.WorkOrderItem.query")
     @patch("extensions.db.session")
     def test_work_order_edit_integration(
-        self, mock_db_session, mock_item_query, mock_wo_query
+        self,
+        mock_db_session,
+        mock_item_query,
+        mock_wo_query,
+        app,  # Add 'app' fixture
     ):
         """Test work order editing integration."""
         # Mock existing work order
@@ -498,21 +551,25 @@ class TestWorkOrderIntegrationMocked:
 
     @patch("extensions.db.session")
     @patch("models.work_order.WorkOrder.query")
-    def test_work_order_deletion_integration(self, mock_wo_query, mock_db_session):
+    def test_work_order_deletion_integration(
+        self, mock_wo_query, mock_db_session, app
+    ):  # Add 'app' fixture
         """Test work order deletion integration."""
         # Mock work order with items
         mock_item1 = Mock()
         mock_item2 = Mock()
         mock_work_order = Mock()
         mock_work_order.WorkOrderNo = "1001"
-        mock_work_order.items = [mock_item1, mock_item2]
+        mock_work_order.items = [mock_item1, mock_item2]  # Simulate relationship
         mock_wo_query.filter_by.return_value.first_or_404.return_value = mock_work_order
 
         # Test deletion logic
         work_order_no = "1001"
 
-        # Verify that items would be deleted first
-        items_to_delete = mock_work_order.items
+        # Verify that items would be deleted first (in the actual app logic)
+        items_to_delete = (
+            mock_work_order.items
+        )  # Accessing this attribute will work now due to app context
         assert len(items_to_delete) == 2
 
         # Verify that work order would be deleted
