@@ -33,3 +33,6 @@ plotly
 scikit-learn
 lightgbm
 reportlab
+pytest 
+pytest-flask 
+pytest-mock
