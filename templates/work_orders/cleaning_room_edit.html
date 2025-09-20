@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Cleaning Room Edit - Work Order {{ work_order.WorkOrderNo }}</h2>
+
+<form method="POST">
+    <div class="form-group">
+        <label for="Clean">Clean Date</label>
+        <input type="date" name="Clean" id="Clean"
+               value="{{ work_order.Clean or '' }}" class="form-control">
+    </div>
+
+    <div class="form-group">
+        <label for="Treat">Treat Date</label>
+        <input type="date" name="Treat" id="Treat"
+               value="{{ work_order.Treat or '' }}" class="form-control">
+    </div>
+
+    <div class="form-group">
+        <label for="SpecialInstructions">Special Instructions</label>
+        <textarea name="SpecialInstructions" id="SpecialInstructions"
+                  class="form-control">{{ work_order.SpecialInstructions or '' }}</textarea>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}"
+       class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

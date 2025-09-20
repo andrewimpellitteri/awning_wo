@@ -155,6 +155,7 @@ class TestingConfig(Config):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     WTF_CSRF_ENABLED = False
     SECRET_KEY = "test-secret-key"
+    SQLALCHEMY_ENGINE_OPTIONS = {}
 
 
 if __name__ == "__main__":
