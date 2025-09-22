@@ -46,6 +46,8 @@ class WorkOrder(db.Model):
         "WorkOrderItem", back_populates="work_order", cascade="all, delete-orphan"
     )
 
+    QueuePosition = db.Column("queueposition", db.Integer, nullable=True)
+
     ship_to_source = db.relationship(
         "Source",
         primaryjoin="WorkOrder.ShipTo==Source.SSource",

@@ -2,11 +2,170 @@ from flask import Blueprint, render_template, request, jsonify, url_for
 from flask_login import login_required
 from models.work_order import WorkOrder
 from .work_orders import format_date_from_str
-from sqlalchemy import or_
+from sqlalchemy import or_, and_, func
 from extensions import db
 
 
 queue_bp = Blueprint("cleaning_queue", __name__)
+
+
+def initialize_queue_positions_for_unassigned():
+    """Initialize queue positions for work orders that don't have them (preserves existing manual ordering)"""
+    try:
+        base_filter = or_(
+            WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""
+        )
+
+        # Only get work orders without queue positions
+        unassigned_orders = WorkOrder.query.filter(
+            base_filter, WorkOrder.QueuePosition.is_(None)
+        ).all()
+
+        if not unassigned_orders:
+            return 0
+
+        # Sort unassigned orders by priority and date
+        def priority_sort_key(wo):
+            if wo.FirmRush == "1":
+                return (
+                    1,
+                    wo.DateRequired or "9999-12-31",
+                    wo.DateIn or "9999-12-31",
+                    wo.WorkOrderNo,
+                )
+            elif wo.RushOrder == "1":
+                return (2, wo.DateIn or "9999-12-31", wo.WorkOrderNo)
+            else:
+                return (3, wo.DateIn or "9999-12-31", wo.WorkOrderNo)
+
+        sorted_unassigned = sorted(unassigned_orders, key=priority_sort_key)
+
+        # Get the highest existing queue position to continue from there
+        max_position = (
+            db.session.query(func.max(WorkOrder.QueuePosition))
+            .filter(base_filter)
+            .scalar()
+            or 0
+        )
+
+        # Assign positions to unassigned orders
+        for i, wo in enumerate(sorted_unassigned):
+            wo.QueuePosition = max_position + i + 1
+
+        db.session.commit()
+        return len(sorted_unassigned)
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error initializing queue positions: {e}")
+        return 0
+
+
+def initialize_all_queue_positions(force_reset=False):
+    """Initialize queue positions for all work orders that don't have them"""
+    try:
+        base_filter = or_(
+            WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""
+        )
+
+        if force_reset:
+            # Clear all existing positions first
+            WorkOrder.query.filter(base_filter).update({WorkOrder.QueuePosition: None})
+            db.session.flush()
+
+        # Get all work orders without queue positions
+        unpositioned_orders = WorkOrder.query.filter(
+            base_filter, WorkOrder.QueuePosition.is_(None)
+        ).all()
+
+        if not unpositioned_orders:
+            return 0
+
+        # Sort by priority and date
+        def priority_sort_key(wo):
+            if wo.FirmRush == "1":
+                return (
+                    1,
+                    wo.DateRequired or "9999-12-31",
+                    wo.DateIn or "9999-12-31",
+                    wo.WorkOrderNo,
+                )
+            elif wo.RushOrder == "1":
+                return (2, wo.DateIn or "9999-12-31", wo.WorkOrderNo)
+            else:
+                return (3, wo.DateIn or "9999-12-31", wo.WorkOrderNo)
+
+        sorted_orders = sorted(unpositioned_orders, key=priority_sort_key)
+
+        # Get starting position
+        max_position = (
+            db.session.query(func.max(WorkOrder.QueuePosition))
+            .filter(base_filter)
+            .scalar()
+            or 0
+        )
+
+        # Assign positions
+        for i, wo in enumerate(sorted_orders):
+            wo.QueuePosition = max_position + i + 1
+
+        db.session.commit()
+        return len(sorted_orders)
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error initializing queue positions: {e}")
+        return 0
+
+    """Initialize queue positions for work orders that don't have them (preserves existing manual ordering)"""
+    try:
+        base_filter = or_(
+            WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""
+        )
+
+        # Only get work orders without queue positions
+        unassigned_orders = WorkOrder.query.filter(
+            base_filter, WorkOrder.QueuePosition.is_(None)
+        ).all()
+
+        if not unassigned_orders:
+            return 0
+
+        # Sort unassigned orders by priority and date
+        def priority_sort_key(wo):
+            if wo.FirmRush == "1":
+                return (
+                    1,
+                    wo.DateRequired or "9999-12-31",
+                    wo.DateIn or "9999-12-31",
+                    wo.WorkOrderNo,
+                )
+            elif wo.RushOrder == "1":
+                return (2, wo.DateIn or "9999-12-31", wo.WorkOrderNo)
+            else:
+                return (3, wo.DateIn or "9999-12-31", wo.WorkOrderNo)
+
+        sorted_unassigned = sorted(unassigned_orders, key=priority_sort_key)
+
+        # Get the highest existing queue position to continue from there
+        max_position = (
+            db.session.query(func.max(WorkOrder.QueuePosition))
+            .filter(base_filter)
+            .scalar()
+            or 0
+        )
+
+        # Assign positions to unassigned orders
+        for i, wo in enumerate(sorted_unassigned):
+            wo.QueuePosition = max_position + i + 1
+
+        db.session.commit()
+        return len(sorted_unassigned)
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error initializing queue positions: {e}")
+        return 0
 
 
 @queue_bp.route("/cleaning-queue")
@@ -35,36 +194,33 @@ def cleaning_queue():
     # Base filters: incomplete work orders
     base_filter = or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == "")
 
-    # Priority 1: Firm Rush
-    firm_rush_query = search_filter(
-        WorkOrder.query.filter(WorkOrder.FirmRush == "1", base_filter).order_by(
-            WorkOrder.DateRequired.asc().nullslast(), WorkOrder.DateIn.asc().nullslast()
+    # Initialize queue positions for any work orders that don't have them
+    # This only affects work orders without positions, preserving manual reordering
+    initialized_count = initialize_queue_positions_for_unassigned()
+    if initialized_count > 0:
+        print(f"Auto-initialized {initialized_count} work orders with queue positions")
+
+    # FIXED: Fetch ALL work orders together, ordered by queue position FIRST
+    all_orders_query = search_filter(
+        WorkOrder.query.filter(base_filter).order_by(
+            WorkOrder.QueuePosition.asc().nullslast(),
+            # Fallback ordering for items without queue positions
+            WorkOrder.DateRequired.asc().nullslast(),
+            WorkOrder.DateIn.asc().nullslast(),
+            WorkOrder.WorkOrderNo.asc(),
         )
     )
-    firm_rush_orders = firm_rush_query.all()
 
-    # Priority 2: Rush (excluding Firm Rush)
-    rush_query = search_filter(
-        WorkOrder.query.filter(
-            WorkOrder.RushOrder == "1",
-            or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != "1"),
-            base_filter,
-        ).order_by(WorkOrder.DateIn.asc().nullslast(), WorkOrder.WorkOrderNo.asc())
-    )
-    rush_orders = rush_query.all()
+    all_orders = all_orders_query.all()
 
-    # Priority 3: Regular (non-Rush, non-FirmRush)
-    regular_query = search_filter(
-        WorkOrder.query.filter(
-            or_(WorkOrder.RushOrder.is_(None), WorkOrder.RushOrder != "1"),
-            or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != "1"),
-            base_filter,
-        ).order_by(WorkOrder.DateIn.asc().nullslast(), WorkOrder.WorkOrderNo.asc())
-    )
-    regular_orders = regular_query.all()
-
-    # Combine all orders in priority order
-    all_orders = firm_rush_orders + rush_orders + regular_orders
+    # Calculate counts for each priority (for the stats display)
+    firm_rush_orders = [wo for wo in all_orders if wo.FirmRush == "1"]
+    rush_orders = [
+        wo for wo in all_orders if wo.RushOrder == "1" and wo.FirmRush != "1"
+    ]
+    regular_orders = [
+        wo for wo in all_orders if wo.RushOrder != "1" and wo.FirmRush != "1"
+    ]
 
     # Manual pagination
     total = len(all_orders)
@@ -79,7 +235,7 @@ def cleaning_queue():
             self.page = page
             self.per_page = per_page
             self.total = total
-            self.pages = (total + per_page - 1) // per_page
+            self.pages = (total + per_page - 1) // per_page if per_page > 0 else 1
             self.has_prev = page > 1
             self.prev_num = page - 1 if self.has_prev else None
             self.has_next = page < self.pages
@@ -87,7 +243,7 @@ def cleaning_queue():
 
     pagination = ManualPagination(paginated_orders, page, per_page, total)
 
-    # Add display priority labels
+    # Add display priority labels and queue positions
     for wo in paginated_orders:
         if wo.FirmRush == "1":
             wo.priority_label = "FIRM RUSH"
@@ -121,27 +277,62 @@ def cleaning_queue():
 @login_required
 def reorder_cleaning_queue():
     """Allow manual reordering of work orders in cleaning queue"""
-    data = request.get_json()
-    work_order_ids = data.get("work_order_ids", [])
-
-    if not work_order_ids:
-        return jsonify({"success": False, "message": "No work orders provided"})
-
     try:
-        # Update the queue position for each work order
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "message": "No JSON data received"})
+
+        work_order_ids = data.get("work_order_ids", [])
+
+        if not work_order_ids:
+            return jsonify({"success": False, "message": "No work orders provided"})
+
+        print(f"Reorder request received: {len(work_order_ids)} work orders")
+        print(f"Work order IDs: {work_order_ids}")
+
+        # Get the current page info to only reorder visible items
+        page = data.get("page", 1)
+        per_page = data.get("per_page", 25)
+
+        # Calculate the starting position for this page
+        start_position = (page - 1) * per_page + 1
+
+        print(f"Page: {page}, Per page: {per_page}, Start position: {start_position}")
+
+        # Update queue positions for the reordered items
+        success_count = 0
+        failed_items = []
+
         for index, wo_id in enumerate(work_order_ids):
             work_order = WorkOrder.query.filter_by(WorkOrderNo=wo_id).first()
             if work_order:
-                # Add a QueuePosition field or use an existing field to track manual order
-                # For now, we'll use a simple approach with a custom field
-                work_order.QueuePosition = index + 1
+                old_position = work_order.QueuePosition
+                new_position = start_position + index
+                work_order.QueuePosition = new_position
+                success_count += 1
+                print(f"Updated WO {wo_id}: {old_position} -> {new_position}")
+            else:
+                failed_items.append(wo_id)
+                print(f"Work order {wo_id} not found")
 
         db.session.commit()
-        return jsonify({"success": True, "message": "Queue order updated successfully"})
+
+        result = {
+            "success": True,
+            "message": f"Queue order updated successfully for {success_count} work orders",
+            "updated_count": success_count,
+        }
+
+        if failed_items:
+            result["warning"] = f"Could not find work orders: {', '.join(failed_items)}"
+
+        return jsonify(result)
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({"success": False, "message": f"Error updating queue: {str(e)}"})
+        error_msg = f"Error updating queue: {str(e)}"
+        print(f"Reorder error: {error_msg}")
+        return jsonify({"success": False, "message": error_msg}), 500
 
 
 @queue_bp.route("/api/cleaning-queue/summary")
@@ -149,35 +340,37 @@ def reorder_cleaning_queue():
 def cleaning_queue_summary():
     """API endpoint for dashboard summary of cleaning queue"""
     # Count work orders in cleaning queue by priority
+    base_filter = or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == "")
+
     firm_rush_count = WorkOrder.query.filter(
-        or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""),
+        base_filter,
         WorkOrder.FirmRush == "1",
     ).count()
 
     rush_count = WorkOrder.query.filter(
-        or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""),
+        base_filter,
         WorkOrder.RushOrder == "1",
         or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != "1"),
     ).count()
 
     regular_count = WorkOrder.query.filter(
-        or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""),
+        base_filter,
         or_(WorkOrder.RushOrder.is_(None), WorkOrder.RushOrder != "1"),
         or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != "1"),
     ).count()
 
     total_count = firm_rush_count + rush_count + regular_count
 
-    # Get next 5 work orders in queue for preview
-    base_query = WorkOrder.query.filter(
-        or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == "")
-    )
+    # Get next 5 work orders in queue for preview (using queue position ordering)
+    base_query = WorkOrder.query.filter(base_filter)
 
-    # Get in priority order (same logic as main queue)
+    # Get in priority order with queue position ordering
     firm_rush_orders = (
         base_query.filter(WorkOrder.FirmRush == "1")
         .order_by(
-            WorkOrder.DateRequired.asc().nullslast(), WorkOrder.DateIn.asc().nullslast()
+            WorkOrder.QueuePosition.asc().nullslast(),
+            WorkOrder.DateRequired.asc().nullslast(),
+            WorkOrder.DateIn.asc().nullslast(),
         )
         .limit(5)
         .all()
@@ -193,7 +386,11 @@ def cleaning_queue_summary():
                 WorkOrder.RushOrder == "1",
                 or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != "1"),
             )
-            .order_by(WorkOrder.DateIn.asc().nullslast(), WorkOrder.WorkOrderNo.asc())
+            .order_by(
+                WorkOrder.QueuePosition.asc().nullslast(),
+                WorkOrder.DateIn.asc().nullslast(),
+                WorkOrder.WorkOrderNo.asc(),
+            )
             .limit(remaining_slots)
             .all()
         )
@@ -207,7 +404,9 @@ def cleaning_queue_summary():
                     or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != "1"),
                 )
                 .order_by(
-                    WorkOrder.DateIn.asc().nullslast(), WorkOrder.WorkOrderNo.asc()
+                    WorkOrder.QueuePosition.asc().nullslast(),
+                    WorkOrder.DateIn.asc().nullslast(),
+                    WorkOrder.WorkOrderNo.asc(),
                 )
                 .limit(remaining_slots)
                 .all()
@@ -236,8 +435,77 @@ def cleaning_queue_summary():
                     "detail_url": url_for(
                         "work_orders.view_work_order", work_order_no=wo.WorkOrderNo
                     ),
+                    "queue_position": wo.QueuePosition,
                 }
                 for wo in next_orders[:5]
             ],
         }
     )
+
+
+@queue_bp.route("/api/cleaning-queue/initialize", methods=["POST"])
+@login_required
+def initialize_queue_positions():
+    """Manually initialize queue positions for all work orders that don't have them"""
+    try:
+        initialized_count = initialize_queue_positions_for_unassigned()
+
+        if initialized_count == 0:
+            return jsonify(
+                {
+                    "success": True,
+                    "message": "All work orders already have queue positions assigned",
+                    "initialized_count": 0,
+                }
+            )
+
+        return jsonify(
+            {
+                "success": True,
+                "message": f"Successfully initialized queue positions for {initialized_count} work orders",
+                "initialized_count": initialized_count,
+            }
+        )
+
+    except Exception as e:
+        return jsonify(
+            {
+                "success": False,
+                "message": f"Error initializing queue positions: {str(e)}",
+                "initialized_count": 0,
+            }
+        )
+
+
+@queue_bp.route("/api/cleaning-queue/reset", methods=["POST"])
+@login_required
+def reset_all_queue_positions():
+    """Reset all queue positions and reassign them from scratch (WARNING: destroys manual ordering)"""
+    try:
+        base_filter = or_(
+            WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""
+        )
+
+        # Clear all existing queue positions
+        cleared_count = WorkOrder.query.filter(base_filter).update(
+            {WorkOrder.QueuePosition: None}
+        )
+        db.session.commit()
+
+        # Reinitialize them
+        initialized_count = initialize_queue_positions_for_unassigned()
+
+        return jsonify(
+            {
+                "success": True,
+                "message": f"Reset complete: cleared {cleared_count} positions, reassigned {initialized_count} work orders",
+                "cleared_count": cleared_count,
+                "initialized_count": initialized_count,
+            }
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify(
+            {"success": False, "message": f"Error resetting queue positions: {str(e)}"}
+        )

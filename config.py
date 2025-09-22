@@ -1,6 +1,8 @@
 import os
 from datetime import timedelta
 
+TEST_MIGRATION = True
+
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-key-change-in-production"
@@ -25,18 +27,33 @@ class Config:
     }
 
     # Compute database URI immediately
-    SQLALCHEMY_DATABASE_URI = (
-        os.environ.get("RDS_HOSTNAME")
-        and f"postgresql://{os.environ.get('RDS_USERNAME')}:{os.environ.get('RDS_PASSWORD')}@"
-        f"{os.environ.get('RDS_HOSTNAME')}:{os.environ.get('RDS_PORT', 5432)}/"
-        f"{os.environ.get('RDS_DB_NAME')}"
-        or os.environ.get("DATABASE_URL")
-        or f"postgresql://{os.environ.get('POSTGRES_USER', 'postgres')}:"
-        f"{os.environ.get('POSTGRES_PASSWORD', 'password')}@"
-        f"{os.environ.get('POSTGRES_HOST', 'localhost')}:"
-        f"{os.environ.get('POSTGRES_PORT', '5432')}/"
-        f"{os.environ.get('POSTGRES_DB', 'Clean_Repair')}"
-    )
+    if TEST_MIGRATION:
+        SQLALCHEMY_DATABASE_URI = (
+            os.environ.get("RDS_HOSTNAME")
+            and f"postgresql://{os.environ.get('RDS_USERNAME')}:{os.environ.get('RDS_PASSWORD')}@"
+            f"{os.environ.get('RDS_HOSTNAME')}:{os.environ.get('RDS_PORT', 5432)}/"
+            f"{os.environ.get('RDS_DB_NAME')}"
+            or os.environ.get("DATABASE_URL")
+            or f"postgresql://{os.environ.get('POSTGRES_USER', 'postgres')}:"
+            f"{os.environ.get('POSTGRES_PASSWORD', 'password')}@"
+            f"{os.environ.get('POSTGRES_HOST', 'localhost')}:"
+            f"{os.environ.get('POSTGRES_PORT', '5432')}/"
+            f"{os.environ.get('POSTGRES_DB', 'migrated_db')}"
+        )
+
+    else:
+        SQLALCHEMY_DATABASE_URI = (
+            os.environ.get("RDS_HOSTNAME")
+            and f"postgresql://{os.environ.get('RDS_USERNAME')}:{os.environ.get('RDS_PASSWORD')}@"
+            f"{os.environ.get('RDS_HOSTNAME')}:{os.environ.get('RDS_PORT', 5432)}/"
+            f"{os.environ.get('RDS_DB_NAME')}"
+            or os.environ.get("DATABASE_URL")
+            or f"postgresql://{os.environ.get('POSTGRES_USER', 'postgres')}:"
+            f"{os.environ.get('POSTGRES_PASSWORD', 'password')}@"
+            f"{os.environ.get('POSTGRES_HOST', 'localhost')}:"
+            f"{os.environ.get('POSTGRES_PORT', '5432')}/"
+            f"{os.environ.get('POSTGRES_DB', 'Clean_Repair')}"
+        )
 
 
 class DevelopmentConfig(Config):

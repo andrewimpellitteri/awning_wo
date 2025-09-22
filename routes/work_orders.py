@@ -13,16 +13,43 @@ from models.work_order import WorkOrder, WorkOrderItem
 from models.customer import Customer
 from models.source import Source
 from models.inventory import Inventory  # Using your new Inventory model
-from sqlalchemy import or_, func, desc, cast, Integer, case, literal
+from sqlalchemy import or_, func, cast, Integer, case, literal
 from extensions import db
 from datetime import datetime, date
-from sqlalchemy.types import Date
-from sqlalchemy.dialects.postgresql import dialect as pg_dialect
 import uuid
 from work_order_pdf import generate_work_order_pdf
 from decorators import role_required
 
 work_orders_bp = Blueprint("work_orders", __name__, url_prefix="/work_orders")
+
+
+def assign_queue_position_to_new_work_order(work_order):
+    """Assign queue position to a newly created work order"""
+    if work_order.QueuePosition is not None:
+        return  # Already has a position
+
+    try:
+        # Get the highest existing queue position for incomplete work orders
+        base_filter = or_(
+            WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""
+        )
+        max_position = (
+            db.session.query(func.max(WorkOrder.QueuePosition))
+            .filter(base_filter)
+            .scalar()
+            or 0
+        )
+
+        # Assign the next position
+        work_order.QueuePosition = max_position + 1
+        print(
+            f"Assigned queue position {work_order.QueuePosition} to work order {work_order.WorkOrderNo}"
+        )
+
+    except Exception as e:
+        print(f"Error assigning queue position to new work order: {e}")
+        # Fallback: assign position 1 if something goes wrong
+        work_order.QueuePosition = 1
 
 
 @work_orders_bp.route("/")
@@ -238,6 +265,8 @@ def create_work_order(prefill_cust_id=None):
                 FirmRush=request.form.get("FirmRush", "0"),
                 CleanFirstWO=request.form.get("CleanFirstWO"),
             )
+
+            # assign_queue_position_to_new_work_order(work_order)
 
             db.session.add(work_order)
             db.session.flush()

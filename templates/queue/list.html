@@ -187,41 +187,122 @@
 {% block scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 <script>
-    const sortableQueue = document.getElementById('sortable-queue');
-    if (sortableQueue) {
-        new Sortable(sortableQueue, {
-            animation: 150,
-            handle: '.drag-handle',
-            onEnd: function(evt) {
-                const workOrderIds = Array.from(sortableQueue.children).map(item => item.dataset.woId);
-                fetch('api/cleaning-queue/reorder', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ work_order_ids: workOrderIds })
+// Fixed JavaScript for the queue template
+const sortableQueue = document.getElementById('sortable-queue');
+if (sortableQueue) {
+    new Sortable(sortableQueue, {
+        animation: 150,
+        handle: '.drag-handle',
+        onEnd: function(evt) {
+            // Immediately update position numbers
+            updatePositionNumbers();
+            
+            // Get the work order IDs in new order
+            const workOrderIds = Array.from(sortableQueue.children).map(item => item.dataset.woId);
+            
+            // Save to server with page information
+            fetch('{{ url_for("cleaning_queue.reorder_cleaning_queue") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ 
+                    work_order_ids: workOrderIds,
+                    page: {{ pagination.page }},
+                    per_page: {{ pagination.per_page }}
                 })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) updatePositionNumbers();
-                    else console.error('Error reordering queue:', data.message);
-                })
-                .catch(err => console.error('Error:', err));
-            }
-        });
-    }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error('Error reordering queue:', data.message);
+                    // Optionally show user notification
+                    showNotification('Error saving queue order: ' + data.message, 'error');
+                } else {
+                    showNotification('Queue order saved successfully', 'success');
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                showNotification('Failed to save queue order', 'error');
+            });
+        }
+    });
+}
 
-    function updatePositionNumbers() {
-        const items = document.querySelectorAll('.queue-item');
-        const currentPage = {{ pagination.page }};
-        const perPage = {{ pagination.per_page }};
-        const startIndex = (currentPage - 1) * perPage;
-        items.forEach((item, i) => {
-            item.querySelector('.queue-position').textContent = startIndex + i + 1;
-        });
-    }
+function updatePositionNumbers() {
+    // Fixed: use correct selector for list items
+    const items = document.querySelectorAll('#sortable-queue .list-group-item');
+    const currentPage = {{ pagination.page }};
+    const perPage = {{ pagination.per_page }};
+    const startIndex = (currentPage - 1) * perPage;
+    
+    items.forEach((item, i) => {
+        const positionElement = item.querySelector('.queue-position');
+        if (positionElement) {
+            positionElement.textContent = startIndex + i + 1;
+        }
+    });
+}
 
-    // Auto-refresh every 30 seconds
-    setInterval(() => {
-        if (!document.hidden) location.reload();
-    }, 30000);
+// Optional: Add notification system
+function showNotification(message, type = 'info') {
+    // Create notification element if it doesn't exist
+    let notification = document.getElementById('queue-notification');
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'queue-notification';
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 300px;
+            padding: 12px 20px;
+            border-radius: 4px;
+            color: white;
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        `;
+        document.body.appendChild(notification);
+    }
+    
+    // Set notification style based on type
+    const colors = {
+        success: '#28a745',
+        error: '#dc3545',
+        info: '#007bff'
+    };
+    
+    notification.style.backgroundColor = colors[type] || colors.info;
+    notification.textContent = message;
+    notification.style.opacity = '1';
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+        notification.style.opacity = '0';
+    }, 3000);
+}
+
+// Remove auto-refresh when user is actively dragging
+let isUserActive = false;
+let activityTimeout;
+
+document.addEventListener('mousedown', () => {
+    isUserActive = true;
+    clearTimeout(activityTimeout);
+    activityTimeout = setTimeout(() => {
+        isUserActive = false;
+    }, 60000); // Consider user inactive after 1 minute
+});
+
+// Modified auto-refresh - only refresh if user is not active
+setInterval(() => {
+    if (!document.hidden && !isUserActive) {
+        location.reload();
+    }
+}, 30000);
 </script>
 {% endblock %}

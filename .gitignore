@@ -126,3 +126,5 @@ tempdb/
 aws_info.txt
 .ebextensions/
 .elasticbeanstalk/
+
+migration_tool/*.sqlite
