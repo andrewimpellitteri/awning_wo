@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, jsonify, url_for
 from flask_login import login_required
 from models.work_order import WorkOrder
 from .work_orders import format_date_from_str
-from sqlalchemy import or_, and_, func
+from sqlalchemy import or_, func
 from extensions import db
 
 

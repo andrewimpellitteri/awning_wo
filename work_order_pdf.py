@@ -74,19 +74,6 @@ class WorkOrderPDF:
             )
         )
 
-        # Section headers - professional blue
-        self.styles.add(
-            ParagraphStyle(
-                name="SectionHeader",
-                parent=self.styles["Normal"],
-                fontSize=10,
-                fontName="Helvetica-Bold",
-                textColor=colors.HexColor("#1976d2"),  # Professional blue
-                spaceAfter=0.05 * inch,
-                leftIndent=2,
-            )
-        )
-
         # Field labels - refined and consistent
         self.styles.add(
             ParagraphStyle(
@@ -126,14 +113,14 @@ class WorkOrderPDF:
             )
         )
 
-        # Important values - emphasized
+        # Values - bold and prominent for source info
         self.styles.add(
             ParagraphStyle(
-                name="ImportantValue",
+                name="SmallValueSource",
                 parent=self.styles["Normal"],
-                fontSize=9,
-                textColor=colors.HexColor("#212121"),
-                fontName="Helvetica-Bold",
+                fontSize=11,  # slightly larger than default SmallValue
+                textColor=colors.HexColor("#000000"),  # pure black for emphasis
+                fontName="Helvetica-Bold",  # make it bold
                 spaceBefore=1,
                 spaceAfter=1,
             )
@@ -161,20 +148,6 @@ class WorkOrderPDF:
                 fontSize=8,
                 textColor=colors.HexColor("#424242"),
                 fontName="Helvetica",
-                alignment=TA_CENTER,
-                spaceBefore=1,
-                spaceAfter=1,
-            )
-        )
-
-        # Table cells for important data (like prices)
-        self.styles.add(
-            ParagraphStyle(
-                name="TableCellBold",
-                parent=self.styles["Normal"],
-                fontSize=8,
-                textColor=colors.HexColor("#212121"),
-                fontName="Helvetica-Bold",
                 alignment=TA_CENTER,
                 spaceBefore=1,
                 spaceAfter=1,
@@ -217,32 +190,17 @@ class WorkOrderPDF:
             )
         )
 
-        # Special instructions - readable writing space
-        self.styles.add(
-            ParagraphStyle(
-                name="Instructions",
-                parent=self.styles["Normal"],
-                fontSize=9,
-                textColor=colors.HexColor("#212121"),
-                fontName="Helvetica",
-                leftIndent=4,
-                rightIndent=4,
-                spaceBefore=2,
-                spaceAfter=2,
-            )
-        )
-
     def _calculate_dynamic_instruction_rows(self, items_count):
         """Calculate number of instruction rows based on items count"""
         # Base calculation: fewer items = more instruction space
         if items_count <= 3:
-            return 12  # Lots of space for few items
+            return 10  # Lots of space for few items
         elif items_count <= 6:
-            return 6  # Moderate space
+            return 4  # Moderate space
         elif items_count <= 10:
-            return 6  # Less space but still reasonable
+            return 3  # Less space but still reasonable
         else:
-            return 3  # Minimum space for many items
+            return 2  # Minimum space for many items
 
     def _format_date(self, date_str):
         if not date_str:
@@ -318,67 +276,74 @@ class WorkOrderPDF:
 
         return [header_table, Spacer(1, 0.1 * inch)]
 
-    def _build_top_section(self):
-        """Build a clean, professional top section with dates and customer info"""
+    def _build_rush_table(self):
+        """Build a 1-row, 3-column rush table with horizontal line below"""
         wo = self.work_order
-        customer = wo.get("customer", {})
 
-        date_order_data = [
-            [
-                safe_paragraph("Rush Order", self.styles["SmallLabel"]),
-                safe_paragraph(
-                    "Yes" if wo.get("RushOrder") == "1" else "No",
-                    self.styles["RushHighlight"]
-                    if wo.get("RushOrder") == "1"
-                    else self.styles["SmallValue"],
-                ),
-                safe_paragraph("Date Required", self.styles["SmallLabel"]),
-                safe_paragraph(
-                    self._format_date(wo.get("DateRequired")), self.styles["SmallValue"]
-                ),
-                safe_paragraph("Firm Rush", self.styles["SmallLabel"]),
-                safe_paragraph(
-                    "Yes" if wo.get("FirmRush") == "1" else "No",
-                    self.styles["RushHighlight"]
-                    if wo.get("FirmRush") == "1"
-                    else self.styles["SmallValue"],
-                ),
-            ]
+        def rush_value(label, flag):
+            """Return a Paragraph with optional red highlighting for 'Yes'"""
+            style = (
+                self.styles["RushHighlight"]
+                if flag == "1"
+                else self.styles["SmallValue"]
+            )
+            return safe_paragraph("Yes" if flag == "1" else "No", style)
+
+        # Each column: [label, value] stacked vertically
+        col1 = [
+            safe_paragraph("Rush Order", self.styles["SmallLabel"]),
+            rush_value("Rush Order", wo.get("RushOrder")),
+        ]
+        col2 = [
+            safe_paragraph("Firm Rush", self.styles["SmallLabel"]),
+            rush_value("Firm Rush", wo.get("FirmRush")),
+        ]
+        col3 = [
+            safe_paragraph("Date Required", self.styles["SmallLabel"]),
+            safe_paragraph(
+                self._format_date(wo.get("DateRequired")), self.styles["SmallValue"]
+            ),
         ]
 
-        date_order_table = Table(
-            date_order_data,
-            colWidths=[
-                1 * inch,
-                1 * inch,
-                1 * inch,
-                1 * inch,
-                1 * inch,
-                1 * inch,
-            ],
-        )
-        date_order_table.setStyle(
+        table_data = [[col1, col2, col3]]  # 1 row, 3 columns
+
+        # Use a Table with nested flowables in cells
+        rush_table = Table(table_data, colWidths=[2 * inch, 2 * inch, 2 * inch])
+        rush_table.setStyle(
             TableStyle(
                 [
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ("ALIGN", (1, 0), (1, 0), "LEFT"),
-                    ("ALIGN", (3, 0), (3, 0), "LEFT"),
-                    ("ALIGN", (5, 0), (5, 0), "LEFT"),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
                     ("TOPPADDING", (0, 0), (-1, -1), 4),
                     (
                         "LINEBELOW",
                         (0, 0),
-                        (5, 0),
+                        (-1, 0),
                         1,
                         colors.black,
-                    ),  # Add horizontal line below the row
+                    ),  # horizontal line under the row
                 ]
             )
         )
 
-        # --- Customer Address ---
-        address_data = [
+        return [rush_table, Spacer(1, 0.1 * inch)]
+
+    def _build_top_section(self):
+        """Build a two-column header section with customer info on left and WO info on right"""
+        wo = self.work_order
+        customer = wo.get("customer", {})
+
+        customer_zip = customer.get("ZipCode", "")
+        if customer_zip:
+            if customer_zip[-1] == "-":
+                customer_zip = customer_zip.rstrip("-")
+
+        customer_state = customer.get("State", "")
+        if customer_state:
+            customer_state = customer_state.upper()
+
+        # --- LEFT: Customer Info ---
+        left_data = [
             [
                 safe_paragraph("Customer ID", self.styles["SmallLabel"]),
                 safe_paragraph(str(wo.get("CustID", "")), self.styles["SmallValue"]),
@@ -386,54 +351,38 @@ class WorkOrderPDF:
             [
                 safe_paragraph("Name", self.styles["SmallLabel"]),
                 safe_paragraph(customer.get("Name", ""), self.styles["SmallValue"]),
+            ],
+            [
                 safe_paragraph("Contact", self.styles["SmallLabel"]),
                 safe_paragraph(customer.get("Contact", ""), self.styles["SmallValue"]),
             ],
             [
                 safe_paragraph("Address", self.styles["SmallLabel"]),
                 safe_paragraph(customer.get("Address", ""), self.styles["SmallValue"]),
+            ],
+            [
                 safe_paragraph("Address2", self.styles["SmallLabel"]),
                 safe_paragraph(customer.get("Address2", ""), self.styles["SmallValue"]),
             ],
             [
                 safe_paragraph("City", self.styles["SmallLabel"]),
                 safe_paragraph(customer.get("City", ""), self.styles["SmallValue"]),
+            ],
+            [
                 safe_paragraph("State", self.styles["SmallLabel"]),
-                safe_paragraph(
-                    customer.get("State", "").upper(), self.styles["SmallValue"]
-                ),
+                safe_paragraph(customer_state, self.styles["SmallValue"]),
             ],
             [
                 safe_paragraph("Zip", self.styles["SmallLabel"]),
-                safe_paragraph(
-                    customer.get("ZipCode", "").strip("-"), self.styles["SmallValue"]
-                ),
-                "",
-                "",
+                safe_paragraph(customer_zip, self.styles["SmallValue"]),
             ],
-        ]
-
-        address_table = Table(
-            address_data,
-            colWidths=[1.8 * inch, 1.8 * inch, 1.8 * inch, 1.8 * inch, 1.8 * inch],
-        )
-        address_table.setStyle(
-            TableStyle(
-                [
-                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-                    ("TOPPADDING", (0, 0), (-1, -1), 2),
-                ]
-            )
-        )
-
-        # --- Phone & Email ---
-        phone_data = [
             [
                 safe_paragraph("Cell Phone", self.styles["SmallLabel"]),
                 safe_paragraph(
                     customer.get("CellPhone", ""), self.styles["SmallValue"]
                 ),
+            ],
+            [
                 safe_paragraph("Home Phone", self.styles["SmallLabel"]),
                 safe_paragraph(
                     customer.get("HomePhone", ""), self.styles["SmallValue"]
@@ -444,121 +393,74 @@ class WorkOrderPDF:
                 safe_paragraph(
                     customer.get("WorkPhone", ""), self.styles["SmallValue"]
                 ),
+            ],
+            [
                 safe_paragraph("Email", self.styles["SmallLabel"]),
                 safe_paragraph(
                     customer.get("EmailAddress", ""), self.styles["SmallValue"]
                 ),
             ],
         ]
+        left_table = Table(left_data, colWidths=[1.0 * inch, 2.0 * inch])
 
-        phone_table = Table(
-            phone_data, colWidths=[1 * inch, 2 * inch, 1 * inch, 2 * inch]
-        )
-        phone_table.setStyle(
-            TableStyle(
-                [
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-                    ("TOPPADDING", (0, 0), (-1, -1), 2),
-                ]
-            )
-        )
-
-        return [
-            date_order_table,
-            Spacer(1, 0.05 * inch),
-            address_table,
-            Spacer(1, 0.05 * inch),
-            phone_table,
-            Spacer(1, 0.1 * inch),
+        # --- RIGHT: Work Order Info ---
+        cust = wo.get("customer", {})
+        if cust.get("SourceZip"):
+            if cust["SourceZip"][-1] == "-":
+                cust["SourceZip"] = cust["SourceZip"].strip("-")
+        if cust.get("SourceState"):
+            cust["SourceState"] = cust["SourceState"].upper()
+        safe_values = [
+            str(cust.get(field) or "").strip()
+            for field in [
+                "Source",
+                "SourceAddress",
+                "SourceCity",
+                "SourceState",
+                "SourceZip",
+            ]
+            if cust.get(field)
         ]
+        source_str = " ".join(safe_values) if safe_values else "N/A"
 
-    def _build_middle_section(self):
-        """Build a clean, professional middle section with work order details"""
-        wo = self.work_order
-
-        # --- Combine left & right info in one table ---
-        middle_data = [
+        right_data = [
             [
-                safe_paragraph("StorageRack#", self.styles["SmallLabel"]),
-                safe_paragraph(wo.get("Storage", ""), self.styles["SmallValue"]),
-                safe_paragraph("Rack No", self.styles["SmallLabel"]),
-                safe_paragraph(wo.get("RackNo", ""), self.styles["SmallValue"]),
+                safe_paragraph("Source", self.styles["SmallLabel"]),
+                safe_paragraph(source_str, self.styles["SmallValueSource"]),
             ],
             [
-                safe_paragraph("Storage", self.styles["SmallLabel"]),
-                safe_paragraph(wo.get("StorageTime", ""), self.styles["SmallValue"]),
                 safe_paragraph("Date In", self.styles["SmallLabel"]),
                 safe_paragraph(
                     self._format_date(wo.get("DateIn")), self.styles["SmallValue"]
                 ),
             ],
-        ]
-
-        middle_table = Table(
-            middle_data, colWidths=[1.2 * inch, 2.0 * inch, 1.2 * inch, 2.0 * inch]
-        )
-        middle_table.setStyle(
-            TableStyle(
-                [
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ("ALIGN", (1, 0), (1, -1), "LEFT"),
-                    ("ALIGN", (3, 0), (3, -1), "LEFT"),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-                    ("TOPPADDING", (0, 0), (-1, -1), 4),
-                ]
-            )
-        )
-
-        return [middle_table, Spacer(1, 0.15 * inch)]
-
-    def _build_source_line(self):
-        """Build the source line"""
-        wo = self.work_order
-
-        cust = wo.get("customer", {})
-
-        source_fields = [
-            "Source",
-            "SourceAddress",
-            "SourceCity",
-            "SourceState",
-            "SourceZip",
-        ]
-
-        # Convert all to strings, strip whitespace, ignore empty/None values
-        safe_values = [
-            str(cust.get(field) or "").strip()
-            for field in source_fields
-            if cust.get(field)
-        ]
-        source_str = " ".join(safe_values)
-
-        # Final fallback
-        if not source_str:
-            source_str = "N/A"
-
-        # Make sure Paragraph always gets a plain string
-        source_para = safe_paragraph(source_str, self.styles["SmallValue"])
-
-        source_data = [
             [
-                safe_paragraph("Source:", self.styles["SmallLabel"]),
-                source_para,
-            ]
+                safe_paragraph("Storage", self.styles["SmallLabel"]),
+                safe_paragraph(wo.get("StorageTime", ""), self.styles["SmallValue"]),
+            ],
+            [
+                safe_paragraph("Rack No", self.styles["SmallLabel"]),
+                safe_paragraph(wo.get("RackNo", ""), self.styles["SmallValue"]),
+            ],
         ]
 
-        source_table = Table(source_data, colWidths=[0.8 * inch, 1.5 * inch])
-        source_table.setStyle(
+        right_table = Table(right_data, colWidths=[1.2 * inch, 2.0 * inch])
+
+        # --- Final two-column layout ---
+        header_table = Table(
+            [[left_table, right_table]], colWidths=[3.2 * inch, 3.2 * inch]
+        )
+        header_table.setStyle(
             TableStyle(
                 [
-                    ("FONTSIZE", (0, 0), (-1, -1), 8),
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 4),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 4),
                 ]
             )
         )
 
-        return [source_table, Spacer(1, 0.1 * inch)]
+        return [header_table, Spacer(1, 0.15 * inch)]
 
     def _build_items_table(self):
         """Build a clean, professional items table"""
@@ -591,7 +493,10 @@ class WorkOrderPDF:
                     price = str(item.get("Price"))
 
             row = [
-                safe_paragraph(str(item.get("Qty", "")), self.styles["TableCell"]),
+                safe_paragraph(
+                    str(int(float(item.get("Qty", 0)))),  # Convert '1.0' → 1
+                    self.styles["TableCell"],
+                ),
                 safe_paragraph(
                     str(item.get("Description", "")), self.styles["TableCell"]
                 ),
@@ -607,13 +512,13 @@ class WorkOrderPDF:
 
         # --- Define column widths ---
         col_widths = [
-            0.6 * inch,
-            2.2 * inch,
+            0.5 * inch,
+            1.8 * inch,
+            0.9 * inch,
+            0.9 * inch,
+            0.9 * inch,
             1.0 * inch,
             1.0 * inch,
-            1.0 * inch,
-            1.2 * inch,
-            1.2 * inch,
         ]
 
         items_table = Table(rows, colWidths=col_widths, repeatRows=1)
@@ -642,8 +547,8 @@ class WorkOrderPDF:
                         (-1, -1),
                         [colors.white, colors.whitesmoke],
                     ),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 4),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 2),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 2),
                     ("TOPPADDING", (0, 0), (-1, -1), 2),
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
                 ]
@@ -877,9 +782,8 @@ class WorkOrderPDF:
 
         story = []
         story.extend(self._build_header_with_wo_number())
+        story.extend(self._build_rush_table())
         story.extend(self._build_top_section())
-        story.extend(self._build_middle_section())
-        story.extend(self._build_source_line())
         story.extend(self._build_items_table())
         story.extend(self._build_footer())
 
