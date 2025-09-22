@@ -12,7 +12,9 @@ from flask_login import login_required
 from models.work_order import WorkOrder, WorkOrderItem
 from models.customer import Customer
 from models.source import Source
-from models.inventory import Inventory  # Using your new Inventory model
+from models.inventory import Inventory
+from models.work_order_file import WorkOrderFile
+from utils.file_upload import save_work_order_file
 from sqlalchemy import or_, func, cast, Integer, case, literal
 from extensions import db
 from datetime import datetime, date
@@ -21,6 +23,47 @@ from work_order_pdf import generate_work_order_pdf
 from decorators import role_required
 
 work_orders_bp = Blueprint("work_orders", __name__, url_prefix="/work_orders")
+
+
+@work_orders_bp.route("/<work_order_no>/files/upload", methods=["POST"])
+@login_required
+def upload_work_order_file(work_order_no):
+    work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
+    if "file" not in request.files:
+        return jsonify({"error": "No file part"}), 400
+
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"error": "No selected file"}), 400
+
+    saved_file = save_work_order_file(work_order_no, file)
+    if saved_file:
+        return jsonify(
+            {"message": "File uploaded successfully", "file_id": saved_file.FileID}
+        )
+    return jsonify({"error": "Invalid file type"}), 400
+
+
+@work_orders_bp.route("/<work_order_no>/files/<file_id>/download")
+@login_required
+def download_work_order_file(work_order_no, file_id):
+    wo_file = WorkOrderFile.query.filter_by(
+        FileID=file_id, WorkOrderNo=work_order_no
+    ).first_or_404()
+    return send_file(
+        wo_file.FilePath, as_attachment=True, download_name=wo_file.Filename
+    )
+
+
+@work_orders_bp.route("/<work_order_no>/files")
+@login_required
+def list_work_order_files(work_order_no):
+    work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
+    files = [
+        {"id": f.FileID, "filename": f.Filename, "uploaded": f.UploadDate.isoformat()}
+        for f in work_order.files
+    ]
+    return jsonify(files)
 
 
 def assign_queue_position_to_new_work_order(work_order):
@@ -186,12 +229,30 @@ def rush_work_orders():
     )
 
 
-def safe_int_conversion(value, default=0):
-    """Safely convert string to int"""
+def safe_int_conversion(value):
+    """
+    Safely convert a value to integer, handling various input types
+    """
+    if value is None or value == "":
+        return 1  # Default to 1 if empty
+
     try:
-        return int(value or default)
+        # Handle string inputs
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                return 1
+
+        # Convert to float first, then int (handles decimal strings like "1.0")
+        float_val = float(value)
+        int_val = int(float_val)
+
+        # Ensure positive value
+        return max(1, int_val)
+
     except (ValueError, TypeError):
-        return default
+        print(f"Warning: Could not convert '{value}' to integer, defaulting to 1")
+        return 1
 
 
 # Corrected work order routes - Inventory as static catalog only:
@@ -243,6 +304,13 @@ def create_work_order(prefill_cust_id=None):
                 f"New Item Descriptions: {request.form.getlist('new_item_description[]')}"
             )
             print("------------------------")
+
+            print(f"Files in request: {'files' in request.files}")
+            if "files" in request.files:
+                files = request.files.getlist("files[]")
+                print(f"Number of files: {len(files)}")
+                for i, file in enumerate(files):
+                    print(f"File {i}: {file.filename if file else 'None'}")
 
             # Create the work order
             work_order = WorkOrder(
@@ -411,6 +479,15 @@ def create_work_order(prefill_cust_id=None):
                             f"New item type '{description}' added to catalog with quantity {work_order_qty}",
                             "success",
                         )
+
+            if "files" in request.files:
+                for file in request.files.getlist("files[]"):
+                    if file.filename:
+                        wo_file = save_work_order_file(work_order.WorkOrderNo, file)
+                        if wo_file:
+                            print(
+                                f"Saved file {wo_file.Filename} for work order {work_order.WorkOrderNo}"
+                            )
 
             db.session.commit()
             flash(f"Work Order {next_wo_no} created successfully!", "success")

@@ -46,6 +46,13 @@ class WorkOrder(db.Model):
         "WorkOrderItem", back_populates="work_order", cascade="all, delete-orphan"
     )
 
+    files = db.relationship(
+        "WorkOrderFile",
+        back_populates="work_order",
+        cascade="all, delete-orphan",
+        lazy="joined",
+    )
+
     QueuePosition = db.Column("queueposition", db.Integer, nullable=True)
 
     ship_to_source = db.relationship(
