@@ -2,7 +2,7 @@
 {% block content %}
 <h2>Cleaning Room Edit - Work Order {{ work_order.WorkOrderNo }}</h2>
 
-<form method="POST" enctype="multipart/form-data">
+<form method="POST" enctype="multipart/form-data" id="cleaningRoomForm">
     <div class="form-group">
         <label for="Clean">Clean Date</label>
         <input type="date" name="Clean" id="Clean"
@@ -43,7 +43,7 @@
                 </button>
             </div>
         </div>
-    </div
+    </div> <!-- FIXED: Added missing closing tag -->
 
     <button type="submit" class="btn btn-primary">Save</button>
     <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}"
@@ -51,7 +51,7 @@
 </form>
 
 <script>
-    const dropzone = document.getElementById('fileDropzone');
+const dropzone = document.getElementById('fileDropzone');
 const fileInput = document.getElementById('files');
 const fileList = document.getElementById('fileList');
 const fileListContainer = document.getElementById('fileListContainer');
@@ -219,42 +219,8 @@ function clearFiles() {
     updateFileList();
 }
 
-// Add file count to form validation
-document.getElementById('workOrderForm').addEventListener('submit', function(e) {
-    const custId = document.getElementById('CustID').value;
-    if (!custId) {
-        e.preventDefault();
-        alert('Please select a customer.');
-        document.getElementById('CustID').focus();
-        return;
-    }
-
-    // Check if at least one item is selected or added
-    const selectedItems = document.querySelectorAll('input[name="selected_items[]"]:checked').length;
-    const newItems = document.querySelectorAll('input[name="new_item_description[]"]').length;
-    
-    if (selectedItems === 0 && newItems === 0) {
-        e.preventDefault();
-        alert('Please select at least one inventory item or add a new item.');
-        return;
-    }
-
-    // Validate new items have descriptions
-    const newItemDescriptions = document.querySelectorAll('input[name="new_item_description[]"]');
-    let hasEmptyDescription = false;
-    newItemDescriptions.forEach(input => {
-        if (!input.value.trim()) {
-            hasEmptyDescription = true;
-            input.focus();
-        }
-    });
-
-    if (hasEmptyDescription) {
-        e.preventDefault();
-        alert('Please provide descriptions for all new items.');
-        return;
-    }
-
+// FIXED: Simplified form validation for cleaning room edit
+document.getElementById('cleaningRoomForm').addEventListener('submit', function(e) {
     // Log files being submitted for debugging
     const files = fileInput.files;
     console.log(`Submitting ${files.length} files:`);
@@ -265,7 +231,7 @@ document.getElementById('workOrderForm').addEventListener('submit', function(e) 
     // Show loading state
     const submitBtn = this.querySelector('button[type="submit"]');
     const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
     submitBtn.disabled = true;
 
     // Re-enable button after 15 seconds in case of issues
@@ -274,6 +240,5 @@ document.getElementById('workOrderForm').addEventListener('submit', function(e) 
         submitBtn.disabled = false;
     }, 15000);
 });
-
 </script>
 {% endblock %}
