@@ -277,9 +277,11 @@
                                         <div class="card-body">
                                             {% if files %}
                                                 <ul class="list-group list-group-flush">
-                                                    {% for file in files %}
+                                                    {% for file in work_order.files %}
                                                         <li class="list-group-item">
-                                                            <a href="{{ url_for('work_orders.download_file', file_id=file.id) }}">
+                                                            <a href="{{ url_for('work_orders.download_work_order_file',
+                                                                                work_order_no=work_order.WorkOrderNo,
+                                                                                file_id=file.id) }}">
                                                                 {{ file.filename }}
                                                             </a>
                                                         </li>

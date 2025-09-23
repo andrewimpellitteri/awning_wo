@@ -124,6 +124,7 @@ app = create_app()
 # Debug info (only show in development)
 if os.environ.get("FLASK_ENV") == "development":
     with app.app_context():
+        db.create_all()
         try:
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()

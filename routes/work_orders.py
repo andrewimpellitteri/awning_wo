@@ -7,6 +7,7 @@ from flask import (
     redirect,
     url_for,
     send_file,
+    abort,
 )
 from flask_login import login_required
 from models.work_order import WorkOrder, WorkOrderItem
@@ -14,7 +15,7 @@ from models.customer import Customer
 from models.source import Source
 from models.inventory import Inventory
 from models.work_order_file import WorkOrderFile
-from utils.file_upload import save_work_order_file
+from utils.file_upload import save_work_order_file, generate_presigned_url
 from sqlalchemy import or_, func, cast, Integer, case, literal
 from extensions import db
 from datetime import datetime, date
@@ -44,14 +45,30 @@ def upload_work_order_file(work_order_no):
     return jsonify({"error": "Invalid file type"}), 400
 
 
-@work_orders_bp.route("/<work_order_no>/files/<file_id>/download")
+@work_orders_bp.route("/<work_order_no>/files/<int:file_id>/download")
 @login_required
 def download_work_order_file(work_order_no, file_id):
+    """
+    Download a file attached to a work order.
+    Supports local files or S3 files (via pre-signed URLs).
+    """
     wo_file = WorkOrderFile.query.filter_by(
-        FileID=file_id, WorkOrderNo=work_order_no
-    ).first_or_404()
+        id=file_id, WorkOrderNo=work_order_no
+    ).first()
+
+    if not wo_file:
+        abort(404, description="File not found for this work order.")
+
+    if wo_file.file_path.startswith("s3://"):
+        # S3 file → redirect to pre-signed URL
+        presigned_url = generate_presigned_url(wo_file.file_path)
+        return redirect(presigned_url)
+
+    # Local file → serve directly
     return send_file(
-        wo_file.FilePath, as_attachment=True, download_name=wo_file.Filename
+        wo_file.file_path,
+        as_attachment=True,
+        download_name=wo_file.filename,
     )
 
 
@@ -133,8 +150,16 @@ def list_work_orders():
 
 @work_orders_bp.route("/<work_order_no>")
 def view_work_order(work_order_no):
-    work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
-    return render_template("work_orders/detail.html", work_order=work_order)
+    work_order = (
+        WorkOrder.query.filter_by(WorkOrderNo=work_order_no)
+        .options(db.joinedload(WorkOrder.files))  # eager load for safety
+        .first_or_404()
+    )
+    return render_template(
+        "work_orders/detail.html",
+        work_order=work_order,
+        files=work_order.files,  # pass files explicitly
+    )
 
 
 @work_orders_bp.route("/status/<status>")
@@ -288,14 +313,11 @@ def create_work_order(prefill_cust_id=None):
     """Create a new work order - inventory quantities never change"""
     if request.method == "POST":
         try:
+            # --- Generate next WorkOrderNo ---
             latest_num = db.session.query(
                 func.max(cast(WorkOrder.WorkOrderNo, Integer))
             ).scalar()
-
-            if latest_num is not None:
-                next_wo_no = str(latest_num + 1)
-            else:
-                next_wo_no = "1"
+            next_wo_no = str(latest_num + 1) if latest_num is not None else "1"
 
             print("--- Form Data Received ---")
             print(f"Request Form Keys: {request.form.keys()}")
@@ -303,16 +325,8 @@ def create_work_order(prefill_cust_id=None):
             print(
                 f"New Item Descriptions: {request.form.getlist('new_item_description[]')}"
             )
-            print("------------------------")
 
-            print(f"Files in request: {'files' in request.files}")
-            if "files" in request.files:
-                files = request.files.getlist("files[]")
-                print(f"Number of files: {len(files)}")
-                for i, file in enumerate(files):
-                    print(f"File {i}: {file.filename if file else 'None'}")
-
-            # Create the work order
+            # --- Create Work Order ---
             work_order = WorkOrder(
                 WorkOrderNo=next_wo_no,
                 CustID=request.form.get("CustID"),
@@ -333,42 +347,21 @@ def create_work_order(prefill_cust_id=None):
                 FirmRush=request.form.get("FirmRush", "0"),
                 CleanFirstWO=request.form.get("CleanFirstWO"),
             )
-
-            # assign_queue_position_to_new_work_order(work_order)
-
             db.session.add(work_order)
-            db.session.flush()
+            db.session.flush()  # ensures parent exists in DB for FK references
 
-            # Handle selected inventory items (REFERENCE ONLY - NO QUANTITY CHANGES)
+            # --- Handle Selected Inventory Items ---
             selected_items = request.form.getlist("selected_items[]")
-            item_quantities = {}
+            item_quantities = {
+                key.replace("item_qty_", ""): safe_int_conversion(value)
+                for key, value in request.form.items()
+                if key.startswith("item_qty_") and value
+            }
 
-            print(f"--- Debug: Selected Items from Form ---\n{selected_items}")
-
-            # Parse quantities for selected items
-            for key, value in request.form.items():
-                print(f"{key}: {request.form[key]}")
-                if key.startswith("item_qty_"):
-                    item_id = key.replace("item_qty_", "")
-                    if item_id in selected_items and value:
-                        item_quantities[item_id] = safe_int_conversion(value)
-
-            print(f"--- Debug: Parsed Item Quantities ---\n{item_quantities}")
-
-            # Add selected inventory items to work order (NO INVENTORY MODIFICATION)
             for inventory_key in selected_items:
-                requested_qty = item_quantities.get(
-                    inventory_key, 1
-                )  # default to 1 if not specified
-
-                # Find the inventory item by InventoryKey (primary key must match type)
+                requested_qty = item_quantities.get(inventory_key, 1)
                 inventory_item = Inventory.query.get(inventory_key)
-
                 if inventory_item:
-                    print(
-                        f"Adding Inventory Item to Work Order: {inventory_item.Description} x {requested_qty}"
-                    )
-
                     work_order_item = WorkOrderItem(
                         WorkOrderNo=next_wo_no,
                         CustID=request.form.get("CustID"),
@@ -381,12 +374,8 @@ def create_work_order(prefill_cust_id=None):
                         Price=inventory_item.Price,
                     )
                     db.session.add(work_order_item)
-                else:
-                    print(
-                        f"Warning: Inventory item with key '{inventory_key}' not found in catalog."
-                    )
 
-            # Handle new inventory items (items customer is bringing for first time)
+            # --- Handle New Inventory Items ---
             new_item_descriptions = request.form.getlist("new_item_description[]")
             new_item_materials = request.form.getlist("new_item_material[]")
             new_item_quantities = request.form.getlist("new_item_qty[]")
@@ -396,107 +385,104 @@ def create_work_order(prefill_cust_id=None):
             new_item_prices = request.form.getlist("new_item_price[]")
 
             for i, description in enumerate(new_item_descriptions):
-                if description and i < len(new_item_materials):
-                    work_order_qty = safe_int_conversion(
-                        new_item_quantities[i] if i < len(new_item_quantities) else "1"
-                    )
+                if not description:
+                    continue
 
-                    # Add to work order items table
-                    work_order_item = WorkOrderItem(
-                        WorkOrderNo=next_wo_no,
+                work_order_qty = safe_int_conversion(
+                    new_item_quantities[i] if i < len(new_item_quantities) else "1"
+                )
+
+                work_order_item = WorkOrderItem(
+                    WorkOrderNo=next_wo_no,
+                    CustID=request.form.get("CustID"),
+                    Description=description,
+                    Material=new_item_materials[i]
+                    if i < len(new_item_materials)
+                    else "",
+                    Qty=str(work_order_qty),
+                    Condition=new_item_conditions[i]
+                    if i < len(new_item_conditions)
+                    else "",
+                    Color=new_item_colors[i] if i < len(new_item_colors) else "",
+                    SizeWgt=new_item_sizes[i] if i < len(new_item_sizes) else "",
+                    Price=new_item_prices[i] if i < len(new_item_prices) else "",
+                )
+                db.session.add(work_order_item)
+
+                # Update or insert into inventory catalog
+                existing_inventory = Inventory.query.filter_by(
+                    CustID=request.form.get("CustID"),
+                    Description=description,
+                    Material=new_item_materials[i]
+                    if i < len(new_item_materials)
+                    else "",
+                    Condition=new_item_conditions[i]
+                    if i < len(new_item_conditions)
+                    else "",
+                    Color=new_item_colors[i] if i < len(new_item_colors) else "",
+                    SizeWgt=new_item_sizes[i] if i < len(new_item_sizes) else "",
+                ).first()
+
+                if existing_inventory:
+                    existing_inventory.Qty = str(
+                        safe_int_conversion(existing_inventory.Qty) + work_order_qty
+                    )
+                    flash(
+                        f"Updated catalog: Customer now has {existing_inventory.Qty} total of '{description}'",
+                        "info",
+                    )
+                else:
+                    inventory_key = f"INV_{uuid.uuid4().hex[:8].upper()}"
+                    new_inventory_item = Inventory(
+                        InventoryKey=inventory_key,
                         CustID=request.form.get("CustID"),
                         Description=description,
                         Material=new_item_materials[i]
                         if i < len(new_item_materials)
                         else "",
-                        Qty=str(work_order_qty),
                         Condition=new_item_conditions[i]
                         if i < len(new_item_conditions)
                         else "",
                         Color=new_item_colors[i] if i < len(new_item_colors) else "",
                         SizeWgt=new_item_sizes[i] if i < len(new_item_sizes) else "",
                         Price=new_item_prices[i] if i < len(new_item_prices) else "",
+                        Qty=str(work_order_qty),
                     )
-                    db.session.add(work_order_item)
+                    db.session.add(new_inventory_item)
+                    flash(
+                        f"New item '{description}' added to catalog with quantity {work_order_qty}",
+                        "success",
+                    )
 
-                    # Check if this exact item type already exists in catalog
-                    existing_inventory = Inventory.query.filter_by(
-                        CustID=request.form.get("CustID"),
-                        Description=description,
-                        Material=new_item_materials[i]
-                        if i < len(new_item_materials)
-                        else "",
-                        Condition=new_item_conditions[i]
-                        if i < len(new_item_conditions)
-                        else "",
-                        Color=new_item_colors[i] if i < len(new_item_colors) else "",
-                        SizeWgt=new_item_sizes[i] if i < len(new_item_sizes) else "",
-                    ).first()
+            # --- Handle Files (all-or-nothing) ---
+            uploaded_files = []
+            if "files[]" in request.files:
+                files = request.files.getlist("files[]")
+                print(f"Processing {len(files)} files")
 
-                    if existing_inventory:
-                        # Item type exists in catalog - UPDATE THE CATALOG QUANTITY
-                        # This represents the new total they've ever brought of this type
-                        current_catalog_qty = safe_int_conversion(
-                            existing_inventory.Qty
-                        )
-                        new_catalog_qty = current_catalog_qty + work_order_qty
-                        existing_inventory.Qty = str(new_catalog_qty)
+                for i, file in enumerate(files):
+                    if file and file.filename:
+                        wo_file = save_work_order_file(next_wo_no, file, to_s3=True)
+                        if not wo_file:
+                            raise Exception(f"Failed to process file: {file.filename}")
+                        uploaded_files.append(wo_file)
+                        db.session.add(wo_file)
+                        print(f"Prepared file {i}: {wo_file.filename}")
 
-                        flash(
-                            f"Updated catalog: Customer now has brought {new_catalog_qty} total of '{description}'",
-                            "info",
-                        )
-                    else:
-                        # New item type - ADD TO CATALOG
-                        inventory_key = f"INV_{uuid.uuid4().hex[:8].upper()}"
-
-                        new_inventory_item = Inventory(
-                            InventoryKey=inventory_key,
-                            CustID=request.form.get("CustID"),
-                            Description=description,
-                            Material=new_item_materials[i]
-                            if i < len(new_item_materials)
-                            else "",
-                            Condition=new_item_conditions[i]
-                            if i < len(new_item_conditions)
-                            else "",
-                            Color=new_item_colors[i]
-                            if i < len(new_item_colors)
-                            else "",
-                            SizeWgt=new_item_sizes[i]
-                            if i < len(new_item_sizes)
-                            else "",
-                            Price=new_item_prices[i]
-                            if i < len(new_item_prices)
-                            else "",
-                            Qty=str(
-                                work_order_qty
-                            ),  # Total quantity they've ever brought of this type
-                        )
-                        db.session.add(new_inventory_item)
-
-                        flash(
-                            f"New item type '{description}' added to catalog with quantity {work_order_qty}",
-                            "success",
-                        )
-
-            if "files" in request.files:
-                for file in request.files.getlist("files[]"):
-                    if file.filename:
-                        wo_file = save_work_order_file(work_order.WorkOrderNo, file)
-                        if wo_file:
-                            print(
-                                f"Saved file {wo_file.Filename} for work order {work_order.WorkOrderNo}"
-                            )
-
+            # --- Final Commit (everything at once) ---
             db.session.commit()
-            flash(f"Work Order {next_wo_no} created successfully!", "success")
+
+            flash(
+                f"Work Order {next_wo_no} created successfully with {len(uploaded_files)} files!",
+                "success",
+            )
             return redirect(
                 url_for("work_orders.view_work_order", work_order_no=next_wo_no)
             )
 
         except Exception as e:
             db.session.rollback()
+            print(f"Error creating work order: {str(e)}")
             flash(f"Error creating work order: {str(e)}", "error")
             return render_template(
                 "work_orders/create.html",
@@ -505,19 +491,18 @@ def create_work_order(prefill_cust_id=None):
                 form_data=request.form,
             )
 
-    # GET request - show the form (unchanged)
+    # --- GET Request: Render Form ---
     customers = Customer.query.order_by(Customer.CustID).all()
     sources = Source.query.order_by(Source.SSource).all()
 
     form_data = {}
     if prefill_cust_id:
-        form_data["CustID"] = str(prefill_cust_id)
         customer = Customer.query.get(str(prefill_cust_id))
         if customer:
             form_data["CustID"] = str(prefill_cust_id)
+            form_data["WOName"] = customer.Name
             if customer.Source:
                 form_data["ShipTo"] = customer.Source
-            form_data["WOName"] = customer.Name
 
     return render_template(
         "work_orders/create.html",
