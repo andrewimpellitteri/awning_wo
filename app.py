@@ -115,6 +115,32 @@ def create_app(config_class=Config):
 
         return User.query.get(int(user_id))
 
+    # At the bottom of create_app(), inside the app context
+    with app.app_context():
+        try:
+            # Print the DB URI being used
+            print(
+                "[DEBUG] SQLALCHEMY_DATABASE_URI:",
+                app.config.get("SQLALCHEMY_DATABASE_URI"),
+            )
+
+            # List all tables
+            inspector = inspect(db.engine)
+            tables = inspector.get_table_names()
+            print("[DEBUG] Tables in DB:", tables)
+
+            # Check if user table has any rows
+            result = db.engine.execute('SELECT id, username, email, role FROM "user";')
+            users = result.fetchall()
+            print("[DEBUG] Users in DB:")
+            for u in users:
+                print(
+                    f"  id={u.id}, username={u.username}, email={u.email}, role={u.role}"
+                )
+
+        except Exception as e:
+            print("[DEBUG] Database connection error:", e)
+
     return app
 
 

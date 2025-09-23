@@ -1,8 +1,6 @@
 import os
 from datetime import timedelta
 
-TEST_MIGRATION = True
-
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY") or "dev-key-change-in-production"
@@ -21,39 +19,25 @@ class Config:
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
         "pool_recycle": 300,
-        "pool_size": 10,  # Keep 10 persistent connections
-        "max_overflow": 20,  # Allow up to 20 extra connections if needed
+        "pool_size": 10,
+        "max_overflow": 20,
         "connect_args": {"connect_timeout": 10},
     }
 
-    # Compute database URI immediately
-    if TEST_MIGRATION:
-        SQLALCHEMY_DATABASE_URI = (
+    # Database URI logic
+    SQLALCHEMY_DATABASE_URI = (
+        os.environ.get("DATABASE_URL")
+        or (
             os.environ.get("RDS_HOSTNAME")
             and f"postgresql://{os.environ.get('RDS_USERNAME')}:{os.environ.get('RDS_PASSWORD')}@"
             f"{os.environ.get('RDS_HOSTNAME')}:{os.environ.get('RDS_PORT', 5432)}/"
             f"{os.environ.get('RDS_DB_NAME')}"
-            or os.environ.get("DATABASE_URL")
-            or f"postgresql://{os.environ.get('POSTGRES_USER', 'postgres')}:"
-            f"{os.environ.get('POSTGRES_PASSWORD', 'password')}@"
-            f"{os.environ.get('POSTGRES_HOST', 'localhost')}:"
-            f"{os.environ.get('POSTGRES_PORT', '5432')}/"
-            f"{os.environ.get('POSTGRES_DB', 'migrated_db')}"
         )
-
-    else:
-        SQLALCHEMY_DATABASE_URI = (
-            os.environ.get("RDS_HOSTNAME")
-            and f"postgresql://{os.environ.get('RDS_USERNAME')}:{os.environ.get('RDS_PASSWORD')}@"
-            f"{os.environ.get('RDS_HOSTNAME')}:{os.environ.get('RDS_PORT', 5432)}/"
-            f"{os.environ.get('RDS_DB_NAME')}"
-            or os.environ.get("DATABASE_URL")
-            or f"postgresql://{os.environ.get('POSTGRES_USER', 'postgres')}:"
-            f"{os.environ.get('POSTGRES_PASSWORD', 'password')}@"
-            f"{os.environ.get('POSTGRES_HOST', 'localhost')}:"
-            f"{os.environ.get('POSTGRES_PORT', '5432')}/"
-            f"{os.environ.get('POSTGRES_DB', 'Clean_Repair')}"
-        )
+        or f"postgresql://{os.environ.get('POSTGRES_USER', 'postgres')}:"
+        f"{os.environ.get('POSTGRES_PASSWORD', 'password')}@"
+        f"{os.environ.get('POSTGRES_HOST', 'localhost')}:{os.environ.get('POSTGRES_PORT', '5432')}/"
+        f"{os.environ.get('POSTGRES_DB', 'clean_repair')}"
+    )
 
     AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
     AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
