@@ -17,6 +17,8 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
 
+    print("heh")
+
     @app.template_filter("price_format")
     def format_price(price):
         """
