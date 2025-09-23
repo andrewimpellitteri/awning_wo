@@ -20,14 +20,31 @@ AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
 
-# Detect if running on Elastic Beanstalk
-is_eb_environment = os.getenv("PYTHONPATH") == "/var/app/current"
+def is_running_on_aws():
+    """Better detection for AWS environment"""
+    # Check multiple indicators that we're running on AWS
+    aws_indicators = [
+        os.getenv("AWS_EXECUTION_ENV"),  # Set by AWS services
+        os.getenv("AWS_LAMBDA_FUNCTION_NAME"),  # Lambda
+        os.getenv("AWS_REGION"),  # Usually set in AWS environments
+        os.path.exists("/var/app/current"),  # EB directory structure
+        os.path.exists("/opt/elasticbeanstalk"),  # EB specific path
+    ]
 
-if is_eb_environment:
+    # If any AWS indicator is present, assume we're on AWS
+    return any(aws_indicators)
+
+
+# Detect environment
+is_aws_environment = is_running_on_aws()
+
+if is_aws_environment:
     # Use IAM role (no credentials needed)
+    print("Detected AWS environment - using IAM role for S3 access")
     s3_client = boto3.client("s3", region_name=AWS_REGION)
 else:
     # Use explicit credentials for local development
+    print("Detected local environment - using explicit AWS credentials")
     AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
     AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 
