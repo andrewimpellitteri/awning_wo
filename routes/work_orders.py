@@ -309,6 +309,7 @@ def get_customer_inventory(cust_id):
 @work_orders_bp.route("/new", methods=["GET", "POST"])
 @work_orders_bp.route("/new/<int:prefill_cust_id>", methods=["GET", "POST"])
 @login_required
+@role_required("admin", "manager")
 def create_work_order(prefill_cust_id=None):
     """Create a new work order - inventory quantities never change"""
     if request.method == "POST":
@@ -514,6 +515,7 @@ def create_work_order(prefill_cust_id=None):
 
 @work_orders_bp.route("/edit/<work_order_no>", methods=["GET", "POST"])
 @login_required
+@role_required("admin", "manager")
 def edit_work_order(work_order_no):
     """Edit an existing work order (NO INVENTORY ADJUSTMENTS EVER)"""
     work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
@@ -937,6 +939,7 @@ def api_work_orders():
 
 @work_orders_bp.route("/delete/<work_order_no>", methods=["POST"])
 @login_required
+@role_required("admin", "manager")
 def delete_work_order(work_order_no):
     """Delete a work order without adjusting inventory"""
     work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()

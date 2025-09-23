@@ -39,7 +39,7 @@
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-
+            <!-- Modified navigation section with role-based restrictions -->
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
@@ -57,27 +57,37 @@
                             <i class="fas fa-person"></i> Customers
                         </a>
                     </li>
+
+                    
+                    <!-- Work Orders - visible to all authenticated users -->
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('work_orders.list_work_orders') }}">
                             <i class="fas fa-broom"></i> Work Orders
                         </a>
                     </li>
+                    
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('repair_work_orders.list_repair_work_orders') }}">
                             <i class="fas fa-scissors"></i> Repair Orders
                         </a>
                     </li>
+
+                    
+                    <!-- Queue - visible to all authenticated users -->
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('cleaning_queue.cleaning_queue') }}">
                             <i class="fas fa-stream"></i> Queue
                         </a>
                     </li>
 
+                    {% if current_user.role != 'user' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('analytics.analytics_dashboard') }}">
                             <i class="fas fa-chart-bar"></i> Analytics
                         </a>
                     </li>
+                    {% endif %}
+                    
                     {% if current_user.role == "admin" %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin.manage_users') }}">
@@ -87,6 +97,7 @@
                     {% endif %}
                 </ul>
 
+                <!-- Rest of navigation remains the same -->
                 <!-- Dark/Light toggle -->
                 <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item me-2">

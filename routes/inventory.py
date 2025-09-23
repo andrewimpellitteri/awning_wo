@@ -4,6 +4,7 @@ from models.inventory import Inventory  # Updated import
 from extensions import db
 from sqlalchemy import or_
 import uuid
+from decorators import role_required
 
 inventory_bp = Blueprint("inventory", __name__)
 
@@ -49,6 +50,7 @@ def inventory_detail(inventory_key):
 
 @inventory_bp.route("/new", methods=["GET", "POST"])
 @login_required
+@role_required("admin", "manager")
 def create_inventory():
     """Create a new inventory item"""
     if request.method == "POST":
@@ -88,6 +90,7 @@ def create_inventory():
 
 @inventory_bp.route("/edit/<inventory_key>", methods=["GET", "POST"])
 @login_required
+@role_required("admin", "manager")
 def edit_inventory(inventory_key):
     """Edit an existing inventory item"""
     item = Inventory.query.get_or_404(inventory_key)
@@ -239,6 +242,7 @@ def api_bulk_update_inventory():
 
 @inventory_bp.route("/add_ajax", methods=["POST"])
 @login_required
+@role_required("admin", "manager")
 def add_inventory_ajax():
     data = request.form
     customer_id = data.get("CustID")
@@ -268,6 +272,7 @@ def add_inventory_ajax():
 
 @inventory_bp.route("/edit_ajax/<inventory_key>", methods=["POST"])
 @login_required
+@role_required("admin", "manager")
 def edit_inventory_ajax(inventory_key):
     item = Inventory.query.get_or_404(inventory_key)
     data = request.form
@@ -290,6 +295,7 @@ def edit_inventory_ajax(inventory_key):
 
 @inventory_bp.route("/delete_ajax/<inventory_key>", methods=["POST"])
 @login_required
+@role_required("admin", "manager")
 def delete_inventory_ajax(inventory_key):
     """Delete an inventory item via AJAX"""
     item = Inventory.query.get_or_404(inventory_key)

@@ -4,7 +4,7 @@ from models.work_order import WorkOrder
 from .work_orders import format_date_from_str
 from sqlalchemy import or_, func
 from extensions import db
-
+from decorators import role_required
 
 queue_bp = Blueprint("cleaning_queue", __name__)
 
@@ -275,6 +275,7 @@ def cleaning_queue():
 
 @queue_bp.route("/api/cleaning-queue/reorder", methods=["POST"])
 @login_required
+@role_required("admin", "manager")
 def reorder_cleaning_queue():
     """Allow manual reordering of work orders in cleaning queue"""
     try:
@@ -479,6 +480,7 @@ def initialize_queue_positions():
 
 @queue_bp.route("/api/cleaning-queue/reset", methods=["POST"])
 @login_required
+@role_required("admin", "manager")
 def reset_all_queue_positions():
     """Reset all queue positions and reassign them from scratch (WARNING: destroys manual ordering)"""
     try:

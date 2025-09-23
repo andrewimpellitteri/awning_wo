@@ -6,6 +6,7 @@ from models.source import Source
 from sqlalchemy import or_, case, func, literal, desc, cast, Integer
 from datetime import datetime
 from extensions import db
+from decorators import role_required
 
 repair_work_orders_bp = Blueprint(
     "repair_work_orders", __name__, url_prefix="/repair_work_orders"
@@ -250,6 +251,7 @@ def api_repair_work_orders():
 @repair_work_orders_bp.route("/new", methods=["GET", "POST"])
 @repair_work_orders_bp.route("/new/<prefill_cust_id>", methods=["GET", "POST"])
 @login_required
+@role_required("admin", "manager")
 def create_repair_order(prefill_cust_id=None):
     """Create a new repair work order"""
     if request.method == "POST":
@@ -364,6 +366,7 @@ def create_repair_order(prefill_cust_id=None):
 
 @repair_work_orders_bp.route("/<repair_order_no>/edit", methods=["GET", "POST"])
 @login_required
+@role_required("admin", "manager")
 def edit_repair_order(repair_order_no):
     """Edit an existing repair work order"""
     repair_order = RepairWorkOrder.query.filter_by(
@@ -496,6 +499,7 @@ def edit_repair_order(repair_order_no):
 
 @repair_work_orders_bp.route("/<repair_order_no>/delete", methods=["POST"])
 @login_required
+@role_required("admin", "manager")
 def delete_repair_order(repair_order_no):
     """Delete a repair work order and all associated items"""
     try:

@@ -8,6 +8,7 @@ import re
 from datetime import datetime
 from sqlalchemy import text
 import json
+from decorators import role_required
 
 analytics_bp = Blueprint("analytics", __name__)
 
@@ -426,6 +427,7 @@ def create_status_pie_chart(df):
 
 @analytics_bp.route("/")
 @login_required
+@role_required("admin", "manager")
 def analytics_dashboard():
     try:
         print("[DEBUG] Loading analytics dashboard...")

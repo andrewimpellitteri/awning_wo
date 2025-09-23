@@ -3,6 +3,7 @@ from flask_login import login_required
 from models.source import Source
 from extensions import db
 from sqlalchemy import or_
+from decorators import role_required
 
 source_bp = Blueprint("source", __name__)
 
@@ -63,6 +64,7 @@ def source_detail(source_name):
 
 @source_bp.route("/new", methods=["GET", "POST"])
 @login_required
+@role_required("admin", "manager")
 def create_source():
     """Create a new source"""
     if request.method == "POST":
@@ -105,6 +107,7 @@ def create_source():
 
 @source_bp.route("/edit/<source_name>", methods=["GET", "POST"])
 @login_required
+@role_required("admin", "manager")
 def edit_source(source_name):
     """Edit an existing source"""
     source = Source.query.get_or_404(source_name)
@@ -135,6 +138,7 @@ def edit_source(source_name):
 
 @source_bp.route("/delete/<source_name>", methods=["POST"])
 @login_required
+@role_required("admin", "manager")
 def delete_source(source_name):
     """Delete a source"""
     source = Source.query.get_or_404(source_name)

@@ -13,6 +13,7 @@ import warnings
 import joblib
 import os
 from datetime import datetime, timedelta
+from utils.file_upload import save_ml_model
 
 warnings.filterwarnings("ignore")
 
@@ -231,6 +232,9 @@ def dashboard():
     return render_template("ml/dashboard.html")
 
 
+# Replace your existing train_model route with this updated version
+
+
 @ml_bp.route("/train", methods=["POST"])
 @login_required
 def train_model():
@@ -240,6 +244,7 @@ def train_model():
     try:
         config_name = request.json.get("config", "baseline")
         config = MODEL_CONFIGS.get(config_name, MODEL_CONFIGS["baseline"])
+        auto_save = request.json.get("auto_save", True)  # New parameter
 
         # Load data using the WorkOrder model
         df = MLService.load_work_orders()
@@ -340,18 +345,32 @@ def train_model():
             "feature_columns": feature_cols,
         }
 
-        return jsonify(
-            {
-                "message": "Model trained successfully",
-                "metrics": {
-                    "mae": mae,
-                    "rmse": rmse,
-                    "r2": r2,
-                    "training_time": training_time,
-                    "samples": len(X_train),
-                },
-            }
-        )
+        # Auto-save the model if requested
+        save_result = None
+        if auto_save:
+            try:
+                model_name = f"{config_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                save_metadata = model_metadata.copy()
+                save_metadata["model_name"] = model_name
+                save_result = save_ml_model(current_model, save_metadata, model_name)
+            except Exception as save_error:
+                print(f"Warning: Failed to auto-save model: {save_error}")
+
+        response_data = {
+            "message": "Model trained successfully",
+            "metrics": {
+                "mae": mae,
+                "rmse": rmse,
+                "r2": r2,
+                "training_time": training_time,
+                "samples": len(X_train),
+            },
+        }
+
+        if save_result:
+            response_data["saved"] = save_result
+
+        return jsonify(response_data)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -599,3 +618,209 @@ def status():
             "available_configs": list(MODEL_CONFIGS.keys()),
         }
     )
+
+
+# Add this route to your ml_bp blueprint
+
+
+@ml_bp.route("/cron/retrain", methods=["POST"])
+def cron_retrain():
+    """Special endpoint for cron jobs - trains on ALL data without test holdout"""
+
+    # Simple security: check for a secret key
+    secret = request.headers.get("X-Cron-Secret") or (request.json or {}).get("secret")
+    expected_secret = os.getenv("CRON_SECRET", "your-secret-key")
+
+    if secret != expected_secret:
+        return jsonify({"error": "Unauthorized - invalid cron secret"}), 401
+
+    global current_model, model_metadata
+
+    try:
+        # Get configuration from request or use default
+        request_data = request.json or {}
+        config_name = request_data.get("config", "baseline")
+        config = MODEL_CONFIGS.get(config_name, MODEL_CONFIGS["baseline"])
+
+        # Log the start of training
+        start_timestamp = datetime.now()
+        print(f"[CRON RETRAIN] Starting at {start_timestamp}")
+
+        # Load data using the WorkOrder model
+        df = MLService.load_work_orders()
+        if df is None or df.empty:
+            error_msg = "No data available for training"
+            print(f"[CRON RETRAIN] ERROR: {error_msg}")
+            return jsonify(
+                {"error": error_msg, "timestamp": start_timestamp.isoformat()}
+            ), 400
+
+        # Preprocess and engineer features
+        train_df = MLService.preprocess_data(df)
+        train_df = MLService.engineer_features(train_df)
+
+        print(f"[CRON RETRAIN] Preprocessed data: {len(train_df)} samples")
+
+        # Feature selection - same as regular training
+        feature_cols = [
+            "rushorder_binary",
+            "firmrush_binary",
+            "storagetime_numeric",
+            "order_age",
+            "month_in",
+            "dow_in",
+            "quarter_in",
+            "is_weekend",
+            "is_rush",
+            "any_rush",
+            "instructions_len",
+            "has_special_instructions",
+            "repairs_len",
+            "has_repairs_needed",
+            "has_required_date",
+            "days_until_required",
+            "customer_encoded",
+            "cust_mean",
+            "cust_std",
+            "cust_count",
+            "storage_impact",
+        ]
+
+        # Add optional features if they exist
+        if "needs_cleaning" in train_df.columns:
+            feature_cols.append("needs_cleaning")
+        if "needs_treatment" in train_df.columns:
+            feature_cols.append("needs_treatment")
+
+        # Filter available features
+        feature_cols = [col for col in feature_cols if col in train_df.columns]
+
+        if len(feature_cols) == 0:
+            error_msg = "No valid features found"
+            print(f"[CRON RETRAIN] ERROR: {error_msg}")
+            return jsonify(
+                {"error": error_msg, "timestamp": start_timestamp.isoformat()}
+            ), 400
+
+        # Prepare ALL data for training (no test holdout for cron job)
+        X = train_df[feature_cols].fillna(0)
+        y = train_df["days_to_complete"]
+
+        if len(X) < 10:
+            error_msg = f"Insufficient training data: only {len(X)} samples"
+            print(f"[CRON RETRAIN] ERROR: {error_msg}")
+            return jsonify(
+                {"error": error_msg, "timestamp": start_timestamp.isoformat()}
+            ), 400
+
+        print(
+            f"[CRON RETRAIN] Training on ALL {len(X)} samples with {len(feature_cols)} features"
+        )
+
+        # Train model on ALL available data
+        training_start_time = time.time()
+
+        model = lgb.LGBMRegressor(
+            objective="regression",
+            n_estimators=config["n_estimators"],
+            learning_rate=config["learning_rate"],
+            max_depth=config["max_depth"],
+            num_leaves=config["num_leaves"],
+            min_child_samples=20,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            n_jobs=-1,
+            verbose=-1,
+        )
+
+        # Fit on ALL data
+        model.fit(X, y)
+        training_time = time.time() - training_start_time
+
+        print(f"[CRON RETRAIN] Model training completed in {training_time:.2f} seconds")
+
+        # Calculate training metrics (on the same data used for training)
+        y_pred = model.predict(X)
+        mae = mean_absolute_error(y, y_pred)
+        rmse = np.sqrt(mean_squared_error(y, y_pred))
+
+        # Calculate R²
+        ss_res = np.sum((y - y_pred) ** 2)
+        ss_tot = np.sum((y - np.mean(y)) ** 2)
+        r2 = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0
+
+        print(
+            f"[CRON RETRAIN] Training metrics - MAE: {mae:.3f}, RMSE: {rmse:.3f}, R²: {r2:.3f}"
+        )
+
+        # Store model globally
+        current_model = model
+        model_metadata = {
+            "config_name": config_name,
+            "training_time": round(training_time, 2),
+            "mae": round(mae, 3),
+            "rmse": round(rmse, 3),
+            "r2": round(r2, 3),
+            "trained_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "sample_count": len(X),
+            "feature_columns": feature_cols,
+            "training_type": "cron_full_data",  # Distinguish from regular training
+            "data_version": start_timestamp.strftime("%Y%m%d_%H%M%S"),
+        }
+
+        # Auto-save the model with timestamp
+        model_name = f"cron_{config_name}_{start_timestamp.strftime('%Y%m%d_%H%M%S')}"
+        save_metadata = model_metadata.copy()
+        save_metadata["model_name"] = model_name
+        save_metadata["auto_saved"] = True
+
+        try:
+            save_result = save_ml_model(current_model, save_metadata, model_name)
+            print(f"[CRON RETRAIN] Model saved successfully as: {model_name}")
+            save_success = True
+        except Exception as save_error:
+            print(f"[CRON RETRAIN] WARNING: Failed to save model: {save_error}")
+            save_result = None
+            save_success = False
+
+        end_timestamp = datetime.now()
+        total_time = (end_timestamp - start_timestamp).total_seconds()
+
+        print(f"[CRON RETRAIN] Completed successfully in {total_time:.2f} seconds")
+
+        # Return success response
+        response_data = {
+            "message": "Cron retrain completed successfully",
+            "timestamp": end_timestamp.isoformat(),
+            "config_used": config_name,
+            "training_metrics": {
+                "mae": mae,
+                "rmse": rmse,
+                "r2": r2,
+                "training_time_seconds": training_time,
+                "total_time_seconds": total_time,
+                "samples_trained": len(X),
+                "features_used": len(feature_cols),
+            },
+            "model_saved": save_success,
+            "model_name": model_name if save_success else None,
+        }
+
+        if save_result:
+            response_data["save_details"] = save_result
+
+        return jsonify(response_data)
+
+    except Exception as e:
+        error_timestamp = datetime.now()
+        error_msg = str(e)
+        print(f"[CRON RETRAIN] EXCEPTION at {error_timestamp}: {error_msg}")
+
+        return jsonify(
+            {
+                "error": error_msg,
+                "timestamp": error_timestamp.isoformat(),
+                "training_type": "cron_full_data",
+            }
+        ), 500

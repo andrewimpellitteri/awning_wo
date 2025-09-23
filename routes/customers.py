@@ -8,6 +8,7 @@ from models.repair_order import RepairWorkOrder
 from extensions import db
 from sqlalchemy import or_, func, cast, Integer, desc, asc
 import json
+from decorators import role_required
 
 
 customers_bp = Blueprint("customers", __name__)
@@ -15,6 +16,7 @@ customers_bp = Blueprint("customers", __name__)
 
 @customers_bp.route("/")
 @login_required
+@role_required("admin", "manager")
 def list_customers():
     """Render the customer list page with filters"""
     search_query = request.args.get("search", "").strip()
@@ -52,6 +54,7 @@ def list_customers():
 
 @customers_bp.route("/api/customers")
 @login_required
+@role_required("admin", "manager")
 def api_customers():
     """API endpoint for the customers table with server-side filtering, sorting, and pagination"""
 
@@ -206,6 +209,7 @@ def api_customers():
 
 @customers_bp.route("/view/<customer_id>")
 @login_required
+@role_required("admin", "manager")
 def customer_detail(customer_id):
     """Display detailed view of a customer"""
     customer = Customer.query.get_or_404(customer_id)
@@ -304,6 +308,7 @@ def create_customer():
 
 @customers_bp.route("/edit/<customer_id>", methods=["GET", "POST"])
 @login_required
+@role_required("admin", "manager")
 def edit_customer(customer_id):
     """Edit an existing customer"""
     customer = Customer.query.get_or_404(customer_id)
@@ -367,6 +372,7 @@ def edit_customer(customer_id):
 
 @customers_bp.route("/api/source_info/<source_name>")
 @login_required
+@role_required("admin", "manager")
 def api_source_info(source_name):
     source = Source.query.filter_by(SSource=source_name).first_or_404()
     return jsonify(
@@ -381,6 +387,7 @@ def api_source_info(source_name):
 
 @customers_bp.route("/delete/<customer_id>", methods=["POST"])
 @login_required
+@role_required("admin", "manager")
 def delete_customer(customer_id):
     """Delete a customer"""
     customer = Customer.query.get_or_404(customer_id)
