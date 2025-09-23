@@ -131,6 +131,12 @@ if os.environ.get("FLASK_ENV") == "development":
             inspector = inspect(db.engine)
             tables = inspector.get_table_names()
 
+            # List all tables visible to this DB connection
+            tables = db.engine.execute(
+                "SELECT tablename FROM pg_tables WHERE schemaname='public';"
+            )
+            print([t[0] for t in tables])
+
             print("Database URL:", db.engine.url)
             print(f"Available tables: {tables}")
 

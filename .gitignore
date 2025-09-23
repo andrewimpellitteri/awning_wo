@@ -131,3 +131,5 @@ migration_tool/*.sqlite
 
 uploads/
 .env.s3
+
+*.dump
