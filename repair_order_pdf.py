@@ -255,7 +255,7 @@ class RepairOrderPDF:
                         "BACKGROUND",
                         (0, 0),
                         (-1, 0),
-                        colors.lightblue,
+                        colors.lightgreen,
                     ),  # Blue background
                     ("TEXTCOLOR", (0, 0), (-1, 0), colors.black),
                     ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
@@ -405,7 +405,25 @@ class RepairOrderPDF:
 
         # --- RIGHT: Repair Order Info ---
         # Build source information from SOURCE field
-        source_str = str(ro.get("SOURCE", "") or "").strip() or "N/A"
+
+        cust = ro.get("customer", {})
+        if cust.get("SourceZip"):
+            if cust["SourceZip"][-1] == "-":
+                cust["SourceZip"] = cust["SourceZip"].strip("-")
+        if cust.get("SourceState"):
+            cust["SourceState"] = cust["SourceState"].upper()
+        safe_values = [
+            str(cust.get(field) or "").strip()
+            for field in [
+                "Source",
+                "SourceAddress",
+                "SourceCity",
+                "SourceState",
+                "SourceZip",
+            ]
+            if cust.get(field)
+        ]
+        source_str = " ".join(safe_values) if safe_values else "N/A"
 
         right_data = [
             [
@@ -644,7 +662,10 @@ class RepairOrderPDF:
                     self._format_date(ro.get("CLEAN", "")), self.styles["SmallValue"]
                 ),
                 safe_paragraph("See Clean", self.styles["SmallLabel"]),
-                safe_paragraph(ro.get("SEECLEAN", ""), self.styles["SmallValue"]),
+                safe_paragraph(
+                    str(int(float(ro.get("SEECLEAN", 0) or 0))),
+                    self.styles["SmallValue"],
+                ),
                 safe_paragraph("Clean First", self.styles["SmallLabel"]),
                 safe_paragraph(ro.get("CLEANFIRST", ""), self.styles["SmallValue"]),
             ]
