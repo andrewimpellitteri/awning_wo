@@ -431,7 +431,7 @@
                     {% for item in inventory_items %}
                     <tr data-key="{{ item.InventoryKey }}">
                         <td class="qty">
-                            <span class="badge bg-primary">{{ item.Qty or '0' }}</span>
+                            <span class="badge bg-primary">{{ (item.Qty or '0') | int }}</span>
                         </td>
                         <td class="description fw-medium">{{ item.Description }}</td>
                         <td class="material">{{ item.Material or '-' }}</td>
