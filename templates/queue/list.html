@@ -95,7 +95,9 @@
                         <ul class="list-group list-group-flush" id="sortable-queue">
                             {% for work_order in work_orders %}
                             <li class="list-group-item d-flex align-items-center" data-wo-id="{{ work_order.WorkOrderNo }}">
+                                {% if current_user != 'user' %}
                                 <span class="me-3 text-muted drag-handle" style="cursor: grab;">⋮⋮</span>
+                                {% endif %}
                                 <span class="badge bg-light text-dark me-3 queue-position">
                                     {{ loop.index + (pagination.page - 1) * pagination.per_page }}
                                 </span>
@@ -113,11 +115,17 @@
                                         </a>
                                     </div>
                                     <div class="col-md-3">{{ work_order.WOName or 'Untitled' }}</div>
-                                    <div class="col-md-2 text-muted">{{ work_order.CustID }}</div>
+                                    <div class="col-md-2">
+                                        {% if work_order.customer_url %}
+                                          <a href="{{ work_order.customer_url }}" class="badge bg-primary">{{ work_order.CustID }}</a>
+                                        {% else %}
+                                          <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </div>
                                     <div class="col-md-3 text-muted small">
-                                        <div>In: {{ work_order.DateIn or 'N/A' }}</div>
+                                        <div>In: {{ (work_order.DateIn | formate_date) or 'N/A' }}</div>
                                         {% if work_order.DateRequired %}
-                                            <div>Req: {{ work_order.DateRequired }}</div>
+                                            <div>Req: {{ work_order.DateRequired | formate_date }}</div>
                                         {% endif %}
                                     </div>
                                     <div class="col-md-2 d-flex gap-1">
@@ -125,7 +133,8 @@
                                            class="btn btn-sm btn-outline-primary">
                                            <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="{{ url_for('work_orders.edit_work_order', work_order_no=work_order.WorkOrderNo) }}" 
+                                        {% set edit_endpoint = 'work_orders.cleaning_room_edit_work_order' if current_user.role == 'user' else 'work_orders.edit_work_order' %}
+                                        <a href="{{ url_for(edit_endpoint, work_order_no=work_order.WorkOrderNo) }}" 
                                            class="btn btn-sm btn-outline-warning">
                                            <i class="fas fa-edit"></i>
                                         </a>
