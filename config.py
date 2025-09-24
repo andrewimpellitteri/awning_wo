@@ -44,7 +44,7 @@ class Config:
     AWS_S3_BUCKET = os.environ.get("AWS_S3_BUCKET")
     AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
 
-    SAIL_ORDER_SOURCES = ["Source"]
+    SAIL_ORDER_SOURCES = ["NS RI", "Doyle/Island Nautical Canvas", "NS LI"]
 
 
 class DevelopmentConfig(Config):

@@ -133,3 +133,4 @@ uploads/
 .env.s3
 
 *.dump
+*.csv

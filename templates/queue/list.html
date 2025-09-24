@@ -3,6 +3,9 @@
 {% block title %}Cleaning Queue{% endblock %}
 
 {% block content %}
+<head>
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
@@ -55,7 +58,7 @@
             <div class="card mb-4">
                 <div class="card-body">
                     <form method="GET" class="row g-3 align-items-center">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <input type="text" 
                                    name="search" 
                                    value="{{ search }}" 
@@ -70,12 +73,24 @@
                                 <option value="100" {% if per_page == 100 %}selected{% endif %}>100 per page</option>
                             </select>
                         </div>
-                        <div class="col-md-4 d-flex">
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="showSailOrders" name="show_sail_orders" value="true" 
+                                           {% if show_sail_orders %}checked{% endif %}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <label for="showSailOrders" class="form-label mb-0 fw-medium">
+                                    <i class="fas fa-sailboat text-primary me-2"></i>Show Sail Orders
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 d-flex">
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="fas fa-search"></i> Search
                             </button>
                             {% if search %}
-                                <a href="{{ url_for('cleaning_queue.cleaning_queue') }}" class="btn btn-outline-secondary">
+                                <a href="{{ url_for('cleaning_queue.cleaning_queue', show_sail_orders=show_sail_orders) }}" class="btn btn-outline-secondary">
                                     <i class="fas fa-times"></i> Clear
                                 </a>
                             {% endif %}
@@ -127,6 +142,9 @@
                                         {% if work_order.DateRequired %}
                                             <div>Req: {{ work_order.DateRequired | date_format }}</div>
                                         {% endif %}
+                                        {% if work_order.ShipTo %}
+                                            <div class="badge badge-secondary">{{ work_order.ShipTo }}</div>
+                                        {% endif %}
                                     </div>
                                     <div class="col-md-2 d-flex gap-1">
                                         <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}" 
@@ -159,7 +177,7 @@
                 <ul class="pagination justify-content-center">
                     {% if pagination.has_prev %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('cleaning_queue.cleaning_queue', page=pagination.prev_num, search=search, per_page=per_page) }}">
+                            <a class="page-link" href="{{ url_for('cleaning_queue.cleaning_queue', page=pagination.prev_num, search=search, per_page=per_page, show_sail_orders=show_sail_orders) }}">
                                 Previous
                             </a>
                         </li>
@@ -170,7 +188,7 @@
                             <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
                         {% else %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('cleaning_queue.cleaning_queue', page=page_num, search=search, per_page=per_page) }}">
+                                <a class="page-link" href="{{ url_for('cleaning_queue.cleaning_queue', page=page_num, search=search, per_page=per_page, show_sail_orders=show_sail_orders) }}">
                                     {{ page_num }}
                                 </a>
                             </li>
@@ -179,7 +197,7 @@
 
                     {% if pagination.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('cleaning_queue.cleaning_queue', page=pagination.next_num, search=search, per_page=per_page) }}">
+                            <a class="page-link" href="{{ url_for('cleaning_queue.cleaning_queue', page=pagination.next_num, search=search, per_page=per_page, show_sail_orders=show_sail_orders) }}">
                                 Next
                             </a>
                         </li>
@@ -313,5 +331,16 @@ setInterval(() => {
         location.reload();
     }
 }, 30000);
+
+// Toggle switch functionality - FIXED
+document.getElementById('showSailOrders').addEventListener('change', function() {
+    // Get current URL and update the parameter
+    const url = new URL(window.location);
+    url.searchParams.set('show_sail_orders', this.checked ? 'true' : 'false');
+    
+    // Preserve other parameters like search, page, etc.
+    window.location.href = url.toString();
+});
+
 </script>
 {% endblock %}

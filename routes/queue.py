@@ -5,6 +5,7 @@ from .work_orders import format_date_from_str
 from sqlalchemy import or_, func
 from extensions import db
 from decorators import role_required
+from flask import current_app
 
 queue_bp = Blueprint("cleaning_queue", __name__)
 
@@ -176,6 +177,9 @@ def cleaning_queue():
     search = request.args.get("search", "").strip()
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 25, type=int)
+    show_sail_orders = (
+        request.args.get("show_sail_orders", "true").lower() == "true"
+    )  # Default to showing sail orders
 
     # Helper: build search filter if search term is provided
     def search_filter(query):
@@ -195,23 +199,61 @@ def cleaning_queue():
     base_filter = or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == "")
 
     # Initialize queue positions for any work orders that don't have them
-    # This only affects work orders without positions, preserving manual reordering
     initialized_count = initialize_queue_positions_for_unassigned()
     if initialized_count > 0:
         print(f"Auto-initialized {initialized_count} work orders with queue positions")
 
-    # FIXED: Fetch ALL work orders together, ordered by queue position FIRST
-    all_orders_query = search_filter(
-        WorkOrder.query.filter(base_filter).order_by(
-            WorkOrder.QueuePosition.asc().nullslast(),
-            # Fallback ordering for items without queue positions
-            WorkOrder.DateRequired.asc().nullslast(),
-            WorkOrder.DateIn.asc().nullslast(),
-            WorkOrder.WorkOrderNo.asc(),
+    # Build the main query with all filters
+    all_orders_query = WorkOrder.query.filter(base_filter)
+
+    # Apply search filter
+    all_orders_query = search_filter(all_orders_query)
+
+    # DEBUG: Check what's in the config
+    sail_sources = current_app.config.get("SAIL_ORDER_SOURCES", [])
+    print(f"DEBUG - Config SAIL_ORDER_SOURCES: {sail_sources}")
+    print(f"DEBUG - show_sail_orders parameter: {show_sail_orders}")
+
+    # Apply sail order filter if needed
+    if not show_sail_orders:
+        print(f"DEBUG - Applying sail order filter, excluding: {sail_sources}")
+        all_orders_query = all_orders_query.filter(~WorkOrder.ShipTo.in_(sail_sources))
+
+        # DEBUG: Print the SQL after adding sail filter
+        if current_app.debug:
+            print(
+                f"DEBUG - Filtered query SQL: {str(all_orders_query.statement.compile(compile_kwargs={'literal_binds': True}))}"
+            )
+    else:
+        print(
+            "DEBUG - NOT applying sail order filter (showing all orders including sail orders)"
         )
+
+    # Apply ordering
+    all_orders_query = all_orders_query.order_by(
+        WorkOrder.QueuePosition.asc().nullslast(),
+        WorkOrder.DateRequired.asc().nullslast(),
+        WorkOrder.DateIn.asc().nullslast(),
+        WorkOrder.WorkOrderNo.asc(),
     )
 
+    # Execute query
     all_orders = all_orders_query.all()
+
+    # DEBUG: Check what we got back
+    print(f"DEBUG - Total orders found: {len(all_orders)}")
+
+    # Count sail orders in results
+    sail_orders_in_results = [wo for wo in all_orders if wo.ShipTo in sail_sources]
+    print(f"DEBUG - Sail orders in results: {len(sail_orders_in_results)}")
+    if sail_orders_in_results:
+        print(
+            f"DEBUG - Sail order ShipTo values found: {[wo.ShipTo for wo in sail_orders_in_results]}"
+        )
+
+    # Show some ShipTo values for debugging
+    ship_to_values = list(set([wo.ShipTo for wo in all_orders if wo.ShipTo]))[:10]
+    print(f"DEBUG - Sample ShipTo values in results: {ship_to_values}")
 
     # Calculate counts for each priority (for the stats display)
     firm_rush_orders = [wo for wo in all_orders if wo.FirmRush == "1"]
@@ -243,7 +285,7 @@ def cleaning_queue():
 
     pagination = ManualPagination(paginated_orders, page, per_page, total)
 
-    # Add display priority labels and queue positions
+    # Add display priority labels
     for wo in paginated_orders:
         if wo.FirmRush == "1":
             wo.priority_label = "FIRM RUSH"
@@ -269,6 +311,7 @@ def cleaning_queue():
         pagination=pagination,
         search=search,
         per_page=per_page,
+        show_sail_orders=show_sail_orders,
         queue_counts=queue_counts,
     )
 
