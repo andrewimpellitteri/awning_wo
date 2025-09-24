@@ -29,6 +29,23 @@ os.environ["FLASK_ENV"] = "testing"
 os.environ["TESTING"] = "True"
 
 
+# Use a pytest fixture to mock the S3 client
+@pytest.fixture(autouse=True)
+def mock_s3_client(mocker):
+    """
+    This fixture automatically mocks the boto3.client for all tests
+    to prevent calls to AWS and avoid credential errors.
+    """
+    # Create a mock S3 client that can be used in place of the real one
+    mock_s3 = MagicMock()
+
+    # Patch the 'boto3.client' call within the file_upload module
+    mocker.patch("utils.file_upload.boto3.client", return_value=mock_s3)
+
+    # Return the mock if any test needs to make assertions on it
+    return mock_s3
+
+
 @pytest.fixture(scope="function")
 def app():
     app = create_app(config_class=TestingConfig)
