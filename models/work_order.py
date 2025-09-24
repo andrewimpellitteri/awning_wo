@@ -64,13 +64,28 @@ class WorkOrder(db.Model):
         uselist=False,
     )
 
-    @hybrid_property
+    @property
     def is_sail_order(self):
-        """Return True if ShipTo is in the sail order sources list."""
-        return (
-            self.ShipTo is not None
-            and self.ShipTo in current_app.config["SAIL_ORDER_SOURCES"]
-        )
+        """Return True if ShipTo is in the sail order sources list.
+
+        Note: This is a Python property, not a hybrid property,
+        so it only works when the object is loaded in Python,
+        not in database queries.
+        """
+        try:
+            sail_sources = current_app.config.get("SAIL_ORDER_SOURCES", [])
+            return self.ShipTo is not None and self.ShipTo in sail_sources
+        except RuntimeError:
+            # Handle case where we're outside application context
+            return False
+
+    @classmethod
+    def get_sail_order_sources(cls):
+        """Helper method to get sail order sources safely"""
+        try:
+            return current_app.config.get("SAIL_ORDER_SOURCES", [])
+        except RuntimeError:
+            return []
 
     def to_dict(self, include_items=True):
         data = {
