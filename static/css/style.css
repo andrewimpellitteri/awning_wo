@@ -33,6 +33,17 @@
     background-color: var(--bg-secondary);
 }
 
+/* Default logo (light theme) */
+.navbar-brand img {
+    filter: none;
+}
+
+/* Dark theme logo */
+html[data-theme="dark"] .navbar-brand img {
+    filter: invert(1) hue-rotate(180deg);
+}
+
+
 /* Fix striped rows in dark mode */
 [data-theme="dark"] .table-striped tbody tr:nth-of-type(odd) {
     background-color: var(--bg-primary);
