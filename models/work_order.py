@@ -1,6 +1,5 @@
-from datetime import datetime
 from extensions import db
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.sql import func
 from flask import current_app  # Import current_app to access Flask config
 
 
@@ -32,15 +31,8 @@ class WorkOrder(db.Model):
     ShipTo = db.Column("shipto", db.String, db.ForeignKey("tblsource.ssource"))
     FirmRush = db.Column("firmrush", db.String)
     CleanFirstWO = db.Column("cleanfirstwo", db.String)
-    created_at = db.Column(
-        "created_at", db.String, default=lambda: datetime.utcnow().isoformat()
-    )
-    updated_at = db.Column(
-        "updated_at",
-        db.String,
-        default=lambda: datetime.utcnow().isoformat(),
-        onupdate=lambda: datetime.utcnow().isoformat(),
-    )
+    created_at = db.Column(db.DateTime, server_default=func.now())
+    updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
 
     # relationships
     customer = db.relationship("Customer", back_populates="work_orders")
@@ -109,8 +101,12 @@ class WorkOrder(db.Model):
             "ShipTo": self.ShipTo,
             "FirmRush": self.FirmRush,
             "CleanFirstWO": self.CleanFirstWO,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
+            "created_at": self.created_at.strftime("%m/%d/%Y %H:%M:%S")
+            if self.created_at
+            else None,
+            "updated_at": self.updated_at.strftime("%m/%d/%Y %H:%M:%S")
+            if self.updated_at
+            else None,
         }
         if include_items:
             data["items"] = [item.to_dict() for item in self.items]
