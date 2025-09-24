@@ -921,6 +921,12 @@ def api_work_orders():
             "detail_url": url_for(
                 "work_orders.view_work_order", work_order_no=wo.WorkOrderNo
             ),
+            "edit_url": url_for(
+                "work_orders.edit_work_order", work_order_no=wo.WorkOrderNo
+            ),
+            "delete_url": url_for(
+                "work_orders.delete_work_order", work_order_no=wo.WorkOrderNo
+            ),
             "customer_url": url_for("customers.customer_detail", customer_id=wo.CustID)
             if wo.customer
             else None,
