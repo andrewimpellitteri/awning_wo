@@ -8,7 +8,7 @@ import pytest
 import sys
 import tempfile
 import os
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, MagicMock
 from pathlib import Path
 
 # Add the project root to Python path
@@ -32,6 +32,29 @@ except ImportError as e:
     print(f"Project root: {project_root}")
     print(f"Python path: {sys.path}")
     raise
+
+
+# Set mock AWS credentials to prevent import errors
+os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+
+
+# Use a pytest fixture to mock the S3 client
+@pytest.fixture(autouse=True)
+def mock_s3_client(mocker):
+    """
+    This fixture automatically mocks the boto3.client for all tests
+    to prevent calls to AWS and avoid credential errors.
+    """
+    # Create a mock S3 client that can be used in place of the real one
+    mock_s3 = MagicMock()
+
+    # Patch the 'boto3.client' call within the file_upload module
+    mocker.patch("utils.file_upload.boto3.client", return_value=mock_s3)
+
+    # Return the mock if any test needs to make assertions on it
+    return mock_s3
 
 
 @pytest.fixture(scope="session")
