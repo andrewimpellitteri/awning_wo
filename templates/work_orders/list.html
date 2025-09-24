@@ -7,9 +7,11 @@
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0 text-gray-800">Work Orders</h1>
+        {% if current_user.role != 'user' %}
         <a href="{{ url_for('work_orders.create_work_order') }}" class="btn btn-primary btn-sm">
             <i class="fas fa-plus me-1"></i> Add Work Order
         </a>
+        {% endif %}
     </div>
 
     <!-- Status Filters -->
