@@ -20,7 +20,7 @@
                     <h2>{{ customer.Name or 'Unnamed Customer' }}</h2>
                     <p class="text-muted">Customer ID: {{ customer.CustID }}</p>
                 </div>
-                {if current_user.role != 'user'}
+                {% if current_user.role != 'user' %}
                 <div class="btn-group">
                     <a href="{{ url_for('customers.edit_customer', customer_id=customer.CustID) }}" 
                        class="btn btn-warning">
