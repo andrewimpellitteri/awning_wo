@@ -1,5 +1,7 @@
 from datetime import datetime
 from extensions import db
+from sqlalchemy.ext.hybrid import hybrid_property
+from flask import current_app  # Import current_app to access Flask config
 
 
 class WorkOrder(db.Model):
@@ -61,6 +63,14 @@ class WorkOrder(db.Model):
         lazy="joined",
         uselist=False,
     )
+
+    @hybrid_property
+    def is_sail_order(self):
+        """Return True if ShipTo is in the sail order sources list."""
+        return (
+            self.ShipTo is not None
+            and self.ShipTo in current_app.config["SAIL_ORDER_SOURCES"]
+        )
 
     def to_dict(self, include_items=True):
         data = {

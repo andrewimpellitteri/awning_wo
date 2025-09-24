@@ -123,9 +123,9 @@
                                         {% endif %}
                                     </div>
                                     <div class="col-md-3 text-muted small">
-                                        <div>In: {{ (work_order.DateIn | formate_date) or 'N/A' }}</div>
+                                        <div>In: {{ (work_order.DateIn | date_format) or 'N/A' }}</div>
                                         {% if work_order.DateRequired %}
-                                            <div>Req: {{ work_order.DateRequired | formate_date }}</div>
+                                            <div>Req: {{ work_order.DateRequired | date_format }}</div>
                                         {% endif %}
                                     </div>
                                     <div class="col-md-2 d-flex gap-1">
