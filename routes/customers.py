@@ -9,9 +9,14 @@ from extensions import db
 from sqlalchemy import or_, func, cast, Integer, desc, asc
 import json
 from decorators import role_required
+from flask_login import current_user
 
 
 customers_bp = Blueprint("customers", __name__)
+
+
+def user_can_edit():
+    return current_user.role in ("admin", "manager")
 
 
 @customers_bp.route("/")
@@ -181,7 +186,9 @@ def api_customers():
                 ),
                 "edit_url": url_for(
                     "customers.edit_customer", customer_id=customer.CustID
-                ),
+                )
+                if user_can_edit()
+                else None,
             }
         )
 
