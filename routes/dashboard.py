@@ -1,7 +1,7 @@
-from flask import Blueprint, render_template, jsonify, request
+from flask import Blueprint, render_template
 from extensions import db
 from models.work_order import WorkOrder  # Adjust import path as needed
-from sqlalchemy import desc, func, text, nullslast
+from sqlalchemy import func, nullslast
 from datetime import datetime
 
 # Create blueprint (adjust name as needed)

@@ -29,7 +29,6 @@ work_orders_bp = Blueprint("work_orders", __name__, url_prefix="/work_orders")
 @work_orders_bp.route("/<work_order_no>/files/upload", methods=["POST"])
 @login_required
 def upload_work_order_file(work_order_no):
-    work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
     if "file" not in request.files:
         return jsonify({"error": "No file part"}), 400
 
