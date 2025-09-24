@@ -29,6 +29,12 @@ os.environ["FLASK_ENV"] = "testing"
 os.environ["TESTING"] = "True"
 
 
+# Set mock AWS credentials to prevent import errors
+os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+
+
 # Use a pytest fixture to mock the S3 client
 @pytest.fixture(autouse=True)
 def mock_s3_client(mocker):
