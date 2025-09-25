@@ -41,17 +41,81 @@ def initialize_queue_positions_for_unassigned():
 
         sorted_unassigned = sorted(unassigned_orders, key=priority_sort_key)
 
-        # Get the highest existing queue position to continue from there
-        max_position = (
-            db.session.query(func.max(WorkOrder.QueuePosition))
-            .filter(base_filter)
-            .scalar()
-            or 0
-        )
+        # Separate by priority for proper insertion
+        firm_rush_orders = [wo for wo in sorted_unassigned if wo.FirmRush == "1"]
+        rush_orders = [
+            wo for wo in sorted_unassigned if wo.RushOrder == "1" and wo.FirmRush != "1"
+        ]
+        regular_orders = [
+            wo for wo in sorted_unassigned if wo.RushOrder != "1" and wo.FirmRush != "1"
+        ]
 
-        # Assign positions to unassigned orders
-        for i, wo in enumerate(sorted_unassigned):
-            wo.QueuePosition = max_position + i + 1
+        position_counter = 0
+
+        # Handle Firm Rush orders - insert at the very beginning
+        if firm_rush_orders:
+            # Shift all existing orders down by the number of firm rush orders
+            existing_orders = WorkOrder.query.filter(
+                base_filter, WorkOrder.QueuePosition.isnot(None)
+            ).all()
+
+            for existing_wo in existing_orders:
+                existing_wo.QueuePosition += len(firm_rush_orders)
+
+            # Assign positions to firm rush orders at the top
+            for i, wo in enumerate(firm_rush_orders):
+                wo.QueuePosition = i + 1
+                position_counter += 1
+
+        # Handle Rush orders - insert after firm rush but before regular
+        if rush_orders:
+            # Find where rush orders should start (after last firm rush)
+            last_firm_rush_position = 0
+            if firm_rush_orders:
+                last_firm_rush_position = len(firm_rush_orders)
+            else:
+                # Check existing firm rush orders
+                existing_firm_rush = (
+                    WorkOrder.query.filter(
+                        base_filter,
+                        WorkOrder.FirmRush == "1",
+                        WorkOrder.QueuePosition.isnot(None),
+                    )
+                    .order_by(WorkOrder.QueuePosition.desc())
+                    .first()
+                )
+
+                if existing_firm_rush:
+                    last_firm_rush_position = existing_firm_rush.QueuePosition
+
+            # Shift existing rush and regular orders down
+            existing_non_firm_rush = WorkOrder.query.filter(
+                base_filter,
+                WorkOrder.QueuePosition > last_firm_rush_position,
+                WorkOrder.QueuePosition.isnot(None),
+            ).all()
+
+            for existing_wo in existing_non_firm_rush:
+                existing_wo.QueuePosition += len(rush_orders)
+
+            # Assign positions to rush orders
+            for i, wo in enumerate(rush_orders):
+                wo.QueuePosition = last_firm_rush_position + i + 1
+                position_counter += 1
+
+        # Handle Regular orders - add at the end
+        if regular_orders:
+            # Get the current highest position
+            max_position = (
+                db.session.query(func.max(WorkOrder.QueuePosition))
+                .filter(base_filter)
+                .scalar()
+                or 0
+            )
+
+            for i, wo in enumerate(regular_orders):
+                wo.QueuePosition = max_position + i + 1
+                position_counter += 1
 
         db.session.commit()
         return len(sorted_unassigned)
