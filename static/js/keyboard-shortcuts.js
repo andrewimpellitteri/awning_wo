@@ -170,6 +170,30 @@ function initializeKeyboardShortcuts() {
             fileInput.click();
         }
     });
+
+    // Edit order (works for both clean + repair)
+    hotkeys('ctrl+e', (e) => {
+        e.preventDefault();
+
+        // Try repair edit button first
+        let repairEdit = document.querySelector("a.btn-warning[href*='repair_work_orders']");
+        if (repairEdit) {
+            repairEdit.click();
+            console.log('Ctrl+E pressed - Repair Edit clicked');
+            return;
+        }
+
+        // Then try clean edit button
+        let cleanEdit = document.querySelector("a.btn-primary[href*='work_orders']");
+        if (cleanEdit) {
+            cleanEdit.click();
+            console.log('Ctrl+E pressed - Clean Edit clicked');
+            return;
+        }
+
+        console.warn("Ctrl+E pressed - No edit button found on this page");
+    });
+    
     
     // Show help
     hotkeys('alt+shift+/', (e) => {

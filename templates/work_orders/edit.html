@@ -628,13 +628,14 @@
             </form>
         </div>
     </div>
+    {% include "_help_panel.html" %}
 </div>
 
 <script>
     let newItemCounter = 0;
     let selectedItemsCount = 0;
     let newItemsCount = 0;
-    let existingItemsCount = {{ work_order_items|length if work_order_items else 0 }};
+    let existingItemsCount = {{ work_order_items | length if work_order_items else 0 }};
 
     function formatPrice(price) {
         let num = parseFloat(price);
