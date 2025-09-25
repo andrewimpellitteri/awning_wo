@@ -49,6 +49,8 @@ class WorkOrder(db.Model):
 
     QueuePosition = db.Column("queueposition", db.Integer, nullable=True)
 
+    ProcessingStatus = db.Column("processingstatus", db.Boolean, default=False)
+
     ship_to_source = db.relationship(
         "Source",
         primaryjoin="WorkOrder.ShipTo==Source.SSource",
@@ -136,7 +138,7 @@ class WorkOrderItem(db.Model):
 
     # Add Description and Material to primary key
     Description = db.Column("description", db.String, primary_key=True)
-    Material = db.Column("material", db.String, primary_key=True)
+    Material = db.Column("material", db.String, nullable=True, default="Unknown")
 
     # Rest of the columns
     Qty = db.Column("qty", db.String)

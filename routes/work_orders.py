@@ -15,7 +15,11 @@ from models.customer import Customer
 from models.source import Source
 from models.inventory import Inventory
 from models.work_order_file import WorkOrderFile
-from utils.file_upload import save_work_order_file, generate_presigned_url
+from utils.file_upload import (
+    save_work_order_file,
+    generate_presigned_url,
+    get_file_size,
+)
 from sqlalchemy import or_, func, cast, Integer, case, literal
 from extensions import db
 from datetime import datetime, date
@@ -69,6 +73,39 @@ def download_work_order_file(work_order_no, file_id):
         as_attachment=True,
         download_name=wo_file.filename,
     )
+
+
+@work_orders_bp.route("/thumbnail/<int:file_id>")
+@login_required
+def get_thumbnail(file_id):
+    """Serve thumbnail for a work order file"""
+    try:
+        # Get the file record
+        wo_file = WorkOrderFile.query.get_or_404(file_id)
+
+        if wo_file.thumbnail_path:
+            if wo_file.thumbnail_path.startswith("s3://"):
+                # Generate presigned URL for S3 thumbnail
+                thumbnail_url = generate_presigned_url(
+                    wo_file.thumbnail_path, expires_in=3600
+                )
+                return redirect(thumbnail_url)
+            else:
+                # Serve local thumbnail
+                return send_file(wo_file.thumbnail_path)
+        else:
+            # No thumbnail available, return a default icon or 404
+            abort(404)
+
+    except Exception as e:
+        print(f"Error serving thumbnail for file {file_id}: {e}")
+        abort(404)
+
+
+# Add this to your template context
+@work_orders_bp.context_processor
+def utility_processor():
+    return dict(get_file_size=get_file_size)
 
 
 @work_orders_bp.route("/<work_order_no>/files")
@@ -454,7 +491,6 @@ def create_work_order(prefill_cust_id=None):
                         "success",
                     )
 
-            # --- Handle Files (all-or-nothing) ---
             uploaded_files = []
             if "files[]" in request.files:
                 files = request.files.getlist("files[]")
@@ -462,12 +498,20 @@ def create_work_order(prefill_cust_id=None):
 
                 for i, file in enumerate(files):
                     if file and file.filename:
-                        wo_file = save_work_order_file(next_wo_no, file, to_s3=True)
+                        # Use the no-commit version for batch processing
+                        wo_file = save_work_order_file(
+                            next_wo_no, file, to_s3=True, generate_thumbnails=True
+                        )
                         if not wo_file:
                             raise Exception(f"Failed to process file: {file.filename}")
+
                         uploaded_files.append(wo_file)
-                        db.session.add(wo_file)
-                        print(f"Prepared file {i}: {wo_file.filename}")
+                        db.session.add(wo_file)  # Add to session but don't commit yet
+                        print(f"Prepared file {i + 1}/{len(files)}: {wo_file.filename}")
+
+                        # Log thumbnail info
+                        if wo_file.thumbnail_path:
+                            print(f"  - Thumbnail generated: {wo_file.thumbnail_path}")
 
             # --- Final Commit (everything at once) ---
             db.session.commit()
@@ -683,6 +727,36 @@ def cleaning_room_edit_work_order(work_order_no):
             work_order.Clean = request.form.get("Clean")
             work_order.Treat = request.form.get("Treat")
             work_order.SpecialInstructions = request.form.get("SpecialInstructions")
+
+            # Set ProcessingStatus based on form checkbox
+            in_progress = request.form.get("ProcessingStatus") == "on"
+            work_order.ProcessingStatus = in_progress
+
+            # Reset ProcessingStatus if Treat date is set
+            if work_order.Treat:
+                work_order.ProcessingStatus = False
+
+            uploaded_files = []
+            if "files[]" in request.files:
+                files = request.files.getlist("files[]")
+                print(f"Processing {len(files)} files")
+
+                for i, file in enumerate(files):
+                    if file and file.filename:
+                        # Use the no-commit version for batch processing
+                        wo_file = save_work_order_file(
+                            work_order_no, file, to_s3=True, generate_thumbnails=True
+                        )
+                        if not wo_file:
+                            raise Exception(f"Failed to process file: {file.filename}")
+
+                        uploaded_files.append(wo_file)
+                        db.session.add(wo_file)  # Add to session but don't commit yet
+                        print(f"Prepared file {i + 1}/{len(files)}: {wo_file.filename}")
+
+                        # Log thumbnail info
+                        if wo_file.thumbnail_path:
+                            print(f"  - Thumbnail generated: {wo_file.thumbnail_path}")
 
             db.session.commit()
             flash(

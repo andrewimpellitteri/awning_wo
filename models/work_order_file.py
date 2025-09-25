@@ -20,6 +20,7 @@ class WorkOrderFile(db.Model):
     filename = db.Column("filename", db.String, nullable=False)
     file_path = db.Column("file_path", db.String, nullable=False)  # optional full path
     uploaded_at = db.Column("uploaded_at", db.DateTime, default=datetime.utcnow)
+    thumbnail_path = db.Column(db.String(500), nullable=True)
 
     # Relationship back to WorkOrder
     work_order = db.relationship("WorkOrder", back_populates="files")

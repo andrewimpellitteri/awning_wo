@@ -3,11 +3,15 @@
 {% block title %}Login - Awning Management{% endblock %}
 
 {% block content %}
+<head>
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
 <div class="row justify-content-center">
     <div class="col-md-6 col-lg-4">
         <div class="card">
             <div class="card-header text-center">
-                <h4><i class="fas fa-umbrella"></i> Awning Management</h4>
+                <h4><img src="{{ url_for('static', filename='favicon.png') }}" alt="ACI Logo" class="login-logo" 
+                    style="height: 30px; width: auto; margin-right: 8px; vertical-align: middle;"> Awning Management</h4>
                 <p class="text-muted">Please sign in to continue</p>
             </div>
             <div class="card-body">
