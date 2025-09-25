@@ -446,5 +446,75 @@ document.querySelector('form').addEventListener('submit', function(e) {
         }
     }
 });
+
+// Function to show/hide cards based on source selection
+function toggleCardsBasedOnSource(sourceName) {
+    const contactCard = document.querySelector('.card:has(#HomePhone)').closest('.card');
+    const addressCard = document.querySelector('.card:has(#Address)').closest('.card');
+    const mailingCard = document.querySelector('.card:has(#MailAddress)').closest('.card');
+    
+    // Alternative selector method if the above doesn't work
+    const cards = document.querySelectorAll('.card');
+    let contactCardAlt, addressCardAlt, mailingCardAlt;
+    
+    cards.forEach(card => {
+        if (card.querySelector('#HomePhone')) contactCardAlt = card;
+        if (card.querySelector('#Address')) addressCardAlt = card;
+        if (card.querySelector('#MailAddress')) mailingCardAlt = card;
+    });
+    
+    // Use whichever method found the cards
+    const contactCardElement = contactCard || contactCardAlt;
+    const addressCardElement = addressCard || addressCardAlt;
+    const mailingCardElement = mailingCard || mailingCardAlt;
+    
+    const showCards = sourceName === 'ACI' || sourceName === 'Awning Cleaning Industries';
+    
+    if (contactCardElement) {
+        contactCardElement.style.display = showCards ? 'block' : 'none';
+    }
+    if (addressCardElement) {
+        addressCardElement.style.display = showCards ? 'block' : 'none';
+    }
+    if (mailingCardElement) {
+        mailingCardElement.style.display = showCards ? 'block' : 'none';
+    }
+}
+
+// Initialize card visibility on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const sourceSelect = document.getElementById('Source');
+    const initialSource = sourceSelect.value;
+    toggleCardsBasedOnSource(initialSource);
+});
+
+// Source selection handler
+document.getElementById('Source').addEventListener('change', function() {
+    const sourceName = this.value;
+    const sourcePreview = document.getElementById('sourcePreview');
+    const sourceDetails = document.getElementById('sourceDetails');
+    
+    // Toggle card visibility based on source
+    toggleCardsBasedOnSource(sourceName);
+    
+    if (sourceName) {
+        fetch(`{{ url_for('customers.api_source_info', source_name='PLACEHOLDER') }}`.replace('PLACEHOLDER', encodeURIComponent(sourceName)))
+            .then(response => response.json())
+            .then(data => {
+                sourceDetails.innerHTML = `
+                    <h6>${sourceName}</h6>
+                    ${data.address ? `<p class="small mb-1">${data.address}</p>` : ''}
+                    ${data.city || data.state ? `<p class="small mb-0">${data.city || ''} ${data.state || ''} ${data.zip || ''}</p>` : ''}
+                `;
+                sourcePreview.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error fetching source info:', error);
+                sourcePreview.style.display = 'none';
+            });
+    } else {
+        sourcePreview.style.display = 'none';
+    }
+});
 </script>
 {% endblock %}

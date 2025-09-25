@@ -10,6 +10,39 @@ from flask import current_app
 queue_bp = Blueprint("cleaning_queue", __name__)
 
 
+# Sort firm rush orders by DateRequired (closest date first), then DateIn, then WorkOrderNo
+def safe_date_sort_key(date_str):
+    """Convert date string to a sortable format"""
+    if not date_str or date_str.strip() == "":
+        return "9999-12-31"  # Put empty dates at the end
+
+    # If it's already in YYYY-MM-DD format, use as-is
+    if len(date_str) == 10 and date_str[4] == "-" and date_str[7] == "-":
+        return date_str
+
+    # Try to parse common date formats and convert to YYYY-MM-DD
+    try:
+        from datetime import datetime
+
+        # Try MM/DD/YYYY format
+        if "/" in date_str:
+            parsed_date = datetime.strptime(date_str, "%m/%d/%Y")
+            return parsed_date.strftime("%Y-%m-%d")
+        # Try MM-DD-YYYY format
+        elif "-" in date_str and len(date_str.split("-")) == 3:
+            parts = date_str.split("-")
+            if len(parts[0]) <= 2:  # MM-DD-YYYY format
+                parsed_date = datetime.strptime(date_str, "%m-%d-%Y")
+                return parsed_date.strftime("%Y-%m-%d")
+    except Exception as e:
+        print("Error parsing dates")
+        print(e)
+        pass
+
+    # If we can't parse it, return as-is and hope for the best
+    return date_str or "9999-12-31"
+
+
 def initialize_queue_positions_for_unassigned():
     """Initialize queue positions for work orders that don't have them (preserves existing manual ordering)"""
     try:
@@ -41,7 +74,7 @@ def initialize_queue_positions_for_unassigned():
 
         sorted_unassigned = sorted(unassigned_orders, key=priority_sort_key)
 
-        # Separate by priority for proper insertion
+        # Separate by priority for proper insertion and sort each group appropriately
         firm_rush_orders = [wo for wo in sorted_unassigned if wo.FirmRush == "1"]
         rush_orders = [
             wo for wo in sorted_unassigned if wo.RushOrder == "1" and wo.FirmRush != "1"
@@ -49,6 +82,22 @@ def initialize_queue_positions_for_unassigned():
         regular_orders = [
             wo for wo in sorted_unassigned if wo.RushOrder != "1" and wo.FirmRush != "1"
         ]
+
+        firm_rush_orders.sort(
+            key=lambda wo: (
+                safe_date_sort_key(wo.DateRequired),
+                safe_date_sort_key(wo.DateIn),
+                wo.WorkOrderNo,
+            )
+        )
+
+        # Sort rush orders by DateIn, then WorkOrderNo
+        rush_orders.sort(key=lambda wo: (safe_date_sort_key(wo.DateIn), wo.WorkOrderNo))
+
+        # Sort regular orders by DateIn, then WorkOrderNo
+        regular_orders.sort(
+            key=lambda wo: (safe_date_sort_key(wo.DateIn), wo.WorkOrderNo)
+        )
 
         position_counter = 0
 

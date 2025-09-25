@@ -4,6 +4,7 @@
 
 {% block styles %}
 {{ super() }}
+
 <style>
     /* Remove hardcoded colors - let CSS variables handle theming */
     .detail-row {
@@ -115,6 +116,132 @@
         font-size: 3rem;
         margin-bottom: 1rem;
         opacity: 0.5;
+    }
+
+    /* Floating Help Panel Styles */
+    #floating-help {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 350px;
+        max-height: 80vh;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        z-index: 1050;
+        transform: translateX(100%);
+        opacity: 0;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        overflow: hidden;
+    }
+
+    #floating-help.show {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    .help-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 12px 12px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .help-content {
+        padding: 20px;
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
+    .shortcut-group {
+        margin-bottom: 20px;
+    }
+
+    .shortcut-group h6 {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #e9ecef;
+        padding-bottom: 5px;
+    }
+
+    .shortcut-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid #f8f9fa;
+    }
+
+    .shortcut-item:last-child {
+        border-bottom: none;
+    }
+
+    .shortcut-desc {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+
+    .kbd-combo {
+        display: flex;
+        gap: 2px;
+    }
+
+    .kbd {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 2px 6px;
+        font-size: 0.8rem;
+        font-family: monospace;
+        color: #495057;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background-color 0.2s;
+    }
+
+    .close-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .help-trigger {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        cursor: pointer;
+        z-index: 1040;
+        transition: all 0.3s ease;
+    }
+
+    .help-trigger:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
     }
 
 </style>
@@ -478,8 +605,200 @@
             </form>
         </div>
     </div>
-</div>
+    <!-- Floating Help Panel -->
+    <div id="floating-help">
+        <div class="help-header">
+            <div>
+                <h5 class="mb-0">
+                    <i class="fas fa-keyboard me-2"></i>Keyboard Shortcuts
+                </h5>
+            </div>
+            <button class="close-btn" onclick="toggleHelp()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="help-content">
+            <div class="shortcut-group">
+                <h6><i class="fas fa-compass me-2"></i>Navigation</h6>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Sources</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Ctrl</span>
+                        <span class="kbd">Shift</span>
+                        <span class="kbd">1</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Customers</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Ctrl</span>
+                        <span class="kbd">Shift</span>
+                        <span class="kbd">2</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Work Orders</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Ctrl</span>
+                        <span class="kbd">Shift</span>
+                        <span class="kbd">3</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Repair Orders</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Ctrl</span>
+                        <span class="kbd">Shift</span>
+                        <span class="kbd">4</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Queue</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Ctrl</span>
+                        <span class="kbd">Shift</span>
+                        <span class="kbd">5</span>
+                    </div>
+                </div>
+            </div>
+            <div class="shortcut-group">
+                <h6><i class="fas fa-edit me-2"></i>Form Fields</h6>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Customer ID</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Alt</span>
+                        <span class="kbd">C</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Work Order Name</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Alt</span>
+                        <span class="kbd">N</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Storage/Rack</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Alt</span>
+                        <span class="kbd">S</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Source Dropdown</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Alt</span>
+                        <span class="kbd">R</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Special Instructions</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Alt</span>
+                        <span class="kbd">I</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Repairs Needed</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Alt</span>
+                        <span class="kbd">D</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Quote Dropdown</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Alt</span>
+                        <span class="kbd">Q</span>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="shortcut-group">
+                <h6><i class="fas fa-boxes me-2"></i>Item Management</h6>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Add New Item</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Alt</span>
+                        <span class="kbd">A</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">File Upload</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Alt</span>
+                        <span class="kbd">F</span>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="shortcut-group">
+                <h6><i class="fas fa-flag me-2"></i>Priority & Status</h6>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Toggle Rush Order</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Alt</span>
+                        <span class="kbd">U</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Toggle Firm Rush</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Alt</span>
+                        <span class="kbd">E</span>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="shortcut-group">
+                <h6><i class="fas fa-save me-2"></i>Actions</h6>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Save Work Order</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Ctrl</span>
+                        <span class="kbd">Shift</span>
+                        <span class="kbd">S</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Cancel / Unfocus</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Esc</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Toggle This Help</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">Alt</span>
+                        <span class="kbd">Shift</span>
+                        <span class="kbd">/</span>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="shortcut-group">
+                <h6><i class="fas fa-info-circle me-2"></i>Tips</h6>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Press ESC to unfocus current field</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">💡</span>
+                    </div>
+                </div>
+                <div class="shortcut-item">
+                    <span class="shortcut-desc">Use Tab/Shift+Tab for field navigation</span>
+                    <div class="kbd-combo">
+                        <span class="kbd">💡</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Help Trigger Button -->
+    <button class="help-trigger" onclick="toggleHelp()" title="Keyboard Shortcuts (Alt + ?)">
+        <i class="fas fa-question"></i>
+    </button>
+</div>
 <script>
     let newItemCounter = 0;
     let selectedItemsCount = 0;
@@ -1075,6 +1394,5 @@ document.getElementById('workOrderForm').addEventListener('submit', function(e) 
         submitBtn.disabled = false;
     }, 15000);
 });
-
 </script>
 {% endblock %}
