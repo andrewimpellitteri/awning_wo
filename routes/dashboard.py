@@ -36,14 +36,8 @@ def get_recent_orders(limit=10):
 
 @dashboard_bp.route("/")
 def dashboard():
-    print("Dashboard route hit")
-
     try:
         recent_orders = get_recent_orders()
-
-        print("Recent orders:", recent_orders)
-        print("Number of recent orders:", len(recent_orders))
-
         total_recent = len(recent_orders)
         sail_orders_count = sum(1 for wo in recent_orders if wo.is_sail_order)
         rush_orders_count = sum(1 for wo in recent_orders if wo.RushOrder == "Y")

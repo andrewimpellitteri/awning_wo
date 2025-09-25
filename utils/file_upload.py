@@ -7,6 +7,12 @@ import pickle
 import json
 from io import BytesIO
 from datetime import datetime
+from .thumbnail_generator import (
+    generate_thumbnail,
+    save_thumbnail_to_s3,
+    save_thumbnail_locally,
+)
+
 
 UPLOAD_FOLDER = "uploads/work_orders"  # local fallback
 ALLOWED_EXTENSIONS = {"pdf", "jpg", "jpeg", "png", "docx", "xlsx", "txt", "csv"}
@@ -61,31 +67,94 @@ else:
     )
 
 
-def save_work_order_file(work_order_no, file, to_s3=True):
+def save_work_order_file(work_order_no, file, to_s3=True, generate_thumbnails=True):
+    """
+    Save work order file and generate thumbnail but don't commit to DB
+    Returns the WorkOrderFile object for batch processing
+    """
     filename = secure_filename(file.filename)
+
+    # Read file content for thumbnail generation
+    file_content = None
+    if generate_thumbnails:
+        file.seek(0)
+        file_content = file.read()
+        file.seek(0)  # Reset file pointer for upload
 
     if to_s3:
         s3_key = f"work_orders/{work_order_no}/{filename}"
         s3_client.upload_fileobj(file, AWS_S3_BUCKET, s3_key)
         file_path = f"s3://{AWS_S3_BUCKET}/{s3_key}"
+
+        # Generate and save thumbnail to S3
+        thumbnail_path = None
+        if generate_thumbnails and file_content:
+            try:
+                thumbnail_img = generate_thumbnail(file_content, filename)
+                thumbnail_key = save_thumbnail_to_s3(
+                    thumbnail_img, s3_client, AWS_S3_BUCKET, s3_key
+                )
+                thumbnail_path = f"s3://{AWS_S3_BUCKET}/{thumbnail_key}"
+                print(f"Generated thumbnail: {thumbnail_path}")
+            except Exception as e:
+                print(f"Error generating thumbnail for {filename}: {e}")
     else:
         wo_folder = os.path.join(UPLOAD_FOLDER, str(work_order_no))
         os.makedirs(wo_folder, exist_ok=True)
         file_path = os.path.join(wo_folder, filename)
         file.save(file_path)
 
-    # Save record to DB
+        # Generate and save thumbnail locally
+        thumbnail_path = None
+        if generate_thumbnails and file_content:
+            try:
+                thumbnail_img = generate_thumbnail(file_content, filename)
+                thumbnail_path = save_thumbnail_locally(thumbnail_img, file_path)
+                print(f"Generated thumbnail: {thumbnail_path}")
+            except Exception as e:
+                print(f"Error generating thumbnail for {filename}: {e}")
+
+    # Create WorkOrderFile object but don't commit yet
     wo_file = WorkOrderFile(
-        WorkOrderNo=work_order_no, filename=filename, file_path=file_path
+        WorkOrderNo=work_order_no,
+        filename=filename,
+        file_path=file_path,
+        thumbnail_path=thumbnail_path if generate_thumbnails else None,
     )
-    db.session.add(wo_file)
-    db.session.commit()
+
     return wo_file
+
+
+def get_file_size(file_path):
+    """Get human readable file size"""
+    if file_path.startswith("s3://"):
+        try:
+            s3_key = file_path.replace(f"s3://{AWS_S3_BUCKET}/", "")
+            response = s3_client.head_object(Bucket=AWS_S3_BUCKET, Key=s3_key)
+            size_bytes = response["ContentLength"]
+        except:
+            return None
+    else:
+        try:
+            size_bytes = os.path.getsize(file_path)
+        except:
+            return None
+
+    # Convert to human readable
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes / 1024:.1f} KB"
+    elif size_bytes < 1024 * 1024 * 1024:
+        return f"{size_bytes / (1024 * 1024):.1f} MB"
+    else:
+        return f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
 
 
 def generate_presigned_url(file_path: str, expires_in: int = 3600) -> str:
     """
     Given a full s3://bucket/key path, generate a pre-signed URL.
+    Note: This only makes the URL expire, NOT the file itself.
     """
     if not file_path.startswith("s3://"):
         raise ValueError("File path must be an S3 path")
@@ -98,6 +167,41 @@ def generate_presigned_url(file_path: str, expires_in: int = 3600) -> str:
         Params={"Bucket": AWS_S3_BUCKET, "Key": s3_key},
         ExpiresIn=expires_in,
     )
+
+
+def generate_thumbnail_presigned_url(
+    thumbnail_path: str, expires_in: int = 3600
+) -> str:
+    """
+    Generate presigned URL for thumbnail
+    """
+    if thumbnail_path and thumbnail_path.startswith("s3://"):
+        return generate_presigned_url(thumbnail_path, expires_in)
+    return None
+
+
+def get_file_with_thumbnail_urls(wo_file, expires_in: int = 3600):
+    """
+    Get file URLs including thumbnail for a WorkOrderFile object
+    """
+    file_url = None
+    thumbnail_url = None
+
+    if wo_file.file_path.startswith("s3://"):
+        file_url = generate_presigned_url(wo_file.file_path, expires_in)
+
+    if wo_file.thumbnail_path and wo_file.thumbnail_path.startswith("s3://"):
+        thumbnail_url = generate_presigned_url(wo_file.thumbnail_path, expires_in)
+    elif wo_file.thumbnail_path and not wo_file.thumbnail_path.startswith("s3://"):
+        # Local thumbnail path - you might want to serve this through your web server
+        thumbnail_url = wo_file.thumbnail_path
+
+    return {
+        "file": wo_file,
+        "file_url": file_url or wo_file.file_path,
+        "thumbnail_url": thumbnail_url,
+        "has_thumbnail": bool(thumbnail_url),
+    }
 
 
 # Add this to your existing S3 setup (after your file upload functions)

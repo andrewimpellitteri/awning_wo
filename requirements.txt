@@ -38,3 +38,6 @@ pytest-flask
 pytest-mock
 pytest-cov
 boto3
+PyMuPDF>=1.20.0        # For PDF thumbnails (installs as 'fitz')
+python-docx>=0.8.11    # For Word document processing
+openpyxl>=3.0.9        # For Excel file processing
