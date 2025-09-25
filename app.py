@@ -5,6 +5,7 @@ from extensions import db, login_manager
 from sqlalchemy import inspect
 from datetime import datetime, date
 import os
+import re
 
 
 def create_app(config_class=Config):
@@ -27,6 +28,28 @@ def create_app(config_class=Config):
         except (ValueError, TypeError) as e:
             print(f"Error: Invalid input '{price}'. Please provide a number.")
             return None
+
+    import re
+
+    @app.template_filter("format_phone")
+    def format_phone(phone) -> str:
+        """Format a phone number (int or str) into (XXX) XXX-XXXX."""
+        if phone is None:
+            return ""
+
+        # Convert to string
+        digits = re.sub(r"\D", "", str(phone))
+
+        # Handle 10-digit US numbers
+        if len(digits) == 10:
+            return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
+
+        # Handle 11-digit starting with '1' (US country code)
+        if len(digits) == 11 and digits.startswith("1"):
+            return f"+1 ({digits[1:4]}) {digits[4:7]}-{digits[7:]}"
+
+        # Fallback: return digits as-is
+        return digits
 
     @app.template_filter("yesdash")
     def yesdash(value):

@@ -99,9 +99,9 @@
                                         <label class="form-label text-muted">Phone</label>
                                         <p class="form-control-plaintext">
                                             {% if source.SourcePhone %}
-                                                <a href="tel:{{ source.SourcePhone }}" class="text-decoration-none">
-                                                    <i class="fas fa-phone"></i> {{ source.clean_phone() }}
-                                                </a>
+                                                <p>
+                                                    <i class="fas fa-phone"></i> {{ source.clean_phone() | int | format_phone }}
+                                                </p>
                                             {% else %}
                                                 <span class="text-muted">Not provided</span>
                                             {% endif %}
