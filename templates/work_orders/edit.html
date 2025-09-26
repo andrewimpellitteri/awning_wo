@@ -51,23 +51,7 @@
         background-color: #f0f8ff;
         box-shadow: 0 0 0 0.2rem rgba(13,110,253,.25);
     }
-    .existing-item {
-        border: 1px solid #28a745;
-        border-radius: 8px;
-        padding: 15px;
-        margin-bottom: 10px;
-        transition: all 0.3s ease;
-        background-color: #f8fff8;
-    }
-    .existing-item:hover {
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        transform: translateY(-1px);
-    }
-    .existing-item.selected {
-        border-color: #28a745;
-        background-color: #f0fff0;
-        box-shadow: 0 0 0 0.2rem rgba(40,167,69,.25);
-    }
+    
     .new-item-row {
         background-color: #f8f9fa;
         border: 1px solid #dee2e6;
@@ -445,7 +429,7 @@
                             <div class="card-body">
                                 <div id="existing-items">
                                     {% for item in work_order_items %}
-                                    <div class="existing-item selected" onclick="toggleExistingItem(this, '{{ item.id if item.id else loop.index }}')">
+                                    <div class="inventory-item selected" onclick="toggleExistingItem(this, '{{ item.id if item.id else loop.index }}')">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="existing_item_id[]" 
                                                    value="{{ item.id if item.id else loop.index }}" 
@@ -463,13 +447,18 @@
                                                     <div class="col-md-2 text-center">
                                                         <small class="text-muted">Size:</small><br>
                                                         <small>{{ item.SizeWgt or '-' }}</small><br>
-                                                        <strong>${{ "%.2f"|format(item.Price|float) if item.Price else "0.00" }}</strong>
+                                                        <!-- Editable price input -->
+                                                        <label class="form-label small">Price:</label>
+                                                        <input type="text" class="form-control form-control-sm price-input"
+                                                            name="existing_item_price_{{ item.Description }}_{{ item.Material }}"
+                                                            value="{{ "%.2f"|format(item.Price|float) if item.Price else "0.00" }}"
+                                                            onclick="event.stopPropagation()">
                                                     </div>
                                                     <div class="col-md-2">
                                                         <label class="form-label small">Qty:</label>
                                                         <input type="number" class="form-control form-control-sm qty-input" 
                                                             name="existing_item_qty_{{ item.id if item.id else loop.index }}" 
-                                                            value="{{ item.Qty or 1 }}" min="1" 
+                                                            value="{{ (item.Qty | int) or 1 }}" min="1" 
                                                             onclick="event.stopPropagation()">
                                                     </div>
                                                 </div>
@@ -632,304 +621,311 @@
 </div>
 
 <script>
-    let newItemCounter = 0;
-    let selectedItemsCount = 0;
-    let newItemsCount = 0;
-    let existingItemsCount = {{ work_order_items | length if work_order_items else 0 }};
+let newItemCounter = 0;
+let selectedItemsCount = 0;
+let newItemsCount = 0;
+let existingItemsCount = {{ work_order_items | length if work_order_items else 0 }};
 
-    function formatPrice(price) {
-        let num = parseFloat(price);
-        if (isNaN(num)) return "$0.00";
-        return `${num.toFixed(2)}`;
-    }
+function formatPrice(price) {
+    let num = parseFloat(price);
+    if (isNaN(num)) return "$0.00";
+    return `${num.toFixed(2)}`;
+}
 
-    function loadCustomerInventory(custId) {
-        const inventoryContainer = document.getElementById('customer-inventory');
-        
-        if (!custId) {
-            inventoryContainer.innerHTML = `
-                <div class="inventory-empty">
-                    <i class="fas fa-boxes"></i>
-                    <p>Select a customer to view their inventory items</p>
-                </div>
-            `;
-            updateInventoryCount(0);
-            return;
-        }
-
-        // Show loading
+function loadCustomerInventory(custId) {
+    const inventoryContainer = document.getElementById('customer-inventory');
+    
+    if (!custId) {
         inventoryContainer.innerHTML = `
             <div class="inventory-empty">
-                <div class="spinner-border text-primary loading-spinner" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p>Loading inventory items...</p>
+                <i class="fas fa-boxes"></i>
+                <p>Select a customer to view their inventory items</p>
             </div>
         `;
+        updateInventoryCount(0);
+        return;
+    }
 
-        fetch(`/work_orders/api/customer_inventory/${custId}`)
-            .then(response => response.json())
-            .then(data => {
-                updateInventoryCount(data.length);
-                
-                if (data.length === 0) {
-                    inventoryContainer.innerHTML = `
-                        <div class="inventory-empty">
-                            <i class="fas fa-box-open"></i>
-                            <p>No items found in previous work orders for this customer</p>
-                            <small class="text-muted">Add new items below to get started</small>
-                        </div>
-                    `;
-                    return;
-                }
+    // Show loading
+    inventoryContainer.innerHTML = `
+        <div class="inventory-empty">
+            <div class="spinner-border text-primary loading-spinner" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading inventory items...</p>
+        </div>
+    `;
 
-                let html = '';
-                data.forEach(item => {
-                    html += `
-                        <div class="inventory-item" onclick="toggleItem(this, '${item.id}')">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="selected_items[]" value="${item.id}" id="item_${item.id}">
-                                <label class="form-check-label w-100" for="item_${item.id}">
-                                    <div class="row align-items-center">
-                                        <div class="col-md-5">
-                                            <div class="detail-label">${item.description}</div>
-                                            <small class="text-muted">${item.material || 'No material specified'}</small>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <span class="badge bg-secondary">${item.condition || 'Unknown'}</span>
-                                            <br><small class="text-muted">${item.color || 'No color'}</small>
-                                        </div>
-                                        <div class="col-md-2 text-center">
-                                            <small class="text-muted">Size:</small><br>
-                                            <small>${item.size_wgt || '-'}</small><br>
-                                            <strong>${formatPrice(item.price)}</strong>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label class="form-label small">Qty:</label>
-                                            <input type="number" class="form-control form-control-sm qty-input" 
-                                                name="item_qty_${item.id}" value="${item.qty || 1}" min="1" 
-                                                onclick="event.stopPropagation()">
-                                        </div>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-                    `;
-                });
-                inventoryContainer.innerHTML = html;
-            })
-            .catch(error => {
-                console.error('Error loading inventory:', error);
+    fetch(`/work_orders/api/customer_inventory/${custId}`)
+        .then(response => response.json())
+        .then(data => {
+            updateInventoryCount(data.length);
+            
+            if (data.length === 0) {
                 inventoryContainer.innerHTML = `
                     <div class="inventory-empty">
-                        <i class="fas fa-exclamation-triangle text-danger"></i>
-                        <p class="text-danger">Error loading previous work order items</p>
+                        <i class="fas fa-box-open"></i>
+                        <p>No items found in previous work orders for this customer</p>
+                        <small class="text-muted">Add new items below to get started</small>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            data.forEach(item => {
+                html += `
+                    <div class="inventory-item" onclick="toggleItem(this, '${item.id}')">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="selected_items[]" value="${item.id}" id="item_${item.id}">
+                            <label class="form-check-label w-100" for="item_${item.id}">
+                                <div class="row align-items-center">
+                                    <div class="col-md-5">
+                                        <div class="detail-label">${item.description}</div>
+                                        <small class="text-muted">${item.material || 'No material specified'}</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <span class="badge bg-secondary">${item.condition || 'Unknown'}</span>
+                                        <br><small class="text-muted">${item.color || 'No color'}</small>
+                                    </div>
+                                    <div class="col-md-2 text-center">
+                                        <small class="text-muted">Size:</small><br>
+                                        <small>${item.size_wgt || '-'}</small><br>
+                                        <strong>${formatPrice(item.price)}</strong>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Qty:</label>
+                                        <input type="number" class="form-control form-control-sm qty-input" 
+                                            name="item_qty_${item.id}" value="${item.qty ? Math.floor(Number(item.qty)) : 1}" min="1" 
+                                            onclick="event.stopPropagation()">
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
                     </div>
                 `;
             });
-    }
-
-    function toggleExistingItem(element, itemId) {
-        const checkbox = element.querySelector('input[type="checkbox"]');
-        if (event.target.type !== 'checkbox' && event.target.type !== 'number') {
-            checkbox.checked = !checkbox.checked;
-        }
-        
-        if (checkbox.checked) {
-            element.classList.add('selected');
-        } else {
-            element.classList.remove('selected');
-            existingItemsCount--;
-        }
-        
-        updateCounts();
-    }
-
-    function toggleItem(element, itemId) {
-        const checkbox = element.querySelector('input[type="checkbox"]');
-        if (event.target.type !== 'checkbox' && event.target.type !== 'number') {
-            checkbox.checked = !checkbox.checked;
-        }
-        
-        if (checkbox.checked) {
-            element.classList.add('selected');
-            selectedItemsCount++;
-        } else {
-            element.classList.remove('selected');
-            selectedItemsCount--;
-        }
-        
-        updateCounts();
-    }
-
-    function addNewItem() {
-        const container = document.getElementById('new-items-container');
-        const itemHtml = `
-            <div class="new-item-row" id="new-item-${newItemCounter}">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="mb-0">
-                        <i class="fas fa-box me-2"></i>New Item ${newItemCounter + 1}
-                    </h6>
-                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeNewItem(${newItemCounter})">
-                        <i class="fas fa-trash"></i>
-                    </button>
+            inventoryContainer.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading inventory:', error);
+            inventoryContainer.innerHTML = `
+                <div class="inventory-empty">
+                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                    <p class="text-danger">Error loading previous work order items</p>
                 </div>
-                
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label detail-label">Description *</label>
-                        <input type="text" class="form-control" name="new_item_description[]" required>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label detail-label">Material</label>
-                        <input type="text" class="form-control" name="new_item_material[]">
-                    </div>
+            `;
+        });
+}
+
+function toggleExistingItem(element, itemId) {
+    const checkbox = element.querySelector('input[type="checkbox"]');
+    if (event.target.type !== 'checkbox' && event.target.type !== 'number') {
+        checkbox.checked = !checkbox.checked;
+    }
+    
+    if (checkbox.checked) {
+        element.classList.add('selected');
+    } else {
+        element.classList.remove('selected');
+    }
+    
+    updateCounts();
+}
+
+function toggleItem(element, itemId) {
+    const checkbox = element.querySelector('input[type="checkbox"]');
+    if (event.target.type !== 'checkbox' && event.target.type !== 'number') {
+        checkbox.checked = !checkbox.checked;
+    }
+    
+    if (checkbox.checked) {
+        element.classList.add('selected');
+    } else {
+        element.classList.remove('selected');
+    }
+    
+    updateCounts();
+}
+
+function addNewItem() {
+    const container = document.getElementById('new-items-container');
+    const itemHtml = `
+        <div class="new-item-row" id="new-item-${newItemCounter}">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">
+                    <i class="fas fa-box me-2"></i>New Item ${newItemCounter + 1}
+                </h6>
+                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeNewItem(${newItemCounter})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label detail-label">Description *</label>
+                    <input type="text" class="form-control" name="new_item_description[]" required>
                 </div>
-                
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label detail-label">Quantity</label>
-                        <input type="number" class="form-control" name="new_item_qty[]" value="1" min="1">
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label detail-label">Condition</label>
-                        <select class="form-select" name="new_item_condition[]">
-                            <option value="">Select</option>
-                            <option value="Excellent">Excellent</option>
-                            <option value="Good">Good</option>
-                            <option value="Fair">Fair</option>
-                            <option value="Poor">Poor</option>
-                            <option value="Damaged">Damaged</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label detail-label">Color</label>
-                        <input type="text" class="form-control" name="new_item_color[]">
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label detail-label">Size/Weight</label>
-                        <input type="text" class="form-control" name="new_item_size[]">
-                    </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label detail-label">Material</label>
+                    <input type="text" class="form-control" name="new_item_material[]">
                 </div>
-                
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label detail-label">Price</label>
-                        <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            <input type="number" class="form-control" name="new_item_price[]" step="0.01" min="0">
-                        </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label detail-label">Quantity</label>
+                    <input type="number" class="form-control" name="new_item_qty[]" value="1" min="1">
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label detail-label">Condition</label>
+                    <select class="form-select" name="new_item_condition[]">
+                        <option value="">Select</option>
+                        <option value="Excellent">Excellent</option>
+                        <option value="Good">Good</option>
+                        <option value="Fair">Fair</option>
+                        <option value="Poor">Poor</option>
+                        <option value="Damaged">Damaged</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label detail-label">Color</label>
+                    <input type="text" class="form-control" name="new_item_color[]">
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label detail-label">Size/Weight</label>
+                    <input type="text" class="form-control" name="new_item_size[]">
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label detail-label">Price</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" name="new_item_price[]" step="0.01" min="0">
                     </div>
                 </div>
             </div>
-        `;
-        
-        container.insertAdjacentHTML('beforeend', itemHtml);
-        newItemCounter++;
-        newItemsCount++;
-        updateCounts();
-    }
-
-    function removeNewItem(itemId) {
-        const element = document.getElementById(`new-item-${itemId}`);
-        if (element) {
-            element.remove();
-            newItemsCount--;
-            updateCounts();
-        }
-    }
-
-    function updateInventoryCount(count) {
-        document.getElementById('inventory-count').textContent = count;
-    }
-
-    function updateCounts() {
-        document.getElementById('existing-count').textContent = existingItemsCount;
-        document.getElementById('selected-count').textContent = selectedItemsCount;
-        document.getElementById('new-count').textContent = newItemsCount;
-        document.getElementById('new-items-count').textContent = newItemsCount;
-        document.getElementById('total-count').textContent = existingItemsCount + selectedItemsCount + newItemsCount;
-    }
-
-    // Monitor rush order checkboxes
-    document.getElementById('RushOrder').addEventListener('change', updateRushStatus);
-    document.getElementById('FirmRush').addEventListener('change', updateRushStatus);
-
-    function updateRushStatus() {
-        const rushOrder = document.getElementById('RushOrder').checked;
-        const firmRush = document.getElementById('FirmRush').checked;
-        const rushStatus = document.getElementById('rush-status');
-        const rushBadge = document.getElementById('rush-badge');
-        const firmRushBadge = document.getElementById('firm-rush-badge');
-
-        if (rushOrder || firmRush) {
-            rushStatus.style.display = 'block';
-            rushBadge.style.display = rushOrder ? 'inline' : 'none';
-            firmRushBadge.style.display = firmRush ? 'inline' : 'none';
-        } else {
-            rushStatus.style.display = 'none';
-        }
-    }
-
-    // Customer change handler
-    document.getElementById('CustID').addEventListener('change', function() {
-        loadCustomerInventory(this.value);
-    });
-
-    // Load customer inventory on page load
-    window.addEventListener('DOMContentLoaded', function() {
-        const custInput = document.getElementById('CustID');
-        if (custInput.value) {
-            loadCustomerInventory(custInput.value);
-        }
-        
-        // Initialize existing items count
-        const existingItemCheckboxes = document.querySelectorAll('input[name="existing_item_id[]"]');
-        existingItemsCount = existingItemCheckboxes.length;
-        updateCounts();
-    });
-
-    // Form validation
-    document.getElementById('workOrderForm').addEventListener('submit', function(e) {
-        const custId = document.getElementById('CustID').value;
-        if (!custId) {
-            e.preventDefault();
-            alert('Please select a customer.');
-            document.getElementById('CustID').focus();
-            return;
-        }
-
-        // Validate new items have descriptions
-        const newItemDescriptions = document.querySelectorAll('input[name="new_item_description[]"]');
-        let hasEmptyDescription = false;
-        newItemDescriptions.forEach(input => {
-            if (!input.value.trim()) {
-                hasEmptyDescription = true;
-                input.focus();
-            }
-        });
-
-        if (hasEmptyDescription) {
-            e.preventDefault();
-            alert('Please provide descriptions for all new items.');
-            return;
-        }
-
-        // Show loading state
-        const submitBtn = this.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
-        submitBtn.disabled = true;
-
-        // Re-enable button after 10 seconds in case of issues
-        setTimeout(() => {
-            submitBtn.innerHTML = originalText;
-            submitBtn.disabled = false;
-        }, 10000);
-    });
-
-    // Initialize counts and rush status
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', itemHtml);
+    newItemCounter++;
     updateCounts();
-    updateRushStatus();
+}
+
+function removeNewItem(itemId) {
+    const element = document.getElementById(`new-item-${itemId}`);
+    if (element) {
+        element.remove();
+        updateCounts();
+    }
+}
+
+function updateInventoryCount(count) {
+    document.getElementById('inventory-count').textContent = count;
+}
+
+function updateCounts() {
+    // Count existing items (those already in the work order)
+    const existingCheckboxes = document.querySelectorAll('input[name="existing_item_id[]"]');
+    const existingChecked = document.querySelectorAll('input[name="existing_item_id[]"]:checked');
+    existingItemsCount = existingChecked.length;
+    
+    // Count selected items from customer inventory
+    const inventoryCheckboxes = document.querySelectorAll('input[name="selected_items[]"]:checked');
+    selectedItemsCount = inventoryCheckboxes.length;
+    
+    // Count new items
+    const newItemRows = document.querySelectorAll('.new-item-row');
+    newItemsCount = newItemRows.length;
+    
+    // Update display
+    document.getElementById('existing-count').textContent = existingItemsCount;
+    document.getElementById('selected-count').textContent = selectedItemsCount;
+    document.getElementById('new-count').textContent = newItemsCount;
+    document.getElementById('new-items-count').textContent = newItemsCount;
+    document.getElementById('total-count').textContent = existingItemsCount + selectedItemsCount + newItemsCount;
+}
+
+// Monitor rush order checkboxes
+document.getElementById('RushOrder').addEventListener('change', updateRushStatus);
+document.getElementById('FirmRush').addEventListener('change', updateRushStatus);
+
+function updateRushStatus() {
+    const rushOrder = document.getElementById('RushOrder').checked;
+    const firmRush = document.getElementById('FirmRush').checked;
+    const rushStatus = document.getElementById('rush-status');
+    const rushBadge = document.getElementById('rush-badge');
+    const firmRushBadge = document.getElementById('firm-rush-badge');
+
+    if (rushOrder || firmRush) {
+        rushStatus.style.display = 'block';
+        rushBadge.style.display = rushOrder ? 'inline' : 'none';
+        firmRushBadge.style.display = firmRush ? 'inline' : 'none';
+    } else {
+        rushStatus.style.display = 'none';
+    }
+}
+
+// Customer change handler
+document.getElementById('CustID').addEventListener('change', function() {
+    loadCustomerInventory(this.value);
+});
+
+// Load customer inventory on page load
+window.addEventListener('DOMContentLoaded', function() {
+    const custInput = document.getElementById('CustID');
+    if (custInput.value) {
+        loadCustomerInventory(custInput.value);
+    }
+    
+    // Initialize counts
+    updateCounts();
+});
+
+// Form validation
+document.getElementById('workOrderForm').addEventListener('submit', function(e) {
+    const custId = document.getElementById('CustID').value;
+    if (!custId) {
+        e.preventDefault();
+        alert('Please select a customer.');
+        document.getElementById('CustID').focus();
+        return;
+    }
+
+    // Validate new items have descriptions
+    const newItemDescriptions = document.querySelectorAll('input[name="new_item_description[]"]');
+    let hasEmptyDescription = false;
+    newItemDescriptions.forEach(input => {
+        if (!input.value.trim()) {
+            hasEmptyDescription = true;
+            input.focus();
+        }
+    });
+
+    if (hasEmptyDescription) {
+        e.preventDefault();
+        alert('Please provide descriptions for all new items.');
+        return;
+    }
+
+    // Show loading state
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
+    submitBtn.disabled = true;
+
+    // Re-enable button after 10 seconds in case of issues
+    setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }, 10000);
+});
+
+// Initialize counts and rush status
+updateCounts();
+updateRushStatus();
 </script>
 {% endblock %}
