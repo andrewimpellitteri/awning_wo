@@ -592,6 +592,7 @@ def edit_work_order(work_order_no):
             # Get updated items from form
             updated_items = request.form.getlist("existing_item_key[]")
             updated_quantities = {}
+            updated_prices = {}
 
             # Parse quantities for existing items
             for key, value in request.form.items():
@@ -599,6 +600,13 @@ def edit_work_order(work_order_no):
                     item_key = key.replace("existing_item_qty_", "")
                     if item_key in updated_items and value:
                         updated_quantities[item_key] = safe_int_conversion(value)
+                elif key.startswith("existing_item_price_"):
+                    item_key = key.replace("existing_item_price_", "")
+                    if item_key in updated_items and value:
+                        try:
+                            updated_prices[item_key] = float(value)
+                        except ValueError:
+                            updated_prices[item_key] = 0.0  # fallback if invalid input
 
             # Update or remove existing items (NO INVENTORY CHANGES)
             for item in existing_items:
@@ -607,6 +615,9 @@ def edit_work_order(work_order_no):
                     # Update quantity in work order only
                     if item_key in updated_quantities:
                         item.Qty = str(updated_quantities[item_key])
+                    # Update price
+                    if item_key in updated_prices:
+                        item.Price = updated_prices[item_key]
                 else:
                     # Remove from work order only (catalog unchanged)
                     db.session.delete(item)
