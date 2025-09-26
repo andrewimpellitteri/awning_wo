@@ -391,7 +391,7 @@
             <p class="text-muted">No repair orders for this customer.</p>
             {% endif %}
 
-            <!-- Inventory Card -->
+<!-- Inventory Card -->
 <div class="card mt-4 mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h6 class="card-title mb-0">
@@ -420,6 +420,7 @@
                         <th>Color</th>
                         <th>Condition</th>
                         <th>Size/Weight</th>
+                        <th>Price</th>
                         {% if current_user.role != 'user' %}
                         <th>Actions</th>
                         {% endif %}
@@ -436,6 +437,13 @@
                         <td class="color">{{ item.Color or '-' }}</td>
                         <td class="condition">{{ item.Condition or '-' }}</td>
                         <td class="sizewgt">{{ item.SizeWgt or '-' }}</td>
+                        <td class="price">
+                            {% if item.Price %}
+                                <span class="text-success fw-medium">${{ "%.2f" | format(item.Price | float) }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
                         {% if current_user.role != 'user' %}
                         <td>
                             <div class="btn-group" role="group">
@@ -449,6 +457,7 @@
                                         data-color="{{ item.Color }}"
                                         data-condition="{{ item.Condition }}"
                                         data-sizewgt="{{ item.SizeWgt }}"
+                                        data-price="{{ item.Price or '' }}"
                                         title="Edit item details">
                                     <i class="fas fa-edit"></i>
                                 </button>
@@ -516,6 +525,17 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label for="PriceAdd" class="form-label">
+                                    <i class="fas fa-dollar-sign"></i> Price
+                                </label>
+                                <input type="number" name="Price" id="PriceAdd" 
+                                       class="form-control" step="0.01" min="0" 
+                                       placeholder="0.00">
+                                <div class="form-text">Price per unit</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label for="MaterialAdd" class="form-label">
                                     <i class="fas fa-layer-group"></i> Material
                                 </label>
@@ -559,6 +579,9 @@
                                        class="form-control" placeholder="e.g., 12ft x 8ft">
                             </div>
                         </div>
+
+
+
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -603,13 +626,26 @@
                                     <i class="fas fa-hashtag"></i> Total Quantity *
                                 </label>
                                 <input type="number" name="Qty" id="QtyEdit" 
-                                       class="form-control" min="0" required>
+                                       class="form-control" min="1" step="1" required>
                                 <div class="form-text">Total amount brought to you</div>
                             </div>
                         </div>
                     </div>
+
+
                     
                     <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="PriceEdit" class="form-label">
+                                    <i class="fas fa-dollar-sign"></i> Price
+                                </label>
+                                <input type="number" name="Price" id="PriceEdit" 
+                                       class="form-control" step="0.01" min="0" 
+                                       placeholder="0.00">
+                                <div class="form-text">Price per unit</div>
+                            </div>
+                        </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="MaterialEdit" class="form-label">
@@ -770,6 +806,9 @@ addForm.addEventListener('submit', async function(e) {
                 <td class="color">${item.Color || '-'}</td>
                 <td class="condition">${item.Condition || '-'}</td>
                 <td class="sizewgt">${item.SizeWgt || '-'}</td>
+                <td class="price">
+                    ${item.Price ? `<span class="text-success fw-medium">$${parseFloat(item.Price).toFixed(2)}</span>` : '<span class="text-muted">-</span>'}
+                </td>
                 <td>
                     <div class="btn-group" role="group">
                         <button class="btn btn-sm btn-outline-primary edit-item" 
@@ -876,6 +915,9 @@ editModal.addEventListener('show.bs.modal', function(e) {
     document.getElementById('ColorEdit').value = button.dataset.color;
     document.getElementById('ConditionEdit').value = button.dataset.condition;
     document.getElementById('SizeWgtEdit').value = button.dataset.sizewgt;
+    document.getElementById('PriceEdit').value = button.dataset.price;
+
+
 });
 
 // --- Save Edit via AJAX ---
@@ -901,6 +943,9 @@ editForm.addEventListener('submit', async function(e) {
             row.querySelector('.color').textContent = item.Color || '-';
             row.querySelector('.condition').textContent = item.Condition || '-';
             row.querySelector('.sizewgt').textContent = item.SizeWgt || '-';
+            row.querySelector('.price').innerHTML = item.Price ? 
+            `<span class="text-success fw-medium">$${parseFloat(item.Price).toFixed(2)}</span>` : 
+            '<span class="text-muted">-</span>';
 
             // Update button dataset
             const btn = row.querySelector('.edit-item');
@@ -910,6 +955,7 @@ editForm.addEventListener('submit', async function(e) {
             btn.dataset.color = item.Color || '';
             btn.dataset.condition = item.Condition || '';
             btn.dataset.sizewgt = item.SizeWgt || '';
+            btn.dataset.price = item.Price || '';
 
             bootstrap.Modal.getInstance(editModal).hide();
             showToast('Item updated successfully!', 'success');
@@ -942,7 +988,6 @@ function showToast(message, type) {
 }
 
 });
-
 
 </script>
 {% endblock %}
