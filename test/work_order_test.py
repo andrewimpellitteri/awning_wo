@@ -17,7 +17,7 @@ from flask import Flask
 
 from app import create_app
 from extensions import db
-from test_config import TestingConfig
+from .test_config import TestingConfig
 
 
 # Add project root to Python path
