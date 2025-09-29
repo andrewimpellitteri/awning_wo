@@ -104,6 +104,7 @@ def create_app(config_class=Config):
     from routes.queue import queue_bp
     from routes.ml import ml_bp
     from routes.dashboard import dashboard_bp
+    from routes.in_progress import in_progress_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(source_bp, url_prefix="/sources")
@@ -116,6 +117,7 @@ def create_app(config_class=Config):
     app.register_blueprint(queue_bp, url_prefix="/cleaning_queue")
     app.register_blueprint(ml_bp)
     app.register_blueprint(dashboard_bp, url_prefix="/")
+    app.register_blueprint(in_progress_bp)
 
     # Register routes
     @app.route("/")
