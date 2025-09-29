@@ -134,3 +134,7 @@ uploads/
 
 *.dump
 *.csv
+
+cicd/
+
+deploy_watcher.out
