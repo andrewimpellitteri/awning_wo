@@ -54,31 +54,25 @@ def mock_s3_client(mocker):
 
 @pytest.fixture(scope="session")
 def app():
-    """Create Flask app for testing with temporary SQLite database."""
-    try:
-        from app import app as flask_app
-    except ImportError:
-        flask_app = Flask(__name__)
-        db.init_app(flask_app)
-        login_manager.init_app(flask_app)
-
-    db_fd, db_path = tempfile.mkstemp()
+    """Flask app for testing with isolated SQLite database."""
+    # Create a Flask instance manually instead of importing the main app
+    flask_app = Flask(__name__)
     flask_app.config.update(
         TESTING=True,
-        SQLALCHEMY_DATABASE_URI=f"sqlite:///{db_path}",
+        SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         WTF_CSRF_ENABLED=False,
         SECRET_KEY="test-secret-key",
     )
+
+    db.init_app(flask_app)
+    login_manager.init_app(flask_app)
 
     with flask_app.app_context():
         db.create_all()
         yield flask_app
         db.session.remove()
         db.drop_all()
-
-    os.close(db_fd)
-    os.unlink(db_path)
 
 
 @pytest.fixture
