@@ -6,163 +6,19 @@
     <title>Analytics Dashboard</title>
     <!-- Plotly.js CDN -->
     <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
     <style>
-        :root {
-            --primary: #3498db;
-            --success: #2ecc71;
-            --warning: #f39c12;
-            --info: #1abc9c;
-            --dark: #2c3e50;
-            --light: #ecf0f1;
-            --gray: #95a5a6;
-            --danger: #e74c3c;
-        }
-        
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f5f7fa;
             color: #333;
             line-height: 1.6;
-        }
-        
-        .dashboard-container {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-        }
-        
-        .dashboard-header {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        
-        .dashboard-title {
-            font-size: 2.2em;
-            color: var(--dark);
-            margin-bottom: 5px;
-        }
-        
-        .dashboard-subtitle {
-            font-size: 1.1em;
-            color: var(--gray);
-        }
-        
-        .info-message {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        
-        .error-message {
-            background: #ffebee;
-            color: var(--danger);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid var(--danger);
-        }
-        
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .kpi-card {
-            padding: 25px 20px;
-            border-radius: 10px;
-            color: white;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-        
-        .kpi-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .kpi-card.primary { background: linear-gradient(135deg, var(--primary), #2980b9); }
-        .kpi-card.success { background: linear-gradient(135deg, var(--success), #27ae60); }
-        .kpi-card.warning { background: linear-gradient(135deg, var(--warning), #e67e22); }
-        .kpi-card.info { background: linear-gradient(135deg, var(--info), #16a085); }
-        
-        .kpi-number {
-            font-size: 2.5em;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .kpi-label {
-            font-size: 1.1em;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        
-        .kpi-subtitle {
-            font-size: 0.9em;
-            opacity: 0.9;
-        }
-        
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 25px;
-        }
-        
-        .chart-container {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        
-        .chart-title {
-            font-size: 1.2em;
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .chart-placeholder {
-            height: 400px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--gray);
-            font-style: italic;
-        }
-        
-        .loading {
-            text-align: center;
-            color: var(--gray);
-            padding: 20px;
-        }
-        
-        @media (max-width: 768px) {
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .dashboard-container {
-                padding: 10px;
-            }
-            
-            .kpi-grid {
-                grid-template-columns: 1fr;
-            }
         }
     </style>
 </head>

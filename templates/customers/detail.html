@@ -67,19 +67,7 @@
                                         </p>
                                     </div>
                                     
-                                    <div class="mb-3">
-                                        <label class="form-label text-muted">Source</label>
-                                        <p class="form-control-plaintext">
-                                            {% if customer.Source %}
-                                                <a href="{{ url_for('source.source_detail', source_name=customer.Source) }}" 
-                                                   class="text-decoration-none">
-                                                    <span class="badge bg-info fs-6">{{ customer.Source }}</span>
-                                                </a>
-                                            {% else %}
-                                                <span class="text-muted">Not assigned</span>
-                                            {% endif %}
-                                        </p>
-                                    </div>
+                                
                                 </div>
                             </div>
                         </div>
