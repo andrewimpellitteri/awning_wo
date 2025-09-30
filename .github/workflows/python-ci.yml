@@ -40,7 +40,7 @@ jobs:
       - name: Extract coverage percentage
         run: |
           COVERAGE=$(python -c "import json; print(json.load(open('coverage.json'))['totals']['percent_covered_display'])")
-          echo "COVERAGE=${COVERAGE}%" >> $GITHUB_ENV
+          echo "COVERAGE=${COVERAGE}" >> $GITHUB_ENV
 
       - name: Create coverage badge
         uses: schneegans/dynamic-badges-action@v1.7.0
