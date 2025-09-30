@@ -185,7 +185,7 @@
                         <div class="card mb-4 shadow-sm">
                             <div class="card-header">
                                 <h5 class="card-title mb-0">
-                                    <i class="fas fa-list me-2"></i>Existing Items 
+                                    <i class="fas fa-list me-2"></i>Existing Items
                                     <span class="badge bg-secondary ms-2" id="existing-items-count">{{ repair_order.items|length }}</span>
                                 </h5>
                             </div>
@@ -241,11 +241,30 @@
                         </div>
                         {% endif %}
 
+                        <!-- Customer Inventory -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-boxes me-2"></i>Customer Item History
+                                    <span class="badge bg-secondary ms-2" id="inventory-count">0</span>
+                                </h5>
+                                <small class="text-muted">Items from previous work orders for this customer</small>
+                            </div>
+                            <div class="card-body">
+                                <div id="customer-inventory">
+                                    <div class="inventory-empty">
+                                        <i class="fas fa-boxes"></i>
+                                        <p>Loading customer inventory...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Add New Items Card -->
                         <div class="card mb-4 shadow-sm">
                             <div class="card-header">
                                 <h5 class="card-title mb-0">
-                                    <i class="fas fa-plus me-2"></i>Add New Items 
+                                    <i class="fas fa-plus me-2"></i>Add New Items
                                     <span class="badge bg-success ms-2" id="new-items-count">0</span>
                                 </h5>
                             </div>
@@ -268,7 +287,7 @@
                                 <div class="detail-row">
                                     <div class="detail-label">Existing Items</div>
                                     <div class="detail-value">
-                                        <span class="badge bg-primary" id="summary-existing">{{ repair_order.items|length if repair_order.items else 0 }}</span>
+                                        <span class="badge bg-success" id="summary-existing">{{ repair_order.items|length if repair_order.items else 0 }}</span>
                                     </div>
                                 </div>
                                 <div class="detail-row">
@@ -278,9 +297,21 @@
                                     </div>
                                 </div>
                                 <div class="detail-row">
+                                    <div class="detail-label">Selected Items</div>
+                                    <div class="detail-value">
+                                        <span class="badge bg-primary" id="selected-count">0</span>
+                                    </div>
+                                </div>
+                                <div class="detail-row">
                                     <div class="detail-label">New Items</div>
                                     <div class="detail-value">
-                                        <span class="badge bg-success" id="summary-new">0</span>
+                                        <span class="badge bg-info" id="summary-new">0</span>
+                                    </div>
+                                </div>
+                                <div class="detail-row">
+                                    <div class="detail-label">Total Items</div>
+                                    <div class="detail-value">
+                                        <span class="badge bg-dark" id="total-count">{{ repair_order.items|length if repair_order.items else 0 }}</span>
                                     </div>
                                 </div>
                                 <div class="detail-row" id="rush-status">
@@ -293,10 +324,6 @@
                                             <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
                                         </span>
                                     </div>
-                                </div>
-                                <div class="detail-row">
-                                    <div class="detail-label">Date In</div>
-                                    <div class="detail-value">{{ (repair_order.DateIn | date_format) or 'Not set' }}</div>
                                 </div>
                                 <div class="detail-row">
                                     <div class="detail-label">Status</div>
@@ -338,11 +365,132 @@
 let newItemCounter = 0;
 let newItemsCount = 0;
 let deletedItemsCount = 0;
+let selectedItemsCount = 0;
+let existingItemsCount = {{ repair_order.items|length if repair_order.items else 0 }};
+
+function formatPrice(price) {
+    let num = parseFloat(price);
+    if (isNaN(num)) return "$0.00";
+    return `$${num.toFixed(2)}`;
+}
+
+function loadCustomerInventory(custId) {
+    const inventoryContainer = document.getElementById('customer-inventory');
+
+    if (!custId) {
+        inventoryContainer.innerHTML = `
+            <div class="inventory-empty">
+                <i class="fas fa-boxes"></i>
+                <p>Select a customer to view their inventory items</p>
+            </div>
+        `;
+        updateInventoryCount(0);
+        return;
+    }
+
+    // Show loading
+    inventoryContainer.innerHTML = `
+        <div class="inventory-empty">
+            <div class="spinner-border text-primary loading-spinner" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading inventory items...</p>
+        </div>
+    `;
+
+    fetch(`/work_orders/api/customer_inventory/${custId}`)
+        .then(response => response.json())
+        .then(data => {
+            updateInventoryCount(data.length);
+
+            if (data.length === 0) {
+                inventoryContainer.innerHTML = `
+                    <div class="inventory-empty">
+                        <i class="fas fa-box-open"></i>
+                        <p>No items found in previous work orders for this customer</p>
+                        <small class="text-muted">Add new items below to get started</small>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            data.forEach(item => {
+                html += `
+                    <div class="inventory-item" onclick="toggleItem(this, '${item.id}')">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="selected_items[]" value="${item.id}" id="item_${item.id}">
+                            <label class="form-check-label w-100" for="item_${item.id}">
+                                <div class="row align-items-center">
+                                    <div class="col-md-5">
+                                        <div class="detail-label">${item.description}</div>
+                                        <small class="text-muted">${item.material || 'No material specified'}</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <span class="badge bg-secondary">${item.condition || 'Unknown'}</span>
+                                        <br><small class="text-muted">${item.color || 'No color'}</small>
+                                    </div>
+                                    <div class="col-md-2 text-center">
+                                        <small class="text-muted">Size:</small><br>
+                                        <small>${item.size_wgt || '-'}</small><br>
+                                        <strong>${formatPrice(item.price)}</strong>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label small">Qty:</label>
+                                        <input type="number" class="form-control form-control-sm qty-input"
+                                            name="item_qty_${item.id}" value="${item.qty || 1}" min="1"
+                                            onclick="event.stopPropagation()">
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            });
+            inventoryContainer.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading inventory:', error);
+            inventoryContainer.innerHTML = `
+                <div class="inventory-empty">
+                    <i class="fas fa-exclamation-triangle text-danger"></i>
+                    <p class="text-danger">Error loading previous work order items</p>
+                </div>
+            `;
+        });
+}
+
+function toggleItem(element, itemId) {
+    const checkbox = element.querySelector('input[type="checkbox"]');
+    if (event.target.type !== 'checkbox' && event.target.type !== 'number') {
+        checkbox.checked = !checkbox.checked;
+    }
+
+    if (checkbox.checked) {
+        element.classList.add('selected');
+        selectedItemsCount++;
+    } else {
+        element.classList.remove('selected');
+        selectedItemsCount--;
+    }
+
+    updateCounts();
+}
+
+function updateInventoryCount(count) {
+    document.getElementById('inventory-count').textContent = count;
+}
 
 function updateCounts() {
     document.getElementById('new-items-count').textContent = newItemsCount;
     document.getElementById('summary-new').textContent = newItemsCount;
     document.getElementById('summary-delete').textContent = deletedItemsCount;
+    document.getElementById('selected-count').textContent = selectedItemsCount;
+
+    // Calculate total: existing items (minus deleted) + selected items + new items
+    const activeExisting = existingItemsCount - deletedItemsCount;
+    const total = activeExisting + selectedItemsCount + newItemsCount;
+    document.getElementById('total-count').textContent = total;
 
     // Update rush badges
     const rush = document.getElementById('RushOrder').checked;
@@ -385,6 +533,39 @@ function toggleDeleteItem(itemId, button) {
     updateCounts();
 }
 
+// Create datalists for autocomplete suggestions
+function createDatalists() {
+    // Description datalist
+    const descriptionDatalist = document.createElement('datalist');
+    descriptionDatalist.id = 'description-list';
+    descriptionValues.forEach(val => {
+        const option = document.createElement('option');
+        option.value = val;
+        descriptionDatalist.appendChild(option);
+    });
+    document.body.appendChild(descriptionDatalist);
+
+    // Material datalist
+    const materialDatalist = document.createElement('datalist');
+    materialDatalist.id = 'material-list';
+    materialValues.forEach(val => {
+        const option = document.createElement('option');
+        option.value = val;
+        materialDatalist.appendChild(option);
+    });
+    document.body.appendChild(materialDatalist);
+
+    // Color datalist
+    const colorDatalist = document.createElement('datalist');
+    colorDatalist.id = 'color-list';
+    colorValues.forEach(val => {
+        const option = document.createElement('option');
+        option.value = val;
+        colorDatalist.appendChild(option);
+    });
+    document.body.appendChild(colorDatalist);
+}
+
 function addNewItem() {
     newItemCounter++;
     newItemsCount++;
@@ -398,11 +579,11 @@ function addNewItem() {
         <div class="row">
             <div class="col-md-6">
                 <label class="form-label">Description *</label>
-                <input type="text" name="new_description[]" class="form-control" placeholder="Item Description" required>
+                <input type="text" name="new_description[]" class="form-control" placeholder="Item Description" required list="description-list">
             </div>
             <div class="col-md-3">
                 <label class="form-label">Material</label>
-                <input type="text" name="new_material[]" class="form-control" placeholder="Material">
+                <input type="text" name="new_material[]" class="form-control" placeholder="Material" list="material-list">
             </div>
             <div class="col-md-2">
                 <label class="form-label">Qty</label>
@@ -422,7 +603,7 @@ function addNewItem() {
             </div>
             <div class="col-md-3">
                 <label class="form-label">Color</label>
-                <input type="text" name="new_color[]" class="form-control" placeholder="Color">
+                <input type="text" name="new_color[]" class="form-control" placeholder="Color" list="color-list">
             </div>
             <div class="col-md-3">
                 <label class="form-label">Size/Weight</label>
@@ -442,6 +623,22 @@ function removeNewItem(button) {
     newItemsCount--;
     updateCounts();
 }
+
+// Load customer inventory when customer changes
+document.querySelector('input[name="CustID"]').addEventListener('change', function() {
+    loadCustomerInventory(this.value);
+});
+
+// Initialize datalists on load
+document.addEventListener('DOMContentLoaded', function() {
+    createDatalists();
+
+    // Load customer inventory on page load
+    const custInput = document.querySelector('input[name="CustID"]');
+    if (custInput && custInput.value) {
+        loadCustomerInventory(custInput.value);
+    }
+});
 
 // Update counts if priority checkboxes change
 document.getElementById('RushOrder').addEventListener('change', updateCounts);

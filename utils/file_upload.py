@@ -25,6 +25,9 @@ def allowed_file(filename):
 AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
+if not AWS_S3_BUCKET:
+    raise ValueError("AWS_S3_BUCKET environment variable is required")
+
 
 def is_running_on_aws():
     """Better detection for AWS environment"""

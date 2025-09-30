@@ -50,6 +50,70 @@ current_model = None
 model_metadata = {}
 
 
+def load_latest_model_from_s3():
+    """Load the most recently trained model from S3 on startup"""
+    global current_model, model_metadata
+
+    try:
+        from utils.file_upload import s3_client, AWS_S3_BUCKET
+        import pickle
+        import json
+        from io import BytesIO
+
+        # List all model files in S3
+        response = s3_client.list_objects_v2(
+            Bucket=AWS_S3_BUCKET,
+            Prefix="ml_models/",
+        )
+
+        if "Contents" not in response:
+            print("[ML STARTUP] No models found in S3")
+            return False
+
+        # Find the most recent cron model
+        model_files = [
+            obj for obj in response["Contents"]
+            if obj["Key"].endswith(".pkl") and "cron_" in obj["Key"]
+        ]
+
+        if not model_files:
+            print("[ML STARTUP] No cron models found in S3")
+            return False
+
+        # Sort by last modified date, get most recent
+        latest_model = sorted(model_files, key=lambda x: x["LastModified"], reverse=True)[0]
+        model_name = latest_model["Key"].replace("ml_models/", "").replace(".pkl", "")
+
+        print(f"[ML STARTUP] Loading model: {model_name}")
+
+        # Download model from S3
+        model_buffer = BytesIO()
+        s3_client.download_fileobj(AWS_S3_BUCKET, latest_model["Key"], model_buffer)
+        model_buffer.seek(0)
+        current_model = pickle.load(model_buffer)
+
+        # Download metadata from S3
+        metadata_key = f"ml_models/{model_name}_metadata.json"
+        metadata_buffer = BytesIO()
+        s3_client.download_fileobj(AWS_S3_BUCKET, metadata_key, metadata_buffer)
+        metadata_buffer.seek(0)
+        model_metadata = json.loads(metadata_buffer.read().decode("utf-8"))
+
+        print(f"[ML STARTUP] Model loaded successfully - MAE: {model_metadata.get('mae')}, "
+              f"Trained at: {model_metadata.get('trained_at')}")
+
+        return True
+
+    except Exception as e:
+        print(f"[ML STARTUP] Failed to load model from S3: {e}")
+        return False
+
+
+# Load the latest model on startup
+print("[ML STARTUP] Attempting to load latest model from S3...")
+load_latest_model_from_s3()
+
+
 class MLService:
     @staticmethod
     def convert_to_binary(series):
