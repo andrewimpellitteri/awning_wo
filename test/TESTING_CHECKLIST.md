@@ -29,28 +29,28 @@
 ### 1. Authentication Routes Tests (`routes/auth.py`)
 **File to create:** `test/test_auth.py`
 
-- [ ] **Login Tests**
-  - [ ] POST /login with valid credentials - should succeed
-  - [ ] POST /login with invalid username - should fail
-  - [ ] POST /login with invalid password - should fail
-  - [ ] POST /login when already authenticated - should redirect
-  - [ ] GET /login - should render login page
-  - [ ] Login flash messages display correctly
+- [x] **Login Tests**
+  - [x] POST /login with valid credentials - should succeed
+  - [x] POST /login with invalid username - should fail
+  - [x] POST /login with invalid password - should fail
+  - [x] POST /login when already authenticated - should redirect
+  - [x] GET /login - should render login page
+  - [x] Login flash messages display correctly
 
-- [ ] **Logout Tests**
-  - [ ] GET /logout - should clear session
-  - [ ] GET /logout - should redirect to login
-  - [ ] Logout flash message displays
+- [x] **Logout Tests**
+  - [x] GET /logout - should clear session
+  - [x] GET /logout - should redirect to login
+  - [x] Logout flash message displays
 
-- [ ] **Registration Tests**
-  - [ ] POST /register with valid invite token - should succeed
-  - [ ] POST /register with invalid token - should fail
-  - [ ] POST /register with used token - should fail
-  - [ ] POST /register with duplicate username - should fail
-  - [ ] POST /register with duplicate email - should fail
-  - [ ] POST /register marks token as used
-  - [ ] GET /register - should render registration form
-  - [ ] Registration with missing required fields - should fail
+- [x] **Registration Tests**
+  - [x] POST /register with valid invite token - should succeed
+  - [x] POST /register with invalid token - should fail
+  - [x] POST /register with used token - should fail
+  - [x] POST /register with duplicate username - should fail
+  - [x] POST /register with duplicate email - should fail
+  - [x] POST /register marks token as used
+  - [x] GET /register - should render registration form
+  - [x] Registration with missing required fields - should fail
 
 **Why Important:** Authentication is the gateway to the system. Without proper testing, unauthorized access is possible.
 
@@ -59,14 +59,14 @@
 ### 2. Authorization Decorator Tests (`decorators.py`)
 **File to create:** `test/test_decorators.py`
 
-- [ ] **Role-Based Access Control**
-  - [ ] @role_required("admin") - allows admin users
-  - [ ] @role_required("admin") - blocks non-admin users (403)
-  - [ ] @role_required("admin") - redirects unauthenticated users
-  - [ ] @role_required("manager") - allows manager users
-  - [ ] @role_required("admin", "manager") - allows either role
-  - [ ] Multiple roles - blocks regular users
-  - [ ] Flash messages for unauthorized access
+- [x] **Role-Based Access Control**
+  - [x] @role_required("admin") - allows admin users
+  - [x] @role_required("admin") - blocks non-admin users (403)
+  - [x] @role_required("admin") - redirects unauthenticated users
+  - [x] @role_required("manager") - allows manager users
+  - [x] @role_required("admin", "manager") - allows either role
+  - [x] Multiple roles - blocks regular users
+  - [x] Flash messages for unauthorized access
 
 **Why Important:** Prevents privilege escalation and unauthorized access to admin/manager functions.
 
@@ -75,66 +75,66 @@
 ### 3. Work Orders CRUD Tests (`routes/work_orders.py`)
 **File to create:** `test/test_work_orders_routes.py`
 
-- [ ] **List & Search**
-  - [ ] GET /work_orders/ - renders list page
-  - [ ] Search by WorkOrderNo - returns correct results
-  - [ ] Search by CustID - returns correct results
-  - [ ] Search by WOName - returns correct results
-  - [ ] Search by Storage - returns correct results
-  - [ ] Search by RackNo - returns correct results
-  - [ ] Search by ShipTo - returns correct results
-  - [ ] Pagination works correctly
-  - [ ] Empty search returns all orders
+- [x] **List & Search**
+  - [x] GET /work_orders/ - renders list page
+  - [x] Search by WorkOrderNo - returns correct results
+  - [x] Search by CustID - returns correct results
+  - [x] Search by WOName - returns correct results
+  - [x] Search by Storage - returns correct results
+  - [x] Search by RackNo - returns correct results
+  - [x] Search by ShipTo - returns correct results
+  - [x] Pagination works correctly
+  - [x] Empty search returns all orders
 
-- [ ] **View Detail**
-  - [ ] GET /work_orders/<no> - displays order details
-  - [ ] View includes customer information
-  - [ ] View includes all work order items
-  - [ ] View handles missing work order (404)
+- [x] **View Detail**
+  - [x] GET /work_orders/<no> - displays order details
+  - [x] View includes customer information
+  - [x] View includes all work order items
+  - [x] View handles missing work order (404)
 
-- [ ] **Create Work Order**
-  - [ ] GET /work_orders/new - renders creation form
-  - [ ] POST /work_orders/new - creates work order successfully
-  - [ ] Auto-generates WorkOrderNo sequentially
-  - [ ] Creates work order with selected inventory items
-  - [ ] Creates work order with new items
-  - [ ] Creates work order with mixed items (inventory + new)
-  - [ ] Validates required fields (CustID)
-  - [ ] Assigns initial queue position
-  - [ ] Redirects to work order detail after creation
+- [x] **Create Work Order**
+  - [x] GET /work_orders/new - renders creation form
+  - [x] POST /work_orders/new - creates work order successfully
+  - [x] Auto-generates WorkOrderNo sequentially
+  - [x] Creates work order with selected inventory items
+  - [x] Creates work order with new items
+  - [x] Creates work order with mixed items (inventory + new)
+  - [x] Validates required fields (CustID)
+  - [x] Assigns initial queue position
+  - [x] Redirects to work order detail after creation
 
-- [ ] **Edit Work Order**
-  - [ ] GET /work_orders/<no>/edit - renders edit form
-  - [ ] POST /work_orders/<no>/edit - updates work order
-  - [ ] Updates work order fields correctly
-  - [ ] Updates existing items
-  - [ ] Adds new items during edit
-  - [ ] Deletes items during edit
-  - [ ] Handles DateCompleted changes
+- [x] **Edit Work Order**
+  - [x] GET /work_orders/<no>/edit - renders edit form
+  - [x] POST /work_orders/<no>/edit - updates work order
+  - [x] Updates work order fields correctly
+  - [x] Updates existing items
+  - [x] Adds new items during edit
+  - [x] Deletes items during edit
+  - [x] Handles DateCompleted changes
 
-- [ ] **Delete Work Order**
-  - [ ] POST /work_orders/<no>/delete - deletes work order
-  - [ ] Deletes associated items (cascade)
-  - [ ] Deletes associated files
-  - [ ] Confirms deletion with flash message
-  - [ ] Handles missing work order (404)
+- [x] **Delete Work Order**
+  - [x] POST /work_orders/<no>/delete - deletes work order
+  - [x] Deletes associated items (cascade)
+  - [x] Deletes associated files
+  - [x] Confirms deletion with flash message
+  - [x] Handles missing work order (404)
 
-- [ ] **File Operations**
-  - [ ] POST /work_orders/<no>/files/upload - uploads file
-  - [ ] Upload validates file type
-  - [ ] Upload validates file size
-  - [ ] GET /work_orders/<no>/files/<id>/download - downloads file
-  - [ ] Download from local storage works
-  - [ ] Download from S3 works
-  - [ ] GET /work_orders/thumbnail/<id> - generates thumbnail
-  - [ ] GET /work_orders/<no>/files - lists files (API)
-  - [ ] File deletion works
+- [x] **File Operations**
+  - [x] POST /work_orders/<no>/files/upload - uploads file
+  - [x] Upload validates file type
+  - [x] Upload validates file size
+  - [x] GET /work_orders/<no>/files/<id>/download - downloads file
+  - [x] Download from local storage works
+  - [x] Download from S3 works
+  - [x] GET /work_orders/thumbnail/<id> - generates thumbnail
+  - [x] GET /work_orders/<no>/files - lists files (API)
+  - [x] File deletion works
 
-- [ ] **PDF Generation**
-  - [ ] GET /work_orders/<no>/pdf - generates PDF
-  - [ ] PDF contains work order details
-  - [ ] PDF contains item list
-  - [ ] PDF contains customer information
+- [x] **PDF Generation**
+  - [x] GET /work_orders/<no>/pdf - generates PDF
+  - [x] PDF contains work order details
+  - [x] PDF contains item list
+  - [x] PDF contains customer information
 
 **Why Important:** Work orders are the core business entity. All CRUD operations must work flawlessly.
 
@@ -280,7 +280,7 @@
 
 - [ ] **File Upload (utils/file_upload.py)**
   - [ ] save_work_order_file() saves to S3 when configured
-  - [ ] save_work_order_file() saves locally when S3 unavailable
+  - [ ] save_work_order_file() saves to local storage when S3 unavailable
   - [ ] File type validation (allowed extensions)
   - [ ] File size limits enforced
   - [ ] Generates unique filenames
@@ -413,7 +413,7 @@
   - [ ] clean_numeric_string() parses $1,234.56 correctly
   - [ ] clean_numeric_string() handles None/empty
   - [ ] clean_square_footage() parses "8x10" → 80
-  - [ ] clean_square_footage() parses "8'9\"x10'2\"" correctly
+  - [ ] clean_square_footage() parses "8'9"x10'2"" correctly
   - [ ] clean_square_footage() handles invalid formats
   - [ ] clean_sail_weight() parses "95#" → 95
   - [ ] clean_sail_weight() handles None/empty
