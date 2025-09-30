@@ -149,7 +149,9 @@
                                                     </span>
                                                 </td>
                                                 <td class="py-2">
-                                                    {% if wo.ReturnStatus == 'Completed' %}
+                                                    {% if wo.ProcessingStatus %}
+                                                        <span class="status-badge status-processing">Processing</span>
+                                                    {% elif wo.ReturnStatus == 'Completed' %}
                                                         <span class="status-badge status-completed">Completed</span>
                                                     {% elif wo.ReturnStatus %}
                                                         <span class="status-badge status-pending">{{ wo.ReturnStatus }}</span>
@@ -158,7 +160,7 @@
                                                     {% endif %}
                                                 </td>
                                                 <td class="py-2">
-                                                    <small>{{ wo.ShipTo or '-' }}</small>
+                                                    <small>{{ wo.ship_to_source.SSource if wo.ship_to_source else (wo.ShipTo or '-') }}</small>
                                                 </td>
                                                 <td class="py-2">
                                                     <small class="text-muted">
