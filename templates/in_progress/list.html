@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}In Progress{% endblock %}
+
+{% block content %}
+<head>
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>In Progress Work Orders</h2>
+                <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-secondary">
+                    <i class="fas fa-list"></i> All Work Orders
+                </a>
+            </div>
+
+            <!-- Search Controls -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3 align-items-center">
+                        <div class="col-md-6">
+                            <input type="text"
+                                   name="search"
+                                   value="{{ search }}"
+                                   placeholder="Search work orders..."
+                                   class="form-control">
+                        </div>
+                        <div class="col-md-3 d-flex">
+                            <button type="submit" class="btn btn-primary me-2">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                            {% if search %}
+                                <a href="{{ url_for('in_progress.list_in_progress') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Work Orders Container -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Work Orders Currently Being Processed</h5>
+                    <small class="text-muted">{{ work_orders|length }} items</small>
+                </div>
+                <div class="card-body p-0">
+                    {% if work_orders %}
+                        <ul class="list-group list-group-flush">
+                            {% for work_order in work_orders %}
+                            <li class="list-group-item d-flex align-items-center">
+                                <span class="badge bg-success me-3">
+                                    <i class="fas fa-spinner fa-spin"></i> In Progress
+                                </span>
+                                <div class="flex-grow-1 row">
+                                    <div class="col-md-2 fw-bold text-primary">
+                                        <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}">
+                                            WO-{{ work_order.WorkOrderNo }}
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3">{{ work_order.WOName or 'Untitled' }}</div>
+                                    <div class="col-md-2">
+                                        {% if work_order.CustID %}
+                                          <a href="{{ url_for('customers.view_customer', cust_id=work_order.CustID) }}" class="badge bg-primary">{{ work_order.CustID }}</a>
+                                        {% else %}
+                                          <span class="text-muted"></span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-3 text-muted small">
+                                        <div>In: {{ (work_order.DateIn | date_format) or 'N/A' }}</div>
+                                        {% if work_order.DateRequired %}
+                                            <div>Req: {{ work_order.DateRequired | date_format }}</div>
+                                        {% endif %}
+                                        {% if work_order.ShipTo %}
+                                            <div class="badge badge-secondary">{{ work_order.ShipTo }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2 d-flex gap-1">
+                                        <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                           <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if current_user.role != 'user' %}
+                                        <a href="{{ url_for('work_orders.edit_work_order', work_order_no=work_order.WorkOrderNo) }}"
+                                           class="btn btn-sm btn-outline-warning">
+                                           <i class="fas fa-edit"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-check-circle fa-3x text-muted mb-3"></i>
+                            <h4>No work orders in progress</h4>
+                            <p class="text-muted">No work orders are currently being processed.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <nav aria-label="In Progress pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if pagination.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('in_progress.list_in_progress', page=pagination.prev_num, search=search) }}">
+                                Previous
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for page_num in range(1, pagination.pages + 1) %}
+                        {% if page_num == pagination.page %}
+                            <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('in_progress.list_in_progress', page=page_num, search=search) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if pagination.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('in_progress.list_in_progress', page=pagination.next_num, search=search) }}">
+                                Next
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}
