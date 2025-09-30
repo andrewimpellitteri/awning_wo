@@ -37,6 +37,11 @@ jobs:
         run: |
           pytest -v -m "integration" --cov=. --cov-append --cov-report=term-missing --cov-report=json --maxfail=5 --disable-warnings
 
+      - name: Extract coverage percentage
+        run: |
+          COVERAGE=$(python -c "import json; print(json.load(open('coverage.json'))['totals']['percent_covered_display'])")
+          echo "COVERAGE=${COVERAGE}%" >> $GITHUB_ENV
+
       - name: Create coverage badge
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
@@ -44,10 +49,5 @@ jobs:
           gistID: 44c7c17b0a9d04574018f0518fd13a6b
           filename: awning-coverage.json
           label: coverage
-          message: ${{ env.COVERAGE }}
+          message: ${{ env.COVERAGE }}%
           color: green
-
-      - name: Extract coverage percentage
-        run: |
-          COVERAGE=$(python -c "import json; print(json.load(open('coverage.json'))['totals']['percent_covered_display'])")
-          echo "COVERAGE=${COVERAGE}%" >> $GITHUB_ENV

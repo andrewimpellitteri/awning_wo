@@ -149,18 +149,18 @@
                                                     </span>
                                                 </td>
                                                 <td class="py-2">
-                                                    {% if wo.ProcessingStatus %}
-                                                        <span class="status-badge status-processing">Processing</span>
-                                                    {% elif wo.ReturnStatus == 'Completed' %}
+                                                    {% if wo.DateCompleted %}
                                                         <span class="status-badge status-completed">Completed</span>
-                                                    {% elif wo.ReturnStatus %}
-                                                        <span class="status-badge status-pending">{{ wo.ReturnStatus }}</span>
+                                                    {% elif wo.Treat %}
+                                                        <span class="status-badge status-pending">Ready to ship/pick up</span>
+                                                    {% elif wo.ProcessingStatus %}
+                                                        <span class="status-badge status-processing">In progress</span>
                                                     {% else %}
-                                                        <span class="status-badge status-active">Active</span>
+                                                        <span class="status-badge status-active">Not started</span>
                                                     {% endif %}
                                                 </td>
                                                 <td class="py-2">
-                                                    <small>{{ wo.ship_to_source.SSource if wo.ship_to_source else (wo.ShipTo or '-') }}</small>
+                                                    <small>{{ wo.customer.source_info.SSource if wo.customer and wo.customer.source_info else '-' }}</small>
                                                 </td>
                                                 <td class="py-2">
                                                     <small class="text-muted">

@@ -1,7 +1,10 @@
 from flask import Blueprint, render_template
 from extensions import db
-from models.work_order import WorkOrder  # Adjust import path as needed
+from models.work_order import WorkOrder
+from models.customer import Customer
+from models.source import Source
 from sqlalchemy import func, nullslast
+from sqlalchemy.orm import joinedload
 from datetime import datetime
 
 # Create blueprint (adjust name as needed)
@@ -18,6 +21,7 @@ def get_recent_orders(limit=10):
         )
         .outerjoin(WorkOrder.files)
         .outerjoin(WorkOrder.ship_to_source)
+        .options(joinedload(WorkOrder.customer).joinedload(Customer.source_info))
         .order_by(
             nullslast(func.greatest(WorkOrder.created_at, WorkOrder.updated_at).desc())
         )
