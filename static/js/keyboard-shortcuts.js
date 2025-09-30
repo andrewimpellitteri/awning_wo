@@ -260,13 +260,325 @@ function initializeGlobalShortcuts() {
     console.log('Global navigation shortcuts initialized');
 }
 
+// Table Navigation Module
+let tableNavigator = null;
+
+class TableNavigator {
+    constructor() {
+        this.selectedRowIndex = -1;
+        this.table = null;
+        this.tableType = null; // 'tabulator' or 'standard'
+        this.rows = [];
+        this.init();
+    }
+
+    init() {
+        // Detect table type on page
+        if (document.querySelector('.tabulator') ||
+            document.querySelector('#work-orders-table') ||
+            document.querySelector('#repair-orders-table') ||
+            document.querySelector('#customers-table')) {
+            this.tableType = 'tabulator';
+            console.log('Tabulator table detected, initializing...');
+            // Wait for tabulator to fully initialize
+            setTimeout(() => this.initTabulator(), 1000);
+        } else if (document.querySelector('table.table')) {
+            this.tableType = 'standard';
+            this.initStandardTable();
+        }
+    }
+
+    initTabulator() {
+        // Wait a bit longer for Tabulator to be fully initialized
+        let retryCount = 0;
+        const maxRetries = 10;
+
+        const checkTabulator = () => {
+            console.log(`Checking for Tabulator instance (attempt ${retryCount + 1}/${maxRetries})...`);
+
+            // Check for globally exposed Tabulator instances
+            this.table = window.workOrdersTable ||
+                        window.repairOrdersTable ||
+                        window.customersTable;
+
+            if (this.table) {
+                console.log('✓ Table navigation initialized for Tabulator', this.table);
+                // Enable row selection
+                this.table.on("rowClick", (e, row) => {
+                    this.selectRow(row);
+                });
+            } else {
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    console.warn(`✗ Tabulator instance not found (window.workOrdersTable=${!!window.workOrdersTable}, window.repairOrdersTable=${!!window.repairOrdersTable}, window.customersTable=${!!window.customersTable}), retrying...`);
+                    // Try again after a short delay
+                    setTimeout(checkTabulator, 500);
+                } else {
+                    console.error('✗ Failed to find Tabulator instance after', maxRetries, 'attempts');
+                }
+            }
+        };
+
+        checkTabulator();
+    }
+
+    initStandardTable() {
+        const table = document.querySelector('table.table tbody');
+        if (!table) return;
+
+        this.table = table;
+        console.log('Table navigation initialized for standard table');
+
+        // Add click handlers to rows
+        this.getStandardRows().forEach((row, index) => {
+            row.addEventListener('click', () => {
+                this.selectStandardRow(index);
+            });
+        });
+    }
+
+    getStandardRows() {
+        if (!this.table) return [];
+        return Array.from(this.table.querySelectorAll('tr'));
+    }
+
+    selectRow(row) {
+        if (this.tableType === 'tabulator' && this.table) {
+            this.table.deselectRow();
+            this.table.selectRow(row);
+            row.getElement().scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    selectStandardRow(index) {
+        const rows = this.getStandardRows();
+        if (index < 0 || index >= rows.length) return;
+
+        // Remove previous selection
+        rows.forEach(r => r.classList.remove('table-active', 'selected-row'));
+
+        // Add selection to new row
+        rows[index].classList.add('table-active', 'selected-row');
+        rows[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        this.selectedRowIndex = index;
+    }
+
+    nextRow() {
+        if (this.tableType === 'tabulator' && this.table) {
+            const selectedRows = this.table.getSelectedRows();
+            if (selectedRows.length === 0) {
+                const firstRow = this.table.getRows()[0];
+                if (firstRow) this.selectRow(firstRow);
+            } else {
+                const currentRow = selectedRows[0];
+                const nextRow = currentRow.getNextRow();
+                if (nextRow) this.selectRow(nextRow);
+            }
+        } else if (this.tableType === 'standard') {
+            const rows = this.getStandardRows();
+            if (rows.length === 0) return;
+
+            if (this.selectedRowIndex === -1) {
+                this.selectStandardRow(0);
+            } else if (this.selectedRowIndex < rows.length - 1) {
+                this.selectStandardRow(this.selectedRowIndex + 1);
+            }
+        }
+    }
+
+    prevRow() {
+        if (this.tableType === 'tabulator' && this.table) {
+            const selectedRows = this.table.getSelectedRows();
+            if (selectedRows.length === 0) {
+                const rows = this.table.getRows();
+                if (rows.length > 0) this.selectRow(rows[0]);
+            } else {
+                const currentRow = selectedRows[0];
+                const prevRow = currentRow.getPrevRow();
+                if (prevRow) this.selectRow(prevRow);
+            }
+        } else if (this.tableType === 'standard') {
+            const rows = this.getStandardRows();
+            if (rows.length === 0) return;
+
+            if (this.selectedRowIndex === -1) {
+                this.selectStandardRow(0);
+            } else if (this.selectedRowIndex > 0) {
+                this.selectStandardRow(this.selectedRowIndex - 1);
+            }
+        }
+    }
+
+    firstRow() {
+        if (this.tableType === 'tabulator' && this.table) {
+            const rows = this.table.getRows();
+            if (rows.length > 0) this.selectRow(rows[0]);
+        } else if (this.tableType === 'standard') {
+            this.selectStandardRow(0);
+        }
+    }
+
+    lastRow() {
+        if (this.tableType === 'tabulator' && this.table) {
+            const rows = this.table.getRows();
+            if (rows.length > 0) this.selectRow(rows[rows.length - 1]);
+        } else if (this.tableType === 'standard') {
+            const rows = this.getStandardRows();
+            if (rows.length > 0) this.selectStandardRow(rows.length - 1);
+        }
+    }
+
+    openSelected() {
+        if (this.tableType === 'tabulator' && this.table) {
+            const selectedRows = this.table.getSelectedRows();
+            if (selectedRows.length > 0) {
+                const data = selectedRows[0].getData();
+                if (data.detail_url) {
+                    window.location.href = data.detail_url;
+                }
+            }
+        } else if (this.tableType === 'standard') {
+            const rows = this.getStandardRows();
+            if (this.selectedRowIndex >= 0 && this.selectedRowIndex < rows.length) {
+                const link = rows[this.selectedRowIndex].querySelector('a');
+                if (link) link.click();
+            }
+        }
+    }
+
+    editSelected() {
+        if (this.tableType === 'tabulator' && this.table) {
+            const selectedRows = this.table.getSelectedRows();
+            if (selectedRows.length > 0) {
+                const data = selectedRows[0].getData();
+                if (data.edit_url) {
+                    window.location.href = data.edit_url;
+                }
+            }
+        } else if (this.tableType === 'standard') {
+            const rows = this.getStandardRows();
+            if (this.selectedRowIndex >= 0 && this.selectedRowIndex < rows.length) {
+                const editBtn = rows[this.selectedRowIndex].querySelector('a[href*="edit"]');
+                if (editBtn) editBtn.click();
+            }
+        }
+    }
+
+    clearSelection() {
+        if (this.tableType === 'tabulator' && this.table) {
+            this.table.deselectRow();
+        } else if (this.tableType === 'standard') {
+            const rows = this.getStandardRows();
+            rows.forEach(r => r.classList.remove('table-active', 'selected-row'));
+            this.selectedRowIndex = -1;
+        }
+    }
+
+    nextPage() {
+        if (this.tableType === 'tabulator' && this.table) {
+            this.table.nextPage();
+        } else if (this.tableType === 'standard') {
+            const nextBtn = document.querySelector('.pagination .page-item:not(.disabled) a:contains("Next")') ||
+                          document.querySelector('.pagination .page-link[aria-label="Next"]');
+            if (nextBtn) nextBtn.click();
+        }
+    }
+
+    prevPage() {
+        if (this.tableType === 'tabulator' && this.table) {
+            this.table.previousPage();
+        } else if (this.tableType === 'standard') {
+            const prevBtn = document.querySelector('.pagination .page-item:not(.disabled) a:contains("Previous")') ||
+                          document.querySelector('.pagination .page-link[aria-label="Previous"]');
+            if (prevBtn) prevBtn.click();
+        }
+    }
+
+    isInputFocused() {
+        const activeElement = document.activeElement;
+        return activeElement && (
+            activeElement.tagName === 'INPUT' ||
+            activeElement.tagName === 'TEXTAREA' ||
+            activeElement.tagName === 'SELECT' ||
+            activeElement.isContentEditable
+        );
+    }
+}
+
+// Initialize table navigation shortcuts
+function initializeTableShortcuts() {
+    if (typeof hotkeys === 'undefined') {
+        console.warn('hotkeys-js not loaded for table shortcuts');
+        return;
+    }
+
+    // Initialize table navigator
+    tableNavigator = new TableNavigator();
+
+    // Navigation shortcuts - only when not in input field
+    const navigationHandler = (key, handler) => {
+        hotkeys(key, (e) => {
+            if (tableNavigator && !tableNavigator.isInputFocused()) {
+                e.preventDefault();
+                handler();
+            }
+        });
+    };
+
+    // Next/Previous row
+    navigationHandler('j', () => tableNavigator.nextRow());
+    navigationHandler('down', () => tableNavigator.nextRow());
+    navigationHandler('k', () => tableNavigator.prevRow());
+    navigationHandler('up', () => tableNavigator.prevRow());
+
+    // First/Last row
+    navigationHandler('g', () => {
+        // Double-tap g to go to first
+        if (window.lastGPress && Date.now() - window.lastGPress < 500) {
+            tableNavigator.firstRow();
+            window.lastGPress = null;
+        } else {
+            window.lastGPress = Date.now();
+        }
+    });
+    navigationHandler('shift+g', () => tableNavigator.lastRow());
+
+    // Open/Edit
+    navigationHandler('enter', () => tableNavigator.openSelected());
+    navigationHandler('e', () => tableNavigator.editSelected());
+
+    // Clear selection (handled by existing escape handler, but add specific clear)
+    hotkeys('escape', (e) => {
+        if (tableNavigator && !tableNavigator.isInputFocused()) {
+            const hasSelection = (tableNavigator.tableType === 'tabulator' && tableNavigator.table && tableNavigator.table.getSelectedRows().length > 0) ||
+                               (tableNavigator.tableType === 'standard' && tableNavigator.selectedRowIndex >= 0);
+
+            if (hasSelection) {
+                e.preventDefault();
+                tableNavigator.clearSelection();
+                return;
+            }
+        }
+    });
+
+    // Page navigation
+    navigationHandler('ctrl+j', () => tableNavigator.nextPage());
+    navigationHandler('pagedown', () => tableNavigator.nextPage());
+    navigationHandler('ctrl+k', () => tableNavigator.prevPage());
+    navigationHandler('pageup', () => tableNavigator.prevPage());
+
+    console.log('Table navigation shortcuts initialized');
+}
+
 // Auto-initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     initializeKeyboardShortcuts();
     initializeGlobalShortcuts();
+    initializeTableShortcuts();
 });
 
 // Export functions for manual initialization if needed
 window.initializeKeyboardShortcuts = initializeKeyboardShortcuts;
 window.initializeGlobalShortcuts = initializeGlobalShortcuts;
+window.initializeTableShortcuts = initializeTableShortcuts;
 window.toggleHelp = toggleHelp;

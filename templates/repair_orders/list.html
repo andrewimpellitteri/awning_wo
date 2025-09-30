@@ -126,7 +126,7 @@ function dateSorter(a, b, aRow, bRow, column, dir, sorterParams) {
 document.addEventListener("DOMContentLoaded", function() {
     let currentStatus = "";
 
-    const table = new Tabulator("#repair-orders-table", {
+    const table = window.repairOrdersTable = new Tabulator("#repair-orders-table", {
         ajaxURL: "{{ url_for('repair_work_orders.api_repair_work_orders') | safe }}",
         ajaxParams: function() {
             // Consolidate all filter parameters here
@@ -275,3 +275,5 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 {% endblock %}
+
+{% include "_help_panel.html" %}

@@ -941,3 +941,45 @@ body {
 .file-item[data-type="text"] {
     border-left: 4px solid #6c757d;
 }
+
+/* Table Navigation - Selected Row Highlighting */
+.selected-row,
+tr.selected-row,
+table.table tbody tr.selected-row {
+    background-color: rgba(13, 110, 253, 0.15) !important;
+    border-left: 3px solid #0d6efd !important;
+    box-shadow: inset 0 0 0 1px rgba(13, 110, 253, 0.3);
+    transition: all 0.2s ease-in-out;
+}
+
+/* Dark theme selected row */
+[data-theme="dark"] .selected-row,
+[data-theme="dark"] tr.selected-row,
+[data-theme="dark"] table.table tbody tr.selected-row {
+    background-color: rgba(102, 179, 255, 0.2) !important;
+    border-left: 3px solid #66b3ff !important;
+    box-shadow: inset 0 0 0 1px rgba(102, 179, 255, 0.4);
+}
+
+/* Tabulator selected row styling */
+.tabulator-row.tabulator-selected {
+    background-color: rgba(13, 110, 253, 0.15) !important;
+    border-left: 3px solid #0d6efd !important;
+}
+
+[data-theme="dark"] .tabulator-row.tabulator-selected {
+    background-color: rgba(102, 179, 255, 0.2) !important;
+    border-left: 3px solid #66b3ff !important;
+}
+
+/* Hover state for keyboard navigable tables */
+table.table tbody tr:hover,
+.tabulator-row:hover {
+    cursor: pointer;
+    background-color: rgba(0, 0, 0, 0.025);
+}
+
+[data-theme="dark"] table.table tbody tr:hover,
+[data-theme="dark"] .tabulator-row:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}

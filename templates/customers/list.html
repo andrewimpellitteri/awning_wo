@@ -108,7 +108,7 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    const table = new Tabulator("#customers-table", {
+    const table = window.customersTable = new Tabulator("#customers-table", {
         ajaxURL: "{{ url_for('customers.api_customers') | safe }}",
         ajaxParams: function() {
             const params = {
@@ -339,3 +339,5 @@ function confirmDelete(customerId, customerName) {
 }
 </script>
 {% endblock %}
+
+{% include "_help_panel.html" %}

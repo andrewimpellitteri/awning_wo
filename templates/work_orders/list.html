@@ -126,7 +126,7 @@ function dateSorter(a, b, aRow, bRow, column, dir, sorterParams) {
 document.addEventListener("DOMContentLoaded", function() {
     let currentStatus = "";
 
-    const table = new Tabulator("#work-orders-table", {
+    const table = window.workOrdersTable = new Tabulator("#work-orders-table", {
         ajaxURL: "{{ url_for('work_orders.api_work_orders') | safe }}",
         ajaxParams: function() {
             const params = { search: document.getElementById("search")?.value || "", status: currentStatus };
@@ -269,3 +269,5 @@ document.addEventListener("DOMContentLoaded", function() {
 
 </script>
 {% endblock %}
+
+{% include "_help_panel.html" %}
