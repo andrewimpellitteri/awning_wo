@@ -260,6 +260,25 @@ def api_repair_work_orders():
     )
 
 
+@repair_work_orders_bp.route("/api/next_ro_number")
+@login_required
+def get_next_ro_number():
+    """API endpoint to get the next repair order number"""
+    latest_order = RepairWorkOrder.query.order_by(
+        desc(RepairWorkOrder.RepairOrderNo)
+    ).first()
+
+    if latest_order:
+        try:
+            next_num = int(latest_order.RepairOrderNo) + 1
+        except ValueError:
+            next_num = int(datetime.now().timestamp())
+    else:
+        next_num = 1
+
+    return jsonify({"next_ro_number": str(next_num)})
+
+
 @repair_work_orders_bp.route("/new", methods=["GET", "POST"])
 @repair_work_orders_bp.route("/new/<prefill_cust_id>", methods=["GET", "POST"])
 @login_required
@@ -318,17 +337,43 @@ def create_repair_order(prefill_cust_id=None):
             db.session.add(repair_order)
             db.session.flush()  # to get the RepairOrderNo
 
-            # Handle repair order items
+            # Handle selected items from customer inventory
+            from models.work_order import WorkOrderItem
+            selected_item_ids = request.form.getlist("selected_items[]")
+
+            for item_id in selected_item_ids:
+                if item_id:
+                    # Fetch the original item from work orders
+                    original_item = WorkOrderItem.query.get(item_id)
+                    if original_item:
+                        qty_key = f"item_qty_{item_id}"
+                        qty = request.form.get(qty_key, original_item.Qty or "1")
+
+                        # Create a copy of this item for the repair order
+                        repair_item = RepairWorkOrderItem(
+                            RepairOrderNo=next_order_no,
+                            CustID=request.form.get("CustID"),
+                            Description=original_item.Description,
+                            Material=original_item.Material,
+                            Qty=qty,
+                            Condition=original_item.Condition,
+                            Color=original_item.Color,
+                            SizeWgt=original_item.SizeWgt,
+                            Price=original_item.Price,
+                        )
+                        db.session.add(repair_item)
+
+            # Handle new repair order items (manually added)
             item_descriptions = request.form.getlist("item_description[]")
             item_materials = request.form.getlist("item_material[]")
             item_qtys = request.form.getlist("item_qty[]")
             item_conditions = request.form.getlist("item_condition[]")
             item_colors = request.form.getlist("item_color[]")
-            item_sizes = request.form.getlist("item_size[]")
+            item_sizes = request.form.getlist("item_size_wgt[]")
             item_prices = request.form.getlist("item_price[]")
 
             for i, descrip in enumerate(item_descriptions):
-                if descrip and i < len(item_materials):
+                if descrip and descrip.strip():
                     repair_item = RepairWorkOrderItem(
                         RepairOrderNo=next_order_no,
                         CustID=request.form.get("CustID"),
@@ -457,6 +502,32 @@ def edit_repair_order(repair_order_no):
                         item.Price = (
                             existing_prices[i] if i < len(existing_prices) else ""
                         )
+
+            # Handle selected items from customer inventory
+            from models.work_order import WorkOrderItem
+            selected_item_ids = request.form.getlist("selected_items[]")
+
+            for item_id in selected_item_ids:
+                if item_id:
+                    # Fetch the original item from work orders
+                    original_item = WorkOrderItem.query.get(item_id)
+                    if original_item:
+                        qty_key = f"item_qty_{item_id}"
+                        qty = request.form.get(qty_key, original_item.Qty or "1")
+
+                        # Create a copy of this item for the repair order
+                        repair_item = RepairWorkOrderItem(
+                            RepairOrderNo=repair_order_no,
+                            CustID=request.form.get("CustID"),
+                            Description=original_item.Description,
+                            Material=original_item.Material,
+                            Qty=qty,
+                            Condition=original_item.Condition,
+                            Color=original_item.Color,
+                            SizeWgt=original_item.SizeWgt,
+                            Price=original_item.Price,
+                        )
+                        db.session.add(repair_item)
 
             # Handle new items
             new_descriptions = request.form.getlist("new_description[]")
