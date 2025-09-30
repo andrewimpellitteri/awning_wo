@@ -1,173 +1,384 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analytics Dashboard</title>
-    <!-- Plotly.js CDN -->
-    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block styles %}
+<script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+<style>
+    .analytics-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding: 2rem 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px;
+    }
+
+    .analytics-header h1 {
+        margin: 0;
+        font-size: 2.5rem;
+        font-weight: 700;
+    }
+
+    .analytics-header p {
+        margin: 0.5rem 0 0 0;
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .kpi-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        border-left: 4px solid;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+
+    .kpi-card.primary { border-left-color: #3498db; }
+    .kpi-card.success { border-left-color: #2ecc71; }
+    .kpi-card.warning { border-left-color: #f39c12; }
+    .kpi-card.info { border-left-color: #9b59b6; }
+    .kpi-card.danger { border-left-color: #e74c3c; }
+
+    .kpi-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: #2c3e50;
+    }
+
+    .kpi-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #7f8c8d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+    }
+
+    .kpi-subtitle {
+        font-size: 0.85rem;
+        color: #95a5a6;
+    }
+
+    .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .chart-container {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .chart-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #ecf0f1;
+    }
+
+    .loading {
+        text-align: center;
+        padding: 3rem;
+        color: #95a5a6;
+        font-size: 1.1rem;
+    }
+
+    .error-message {
+        background: #fee;
+        color: #c33;
+        padding: 1rem;
+        border-radius: 5px;
+        margin-bottom: 1rem;
+        border-left: 4px solid #c33;
+    }
+
+    /* Dark theme support */
+    [data-theme="dark"] .analytics-header {
+        background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+    }
+
+    [data-theme="dark"] .kpi-card,
+    [data-theme="dark"] .chart-container {
+        background: #2d3748;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    [data-theme="dark"] .kpi-number,
+    [data-theme="dark"] .chart-title {
+        color: #e2e8f0;
+    }
+
+    [data-theme="dark"] .kpi-label,
+    [data-theme="dark"] .kpi-subtitle {
+        color: #a0aec0;
+    }
+
+    [data-theme="dark"] .chart-title {
+        border-bottom-color: #4a5568;
+    }
+
+    @media (max-width: 768px) {
+        .kpi-grid,
+        .charts-grid {
+            grid-template-columns: 1fr;
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f5f7fa;
-            color: #333;
-            line-height: 1.6;
+        .analytics-header h1 {
+            font-size: 1.8rem;
         }
-    </style>
-</head>
-<body>
-    <div class="dashboard-container">
-        <div class="dashboard-header">
-            <h1 class="dashboard-title">Analytics Dashboard</h1>
-            <p class="dashboard-subtitle">Business Performance Overview</p>
+
+        .kpi-number {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analytics-dashboard">
+    <div class="analytics-header">
+        <h1>Analytics Dashboard</h1>
+        <p>Business Performance Overview</p>
+    </div>
+
+    {% if error_message %}
+    <div class="error-message">
+        <strong>Error:</strong> {{ error_message }}
+    </div>
+    {% endif %}
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+        <div class="kpi-card primary">
+            <div class="kpi-label">Total Orders</div>
+            <div class="kpi-number">{{ "{:,}".format(kpis.get('total_orders', 0)) }}</div>
+            <div class="kpi-subtitle">All work orders in system</div>
         </div>
 
-        {% if error_message %}
-        <div class="error-message">
-            <strong>Error:</strong> {{ error_message }}
-        </div>
-        {% endif %}
-
-        <div class="info-message">
-            <strong>Data Summary:</strong> Loaded {{ total_records }} records
+        <div class="kpi-card success">
+            <div class="kpi-label">Completed Orders</div>
+            <div class="kpi-number">{{ "{:,}".format(kpis.get('completed_orders', 0)) }}</div>
+            <div class="kpi-subtitle">{{ kpis.get('completion_rate', 0) }}% completion rate</div>
         </div>
 
-        <!-- KPI Cards -->
-        <div class="kpi-grid">
-            <div class="kpi-card primary">
-                <div class="kpi-number">{{ kpis.total_orders }}</div>
-                <div class="kpi-label">Total Orders</div>
-                <div class="kpi-subtitle">All work orders in system</div>
-            </div>
-            <div class="kpi-card success">
-                <div class="kpi-number">{{ kpis.completed_orders }}</div>
-                <div class="kpi-label">Completed Orders</div>
-                <div class="kpi-subtitle">{{ kpis.completion_rate }}% completion rate</div>
-            </div>
-            <div class="kpi-card warning">
-                <div class="kpi-number">${{ "%.2f"|format(kpis.total_revenue) }}</div>
-                <div class="kpi-label">Total Revenue</div>
-                <div class="kpi-subtitle">${{ "%.2f"|format(kpis.avg_revenue) }} average</div>
-            </div>
-            <div class="kpi-card info">
-                <div class="kpi-number">{{ kpis.unique_customers }}</div>
-                <div class="kpi-label">Unique Customers</div>
-                <div class="kpi-subtitle">Customer base size</div>
-            </div>
+        <div class="kpi-card danger">
+            <div class="kpi-label">Open Orders</div>
+            <div class="kpi-number">{{ "{:,}".format(kpis.get('open_orders', 0)) }}</div>
+            <div class="kpi-subtitle">Currently pending</div>
         </div>
 
-        <!-- Charts -->
-        <div class="charts-grid">
-            <div class="chart-container">
-                <div class="chart-title">Monthly Orders Trend</div>
-                <div id="monthly-chart" class="chart-placeholder">Loading chart...</div>
-            </div>
-            <div class="chart-container">
-                <div class="chart-title">Order Status Distribution</div>
-                <div id="status-chart" class="chart-placeholder">Loading chart...</div>
-            </div>
-            <div class="chart-container">
-                <div class="chart-title">Daily Cleaning Throughput</div>
-                <div id="throughput-chart" class="chart-placeholder">Loading chart...</div>
-            </div>
-            <div class="chart-container">
-                <div class="chart-title">Cumulative Uncleaned Sq Ft</div>
-                <div id="cumulative-chart" class="chart-placeholder">Loading chart...</div>
-            </div>
+        <div class="kpi-card warning">
+            <div class="kpi-label">Total Revenue</div>
+            <div class="kpi-number">${{ "{:,.0f}".format(kpis.get('total_revenue', 0)) }}</div>
+            <div class="kpi-subtitle">${{ "{:,.0f}".format(kpis.get('avg_revenue', 0)) }} average</div>
+        </div>
+
+        <div class="kpi-card info">
+            <div class="kpi-label">7-Day Throughput</div>
+            <div class="kpi-number">{{ "{:,.0f}".format(kpis.get('avg_throughput_7d', 0)) }}</div>
+            <div class="kpi-subtitle">Sq ft per day (avg)</div>
+        </div>
+
+        <div class="kpi-card success">
+            <div class="kpi-label">Total Sq Ft Cleaned</div>
+            <div class="kpi-number">{{ "{:,.0f}".format(kpis.get('total_sqft_completed', 0)) }}</div>
+            <div class="kpi-subtitle">All-time total</div>
+        </div>
+
+        <div class="kpi-card primary">
+            <div class="kpi-label">Unique Customers</div>
+            <div class="kpi-number">{{ "{:,}".format(kpis.get('unique_customers', 0)) }}</div>
+            <div class="kpi-subtitle">Customer base</div>
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Parse data from Flask
-            const monthlyChartData = {{ monthly_chart | safe }};
-            const statusChartData = {{ status_chart | safe }};
-            const throughputData = {{ throughput | tojson | safe }};
-            const cumulativeData = {{ cumulative | tojson | safe }};
+    <!-- Charts -->
+    <div class="charts-grid">
+        <div class="chart-container">
+            <div class="chart-title">Monthly Orders Trend</div>
+            <div id="monthly-chart"><div class="loading">Loading chart...</div></div>
+        </div>
 
-            console.log("Monthly chart data:", monthlyChartData);
-            console.log("Status chart data:", statusChartData);
-            console.log("Throughput data:", throughputData);
-            console.log("Cumulative data:", cumulativeData);
+        <div class="chart-container">
+            <div class="chart-title">Order Status Distribution</div>
+            <div id="status-chart"><div class="loading">Loading chart...</div></div>
+        </div>
 
-            function renderPlotlyChart(containerId, data) {
-                if (data && data.data) {
-                    try {
-                        // Parse if it's a JSON string
-                        const chartData = typeof data === 'string' ? JSON.parse(data) : data;
-                        Plotly.newPlot(containerId, chartData.data, chartData.layout || {}, {
-                            responsive: true,
-                            displayModeBar: true
-                        });
-                    } catch (e) {
-                        console.error("Error rendering chart:", e);
-                        document.getElementById(containerId).innerHTML = '<div class="loading">Error rendering chart</div>';
+        <div class="chart-container">
+            <div class="chart-title">Daily Cleaning Throughput (90 days)</div>
+            <div id="throughput-chart"><div class="loading">Loading chart...</div></div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">Backlog Over Time (90 days)</div>
+            <div id="backlog-chart"><div class="loading">Loading chart...</div></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check for dark theme
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const plotBg = isDark ? '#2d3748' : '#ffffff';
+    const gridColor = isDark ? '#4a5568' : '#e2e8f0';
+    const fontColor = isDark ? '#e2e8f0' : '#2c3e50';
+
+    const commonLayout = {
+        plot_bgcolor: plotBg,
+        paper_bgcolor: plotBg,
+        font: { color: fontColor },
+        xaxis: { gridcolor: gridColor },
+        yaxis: { gridcolor: gridColor },
+        margin: { l: 50, r: 30, t: 30, b: 50 }
+    };
+
+    // Fetch chart data
+    fetch('/analytics/api/data')
+        .then(response => response.json())
+        .then(data => {
+            // Monthly Trends Chart
+            if (data.monthly_trends && data.monthly_trends.length > 0) {
+                const monthlyTrace1 = {
+                    x: data.monthly_trends.map(d => d.month),
+                    y: data.monthly_trends.map(d => d.order_count),
+                    name: 'Total Orders',
+                    type: 'bar',
+                    marker: { color: '#3498db' }
+                };
+                const monthlyTrace2 = {
+                    x: data.monthly_trends.map(d => d.month),
+                    y: data.monthly_trends.map(d => d.completed_count),
+                    name: 'Completed',
+                    type: 'bar',
+                    marker: { color: '#2ecc71' }
+                };
+                Plotly.newPlot('monthly-chart', [monthlyTrace1, monthlyTrace2], {
+                    ...commonLayout,
+                    barmode: 'group',
+                    xaxis: { ...commonLayout.xaxis, title: 'Month' },
+                    yaxis: { ...commonLayout.yaxis, title: 'Orders' }
+                }, { responsive: true, displayModeBar: true });
+            } else {
+                document.getElementById('monthly-chart').innerHTML = '<div class="loading">No data available</div>';
+            }
+
+            // Status Distribution Pie Chart
+            if (data.status_distribution) {
+                const statusTrace = {
+                    labels: Object.keys(data.status_distribution),
+                    values: Object.values(data.status_distribution),
+                    type: 'pie',
+                    hole: 0.4,
+                    marker: {
+                        colors: ['#2ecc71', '#f39c12']
                     }
-                } else {
-                    document.getElementById(containerId).innerHTML = '<div class="loading">No data available</div>';
-                }
-            }
-
-            // Render main charts
-            renderPlotlyChart('monthly-chart', monthlyChartData);
-            renderPlotlyChart('status-chart', statusChartData);
-
-            // Throughput chart
-            if (throughputData && throughputData.length > 0) {
-                const trace = {
-                    x: throughputData.map(d => d.datecompleted),
-                    y: throughputData.map(d => d.totalsize),
-                    mode: 'lines+markers',
-                    name: 'Daily Throughput',
-                    line: { color: '#3498db', width: 3 },
-                    marker: { size: 6 }
                 };
-                const layout = { 
-                    title: 'Daily Cleaning Throughput', 
-                    xaxis: { title: 'Date' }, 
-                    yaxis: { title: 'Sq Ft' }, 
-                    template: 'plotly_white' 
-                };
-                Plotly.newPlot('throughput-chart', [trace], layout, { responsive: true, displayModeBar: true });
+                Plotly.newPlot('status-chart', [statusTrace], {
+                    ...commonLayout,
+                    showlegend: true
+                }, { responsive: true, displayModeBar: true });
             } else {
-                document.getElementById('throughput-chart').innerHTML = '<div class="loading">No throughput data available</div>';
+                document.getElementById('status-chart').innerHTML = '<div class="loading">No data available</div>';
             }
 
-            // Cumulative uncleaned chart
-            if (cumulativeData && cumulativeData.length > 0) {
-                const trace = {
-                    x: cumulativeData.map(d => d.date),
-                    y: cumulativeData.map(d => d.cumulative_uncleaned_sqft),
-                    mode: 'lines+markers',
-                    name: 'Cumulative Uncleaned',
-                    line: { color: '#e74c3c', width: 3 },
-                    marker: { size: 6 }
+            // Daily Throughput Chart
+            if (data.daily_throughput && data.daily_throughput.length > 0) {
+                const throughputTrace1 = {
+                    x: data.daily_throughput.map(d => d.date),
+                    y: data.daily_throughput.map(d => d.daily_sqft),
+                    name: 'Daily',
+                    type: 'scatter',
+                    mode: 'markers',
+                    marker: { color: '#95a5a6', size: 4 }
                 };
-                const layout = { 
-                    title: 'Cumulative Uncleaned Sq Ft', 
-                    xaxis: { title: 'Date' }, 
-                    yaxis: { title: 'Sq Ft' }, 
-                    template: 'plotly_white' 
+                const throughputTrace2 = {
+                    x: data.daily_throughput.map(d => d.date),
+                    y: data.daily_throughput.map(d => d.rolling_avg),
+                    name: '7-Day Avg',
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: '#3498db', width: 3 }
                 };
-                Plotly.newPlot('cumulative-chart', [trace], layout, { responsive: true, displayModeBar: true });
+                Plotly.newPlot('throughput-chart', [throughputTrace1, throughputTrace2], {
+                    ...commonLayout,
+                    xaxis: { ...commonLayout.xaxis, title: 'Date' },
+                    yaxis: { ...commonLayout.yaxis, title: 'Sq Ft' }
+                }, { responsive: true, displayModeBar: true });
             } else {
-                document.getElementById('cumulative-chart').innerHTML = '<div class="loading">No cumulative data available</div>';
+                document.getElementById('throughput-chart').innerHTML = '<div class="loading">No data available</div>';
             }
 
-            // Resize charts on window resize
-            window.addEventListener('resize', () => {
-                ['monthly-chart','status-chart','throughput-chart','cumulative-chart'].forEach(id => {
-                    Plotly.Plots.resize(document.getElementById(id));
-                });
+            // Backlog Chart
+            if (data.backlog && data.backlog.length > 0) {
+                const backlogTrace = {
+                    x: data.backlog.map(d => d.date),
+                    y: data.backlog.map(d => d.backlog_sqft),
+                    name: 'Backlog',
+                    type: 'scatter',
+                    mode: 'lines',
+                    fill: 'tozeroy',
+                    line: { color: '#e74c3c', width: 2 },
+                    fillcolor: 'rgba(231, 76, 60, 0.2)'
+                };
+                Plotly.newPlot('backlog-chart', [backlogTrace], {
+                    ...commonLayout,
+                    xaxis: { ...commonLayout.xaxis, title: 'Date' },
+                    yaxis: { ...commonLayout.yaxis, title: 'Sq Ft in Backlog' }
+                }, { responsive: true, displayModeBar: true });
+            } else {
+                document.getElementById('backlog-chart').innerHTML = '<div class="loading">No data available</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading chart data:', error);
+            document.querySelectorAll('.chart-container > div').forEach(el => {
+                el.innerHTML = '<div class="loading">Error loading data</div>';
             });
         });
-    </script>
-</body>
-</html>
+
+    // Re-render charts on window resize
+    window.addEventListener('resize', () => {
+        ['monthly-chart', 'status-chart', 'throughput-chart', 'backlog-chart'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element && element.data) {
+                Plotly.Plots.resize(element);
+            }
+        });
+    });
+
+    // Re-render charts on theme change
+    const observer = new MutationObserver(() => {
+        // If theme changes, reload the page to apply new colors
+        location.reload();
+    });
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme']
+    });
+});
+</script>
+{% endblock %}

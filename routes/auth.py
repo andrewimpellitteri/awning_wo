@@ -50,6 +50,10 @@ def register():
         email = request.form.get("email")
         password = request.form.get("password")
 
+        if not all([username, email, password]):
+            flash("All fields are required.", "error")
+            return redirect(url_for("auth.register"))
+
         if User.query.filter_by(username=username).first():
             flash("Username already exists", "error")
             return redirect(url_for("auth.register"))
@@ -66,8 +70,10 @@ def register():
         )
         db.session.add(user)
 
-        # Mark invite as used only here
+        # Mark invite as used
         invite.used = True
+        db.session.add(invite)
+
         db.session.commit()
 
         flash("Registration successful! Please log in.", "success")

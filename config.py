@@ -44,7 +44,45 @@ class Config:
     AWS_S3_BUCKET = os.environ.get("AWS_S3_BUCKET")
     AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
 
-    SAIL_ORDER_SOURCES = ["NS RI", "Doyle/Island Nautical Canvas", "NS LI"]
+    SAIL_ORDER_SOURCES = [
+        "Aaron's Canvas & Sails LLC",
+        "ACE Sails",
+        "Aurora Sails",
+        "Bareboat Sailing Charters",
+        "Bohndell Sails & Rigging",
+        "Doyle",
+        "Doyle/Island Nautical Canvas",
+        "Fairclough",
+        "Neil Pryde Sails",
+        "NEKA",
+        "Northeast Sail Loft",
+        "NS CT",
+        "NS LI",
+        "NS RI",
+        "NS TOLEDO",
+        "Ocean Rigging",
+        "OneSails/Doyle",
+        "Port Niantic Marina",
+        "QS CT (Shore)",
+        "QS NY",
+        "QS RI (Thurston)",
+        "Sail Repair Co.",
+        "Sperry Sails",
+        "Thurston Sails",
+        "Tim's Sail Loft",
+        "Tomelia Sails & Canvas",
+        "UK CI",
+        "UK Clinton",
+        "UK Cycle",
+        "UK Essex",
+        "UK Halsey",
+        "UK Metro",
+        "UK N",
+        "UK RI",
+        "Ullman Sails",
+        "Wm. Mills & Co.",
+        "Z Sails",
+    ]
 
 
 class DevelopmentConfig(Config):

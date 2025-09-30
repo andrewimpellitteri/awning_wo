@@ -52,25 +52,33 @@ def mock_s3_client(mocker):
     return mock_s3
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def app():
-    """Flask app for testing with isolated SQLite database."""
-    # Create a Flask instance manually instead of importing the main app
-    flask_app = Flask(__name__)
-    flask_app.config.update(
-        TESTING=True,
-        SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        WTF_CSRF_ENABLED=False,
-        SECRET_KEY="test-secret-key",
+    """Fixture for creating a new Flask app for each test function."""
+    # Import the factory and config here to avoid circular dependencies
+    from app import create_app
+    from config import TestingConfig
+
+    # Create the app with test config
+    app = create_app(config_class=TestingConfig)
+    app.config.update(
+        {
+            "TESTING": True,
+            "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",  # Ensure in-memory DB
+            "WTF_CSRF_ENABLED": False,  # Disable CSRF for tests
+            "LOGIN_DISABLED": False,  # Ensure login is not disabled
+        }
     )
 
-    db.init_app(flask_app)
-    login_manager.init_app(flask_app)
-
-    with flask_app.app_context():
+    # Establish an application context before creating the database tables
+    with app.app_context():
+        # Create the database tables
         db.create_all()
-        yield flask_app
+
+        # Yield the app to the test
+        yield app
+
+        # Teardown: clean up the database
         db.session.remove()
         db.drop_all()
 

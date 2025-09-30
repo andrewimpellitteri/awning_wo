@@ -138,3 +138,4 @@ uploads/
 cicd/
 
 deploy_watcher.out
+*.csv
