@@ -983,3 +983,17 @@ table.table tbody tr:hover,
 [data-theme="dark"] .tabulator-row:hover {
     background-color: rgba(255, 255, 255, 0.05);
 }
+
+/* Consistent vertical spacing between stacked cards */
+.card + .card {
+    margin-top: 1.5rem;
+}
+
+/* Stack buttons vertically on small screens */
+@media (max-width: 575.98px) {
+    .d-grid, .btn-group {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+}

@@ -226,39 +226,28 @@ function initializeGlobalShortcuts() {
         return;
     }
 
-    // Global navigation shortcuts
-    hotkeys('ctrl+shift+1', (e) => {
-        e.preventDefault();
-        window.location.href = '/sources';
-        console.log('Navigating to Sources');
-    });
+    // Define key → route mapping
+    const shortcuts = {
+        1: { path: '/sources', label: 'Sources' },
+        2: { path: '/customers', label: 'Customers' },
+        3: { path: '/work_orders', label: 'Work Orders' },
+        4: { path: '/repair_work_orders', label: 'Repair Orders' },
+        5: { path: '/cleaning_queue/cleaning-queue', label: 'Queue' },
+    };
 
-    hotkeys('ctrl+shift+2', (e) => {
-        e.preventDefault();
-        window.location.href = '/customers';
-        console.log('Navigating to Customers');
-    });
-
-    hotkeys('ctrl+shift+3', (e) => {
-        e.preventDefault();
-        window.location.href = '/work_orders';
-        console.log('Navigating to Work Orders');
-    });
-
-    hotkeys('ctrl+shift+4', (e) => {
-        e.preventDefault();
-        window.location.href = '/repair_work_orders';
-        console.log('Navigating to Repair Orders');
-    });
-
-    hotkeys('ctrl+shift+5', (e) => {
-        e.preventDefault();
-        window.location.href = '/cleaning_queue/cleaning-queue';
-        console.log('Navigating to Queue');
+    // Register both top-row and numpad combos
+    Object.entries(shortcuts).forEach(([num, { path, label }]) => {
+        const combos = [`ctrl+shift+${num}`, `ctrl+shift+numpad${num}`];
+        hotkeys(combos.join(','), (e) => {
+            e.preventDefault();
+            window.location.href = path;
+            console.log(`Navigating to ${label}`);
+        });
     });
 
     console.log('Global navigation shortcuts initialized');
 }
+
 
 // Table Navigation Module
 let tableNavigator = null;

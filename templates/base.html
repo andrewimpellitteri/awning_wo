@@ -14,22 +14,6 @@
     <link href="{{ url_for('static', filename='css/help-panel.css') }}" rel="stylesheet">
     <script src="{{ url_for('static', filename='js/keyboard-shortcuts.js') }}"></script>
 
-    <style>
-        /* Consistent vertical spacing between stacked cards */
-        .card + .card {
-                margin-top: 1.5rem;
-            }
-
-            /* Stack buttons vertically on small screens */
-            @media (max-width: 575.98px) {
-                .d-grid, .btn-group {
-                    display: grid !important;
-                    grid-template-columns: 1fr;
-                    gap: 0.5rem;
-                }
-            }
-    </style>
-
     {% block styles %}{% endblock %}
 </head>
 <body>
