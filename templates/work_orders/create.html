@@ -6,7 +6,6 @@
 {{ super() }}
 
 <style>
-    /* Remove hardcoded colors - let CSS variables handle theming */
     .detail-row {
         border-bottom: 1px solid var(--border-color);
         padding: 0.75rem 0;
@@ -612,6 +611,42 @@
     let selectedItemsCount = 0;
     let newItemsCount = 0;
 
+    // Create datalists for autocomplete suggestions (run once on load)
+    function createDatalists() {
+        // Description datalist
+        const descriptionDatalist = document.createElement('datalist');
+        descriptionDatalist.id = 'description-list';
+        descriptionValues.forEach(val => {
+            const option = document.createElement('option');
+            option.value = val;
+            descriptionDatalist.appendChild(option);
+        });
+        document.body.appendChild(descriptionDatalist);
+
+        // Material datalist
+        const materialDatalist = document.createElement('datalist');
+        materialDatalist.id = 'material-list';
+        materialValues.forEach(val => {
+            const option = document.createElement('option');
+            option.value = val;
+            materialDatalist.appendChild(option);
+        });
+        document.body.appendChild(materialDatalist);
+
+        // Color datalist
+        const colorDatalist = document.createElement('datalist');
+        colorDatalist.id = 'color-list';
+        colorValues.forEach(val => {
+            const option = document.createElement('option');
+            option.value = val;
+            colorDatalist.appendChild(option);
+        });
+        document.body.appendChild(colorDatalist);
+    }
+
+    // Initialize datalists on DOM load
+    document.addEventListener("DOMContentLoaded", createDatalists);
+
     function formatPrice(price) {
         let num = parseFloat(price);
         if (isNaN(num)) return "$0.00";
@@ -796,11 +831,11 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label detail-label">Description *</label>
-                        <input type="text" class="form-control" name="new_item_description[]" required>
+                        <input type="text" class="form-control" name="new_item_description[]" required list="description-list">
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label detail-label">Material</label>
-                        <input type="text" class="form-control" name="new_item_material[]">
+                        <input type="text" class="form-control" name="new_item_material[]" list="material-list">
                     </div>
                 </div>
                 
@@ -822,7 +857,7 @@
                     </div>
                     <div class="col-md-3 mb-3">
                         <label class="form-label detail-label">Color</label>
-                        <input type="text" class="form-control" name="new_item_color[]">
+                        <input type="text" class="form-control" name="new_item_color[]" list="color-list">
                     </div>
                     <div class="col-md-3 mb-3">
                         <label class="form-label detail-label">Size/Weight</label>

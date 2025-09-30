@@ -5,25 +5,111 @@
 {% block styles %}
 {{ super() }}
 <style>
-    .detail-row { border-bottom: 1px solid #f8f9fa; padding: 0.75rem 0; transition: background-color 0.2s ease; }
-    .detail-row:hover { background-color: #f8f9fa; margin: 0 -1rem; padding-left: 1rem; padding-right: 1rem; border-radius: 0.375rem; }
-    .detail-row:last-child { border-bottom: none; }
-    .detail-label { font-weight: 600; color: #6c757d; font-size: 0.9rem; margin-bottom: 0.25rem; }
-    .detail-value { color: #212529; font-weight: 500; }
-    .badge { font-size: 0.8rem !important; padding: 0.5rem 0.75rem; }
-    .item-row { border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 15px; background-color: #fff; transition: all 0.3s ease; }
-    .item-row:hover { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .item-row.marked-for-deletion { background-color: #f8d7da; border-color: #dc3545; opacity: 0.7; }
-    .new-item-row { background-color: #d1ecf1; border: 1px solid #bee5eb; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
-    .qty-input { width: 80px; }
-    .btn-add-item { background: linear-gradient(135deg, #28a745, #20c997); border: none; color: white; padding: 10px 20px; border-radius: 6px; transition: all 0.3s ease; box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2); }
-    .btn-add-item:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3); color: white; }
-    .form-section { margin-bottom: 25px; }
-    .card { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); border: 1px solid rgba(0,0,0,.125); }
-    .card-header { background-color: #f8f9fa; border-bottom: 1px solid #dee2e6; }
-    .status-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 0.5rem; }
-    .text-strike { text-decoration: line-through; }
+/* Row details */
+.detail-row {
+  border-bottom: 1px solid var(--bs-border-color);
+  padding: 0.75rem 0;
+  transition: background-color 0.2s ease;
+}
+.detail-row:hover {
+  background-color: var(--bs-tertiary-bg);
+  margin: 0 -1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border-radius: 0.375rem;
+}
+.detail-row:last-child {
+  border-bottom: none;
+}
+.detail-label {
+  font-weight: 600;
+  color: var(--bs-secondary-color);
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+.detail-value {
+  color: var(--bs-body-color);
+  font-weight: 500;
+}
+
+/* Badges */
+.badge {
+  font-size: 0.8rem !important;
+  padding: 0.5rem 0.75rem;
+}
+
+/* Item rows */
+.item-row {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background-color: var(--bs-body-bg);
+  transition: all 0.3s ease;
+}
+.item-row:hover {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.item-row.marked-for-deletion {
+  background-color: var(--bs-danger-bg-subtle);
+  border-color: var(--bs-danger-border-subtle);
+  opacity: 0.7;
+}
+.new-item-row {
+  background-color: var(--bs-info-bg-subtle);
+  border: 1px solid var(--bs-info-border-subtle);
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+/* Inputs */
+.qty-input {
+  width: 80px;
+}
+
+/* Add button */
+.btn-add-item {
+  background: linear-gradient(135deg, var(--bs-success), var(--bs-teal));
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+}
+.btn-add-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+  color: white;
+}
+
+/* Sections & cards */
+.form-section {
+  margin-bottom: 25px;
+}
+.card {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  border: 1px solid var(--bs-border-color);
+}
+.card-header {
+  background-color: var(--bs-card-cap-bg);
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+/* Utilities */
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+}
+.text-strike {
+  text-decoration: line-through;
+}
 </style>
+
 {% endblock %}
 
 {% block content %}
