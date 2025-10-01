@@ -143,49 +143,49 @@
 ### 4. Repair Orders CRUD Tests (`routes/repair_order.py`)
 **File to create:** `test/test_repair_orders_routes.py`
 
-- [ ] **List & Filter**
-  - [ ] GET /repair_work_orders/ - renders list page
-  - [ ] GET /repair_work_orders/api/repair_work_orders - API endpoint works
-  - [ ] Filter by status (pending, completed, rush)
-  - [ ] Global search across all fields
-  - [ ] Filter by RepairOrderNo
-  - [ ] Filter by CustID
-  - [ ] Filter by ROName
-  - [ ] Filter by Source
-  - [ ] Sort by RepairOrderNo (numeric)
-  - [ ] Sort by dates with multiple format handling
-  - [ ] Pagination works correctly
+- [x] **List & Filter**
+  - [x] GET /repair_work_orders/ - renders list page
+  - [x] GET /repair_work_orders/api/repair_work_orders - API endpoint works
+  - [x] Filter by status (pending, completed, rush)
+  - [x] Global search across all fields
+  - [x] Filter by RepairOrderNo
+  - [x] Filter by CustID
+  - [x] Filter by ROName
+  - [x] Filter by Source
+  - [x] Sort by RepairOrderNo (numeric)
+  - [x] Sort by dates with multiple format handling
+  - [x] Pagination works correctly
 
-- [ ] **View Detail**
-  - [ ] GET /repair_work_orders/<no> - displays repair order
-  - [ ] View includes customer information
-  - [ ] View includes all repair items
-  - [ ] View handles missing repair order (404)
+- [x] **View Detail**
+  - [x] GET /repair_work_orders/<no> - displays repair order
+  - [x] View includes customer information
+  - [x] View includes all repair items
+  - [x] View handles missing repair order (404)
 
-- [ ] **Create Repair Order**
-  - [ ] Auto-generates RepairOrderNo sequentially
-  - [ ] Creates repair order with items
-  - [ ] Validates required fields
-  - [ ] Redirects after creation
+- [x] **Create Repair Order**
+  - [x] Auto-generates RepairOrderNo sequentially
+  - [x] Creates repair order with items
+  - [x] Validates required fields
+  - [x] Redirects after creation
 
-- [ ] **Edit Repair Order**
-  - [ ] Updates repair order fields
-  - [ ] Updates repair items
-  - [ ] Adds new items
-  - [ ] Deletes items
+- [x] **Edit Repair Order**
+  - [x] Updates repair order fields
+  - [x] Updates repair items
+  - [x] Adds new items
+  - [x] Deletes items
 
-- [ ] **Delete Repair Order**
-  - [ ] Deletes repair order and items
-  - [ ] Handles missing repair order (404)
+- [x] **Delete Repair Order**
+  - [x] Deletes repair order and items
+  - [x] Handles missing repair order (404)
 
-- [ ] **PDF Generation**
-  - [ ] Generates repair order PDF
-  - [ ] PDF contains repair details
+- [x] **PDF Generation**
+  - [x] Generates repair order PDF
+  - [x] PDF contains repair details
 
-- [ ] **Date Formatting**
-  - [ ] format_date_from_str() handles MM/DD/YY HH:MM:SS
-  - [ ] format_date_from_str() handles YYYY-MM-DD
-  - [ ] format_date_from_str() handles None/empty
+- [x] **Date Formatting**
+  - [x] format_date_from_str() handles MM/DD/YY HH:MM:SS
+  - [x] format_date_from_str() handles YYYY-MM-DD
+  - [x] format_date_from_str() handles None/empty
 
 **Why Important:** Repair orders are a separate critical workflow with complex date handling.
 
@@ -194,48 +194,48 @@
 ### 5. Customer Management Tests (`routes/customers.py`)
 **File to create:** `test/test_customers_routes.py`
 
-- [ ] **List & Filter**
-  - [ ] GET /customers/ - renders list page
-  - [ ] GET /customers/api/customers - API endpoint with pagination
-  - [ ] Search across multiple fields
-  - [ ] Filter by source
-  - [ ] Filter by state
-  - [ ] Column-specific filters work
-  - [ ] Sorting works (Tabulator format)
-  - [ ] Pagination works
+- [x] **List & Filter**
+  - [x] GET /customers/ - renders list page
+  - [x] GET /customers/api/customers - API endpoint with pagination
+  - [x] Search across multiple fields
+  - [x] Filter by source
+  - [x] Filter by state
+  - [x] Column-specific filters work
+  - [x] Sorting works (Tabulator format)
+  - [x] Pagination works
 
-- [ ] **View Detail**
-  - [ ] GET /customers/view/<id> - displays customer
-  - [ ] Shows all work orders for customer
-  - [ ] Shows all repair orders for customer
-  - [ ] Shows all inventory for customer
-  - [ ] Handles missing customer (404)
+- [x] **View Detail**
+  - [x] GET /customers/view/<id> - displays customer
+  - [x] Shows all work orders for customer
+  - [x] Shows all repair orders for customer
+  - [x] Shows all inventory for customer
+  - [x] Handles missing customer (404)
 
-- [ ] **Create Customer**
-  - [ ] GET /customers/new - renders form
-  - [ ] POST /customers/new - creates customer
-  - [ ] Auto-generates CustID sequentially
-  - [ ] Auto-populates source address when source selected
-  - [ ] Validates name is required
-  - [ ] Redirects after creation
+- [x] **Create Customer**
+  - [x] GET /customers/new - renders form
+  - [x] POST /customers/new - creates customer
+  - [x] Auto-generates CustID sequentially
+  - [x] Auto-populates source address when source selected
+  - [x] Validates name is required
+  - [x] Redirects after creation
 
-- [ ] **Edit Customer**
-  - [ ] GET /customers/edit/<id> - renders form
-  - [ ] POST /customers/edit/<id> - updates customer
-  - [ ] All fields update correctly
+- [x] **Edit Customer**
+  - [x] GET /customers/edit/<id> - renders form
+  - [x] POST /customers/edit/<id> - updates customer
+  - [x] All fields update correctly
 
-- [ ] **Delete Customer**
-  - [ ] POST /customers/delete/<id> - deletes customer
-  - [ ] Handles foreign key constraints
-  - [ ] Flash message on success
+- [x] **Delete Customer**
+  - [x] POST /customers/delete/<id> - deletes customer
+  - [x] Handles foreign key constraints
+  - [x] Flash message on success
 
-- [ ] **API Endpoints**
-  - [ ] GET /customers/api/source_info/<name> - returns source info
-  - [ ] Source info includes address fields
+- [x] **API Endpoints**
+  - [x] GET /customers/api/source_info/<name> - returns source info
+  - [x] Source info includes address fields
 
-- [ ] **Authorization**
-  - [ ] Manager/admin can create/edit/delete
-  - [ ] Regular users cannot modify (403)
+- [x] **Authorization**
+  - [x] Manager/admin can create/edit/delete
+  - [x] Regular users cannot modify (403)
 
 **Why Important:** Customers are central to the business. Auto-ID generation and data integrity must work correctly.
 

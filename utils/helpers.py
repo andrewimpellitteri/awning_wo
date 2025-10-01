@@ -1,4 +1,44 @@
 from datetime import datetime
+
+def format_date_from_str(date_str):
+    """Attempts to parse a date string from various formats."""
+    if date_str is None or date_str == "":
+        return None
+    try:
+        return datetime.strptime(date_str, "%m/%d/%y %H:%M:%S")
+    except ValueError:
+        try:
+            return datetime.strptime(date_str, "%Y-%m-%d")
+        except ValueError:
+            return None
+
+def safe_date_sort_key(date_obj):
+    """Returns a sortable key for date objects, handling None values."""
+    if date_obj is None:
+        return datetime.min
+    if isinstance(date_obj, str):
+        return format_date_from_str(date_obj) or datetime.min
+    return date_obj
+
+
+from models.work_order import WorkOrder
+from extensions import db
+
+def initialize_queue_positions_for_unassigned():
+    """Assigns sequential queue positions to work orders that don't have one."""
+    with db.session.no_autoflush:
+        work_orders = WorkOrder.query.all()
+        max_position = -1
+        for wo in work_orders:
+            if wo.queue_position is not None and wo.queue_position > max_position:
+                max_position = wo.queue_position
+
+        for wo in work_orders:
+            if wo.queue_position is None:
+                max_position += 1
+                wo.queue_position = max_position
+        db.session.commit()
+
 import os
 import secrets
 from PIL import Image

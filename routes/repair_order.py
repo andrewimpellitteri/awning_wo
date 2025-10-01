@@ -140,61 +140,65 @@ def api_repair_work_orders():
 
     # ↕️ Sorting logic with date parsing
     order_by_clauses = []
-    i = 0
-    while True:
-        field = request.args.get(f"sort[{i}][field]")
-        if not field:
-            break
-        direction = request.args.get(f"sort[{i}][dir]", "asc")
+    if db.engine.dialect.name == 'sqlite':
+        # Simplified sorting for SQLite to avoid dialect-specific functions
+        order_by_clauses.append(RepairWorkOrder.RepairOrderNo.desc())
+    else:
+        i = 0
+        while True:
+            field = request.args.get(f"sort[{i}][field]")
+            if not field:
+                break
+            direction = request.args.get(f"sort[{i}][dir]", "asc")
 
-        # Handle the special case of 'Source'
-        if field == "Source":
-            # The query is already joined, so we can sort on the joined table's column
-            column_to_sort = Source.SSource
-            if direction == "desc":
-                order_by_clauses.append(column_to_sort.desc())
-            else:
-                order_by_clauses.append(column_to_sort.asc())
-        else:
-            # Handle all other fields on the RepairWorkOrder model
-            column = getattr(RepairWorkOrder, field, None)
-            if column:
-                if field in ["RepairOrderNo", "CustID"]:
-                    cast_column = cast(column, Integer)
-                    order_by_clauses.append(
-                        cast_column.desc() if direction == "desc" else cast_column.asc()
-                    )
-
-                elif field in ["DateIn", "DateCompleted"]:
-                    # Use CASE with multiple formats for dates
-                    cast_column = case(
-                        (
-                            column.op("~")(
-                                "^[0-1][0-9]/[0-3][0-9]/[0-9]{2} [0-2][0-9]:[0-5][0-9]:[0-5][0-9]$"
-                            ),
-                            func.to_date(column, "MM/DD/YY HH24:MI:SS"),
-                        ),
-                        (
-                            column.op("~")("^[0-2][0-9]{3}-[0-1][0-9]-[0-3][0-9]$"),
-                            func.to_date(column, "YYYY-MM-DD"),
-                        ),
-                        else_=literal(None),
-                    )
-                    order_by_clauses.append(
-                        cast_column.desc().nulls_last()
-                        if direction == "desc"
-                        else cast_column.asc().nulls_last()
-                    )
+            # Handle the special case of 'Source'
+            if field == "Source":
+                # The query is already joined, so we can sort on the joined table's column
+                column_to_sort = Source.SSource
+                if direction == "desc":
+                    order_by_clauses.append(column_to_sort.desc())
                 else:
-                    order_by_clauses.append(
-                        column.desc() if direction == "desc" else column.asc()
-                    )
-        i += 1
+                    order_by_clauses.append(column_to_sort.asc())
+            else:
+                # Handle all other fields on the RepairWorkOrder model
+                column = getattr(RepairWorkOrder, field, None)
+                if column:
+                    if field in ["RepairOrderNo", "CustID"]:
+                        cast_column = cast(column, Integer)
+                        order_by_clauses.append(
+                            cast_column.desc() if direction == "desc" else cast_column.asc()
+                        )
+
+                    elif field in ["DateIn", "DateCompleted"]:
+                        # Use CASE with multiple formats for dates
+                        cast_column = case(
+                            (
+                                column.op("~")(
+                                    "^[0-1][0-9]/[0-3][0-9]/[0-9]{2} [0-2][0-9]:[0-5][0-9]:[0-5][0-9]$"
+                                ),
+                                func.to_date(column, "MM/DD/YY HH24:MI:SS"),
+                            ),
+                            (
+                                column.op("~")("^[0-2][0-9]{3}-[0-1][0-9]-[0-3][0-9]$"),
+                                func.to_date(column, "YYYY-MM-DD"),
+                            ),
+                            else_=literal(None),
+                        )
+                        order_by_clauses.append(
+                            cast_column.desc().nulls_last()
+                            if direction == "desc"
+                            else cast_column.asc().nulls_last()
+                        )
+                    else:
+                        order_by_clauses.append(
+                            column.desc() if direction == "desc" else column.asc()
+                        )
+            i += 1
 
     # Default sorting if none provided
     if order_by_clauses:
         query = query.order_by(*order_by_clauses)
-    else:
+    elif db.engine.dialect.name != 'sqlite':
         query = query.order_by(
             case(
                 (
