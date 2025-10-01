@@ -122,9 +122,8 @@
                                                    class="form-control" 
                                                    id="SourcePhone" 
                                                    name="SourcePhone"
-                                                   value="{{ source.SourcePhone if edit_mode else (form_data.SourcePhone if form_data else '') }}"
+                                                   value="{{ source.SourcePhone | format_phone if edit_mode else (form_data.SourcePhone | format_phone if form_data else '') }}"
                                                    placeholder="e.g. 555-123-4567">
-                                            <div class="form-text">Numbers only (no spaces or dashes)</div>
                                         </div>
                                         
                                         <div class="mb-3">
@@ -133,15 +132,15 @@
                                                    class="form-control" 
                                                    id="SourceFax" 
                                                    name="SourceFax"
-                                                   value="{{ source.SourceFax if edit_mode else (form_data.SourceFax if form_data else '') }}"
+                                                   value="{{ source.SourceFax | format_phone if edit_mode else (form_data.SourceFax | format_phone if form_data else '') }}"
                                                    placeholder="e.g. 555-123-4567">
                                         </div>
                                         
                                         <div class="mb-3">
                                             <label for="SourceEmail" class="form-label">Email</label>
-                                            <input type="email" 
-                                                   class="form-control" 
-                                                   id="SourceEmail" 
+                                            <input type="email"
+                                                   class="form-control"
+                                                   id="SourceEmail"
                                                    name="SourceEmail"
                                                    value="{{ source.clean_email() if edit_mode else (form_data.SourceEmail if form_data else '') }}"
                                                    placeholder="email@example.com">

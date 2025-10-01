@@ -248,6 +248,31 @@ function initializeGlobalShortcuts() {
     console.log('Global navigation shortcuts initialized');
 }
 
+// Test this func out to see if it works for the numpad, otherwise not messing with this anymore..
+// function initializeGlobalShortcuts() {
+//     // Define key → route mapping
+//     const shortcuts = {
+//         '1': { path: '/sources', label: 'Sources' },
+//         '2': { path: '/customers', label: 'Customers' },
+//         '3': { path: '/work_orders', label: 'Work Orders' },
+//         '4': { path: '/repair_work_orders', label: 'Repair Orders' },
+//         '5': { path: '/cleaning_queue/cleaning-queue', label: 'Queue' },
+//     };
+
+//     // Use vanilla JS to handle keydown events
+//     document.addEventListener('keydown', (e) => {
+//         // Check for Ctrl + Shift + number (works for both top-row and numpad)
+//         if (e.ctrlKey && e.shiftKey && Object.keys(shortcuts).includes(e.key)) {
+//             e.preventDefault();
+//             const { path, label } = shortcuts[e.key];
+//             window.location.href = path;
+//             console.log(`Navigating to ${label}`);
+//         }
+//     });
+
+//     console.log('Global navigation shortcuts initialized');
+// }
+
 
 // Table Navigation Module
 let tableNavigator = null;

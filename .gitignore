@@ -139,3 +139,5 @@ cicd/
 
 deploy_watcher.out
 *.csv
+
+claude.md
