@@ -132,13 +132,13 @@
                                             {% for wo in recent_work_orders %}
                                             <tr class="py-2">
                                                 <td class="py-2">
-                                                    {% if wo.is_sail_order %}
-                                                    <i class='fa-solid fa-sailboat'></i>
-
-                                                    {% endif %}
+                                                    
                                                     <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo) }}" class="wo-number" onclick="viewWorkOrder('{{ wo.WorkOrderNo }}')">
                                                         {{ wo.WorkOrderNo }}
                                                     </a>
+                                                    {% if wo.is_sail_order %}
+                                                    <i class='fa-solid fa-sailboat'></i>
+                                                    {% endif %}
                                                     {% if wo.RushOrder == 'Y' %}
                                                         <span class="rush-indicator" title="Rush Order">⚡</span>
                                                     {% endif %}
