@@ -54,20 +54,21 @@ class TestInitializeQueuePositions:
     def test_initialize_queue_positions(self, app):
         """Test that initialize_queue_positions_for_unassigned assigns correct positions."""
         with app.app_context():
-            wo1 = WorkOrder(WorkOrderNo="1001", queue_position=1)
-            wo2 = WorkOrder(WorkOrderNo="1002", queue_position=None)
-            wo3 = WorkOrder(WorkOrderNo="1003", queue_position=0)
-            wo4 = WorkOrder(WorkOrderNo="1004", queue_position=None)
+            # CustID is required (NOT NULL constraint)
+            wo1 = WorkOrder(WorkOrderNo="1001", CustID="100", QueuePosition=1)
+            wo2 = WorkOrder(WorkOrderNo="1002", CustID="100", QueuePosition=None)
+            wo3 = WorkOrder(WorkOrderNo="1003", CustID="100", QueuePosition=0)
+            wo4 = WorkOrder(WorkOrderNo="1004", CustID="100", QueuePosition=None)
 
             db.session.add_all([wo1, wo2, wo3, wo4])
             db.session.commit()
 
             initialize_queue_positions_for_unassigned()
 
-            assert WorkOrder.query.get("1001").queue_position == 1
-            assert WorkOrder.query.get("1002").queue_position == 2
-            assert WorkOrder.query.get("1003").queue_position == 0
-            assert WorkOrder.query.get("1004").queue_position == 3
+            assert WorkOrder.query.get("1001").QueuePosition == 1
+            assert WorkOrder.query.get("1002").QueuePosition == 2
+            assert WorkOrder.query.get("1003").QueuePosition == 0
+            assert WorkOrder.query.get("1004").QueuePosition == 3
 
             db.session.query(WorkOrder).delete()
             db.session.commit()

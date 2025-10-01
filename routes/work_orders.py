@@ -43,7 +43,7 @@ def upload_work_order_file(work_order_no):
     saved_file = save_work_order_file(work_order_no, file)
     if saved_file:
         return jsonify(
-            {"message": "File uploaded successfully", "file_id": saved_file.FileID}
+            {"message": "File uploaded successfully", "file_id": saved_file.id}
         )
     return jsonify({"error": "Invalid file type"}), 400
 
@@ -113,7 +113,7 @@ def utility_processor():
 def list_work_order_files(work_order_no):
     work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
     files = [
-        {"id": f.FileID, "filename": f.Filename, "uploaded": f.UploadDate.isoformat()}
+        {"id": f.id, "filename": f.filename, "uploaded": f.uploaded_at.isoformat()}
         for f in work_order.files
     ]
     return jsonify(files)

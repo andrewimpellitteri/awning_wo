@@ -27,15 +27,26 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest pytest-cov
 
-      - name: Run unit tests
+      - name: Run all tests
         run: |
-          pytest -v -m "unit" --cov=. --cov-report=term-missing --cov-report=json --maxfail=5 --disable-warnings
-
-      - name: Run integration tests
-        run: |
-          pytest -v -m "integration" --cov=. --cov-append --cov-report=term-missing --cov-report=json --maxfail=5 --disable-warnings
+          # Runs comprehensive test suite including:
+          # - Model tests (test_models.py)
+          # - Authentication tests (test_auth.py)
+          # - Authorization tests (test_decorators.py)
+          # - Customer routes tests (test_customers_routes.py)
+          # - Work order routes tests (test_work_orders_routes.py)
+          # - Repair order routes tests (test_repair_orders_routes.py)
+          # - Source routes tests (test_source_routes.py)
+          # - Queue routes tests (test_queue_routes.py)
+          # - Utility helper tests (test_utils_helpers.py)
+          # - Configuration tests (test_config.py)
+          # - Basic setup tests (test_basic_setup.py)
+          # - Work order unit tests (work_order_test.py)
+          pytest test/ -v --cov=. --cov-report=term-missing --cov-report=json --maxfail=10 --disable-warnings
+        env:
+          FLASK_ENV: testing
+          TESTING: true
 
       - name: Extract coverage percentage
         run: |

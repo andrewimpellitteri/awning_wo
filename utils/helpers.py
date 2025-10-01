@@ -25,18 +25,22 @@ from models.work_order import WorkOrder
 from extensions import db
 
 def initialize_queue_positions_for_unassigned():
-    """Assigns sequential queue positions to work orders that don't have one."""
+    """Assigns sequential queue positions to work orders that don't have one.
+
+    NOTE: This is a simple version for testing. The production version with
+    priority handling is in routes/queue.py
+    """
     with db.session.no_autoflush:
         work_orders = WorkOrder.query.all()
         max_position = -1
         for wo in work_orders:
-            if wo.queue_position is not None and wo.queue_position > max_position:
-                max_position = wo.queue_position
+            if wo.QueuePosition is not None and wo.QueuePosition > max_position:
+                max_position = wo.QueuePosition
 
         for wo in work_orders:
-            if wo.queue_position is None:
+            if wo.QueuePosition is None:
                 max_position += 1
-                wo.queue_position = max_position
+                wo.QueuePosition = max_position
         db.session.commit()
 
 import os
