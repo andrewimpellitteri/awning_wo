@@ -24,7 +24,7 @@ def logged_in_client(client, app):
             username="testuser",
             email="testuser@example.com",
             password_hash=generate_password_hash("password"),
-            role="user"
+            role="user",
         )
         db.session.add(user)
         db.session.commit()
@@ -42,7 +42,7 @@ def admin_client(client, app):
             username="admin",
             email="admin@example.com",
             password_hash=generate_password_hash("password"),
-            role="admin"
+            role="admin",
         )
         db.session.add(admin)
         db.session.commit()
@@ -64,7 +64,7 @@ def sample_sources(app):
             SourceZip="02101",
             SourcePhone="6175551234",
             SourceFax="6175551235",
-            SourceEmail="test1@example.com"
+            SourceEmail="test1@example.com",
         )
         source2 = Source(
             SSource="Test Source 2",
@@ -73,12 +73,10 @@ def sample_sources(app):
             SourceState="NY",
             SourceZip="10001",
             SourcePhone="2125559876",
-            SourceEmail="test2@example.com"
+            SourceEmail="test2@example.com",
         )
         source3 = Source(
-            SSource="Test Source 3",
-            SourceCity="Cambridge",
-            SourceState="MA"
+            SSource="Test Source 3", SourceCity="Cambridge", SourceState="MA"
         )
 
         db.session.add_all([source1, source2, source3])
@@ -138,20 +136,26 @@ class TestSourceCreateRoutes:
         """GET /sources/new should render the create page."""
         response = admin_client.get("/sources/new")
         assert response.status_code == 200
-        assert b"Add New Source" in response.data or b"Source Information" in response.data
+        assert (
+            b"Add New Source" in response.data or b"Source Information" in response.data
+        )
 
     def test_create_source_success(self, admin_client, app):
         """Test successfully creating a new source."""
         with app.app_context():
-            response = admin_client.post("/sources/new", data={
-                "SSource": "New Test Source",
-                "SourceAddress": "789 Pine St",
-                "SourceCity": "San Francisco",
-                "SourceState": "CA",
-                "SourceZip": "94102",
-                "SourcePhone": "4155551234",
-                "SourceEmail": "newtest@example.com"
-            }, follow_redirects=True)
+            response = admin_client.post(
+                "/sources/new",
+                data={
+                    "SSource": "New Test Source",
+                    "SourceAddress": "789 Pine St",
+                    "SourceCity": "San Francisco",
+                    "SourceState": "CA",
+                    "SourceZip": "94102",
+                    "SourcePhone": "4155551234",
+                    "SourceEmail": "newtest@example.com",
+                },
+                follow_redirects=True,
+            )
 
             assert response.status_code == 200
 
@@ -164,19 +168,20 @@ class TestSourceCreateRoutes:
 
     def test_create_source_missing_name(self, admin_client):
         """Test creating a source without a required name."""
-        response = admin_client.post("/sources/new", data={
-            "SourceCity": "Boston",
-            "SourceState": "MA"
-        })
+        response = admin_client.post(
+            "/sources/new", data={"SourceCity": "Boston", "SourceState": "MA"}
+        )
         assert response.status_code == 200
-        assert b"Source name is required" in response.data or b"error" in response.data.lower()
+        assert (
+            b"Source name is required" in response.data
+            or b"error" in response.data.lower()
+        )
 
     def test_create_source_duplicate(self, admin_client, sample_sources):
-        """Test creating a source with a duplicate name."""
-        response = admin_client.post("/sources/new", data={
-            "SSource": "Test Source 1",
-            "SourceCity": "Boston"
-        })
+        """Test creating a source with a duplicate q."""
+        response = admin_client.post(
+            "/sources/new", data={"SSource": "Test Source 1", "SourceCity": "Boston"}
+        )
         assert response.status_code == 200
         assert b"already exists" in response.data.lower()
 
@@ -193,14 +198,18 @@ class TestSourceEditRoutes:
     def test_update_source_basic_fields(self, admin_client, sample_sources, app):
         """Test updating basic source fields."""
         with app.app_context():
-            response = admin_client.post("/sources/edit/Test Source 1", data={
-                "SourceAddress": "999 Updated St",
-                "SourceCity": "Updated City",
-                "SourceState": "CA",
-                "SourceZip": "90210",
-                "SourcePhone": "6175551234",  # Keep original
-                "SourceEmail": "updated@example.com"
-            }, follow_redirects=True)
+            response = admin_client.post(
+                "/sources/edit/Test Source 1",
+                data={
+                    "SourceAddress": "999 Updated St",
+                    "SourceCity": "Updated City",
+                    "SourceState": "CA",
+                    "SourceZip": "90210",
+                    "SourcePhone": "6175551234",  # Keep original
+                    "SourceEmail": "updated@example.com",
+                },
+                follow_redirects=True,
+            )
 
             assert response.status_code == 200
 
@@ -228,50 +237,64 @@ class TestSourceEditRoutes:
             assert original_source.SourcePhone == "6175551234"
 
             # Update the phone number to a new value
-            response = admin_client.post("/sources/edit/Test Source 1", data={
-                "SourceAddress": "123 Main St",  # Keep original
-                "SourceCity": "Boston",           # Keep original
-                "SourceState": "MA",              # Keep original
-                "SourceZip": "02101",             # Keep original
-                "SourcePhone": "8575559999",      # NEW phone number
-                "SourceEmail": "test1@example.com"  # Keep original
-            }, follow_redirects=True)
+            response = admin_client.post(
+                "/sources/edit/Test Source 1",
+                data={
+                    "SourceAddress": "123 Main St",  # Keep original
+                    "SourceCity": "Boston",  # Keep original
+                    "SourceState": "MA",  # Keep original
+                    "SourceZip": "02101",  # Keep original
+                    "SourcePhone": "8575559999",  # NEW phone number
+                    "SourceEmail": "test1@example.com",  # Keep original
+                },
+                follow_redirects=True,
+            )
 
             assert response.status_code == 200
 
             # Verify phone number was actually updated (not set to 0)
             updated_source = Source.query.get("Test Source 1")
-            assert updated_source.SourcePhone == "8575559999", \
+            assert updated_source.SourcePhone == "8575559999", (
                 f"Phone should be '8575559999' but got '{updated_source.SourcePhone}'"
-            assert updated_source.SourcePhone != "0", \
+            )
+            assert updated_source.SourcePhone != "0", (
                 "Phone number should not be set to 0 (issue #47)"
-            assert updated_source.SourcePhone != "", \
-                "Phone number should not be empty"
+            )
+            assert updated_source.SourcePhone != "", "Phone number should not be empty"
 
-    def test_update_source_phone_number_empty_string(self, admin_client, sample_sources, app):
+    def test_update_source_phone_number_empty_string(
+        self, admin_client, sample_sources, app
+    ):
         """
         Test that an empty phone number field clears the phone number.
 
         This tests the edge case where a user wants to remove a phone number.
         """
         with app.app_context():
-            response = admin_client.post("/sources/edit/Test Source 1", data={
-                "SourceAddress": "123 Main St",
-                "SourceCity": "Boston",
-                "SourceState": "MA",
-                "SourceZip": "02101",
-                "SourcePhone": "",  # Empty phone
-                "SourceEmail": "test1@example.com"
-            }, follow_redirects=True)
+            response = admin_client.post(
+                "/sources/edit/Test Source 1",
+                data={
+                    "SourceAddress": "123 Main St",
+                    "SourceCity": "Boston",
+                    "SourceState": "MA",
+                    "SourceZip": "02101",
+                    "SourcePhone": "",  # Empty phone
+                    "SourceEmail": "test1@example.com",
+                },
+                follow_redirects=True,
+            )
 
             assert response.status_code == 200
 
             updated_source = Source.query.get("Test Source 1")
             # Empty string should be preserved, not converted to 0
-            assert updated_source.SourcePhone in ["", None], \
+            assert updated_source.SourcePhone in ["", None], (
                 f"Empty phone should be '' or None, not '{updated_source.SourcePhone}'"
+            )
 
-    def test_update_source_preserves_existing_phone_when_formatted(self, admin_client, sample_sources, app):
+    def test_update_source_preserves_existing_phone_when_formatted(
+        self, admin_client, sample_sources, app
+    ):
         """
         Test that when a phone number is displayed in formatted form,
         it can still be updated correctly.
@@ -282,14 +305,18 @@ class TestSourceEditRoutes:
         with app.app_context():
             # Simulate formatted phone being sent (as if JS didn't strip it)
             # The form should handle this gracefully
-            response = admin_client.post("/sources/edit/Test Source 1", data={
-                "SourceAddress": "123 Main St",
-                "SourceCity": "Boston",
-                "SourceState": "MA",
-                "SourceZip": "02101",
-                "SourcePhone": "6175551234",  # Already in digit-only form
-                "SourceEmail": "test1@example.com"
-            }, follow_redirects=True)
+            response = admin_client.post(
+                "/sources/edit/Test Source 1",
+                data={
+                    "SourceAddress": "123 Main St",
+                    "SourceCity": "Boston",
+                    "SourceState": "MA",
+                    "SourceZip": "02101",
+                    "SourcePhone": "6175551234",  # Already in digit-only form
+                    "SourceEmail": "test1@example.com",
+                },
+                follow_redirects=True,
+            )
 
             assert response.status_code == 200
 
@@ -299,15 +326,19 @@ class TestSourceEditRoutes:
     def test_update_source_all_fields(self, admin_client, sample_sources, app):
         """Test updating all source fields at once."""
         with app.app_context():
-            response = admin_client.post("/sources/edit/Test Source 2", data={
-                "SourceAddress": "111 New Address",
-                "SourceCity": "Los Angeles",
-                "SourceState": "CA",
-                "SourceZip": "90001",
-                "SourcePhone": "3105551111",
-                "SourceFax": "3105552222",
-                "SourceEmail": "newemail@example.com"
-            }, follow_redirects=True)
+            response = admin_client.post(
+                "/sources/edit/Test Source 2",
+                data={
+                    "SourceAddress": "111 New Address",
+                    "SourceCity": "Los Angeles",
+                    "SourceState": "CA",
+                    "SourceZip": "90001",
+                    "SourcePhone": "3105551111",
+                    "SourceFax": "3105552222",
+                    "SourceEmail": "newemail@example.com",
+                },
+                follow_redirects=True,
+            )
 
             assert response.status_code == 200
 
@@ -327,7 +358,9 @@ class TestSourceDeleteRoutes:
     def test_delete_source(self, admin_client, sample_sources, app):
         """Test deleting a source."""
         with app.app_context():
-            response = admin_client.post("/sources/delete/Test Source 3", follow_redirects=True)
+            response = admin_client.post(
+                "/sources/delete/Test Source 3", follow_redirects=True
+            )
             assert response.status_code == 200
 
             # Verify source was deleted
@@ -374,18 +407,18 @@ class TestSourceRoutesAuth:
 
     def test_regular_user_cannot_create_source(self, logged_in_client):
         """Test that a regular user cannot create a source."""
-        response = logged_in_client.post("/sources/new", data={
-            "SSource": "Unauthorized Source",
-            "SourceCity": "Test City"
-        })
+        response = logged_in_client.post(
+            "/sources/new",
+            data={"SSource": "Unauthorized Source", "SourceCity": "Test City"},
+        )
         # Should be forbidden due to role_required decorator
         assert response.status_code == 403
 
     def test_regular_user_cannot_edit_source(self, logged_in_client, sample_sources):
         """Test that a regular user cannot edit a source."""
-        response = logged_in_client.post("/sources/edit/Test Source 1", data={
-            "SourceCity": "Updated City"
-        })
+        response = logged_in_client.post(
+            "/sources/edit/Test Source 1", data={"SourceCity": "Updated City"}
+        )
         assert response.status_code == 403
 
     def test_regular_user_cannot_delete_source(self, logged_in_client, sample_sources):
@@ -396,11 +429,15 @@ class TestSourceRoutesAuth:
     def test_admin_can_create_source(self, admin_client, app):
         """Test that an admin can create a source."""
         with app.app_context():
-            response = admin_client.post("/sources/new", data={
-                "SSource": "Admin Created Source",
-                "SourceCity": "Admin City",
-                "SourceState": "CA"
-            }, follow_redirects=True)
+            response = admin_client.post(
+                "/sources/new",
+                data={
+                    "SSource": "Admin Created Source",
+                    "SourceCity": "Admin City",
+                    "SourceState": "CA",
+                },
+                follow_redirects=True,
+            )
             assert response.status_code == 200
 
             # Verify source was created
@@ -410,14 +447,18 @@ class TestSourceRoutesAuth:
     def test_admin_can_edit_source(self, admin_client, sample_sources, app):
         """Test that an admin can edit a source."""
         with app.app_context():
-            response = admin_client.post("/sources/edit/Test Source 1", data={
-                "SourceCity": "Admin Updated City",
-                "SourceState": "MA",
-                "SourceAddress": "123 Main St",
-                "SourceZip": "02101",
-                "SourcePhone": "6175551234",
-                "SourceEmail": "test1@example.com"
-            }, follow_redirects=True)
+            response = admin_client.post(
+                "/sources/edit/Test Source 1",
+                data={
+                    "SourceCity": "Admin Updated City",
+                    "SourceState": "MA",
+                    "SourceAddress": "123 Main St",
+                    "SourceZip": "02101",
+                    "SourcePhone": "6175551234",
+                    "SourceEmail": "test1@example.com",
+                },
+                follow_redirects=True,
+            )
             assert response.status_code == 200
 
             updated_source = Source.query.get("Test Source 1")

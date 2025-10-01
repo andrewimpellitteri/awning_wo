@@ -26,8 +26,8 @@ def logged_in_client(client, app):
 def sample_customers(app):
     """Create sample customers for testing."""
     with app.app_context():
-        source1 = Source(SSource="SRC1", SName="Source 1")
-        source2 = Source(SSource="SRC2", SName="Source 2")
+        source1 = Source(SSource="SRC1")
+        source2 = Source(SSource="SRC2")
 
         cust1 = Customer(CustID="123", Name="Customer 1", Source="SRC1", State="CA")
         cust2 = Customer(CustID="124", Name="Customer 2", Source="SRC2", State="NY")
@@ -87,7 +87,9 @@ class TestCustomerRoutes:
 
     def test_sorting(self, client, sample_customers):
         """Test sorting functionality."""
-        response = client.get("/customers/api/customers?sorters[0][field]=Name&sorters[0][dir]=desc")
+        response = client.get(
+            "/customers/api/customers?sorters[0][field]=Name&sorters[0][dir]=desc"
+        )
         assert response.status_code == 200
         data = response.get_json()
         assert data["data"][0]["Name"] == "Customer 3"
@@ -123,11 +125,12 @@ class TestCustomerRoutes:
         last_cust = Customer.query.order_by(Customer.CustID.desc()).first()
         next_cust_id = int(last_cust.CustID) + 1
 
-        response = client.post("/customers/new", data={
-            "Name": "New Customer",
-            "Source": "SRC1"
-        }, follow_redirects=True)
-        assert response.status_code == 200 # After redirect
+        response = client.post(
+            "/customers/new",
+            data={"Name": "New Customer", "Source": "SRC1"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200  # After redirect
         assert f"/customers/view/{next_cust_id}" in response.request.path
 
         new_cust = Customer.query.get(next_cust_id)
@@ -136,9 +139,7 @@ class TestCustomerRoutes:
 
     def test_create_customer_invalid_data(self, client, sample_customers):
         """Test creating a customer with invalid data."""
-        response = client.post("/customers/new", data={
-            "Source": "SRC1"
-        })
+        response = client.post("/customers/new", data={"Source": "SRC1"})
         assert response.status_code == 200
         assert b"Name is required." in response.data
 
@@ -150,11 +151,12 @@ class TestCustomerRoutes:
 
     def test_update_customer(self, client, sample_customers):
         """Test updating a customer."""
-        response = client.post("/customers/edit/123", data={
-            "Name": "Updated Customer Name",
-            "Source": "SRC1"
-        }, follow_redirects=True)
-        assert response.status_code == 200 # After redirect
+        response = client.post(
+            "/customers/edit/123",
+            data={"Name": "Updated Customer Name", "Source": "SRC1"},
+            follow_redirects=True,
+        )
+        assert response.status_code == 200  # After redirect
         assert b"Updated Customer Name" in response.data
 
         updated_cust = Customer.query.get("123")
@@ -175,27 +177,32 @@ class TestCustomerRoutes:
         assert response.status_code == 200
         assert response.is_json
         data = response.get_json()
-        assert data["SName"] == "Source 1"
+        assert data["SSource"] == "Source 1"
 
 
 class TestCustomerRoutesAuth:
-    def test_regular_user_cannot_create_customer(self, logged_in_client, sample_customers):
+    def test_regular_user_cannot_create_customer(
+        self, logged_in_client, sample_customers
+    ):
         """Test that a regular user cannot create a customer."""
-        response = logged_in_client.post("/customers/new", data={
-            "Name": "New Customer",
-            "Source": "SRC1"
-        })
+        response = logged_in_client.post(
+            "/customers/new", data={"Name": "New Customer", "Source": "SRC1"}
+        )
         assert response.status_code == 403
 
-    def test_regular_user_cannot_edit_customer(self, logged_in_client, sample_customers):
+    def test_regular_user_cannot_edit_customer(
+        self, logged_in_client, sample_customers
+    ):
         """Test that a regular user cannot edit a customer."""
-        response = logged_in_client.post("/customers/edit/123", data={
-            "Name": "Updated Customer Name",
-            "Source": "SRC1"
-        })
+        response = logged_in_client.post(
+            "/customers/edit/123",
+            data={"Name": "Updated Customer Name", "Source": "SRC1"},
+        )
         assert response.status_code == 403
 
-    def test_regular_user_cannot_delete_customer(self, logged_in_client, sample_customers):
+    def test_regular_user_cannot_delete_customer(
+        self, logged_in_client, sample_customers
+    ):
         """Test that a regular user cannot delete a customer."""
         response = logged_in_client.post("/customers/delete/123")
         assert response.status_code == 403

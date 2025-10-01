@@ -194,6 +194,26 @@ body {
     border-color: var(--border-color);
 }
 
+.btn-add-item {
+  background-color: var(--primary);   /* pulls from your theme vars */
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn-add-item:hover {
+  background-color: var(--primary-hover, #0b5ed7); /* optional hover var */
+  transform: translateY(-1px);
+}
+
+.btn-add-item:active {
+  transform: translateY(0);
+}
+
+
 .alert {
     border-radius: 0.5rem;
     border-color: var(--border-color);
