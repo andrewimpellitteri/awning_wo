@@ -255,17 +255,13 @@ class TestRepairOrderRoutes:
 
     def test_update_repair_item(self, logged_in_client, sample_repair_order_with_items):
         """Test updating a repair item."""
-        # Get the actual item IDs from the database
-        items = RepairWorkOrderItem.query.filter_by(RepairOrderNo="2001").order_by(RepairWorkOrderItem.id).all()
-
         response = logged_in_client.post(
             "/repair_work_orders/2001/edit",
             data={
                 "CustID": "123",
                 "ROName": "Order with Items",
-                "existing_item_id[]": [items[0].id, items[1].id],
                 "existing_description[]": ["Updated Test Item 1", "Test Item 2"],
-                "existing_material[]": ["", ""],
+                "existing_material[]": ["A", "A"],
                 "existing_qty[]": ["1", "1"],
                 "existing_condition[]": ["", ""],
                 "existing_color[]": ["", ""],
@@ -277,31 +273,29 @@ class TestRepairOrderRoutes:
         assert response.status_code == 200
         assert b"Updated Test Item 1" in response.data
 
-        updated_item = RepairWorkOrderItem.query.get(items[0].id)
+        # Query by composite key (RepairOrderNo, Description, Material)
+        updated_item = RepairWorkOrderItem.query.get(("2001", "Updated Test Item 1", "A"))
+        assert updated_item is not None
         assert updated_item.Description == "Updated Test Item 1"
 
     def test_add_repair_item_on_edit(
         self, logged_in_client, sample_repair_order_with_items
     ):
         """Test adding a new repair item on edit."""
-        # Get the actual item IDs from the database
-        items = RepairWorkOrderItem.query.filter_by(RepairOrderNo="2001").order_by(RepairWorkOrderItem.id).all()
-
         response = logged_in_client.post(
             "/repair_work_orders/2001/edit",
             data={
                 "CustID": "123",
                 "ROName": "Order with Items",
-                "existing_item_id[]": [items[0].id, items[1].id],
                 "existing_description[]": ["Test Item 1", "Test Item 2"],
-                "existing_material[]": ["", ""],
+                "existing_material[]": ["A", "A"],
                 "existing_qty[]": ["1", "1"],
                 "existing_condition[]": ["", ""],
                 "existing_color[]": ["", ""],
                 "existing_size[]": ["", ""],
                 "existing_price[]": ["10", "20"],
                 "new_description[]": ["Newly Added Item"],
-                "new_material[]": [""],
+                "new_material[]": ["B"],
                 "new_qty[]": ["1"],
                 "new_condition[]": [""],
                 "new_color[]": [""],
@@ -321,31 +315,29 @@ class TestRepairOrderRoutes:
     def test_delete_repair_item_on_edit(
         self, logged_in_client, sample_repair_order_with_items
     ):
-        """Test deleting a repair item on edit."""
-        # Get the actual item IDs from the database
-        items = RepairWorkOrderItem.query.filter_by(RepairOrderNo="2001").order_by(RepairWorkOrderItem.id).all()
-
+        """Test deleting a repair item by not including it in the form submission."""
+        # Only submit Test Item 1, omitting Test Item 2 effectively deletes it
         response = logged_in_client.post(
             "/repair_work_orders/2001/edit",
             data={
                 "CustID": "123",
                 "ROName": "Order with Items",
-                "existing_item_id[]": [items[0].id],
                 "existing_description[]": ["Test Item 1"],
-                "existing_material[]": [""],
+                "existing_material[]": ["A"],
                 "existing_qty[]": ["1"],
                 "existing_condition[]": [""],
                 "existing_color[]": [""],
                 "existing_size[]": [""],
                 "existing_price[]": ["10"],
-                "delete_item[]": [items[1].id],  # Mark second item for deletion
             },
             follow_redirects=True,
         )
         assert response.status_code == 200
+        assert b"Test Item 1" in response.data
         assert b"Test Item 2" not in response.data
 
-        deleted_item = RepairWorkOrderItem.query.get(items[1].id)
+        # Verify Test Item 2 was deleted by checking it doesn't exist
+        deleted_item = RepairWorkOrderItem.query.get(("2001", "Test Item 2", "A"))
         assert deleted_item is None
 
     def test_generate_repair_order_pdf(

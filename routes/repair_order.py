@@ -530,8 +530,11 @@ def edit_repair_order(repair_order_no):
             repair_order.LOCATION = request.form.get("LOCATION")
             repair_order.DATEOUT = request.form.get("DATEOUT")
 
-            # Handle existing items updates
-            existing_item_ids = request.form.getlist("existing_item_id[]")
+            # Handle items: delete all existing and recreate from form data
+            # This is simpler than trying to update items with composite keys
+            RepairWorkOrderItem.query.filter_by(RepairOrderNo=repair_order_no).delete()
+
+            # Get existing item data from form
             existing_descriptions = request.form.getlist("existing_description[]")
             existing_materials = request.form.getlist("existing_material[]")
             existing_qtys = request.form.getlist("existing_qty[]")
@@ -539,38 +542,22 @@ def edit_repair_order(repair_order_no):
             existing_colors = request.form.getlist("existing_color[]")
             existing_sizes = request.form.getlist("existing_size[]")
             existing_prices = request.form.getlist("existing_price[]")
-            items_to_delete = request.form.getlist("delete_item[]")
 
-            # Delete marked items
-            if items_to_delete:
-                RepairWorkOrderItem.query.filter(
-                    RepairWorkOrderItem.id.in_(items_to_delete)
-                ).delete(synchronize_session=False)
-
-            # Update existing items
-            for i, item_id in enumerate(existing_item_ids):
-                if item_id and i < len(existing_descriptions):
-                    item = RepairWorkOrderItem.query.get(item_id)
-                    if item:
-                        item.Description = existing_descriptions[i]
-                        item.Material = (
-                            existing_materials[i] if i < len(existing_materials) else ""
-                        )
-                        item.Qty = existing_qtys[i] if i < len(existing_qtys) else "1"
-                        item.Condition = (
-                            existing_conditions[i]
-                            if i < len(existing_conditions)
-                            else ""
-                        )
-                        item.Color = (
-                            existing_colors[i] if i < len(existing_colors) else ""
-                        )
-                        item.SizeWgt = (
-                            existing_sizes[i] if i < len(existing_sizes) else ""
-                        )
-                        item.Price = (
-                            existing_prices[i] if i < len(existing_prices) else ""
-                        )
+            # Recreate existing items (that weren't marked for deletion)
+            for i, descrip in enumerate(existing_descriptions):
+                if descrip and descrip.strip():
+                    repair_item = RepairWorkOrderItem(
+                        RepairOrderNo=repair_order_no,
+                        CustID=request.form.get("CustID"),
+                        Description=descrip,
+                        Material=existing_materials[i] if i < len(existing_materials) else "",
+                        Qty=existing_qtys[i] if i < len(existing_qtys) else "1",
+                        Condition=existing_conditions[i] if i < len(existing_conditions) else "",
+                        Color=existing_colors[i] if i < len(existing_colors) else "",
+                        SizeWgt=existing_sizes[i] if i < len(existing_sizes) else "",
+                        Price=existing_prices[i] if i < len(existing_prices) else "",
+                    )
+                    db.session.add(repair_item)
 
             # Handle selected items from customer inventory
             from models.work_order import WorkOrderItem

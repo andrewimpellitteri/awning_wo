@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Edit Repair Work Order #{{ repair_order.RepairOrderNo }}{% endblock %}
+{% block title %}Edit Repair Work Order #{{ repair_work_order.RepairOrderNo }}{% endblock %}
 
 {% block styles %}
 {{ super() }}
@@ -31,11 +31,11 @@
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h1 class="h3"><i class="fas fa-edit me-2"></i>Edit Work Order #R{{ repair_order.RepairOrderNo }}</h1>
+                    <h1 class="h3"><i class="fas fa-edit me-2"></i>Edit Work Order #R{{ repair_work_order.RepairOrderNo }}</h1>
                     <p class="text-muted mb-0">Modify work order details and manage items</p>
                 </div>
                 <div>
-                    <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=repair_order.RepairOrderNo) }}" class="btn btn-outline-secondary me-2">
+                    <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=repair_work_order.RepairOrderNo) }}" class="btn btn-outline-secondary me-2">
                         <i class="fas fa-eye me-1"></i>View Order
                     </a>
                     <a href="{{ url_for('repair_work_orders.list_repair_work_orders') }}" class="btn btn-outline-secondary">
@@ -52,10 +52,10 @@
                             <div class="card-header">
                                 <h5 class="card-title mb-0">
                                     <i class="fas fa-info-circle me-2"></i>Work Order Information
-                                    {% if repair_order.RushOrder == "YES" %}
+                                    {% if repair_work_order.RushOrder == "YES" %}
                                         <span class="badge bg-warning text-dark ms-2"><i class="fas fa-bolt me-1"></i>Rush</span>
                                     {% endif %}
-                                    {% if repair_order.FirmRush == "YES" %}
+                                    {% if repair_work_order.FirmRush == "YES" %}
                                         <span class="badge bg-danger ms-2"><i class="fas fa-exclamation-triangle me-1"></i>Firm Rush</span>
                                     {% endif %}
                                 </h5>
@@ -66,19 +66,19 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Customer ID <span class="text-danger">*</span></div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" name="CustID" value="{{ repair_order.CustID or '' }}" required>
+                                                <input type="text" class="form-control" name="CustID" value="{{ repair_work_order.CustID or '' }}" required>
                                             </div>
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">Work Order Number</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" value="R{{ repair_order.RepairOrderNo }}" readonly>
+                                                <input type="text" class="form-control" value="R{{ repair_work_order.RepairOrderNo }}" readonly>
                                             </div>
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">RO Name</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" name="ROName" value="{{ repair_order.ROName or '' }}">
+                                                <input type="text" class="form-control" name="ROName" value="{{ repair_work_order.ROName or '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">
@@ -86,8 +86,8 @@
                                             <div class="detail-value">
                                                 <select class="form-select" name="STORAGE">
                                                     <option value="">Select storage type</option>
-                                                    <option value="seasonal" {% if repair_order.STORAGE == 'seasonal' %}selected{% endif %}>Seasonal</option>
-                                                    <option value="temporary" {% if repair_order.STORAGE == 'temporary' %}selected{% endif %}>Temporary</option>
+                                                    <option value="seasonal" {% if repair_work_order.STORAGE == 'seasonal' %}selected{% endif %}>Seasonal</option>
+                                                    <option value="temporary" {% if repair_work_order.STORAGE == 'temporary' %}selected{% endif %}>Temporary</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -96,20 +96,20 @@
                                             <div class="detail-label">Location</div>
                                             <div class="detail-value">
                                                 <input type="text" class="form-control" name="LOCATION" 
-                                                       value="{{ repair_order.LOCATION or repair_order.RackNo or '' }}" 
+                                                       value="{{ repair_work_order.LOCATION or repair_work_order.RackNo or '' }}" 
                                                        placeholder="Location/Rack number">
                                             </div>
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">Item Type</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" name="ITEM_TYPE" value="{{ repair_order.ITEM_TYPE or '' }}">
+                                                <input type="text" class="form-control" name="ITEM_TYPE" value="{{ repair_work_order.ITEM_TYPE or '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">Type of Repair</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" name="TYPE_OF_REPAIR" value="{{ repair_order.TYPE_OF_REPAIR or '' }}">
+                                                <input type="text" class="form-control" name="TYPE_OF_REPAIR" value="{{ repair_work_order.TYPE_OF_REPAIR or '' }}">
                                             </div>
                                         </div>
                                     </div>
@@ -117,13 +117,13 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Date Required</div>
                                             <div class="detail-value">
-                                                <input type="date" class="form-control" name="DateRequired" value="{{ repair_order.DateRequired or '' }}">
+                                                <input type="date" class="form-control" name="DateRequired" value="{{ repair_work_order.DateRequired or '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">Date Completed</div>
                                             <div class="detail-value">
-                                                <input type="date" class="form-control" name="DateCompleted" value="{{ repair_order.DateCompleted or '' }}">
+                                                <input type="date" class="form-control" name="DateCompleted" value="{{ repair_work_order.DateCompleted or '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">
@@ -132,7 +132,7 @@
                                                 <select class="form-select" name="SOURCE">
                                                     <option value="">Select Source</option>
                                                     {% for source in sources %}
-                                                    <option value="{{ source.SSource }}" {% if repair_order.SOURCE == source.SSource %}selected{% endif %}>{{ source.SSource }}</option>
+                                                    <option value="{{ source.SSource }}" {% if repair_work_order.SOURCE == source.SSource %}selected{% endif %}>{{ source.SSource }}</option>
                                                     {% endfor %}
                                                 </select>
                                             </div>
@@ -141,13 +141,13 @@
                                             <div class="detail-label">Priority Options</div>
                                             <div class="detail-value">
                                                 <div class="form-check form-check-inline">
-                                                    <input class="form-check-input" type="checkbox" id="RushOrder" name="RushOrder" value="1" {% if repair_order.RushOrder == "YES" %}checked{% endif %}>
+                                                    <input class="form-check-input" type="checkbox" id="RushOrder" name="RushOrder" value="1" {% if repair_work_order.RushOrder == "YES" %}checked{% endif %}>
                                                     <label class="form-check-label" for="RushOrder">
                                                         <span class="badge bg-warning text-dark"><i class="fas fa-bolt me-1"></i>Rush Order</span>
                                                     </label>
                                                 </div>
                                                 <div class="form-check form-check-inline">
-                                                    <input class="form-check-input" type="checkbox" id="FirmRush" name="FirmRush" value="1" {% if repair_order.FirmRush == "YES" %}checked{% endif %}>
+                                                    <input class="form-check-input" type="checkbox" id="FirmRush" name="FirmRush" value="1" {% if repair_work_order.FirmRush == "YES" %}checked{% endif %}>
                                                     <label class="form-check-label" for="FirmRush">
                                                         <span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Firm Rush</span>
                                                     </label>
@@ -157,7 +157,7 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Customer Price</div>
                                             <div class="detail-value">
-                                                <input type="number" step="0.01" class="form-control" name="CUSTOMERPRICE" value="{{ repair_order.CUSTOMERPRICE or '' }}">
+                                                <input type="number" step="0.01" class="form-control" name="CUSTOMERPRICE" value="{{ repair_work_order.CUSTOMERPRICE or '' }}">
                                             </div>
                                         </div>
                                     </div>
@@ -171,7 +171,7 @@
                                             <div class="detail-value">
                                                 <textarea class="form-control" name="SPECIALINSTRUCTIONS" rows="3" 
                                                           placeholder="Enter any special instructions or notes for this repair work order..."
-                                                          >{{ repair_order.SPECIALINSTRUCTIONS or '' }}</textarea>
+                                                          >{{ repair_work_order.SPECIALINSTRUCTIONS or '' }}</textarea>
                                                 <small class="form-text text-muted">Provide detailed instructions for the repair team</small>
                                             </div>
                                         </div>
@@ -181,19 +181,18 @@
                         </div>
 
                         <!-- Existing Items Card -->
-                        {% if repair_order.items %}
+                        {% if repair_work_order.items %}
                         <div class="card mb-4 shadow-sm">
                             <div class="card-header">
                                 <h5 class="card-title mb-0">
                                     <i class="fas fa-list me-2"></i>Existing Items
-                                    <span class="badge bg-secondary ms-2" id="existing-items-count">{{ repair_order.items|length }}</span>
+                                    <span class="badge bg-secondary ms-2" id="existing-items-count">{{ repair_work_order.items|length }}</span>
                                 </h5>
                             </div>
                             <div class="card-body">
                                 <div id="existing-items-container">
-                                    {% for item in repair_order.items %}
-                                    <div class="item-row" data-item-id="{{ item.id }}">
-                                        <input type="hidden" name="existing_item_id[]" value="{{ item.id }}">
+                                    {% for item in repair_work_order.items %}
+                                    <div class="item-row" data-item-index="{{ loop.index0 }}">
                                         <div class="row">
                                             <div class="col-md-4">
                                                 <label class="form-label">Description</label>
@@ -218,7 +217,7 @@
                                             <div class="col-md-1">
                                                 <label class="form-label">Actions</label>
                                                 <div>
-                                                    <button type="button" class="btn btn-danger btn-sm" onclick="toggleDeleteItem({{ item.id }}, this)">
+                                                    <button type="button" class="btn btn-danger btn-sm" onclick="removeExistingItem(this)">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </div>
@@ -287,7 +286,7 @@
                                 <div class="detail-row">
                                     <div class="detail-label">Existing Items</div>
                                     <div class="detail-value">
-                                        <span class="badge bg-success" id="summary-existing">{{ repair_order.items|length if repair_order.items else 0 }}</span>
+                                        <span class="badge bg-success" id="summary-existing">{{ repair_work_order.items|length if repair_work_order.items else 0 }}</span>
                                     </div>
                                 </div>
                                 <div class="detail-row">
@@ -311,16 +310,16 @@
                                 <div class="detail-row">
                                     <div class="detail-label">Total Items</div>
                                     <div class="detail-value">
-                                        <span class="badge bg-dark" id="total-count">{{ repair_order.items|length if repair_order.items else 0 }}</span>
+                                        <span class="badge bg-dark" id="total-count">{{ repair_work_order.items|length if repair_work_order.items else 0 }}</span>
                                     </div>
                                 </div>
                                 <div class="detail-row" id="rush-status">
                                     <div class="detail-label">Priority</div>
                                     <div class="detail-value">
-                                        <span class="badge bg-warning text-dark" id="rush-badge" {% if repair_order.RushOrder != "YES" %}style="display: none;"{% endif %}>
+                                        <span class="badge bg-warning text-dark" id="rush-badge" {% if repair_work_order.RushOrder != "YES" %}style="display: none;"{% endif %}>
                                             <i class="fas fa-bolt me-1"></i>Rush Order
                                         </span>
-                                        <span class="badge bg-danger" id="firm-rush-badge" {% if repair_order.FirmRush != "YES" %}style="display: none;"{% endif %}>
+                                        <span class="badge bg-danger" id="firm-rush-badge" {% if repair_work_order.FirmRush != "YES" %}style="display: none;"{% endif %}>
                                             <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
                                         </span>
                                     </div>
@@ -328,7 +327,7 @@
                                 <div class="detail-row">
                                     <div class="detail-label">Status</div>
                                     <div class="detail-value">
-                                        {% if repair_order.DateCompleted %}
+                                        {% if repair_work_order.DateCompleted %}
                                             <span class="badge bg-success"><i class="fas fa-check me-1"></i>Completed</span>
                                         {% else %}
                                             <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Pending</span>
@@ -348,7 +347,7 @@
                                     <button type="submit" class="btn btn-primary btn-lg">
                                         <i class="fas fa-save me-2"></i>Update Work Order
                                     </button>
-                                    <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=repair_order.RepairOrderNo) }}" class="btn btn-outline-secondary">
+                                    <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=repair_work_order.RepairOrderNo) }}" class="btn btn-outline-secondary">
                                         <i class="fas fa-times me-2"></i>Cancel Changes
                                     </a>
                                 </div>
@@ -366,7 +365,7 @@ let newItemCounter = 0;
 let newItemsCount = 0;
 let deletedItemsCount = 0;
 let selectedItemsCount = 0;
-let existingItemsCount = {{ repair_order.items|length if repair_order.items else 0 }};
+let existingItemsCount = {{ repair_work_order.items|length if repair_work_order.items else 0 }};
 
 function formatPrice(price) {
     let num = parseFloat(price);
@@ -499,37 +498,11 @@ function updateCounts() {
     document.getElementById('firm-rush-badge').style.display = firmRush ? 'inline-block' : 'none';
 }
 
-function toggleDeleteItem(itemId, button) {
+function removeExistingItem(button) {
+    // Simply remove the item row - when form submits, only remaining items are sent
     const itemRow = button.closest('.item-row');
-    const isMarked = itemRow.classList.contains('marked-for-deletion');
-    
-    if (isMarked) {
-        // Unmark for deletion
-        itemRow.classList.remove('marked-for-deletion');
-        button.innerHTML = '<i class="fas fa-trash"></i>';
-        button.className = 'btn btn-danger btn-sm';
-        
-        // Remove hidden delete input if exists
-        const deleteInput = itemRow.querySelector('input[name="delete_item[]"]');
-        if (deleteInput) {
-            deleteInput.remove();
-        }
-        deletedItemsCount--;
-    } else {
-        // Mark for deletion
-        itemRow.classList.add('marked-for-deletion');
-        button.innerHTML = '<i class="fas fa-undo"></i>';
-        button.className = 'btn btn-warning btn-sm';
-        
-        // Add hidden input to track deletion
-        const deleteInput = document.createElement('input');
-        deleteInput.type = 'hidden';
-        deleteInput.name = 'delete_item[]';
-        deleteInput.value = itemId;
-        itemRow.appendChild(deleteInput);
-        deletedItemsCount++;
-    }
-    
+    itemRow.remove();
+    existingItemsCount--;
     updateCounts();
 }
 
