@@ -309,6 +309,29 @@ def get_next_ro_number():
 def create_repair_order(prefill_cust_id=None):
     """Create a new repair work order"""
     if request.method == "POST":
+        # Validation
+        cust_id = request.form.get("CustID")
+        ro_name = request.form.get("ROName")
+
+        errors = []
+        if not cust_id:
+            errors.append("Customer is required.")
+        if not ro_name:
+            errors.append("Name is required.")
+
+        if errors:
+            for error in errors:
+                flash(error, "error")
+            # Re-render the form with the data
+            customers = Customer.query.order_by(Customer.Name).all()
+            sources = Source.query.order_by(Source.SSource).all()
+            return render_template(
+                "repair_orders/create.html",
+                customers=customers,
+                sources=sources,
+                prefill_cust_id=prefill_cust_id,
+            )
+
         try:
             # Generate next RepairOrderNo
             latest_order = RepairWorkOrder.query.order_by(
@@ -416,7 +439,7 @@ def create_repair_order(prefill_cust_id=None):
             flash(f"Repair Work Order {next_order_no} created successfully!", "success")
             return redirect(
                 url_for(
-                    "repair_orders.view_repair_order", repair_order_no=next_order_no
+                    "repair_work_orders.view_repair_work_order", repair_order_no=next_order_no
                 )
             )
 
@@ -454,10 +477,33 @@ def edit_repair_order(repair_order_no):
     ).first_or_404()
 
     if request.method == "POST":
+        # Validation
+        cust_id = request.form.get("CustID")
+        ro_name = request.form.get("ROName")
+
+        errors = []
+        if not cust_id:
+            errors.append("Customer is required.")
+        if not ro_name:
+            errors.append("Name is required.")
+
+        if errors:
+            for error in errors:
+                flash(error, "error")
+            # Re-render the form with the data
+            customers = Customer.query.order_by(Customer.Name).all()
+            sources = Source.query.order_by(Source.SSource).all()
+            return render_template(
+                "repair_orders/edit.html",
+                repair_work_order=repair_order,
+                customers=customers,
+                sources=sources,
+            )
+
         try:
             # Update the repair work order fields
-            repair_order.CustID = request.form.get("CustID")
-            repair_order.ROName = request.form.get("ROName")
+            repair_order.CustID = cust_id
+            repair_order.ROName = ro_name
             repair_order.SOURCE = request.form.get("SOURCE")
             repair_order.WO_DATE = request.form.get("WO_DATE")
             repair_order.DATE_TO_SUB = request.form.get("DATE_TO_SUB")
@@ -597,7 +643,7 @@ def edit_repair_order(repair_order_no):
 
     return render_template(
         "repair_orders/edit.html",
-        repair_order=repair_order,
+        repair_work_order=repair_order,  # FIX: Use consistent naming
         customers=customers,
         sources=sources,
     )
@@ -654,7 +700,6 @@ def download_repair_order_pdf(repair_order_no):
         RepairWorkOrder.query.filter_by(RepairOrderNo=repair_order_no)
         .options(
             db.joinedload(RepairWorkOrder.customer),
-            db.joinedload(RepairWorkOrder.SOURCE),
         )
         .first_or_404()
     )

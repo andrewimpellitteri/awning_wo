@@ -89,43 +89,43 @@ def sample_sources(app):
 class TestSourceListRoutes:
     """Test source list and search functionality."""
 
-    def test_source_list_page_renders(self, client, sample_sources):
+    def test_source_list_page_renders(self, logged_in_client, sample_sources):
         """GET /sources/ should render the list page."""
-        response = client.get("/sources/")
+        response = logged_in_client.get("/sources/")
         assert response.status_code == 200
         assert b"Sources" in response.data or b"Test Source 1" in response.data
 
-    def test_source_list_search(self, client, sample_sources):
+    def test_source_list_search(self, logged_in_client, sample_sources):
         """Test searching for sources."""
-        response = client.get("/sources/?search=Test Source 1")
+        response = logged_in_client.get("/sources/?search=Test Source 1")
         assert response.status_code == 200
         assert b"Test Source 1" in response.data
 
-    def test_source_list_filter_by_state(self, client, sample_sources):
+    def test_source_list_filter_by_state(self, logged_in_client, sample_sources):
         """Test filtering sources by state."""
-        response = client.get("/sources/?state=MA")
+        response = logged_in_client.get("/sources/?state=MA")
         assert response.status_code == 200
         assert b"Test Source 1" in response.data or b"Test Source 3" in response.data
 
-    def test_source_list_pagination(self, client, sample_sources):
+    def test_source_list_pagination(self, logged_in_client, sample_sources):
         """Test pagination of source list."""
-        response = client.get("/sources/?page=1")
+        response = logged_in_client.get("/sources/?page=1")
         assert response.status_code == 200
 
 
 class TestSourceDetailRoutes:
     """Test source detail view."""
 
-    def test_view_source_detail(self, client, sample_sources):
+    def test_view_source_detail(self, logged_in_client, sample_sources):
         """Test viewing a source's detail page."""
-        response = client.get("/sources/view/Test Source 1")
+        response = logged_in_client.get("/sources/view/Test Source 1")
         assert response.status_code == 200
         assert b"Test Source 1" in response.data
         assert b"Boston" in response.data
 
-    def test_view_missing_source_detail(self, client):
+    def test_view_missing_source_detail(self, logged_in_client):
         """Test viewing a missing source's detail page results in a 404."""
-        response = client.get("/sources/view/Nonexistent Source")
+        response = logged_in_client.get("/sources/view/Nonexistent Source")
         assert response.status_code == 404
 
 
@@ -376,25 +376,25 @@ class TestSourceDeleteRoutes:
 class TestSourceAPIRoutes:
     """Test source API endpoints."""
 
-    def test_api_search_sources(self, client, sample_sources):
+    def test_api_search_sources(self, logged_in_client, sample_sources):
         """Test API endpoint for searching sources."""
-        response = client.get("/sources/api/search?q=Test Source 1")
+        response = logged_in_client.get("/sources/api/search?q=Test Source 1")
         assert response.status_code == 200
         assert response.is_json
         data = response.get_json()
         assert len(data) > 0
         assert any(s["name"] == "Test Source 1" for s in data)
 
-    def test_api_search_sources_no_query(self, client, sample_sources):
+    def test_api_search_sources_no_query(self, logged_in_client, sample_sources):
         """Test API search with no query returns empty list."""
-        response = client.get("/sources/api/search?q=")
+        response = logged_in_client.get("/sources/api/search?q=")
         assert response.status_code == 200
         data = response.get_json()
         assert data == []
 
-    def test_api_get_states(self, client, sample_sources):
+    def test_api_get_states(self, logged_in_client, sample_sources):
         """Test API endpoint for getting all unique states."""
-        response = client.get("/sources/api/states")
+        response = logged_in_client.get("/sources/api/states")
         assert response.status_code == 200
         assert response.is_json
         data = response.get_json()

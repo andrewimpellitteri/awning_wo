@@ -138,11 +138,11 @@
                                         
                                         <div class="mb-3">
                                             <label for="SourceEmail" class="form-label">Email</label>
-                                            <input type="email"
+                                            <input type="text"
                                                    class="form-control"
                                                    id="SourceEmail"
                                                    name="SourceEmail"
-                                                   value="{{ source.clean_email() if edit_mode else (form_data.SourceEmail if form_data else '') }}"
+                                                   value="{{ (source.clean_email() or '') if edit_mode else (form_data.SourceEmail or '') }}"
                                                    placeholder="email@example.com">
                                         </div>
                                     </div>
@@ -223,16 +223,16 @@ document.getElementById('SourceState').addEventListener('input', function(e) {
 
 // Form validation
 document.querySelector('form').addEventListener('submit', function(e) {
+    // Validate required Source Name
     const sourceName = document.getElementById('SSource').value.trim();
-    
     if (!sourceName) {
         e.preventDefault();
         alert('Source name is required.');
         document.getElementById('SSource').focus();
         return false;
     }
-    
-    // Validate email if provided
+
+    // Optional Email validation
     const email = document.getElementById('SourceEmail').value.trim();
     if (email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -243,8 +243,8 @@ document.querySelector('form').addEventListener('submit', function(e) {
             return false;
         }
     }
-    
-    // Validate phone if provided
+
+    // Optional Phone validation
     const phone = document.getElementById('SourcePhone').value.trim();
     if (phone && phone.length < 10) {
         e.preventDefault();
@@ -252,6 +252,32 @@ document.querySelector('form').addEventListener('submit', function(e) {
         document.getElementById('SourcePhone').focus();
         return false;
     }
+
+    const fax = document.getElementById('SourceFax').value.trim();
+    if (fax && fax.length < 10) {
+        e.preventDefault();
+        alert('Please enter a valid 10-digit fax number.');
+        document.getElementById('SourceFax').focus();
+        return false;
+    }
+
+
+    // Optional State validation
+    const stateInput = document.getElementById('SourceState');
+    let state = stateInput.value.trim();
+
+    // Convert to uppercase for validation and saving
+    state = state.toUpperCase();
+    stateInput.value = state;
+
+    if (state && !/^[A-Z]{2}$/.test(state)) {
+        e.preventDefault();
+        alert('Please enter a valid 2-letter state abbreviation.');
+        stateInput.focus();
+        return false;
+    }
+
 });
+
 </script>
 {% endblock %}

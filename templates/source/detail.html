@@ -75,7 +75,7 @@
                                         <label class="form-label text-muted">State</label>
                                         <p class="form-control-plaintext">
                                             {% if source.SourceState %}
-                                                <span class="badge bg-secondary fs-6">{{ source.SourceState }}</span>
+                                                <span class="badge bg-secondary fs-6">{{ source.SourceState | upper }}</span>
                                             {% else %}
                                                 <span class="text-muted">Not provided</span>
                                             {% endif %}

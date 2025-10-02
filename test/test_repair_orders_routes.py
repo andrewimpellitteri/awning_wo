@@ -365,7 +365,7 @@ class TestRepairOrderRoutes:
         # FIX: Use logged_in_client to bypass authentication redirect
         response = logged_in_client.get("/repair_work_orders/new")
         assert response.status_code == 200
-        assert b"Create Repair Work Order" in response.data
+        assert b"Create New Repair Work Order" in response.data  # FIX: Correct title from template
 
     def test_create_repair_order(self, logged_in_client, sample_repair_orders):
         """Test creating a new repair order."""
@@ -455,7 +455,7 @@ class TestRepairOrderRoutes:
             "/repair_work_orders/1001/delete", follow_redirects=True
         )
         assert response.status_code == 200
-        assert b"Repair Order 1001 deleted." in response.data
+        assert b"Repair Work Order #1001 has been deleted successfully" in response.data  # FIX: Match actual flash message
 
         deleted_ro = RepairWorkOrder.query.get(1001)
         assert deleted_ro is None
@@ -465,14 +465,17 @@ class TestRepairOrderRoutes:
 def sample_repair_orders_for_date_sort(app):
     """Create sample repair orders for testing date sorting."""
     with app.app_context():
-        ro1 = RepairWorkOrder(RepairOrderNo="1001", DateIn="2024-01-15")
-        ro2 = RepairWorkOrder(RepairOrderNo="1002", DateIn="2024-01-20")
-        ro3 = RepairWorkOrder(RepairOrderNo="1003", DateIn=None)
+        # Need a customer for the repair orders
+        cust = Customer(CustID="999", Name="Test Customer")
+        ro1 = RepairWorkOrder(RepairOrderNo="1001", CustID="999", DateIn="2024-01-15")
+        ro2 = RepairWorkOrder(RepairOrderNo="1002", CustID="999", DateIn="2024-01-20")
+        ro3 = RepairWorkOrder(RepairOrderNo="1003", CustID="999", DateIn=None)
 
-        db.session.add_all([ro1, ro2, ro3])
+        db.session.add_all([cust, ro1, ro2, ro3])
         db.session.commit()
         yield
         db.session.query(RepairWorkOrder).delete()
+        db.session.query(Customer).delete()
         db.session.commit()
 
 
