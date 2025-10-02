@@ -45,9 +45,12 @@ def list_repair_work_orders():
 @repair_work_orders_bp.route("/<repair_order_no>")
 def view_repair_work_order(repair_order_no):
     """Displays the detail page for a single repair work order."""
-    repair_work_order = RepairWorkOrder.query.filter_by(
-        RepairOrderNo=repair_order_no
-    ).first_or_404()
+    repair_work_order = (
+        RepairWorkOrder.query
+        .options(joinedload(RepairWorkOrder.customer))
+        .filter_by(RepairOrderNo=repair_order_no)
+        .first_or_404()
+    )
     return render_template(
         "repair_orders/detail.html", repair_work_order=repair_work_order
     )
@@ -140,10 +143,26 @@ def api_repair_work_orders():
 
     # ↕️ Sorting logic with date parsing
     order_by_clauses = []
-    if db.engine.dialect.name == 'sqlite':
-        # Simplified sorting for SQLite to avoid dialect-specific functions
-        order_by_clauses.append(RepairWorkOrder.RepairOrderNo.desc())
+
+    # Check for simple sort/dir parameters (used by tests and some clients)
+    simple_sort = request.args.get('sort')
+    simple_dir = request.args.get('dir', 'asc')
+
+    if simple_sort:
+        # Handle simple sort parameter
+        column = getattr(RepairWorkOrder, simple_sort, None)
+        if column:
+            if simple_sort in ["RepairOrderNo", "CustID"]:
+                cast_column = cast(column, Integer)
+                order_by_clauses.append(
+                    cast_column.desc() if simple_dir == "desc" else cast_column.asc()
+                )
+            else:
+                order_by_clauses.append(
+                    column.desc() if simple_dir == "desc" else column.asc()
+                )
     else:
+        # Check for Tabulator-style sort parameters
         i = 0
         while True:
             field = request.args.get(f"sort[{i}][field]")
@@ -169,8 +188,8 @@ def api_repair_work_orders():
                             cast_column.desc() if direction == "desc" else cast_column.asc()
                         )
 
-                    elif field in ["DateIn", "DateCompleted"]:
-                        # Use CASE with multiple formats for dates
+                    elif field in ["DateIn", "DateCompleted"] and db.engine.dialect.name != 'sqlite':
+                        # Use CASE with multiple formats for dates (PostgreSQL only)
                         cast_column = case(
                             (
                                 column.op("~")(
@@ -625,13 +644,14 @@ def delete_repair_order(repair_order_no):
         )
 
 
+@repair_work_orders_bp.route("/<repair_order_no>/pdf")
 @repair_work_orders_bp.route("/<repair_order_no>/pdf/download")
 @login_required
 def download_repair_order_pdf(repair_order_no):
     """download PDF in browser for a work order"""
     # Fetch work order + relationships in one query
     work_order = (
-        RepairWorkOrder.query.filter_by(RepairWorkOrderNo=repair_order_no)
+        RepairWorkOrder.query.filter_by(RepairOrderNo=repair_order_no)
         .options(
             db.joinedload(RepairWorkOrder.customer),
             db.joinedload(RepairWorkOrder.SOURCE),

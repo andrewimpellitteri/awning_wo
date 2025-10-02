@@ -367,6 +367,11 @@ body {
 .badge {
     color: var(--bg-secondary);
 }
+/* Make total-count badge readable in dark mode */
+[data-theme="dark"] #total-count {
+    background-color: #6c757d !important;  /* lighter gray */
+    color: #ffffff !important;             /* white text */
+}
 
 /* Pagination styles */
 .page-link {

@@ -129,7 +129,7 @@
                                             WO-{{ work_order.WorkOrderNo }}
                                         </a>
                                     </div>
-                                    <div class="col-md-3">{{ work_order.WOName or 'Untitled' }}</div>
+                                    <div class="col-md-3 work-order-name">{{ work_order.WOName or 'Untitled' }}</div>
                                     <div class="col-md-2">
                                         {% if work_order.customer_url %}
                                           <a href="{{ work_order.customer_url }}" class="badge bg-primary">{{ work_order.CustID }}</a>

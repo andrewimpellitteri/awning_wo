@@ -624,20 +624,9 @@ function removeNewItem(button) {
     updateCounts();
 }
 
-// Load customer inventory when customer changes
-document.querySelector('input[name="CustID"]').addEventListener('change', function() {
-    loadCustomerInventory(this.value);
-});
-
 // Initialize datalists on load
 document.addEventListener('DOMContentLoaded', function() {
     createDatalists();
-
-    // Load customer inventory on page load
-    const custInput = document.querySelector('input[name="CustID"]');
-    if (custInput && custInput.value) {
-        loadCustomerInventory(custInput.value);
-    }
 });
 
 // Update counts if priority checkboxes change

@@ -61,61 +61,50 @@ def list_customers():
 def api_customers():
     """API endpoint for the customers table with server-side filtering, sorting, and pagination"""
 
-    # Get pagination parameters
     page = request.args.get("page", 1, type=int)
     size = request.args.get("size", 25, type=int)
 
-    # Start with base query
     query = Customer.query
 
-    # Apply global filters
+    # Apply global search
     search = request.args.get("search", "").strip()
-    source_filter = request.args.get("source", "").strip()
-    state_filter = request.args.get("state", "").strip()
-
     if search:
-        search_term = f"%{search}%"
+        term = f"%{search}%"
         query = query.filter(
             or_(
-                Customer.Name.ilike(search_term),
-                Customer.CustID.ilike(search_term),
-                Customer.Contact.ilike(search_term),
-                Customer.City.ilike(search_term),
-                Customer.State.ilike(search_term),
-                Customer.HomePhone.ilike(search_term),
-                Customer.EmailAddress.ilike(search_term),
-                Customer.Source.ilike(search_term),
+                Customer.Name.ilike(term),
+                Customer.CustID.ilike(term),
+                Customer.Contact.ilike(term),
+                Customer.City.ilike(term),
+                Customer.State.ilike(term),
+                Customer.HomePhone.ilike(term),
+                Customer.EmailAddress.ilike(term),
+                Customer.Source.ilike(term),
             )
         )
-
-    if source_filter:
-        query = query.filter(Customer.Source == source_filter)
-
-    if state_filter:
-        query = query.filter(Customer.State == state_filter)
 
     # Apply column-specific filters
     filter_mapping = {
         "filter_CustID": cast(Customer.CustID, Integer),
         "filter_Name": Customer.Name,
         "filter_Contact": Customer.Contact,
-        "filter_Location": Customer.City,  # Assuming Location maps to City
+        "filter_Location": Customer.City,  # or City+State if needed
         "filter_Phone": Customer.HomePhone,
         "filter_EmailAddress": Customer.EmailAddress,
         "filter_Source": Customer.Source,
+        "filter_State": Customer.State,
     }
 
-    for filter_key, column in filter_mapping.items():
-        filter_value = request.args.get(filter_key, "").strip()
-        if filter_value:
-            if filter_key == "filter_CustID":
-                query = query.filter(column == filter_value)
+    for key, column in filter_mapping.items():
+        val = request.args.get(key, "").strip()
+        if val:
+            if key == "filter_CustID":
+                query = query.filter(column == val)
             else:
-                filter_term = f"%{filter_value}%"
-                query = query.filter(column.ilike(filter_term))
+                query = query.filter(column.ilike(f"%{val}%"))
 
-    # Handle Tabulator's sorting format: sort[0][field]=Location&sort[0][dir]=asc
-    field_mapping = {
+    # Sorting
+    sort_mapping = {
         "CustID": Customer.CustID,
         "Name": Customer.Name,
         "Contact": Customer.Contact,
@@ -123,81 +112,48 @@ def api_customers():
         "Phone": Customer.HomePhone,
         "EmailAddress": Customer.EmailAddress,
         "Source": Customer.Source,
+        "State": Customer.State,
     }
 
-    # Look for sort parameters in the format sort[0][field], sort[0][dir], etc.
-    sort_applied = False
     i = 0
+    sort_applied = False
     while True:
-        field_param = f"sort[{i}][field]"
-        dir_param = f"sort[{i}][dir]"
-
-        field = request.args.get(field_param)
-        direction = request.args.get(dir_param, "asc")
-
+        field = request.args.get(f"sort[{i}][field]")
+        direction = request.args.get(f"sort[{i}][dir]", "asc")
         if not field:
             break
-
-        if field in field_mapping:
-            column = field_mapping[field]
-            if direction == "desc":
-                query = query.order_by(desc(column))
-            else:
-                query = query.order_by(asc(column))
+        if field in sort_mapping:
+            col = sort_mapping[field]
+            query = query.order_by(desc(col) if direction == "desc" else asc(col))
             sort_applied = True
-            print(f"Applied sort: {field} {direction}")  # Debug log
-
         i += 1
 
-    # Default sorting if no sort was applied
     if not sort_applied:
         query = query.order_by(Customer.CustID)
 
-    # Get total count before pagination
     total = query.count()
-
-    # Apply pagination
     customers = query.paginate(page=page, per_page=size, error_out=False)
 
-    # Format data for response
     data = []
-    for customer in customers.items:
-        # Build location string
-        location_parts = []
-        if customer.City:
-            location_parts.append(customer.City)
-        if customer.State:
-            location_parts.append(customer.State)
-        location = ", ".join(location_parts) if location_parts else None
-
+    for c in customers.items:
+        location = ", ".join(filter(None, [c.City, c.State]))
         data.append(
             {
-                "CustID": customer.CustID,
-                "Name": customer.Name,
-                "Contact": customer.Contact,
-                "Location": location,
-                "Phone": customer.get_primary_phone()
-                if hasattr(customer, "get_primary_phone")
-                else customer.Phone,
-                "EmailAddress": customer.EmailAddress,
-                "Source": customer.Source,
+                "CustID": c.CustID,
+                "Name": c.Name,
+                "Contact": c.Contact,
+                "Location": location or None,
+                "Phone": getattr(c, "get_primary_phone", lambda: c.HomePhone)(),
+                "EmailAddress": c.EmailAddress,
+                "Source": c.Source,
                 "detail_url": url_for(
-                    "customers.customer_detail", customer_id=customer.CustID
+                    "customers.customer_detail", customer_id=c.CustID
                 ),
-                "edit_url": url_for(
-                    "customers.edit_customer", customer_id=customer.CustID
-                )
+                "edit_url": url_for("customers.edit_customer", customer_id=c.CustID)
                 if user_can_edit()
                 else None,
             }
         )
-
-    # Calculate pagination info
-    last_page = customers.pages
-
-    # Debug log
-    print(f"Query executed: {query}")
-    print(f"Total results: {total}")
 
     return jsonify(
         {
@@ -205,7 +161,7 @@ def api_customers():
             "total": total,
             "page": page,
             "size": size,
-            "last_page": last_page,
+            "last_page": customers.pages,
             "has_next": customers.has_next,
             "has_prev": customers.has_prev,
         }
@@ -250,7 +206,7 @@ def create_customer():
         data = request.form
 
         if not data.get("Name"):
-            flash("Customer name is required", "error")
+            flash("Name is required.", "error")
             return render_template(
                 "customers/form.html", form_data=data, sources=Source.query.all()
             )
@@ -381,6 +337,7 @@ def api_source_info(source_name):
     source = Source.query.filter_by(SSource=source_name).first_or_404()
     return jsonify(
         {
+            "SSource": source.SSource,
             "address": source.SourceAddress,
             "city": source.SourceCity,
             "state": source.SourceState,
@@ -399,7 +356,7 @@ def delete_customer(customer_id):
     try:
         db.session.delete(customer)
         db.session.commit()
-        flash("Customer deleted successfully", "success")
+        flash(f"Customer {customer_id} deleted.", "success")  # <-- match test
     except Exception as e:
         db.session.rollback()
         flash(f"Error deleting customer: {str(e)}", "error")
