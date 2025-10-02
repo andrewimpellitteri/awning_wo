@@ -171,7 +171,7 @@ class TestSourceCreateRoutes:
         response = admin_client.post(
             "/sources/new", data={"SourceCity": "Boston", "SourceState": "MA"}
         )
-        assert response.status_code == 200
+        assert response.status_code == 400
         assert (
             b"Source name is required" in response.data
             or b"error" in response.data.lower()
@@ -182,7 +182,7 @@ class TestSourceCreateRoutes:
         response = admin_client.post(
             "/sources/new", data={"SSource": "Test Source 1", "SourceCity": "Boston"}
         )
-        assert response.status_code == 200
+        assert response.status_code == 400
         assert b"already exists" in response.data.lower()
 
 

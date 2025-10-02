@@ -62,6 +62,9 @@ def source_detail(source_name):
     return render_template("source/detail.html", source=source)
 
 
+# In routes/source.py
+
+
 @source_bp.route("/new", methods=["GET", "POST"])
 @login_required
 @role_required("admin", "manager")
@@ -70,14 +73,21 @@ def create_source():
     if request.method == "POST":
         data = request.form
 
+        # --- FIX 1: Pass context on validation failure ---
         if not data.get("SSource"):
             flash("Source name is required", "error")
-            return render_template("source/form.html")
+            # Pass user's data and edit_mode back to the template
+            return render_template(
+                "source/form.html", form_data=data, edit_mode=False
+            ), 400
 
         # Check if source already exists
         if Source.query.get(data["SSource"]):
             flash("Source already exists", "error")
-            return render_template("source/form.html", form_data=data)
+            # This line was good, just adding edit_mode for consistency
+            return render_template(
+                "source/form.html", form_data=data, edit_mode=False
+            ), 400
 
         try:
             source = Source(
@@ -100,9 +110,14 @@ def create_source():
         except Exception as e:
             db.session.rollback()
             flash(f"Error creating source: {str(e)}", "error")
-            return render_template("source/form.html", form_data=data)
+            # Also adding edit_mode here for consistency
+            return render_template(
+                "source/form.html", form_data=data, edit_mode=False
+            ), 500
 
-    return render_template("source/form.html")
+    # --- FIX 2: Pass context for the initial GET request ---
+    # The form needs these variables even when it's empty.
+    return render_template("source/form.html", form_data={}, edit_mode=False)
 
 
 @source_bp.route("/edit/<source_name>", methods=["GET", "POST"])

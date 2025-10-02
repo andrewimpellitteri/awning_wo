@@ -274,7 +274,9 @@ class TestRepairOrderRoutes:
         assert b"Updated Test Item 1" in response.data
 
         # Query by composite key (RepairOrderNo, Description, Material)
-        updated_item = RepairWorkOrderItem.query.get(("2001", "Updated Test Item 1", "A"))
+        updated_item = RepairWorkOrderItem.query.get(
+            ("2001", "Updated Test Item 1", "A")
+        )
         assert updated_item is not None
         assert updated_item.Description == "Updated Test Item 1"
 
@@ -357,7 +359,9 @@ class TestRepairOrderRoutes:
         # FIX: Use logged_in_client to bypass authentication redirect
         response = logged_in_client.get("/repair_work_orders/new")
         assert response.status_code == 200
-        assert b"Create New Repair Work Order" in response.data  # FIX: Correct title from template
+        assert (
+            b"Create New Repair Work Order" in response.data
+        )  # FIX: Correct title from template
 
     def test_create_repair_order(self, logged_in_client, sample_repair_orders):
         """Test creating a new repair order."""
@@ -447,7 +451,9 @@ class TestRepairOrderRoutes:
             "/repair_work_orders/1001/delete", follow_redirects=True
         )
         assert response.status_code == 200
-        assert b"Repair Work Order #1001 has been deleted successfully" in response.data  # FIX: Match actual flash message
+        assert (
+            b"Repair Work Order #1001 has been deleted successfully" in response.data
+        )  # FIX: Match actual flash message
 
         deleted_ro = RepairWorkOrder.query.get(1001)
         assert deleted_ro is None

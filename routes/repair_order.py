@@ -46,8 +46,7 @@ def list_repair_work_orders():
 def view_repair_work_order(repair_order_no):
     """Displays the detail page for a single repair work order."""
     repair_work_order = (
-        RepairWorkOrder.query
-        .options(joinedload(RepairWorkOrder.customer))
+        RepairWorkOrder.query.options(joinedload(RepairWorkOrder.customer))
         .filter_by(RepairOrderNo=repair_order_no)
         .first_or_404()
     )
@@ -145,8 +144,8 @@ def api_repair_work_orders():
     order_by_clauses = []
 
     # Check for simple sort/dir parameters (used by tests and some clients)
-    simple_sort = request.args.get('sort')
-    simple_dir = request.args.get('dir', 'asc')
+    simple_sort = request.args.get("sort")
+    simple_dir = request.args.get("dir", "asc")
 
     if simple_sort:
         # Handle simple sort parameter
@@ -185,10 +184,15 @@ def api_repair_work_orders():
                     if field in ["RepairOrderNo", "CustID"]:
                         cast_column = cast(column, Integer)
                         order_by_clauses.append(
-                            cast_column.desc() if direction == "desc" else cast_column.asc()
+                            cast_column.desc()
+                            if direction == "desc"
+                            else cast_column.asc()
                         )
 
-                    elif field in ["DateIn", "DateCompleted"] and db.engine.dialect.name != 'sqlite':
+                    elif (
+                        field in ["DateIn", "DateCompleted"]
+                        and db.engine.dialect.name != "sqlite"
+                    ):
                         # Use CASE with multiple formats for dates (PostgreSQL only)
                         cast_column = case(
                             (
@@ -217,7 +221,7 @@ def api_repair_work_orders():
     # Default sorting if none provided
     if order_by_clauses:
         query = query.order_by(*order_by_clauses)
-    elif db.engine.dialect.name != 'sqlite':
+    elif db.engine.dialect.name != "sqlite":
         query = query.order_by(
             case(
                 (
@@ -385,6 +389,7 @@ def create_repair_order(prefill_cust_id=None):
 
             # Handle selected items from customer inventory
             from models.work_order import WorkOrderItem
+
             selected_item_ids = request.form.getlist("selected_items[]")
 
             for item_id in selected_item_ids:
@@ -439,7 +444,8 @@ def create_repair_order(prefill_cust_id=None):
             flash(f"Repair Work Order {next_order_no} created successfully!", "success")
             return redirect(
                 url_for(
-                    "repair_work_orders.view_repair_work_order", repair_order_no=next_order_no
+                    "repair_work_orders.view_repair_work_order",
+                    repair_order_no=next_order_no,
                 )
             )
 
@@ -550,9 +556,13 @@ def edit_repair_order(repair_order_no):
                         RepairOrderNo=repair_order_no,
                         CustID=request.form.get("CustID"),
                         Description=descrip,
-                        Material=existing_materials[i] if i < len(existing_materials) else "",
+                        Material=existing_materials[i]
+                        if i < len(existing_materials)
+                        else "",
                         Qty=existing_qtys[i] if i < len(existing_qtys) else "1",
-                        Condition=existing_conditions[i] if i < len(existing_conditions) else "",
+                        Condition=existing_conditions[i]
+                        if i < len(existing_conditions)
+                        else "",
                         Color=existing_colors[i] if i < len(existing_colors) else "",
                         SizeWgt=existing_sizes[i] if i < len(existing_sizes) else "",
                         Price=existing_prices[i] if i < len(existing_prices) else "",
@@ -561,6 +571,7 @@ def edit_repair_order(repair_order_no):
 
             # Handle selected items from customer inventory
             from models.work_order import WorkOrderItem
+
             selected_item_ids = request.form.getlist("selected_items[]")
 
             for item_id in selected_item_ids:
@@ -641,11 +652,12 @@ def edit_repair_order(repair_order_no):
 @role_required("admin", "manager")
 def delete_repair_order(repair_order_no):
     """Delete a repair work order and all associated items"""
-    try:
-        repair_order = RepairWorkOrder.query.filter_by(
-            RepairOrderNo=repair_order_no
-        ).first_or_404()
 
+    repair_order = RepairWorkOrder.query.filter_by(
+        RepairOrderNo=repair_order_no
+    ).first_or_404()
+
+    try:
         # Optional: Add business logic checks
         # For example, prevent deletion of completed orders
         # if repair_order.DateCompleted:
@@ -696,7 +708,7 @@ def download_repair_order_pdf(repair_order_no):
 
     wo_dict["items"] = [
         {
-            "Qty": item.Qty,
+            "Qty": item.Qty if item.Qty is not None else "0",
             "Description": item.Description,
             "Material": item.Material,
             "Condition": item.Condition,
@@ -734,10 +746,17 @@ def download_repair_order_pdf(repair_order_no):
     else:
         # fallback to ShipTo relationship if no customer.Source
         if work_order.SOURCE:
-            wo_dict["source"] = work_order.SOURCE.to_dict()
-        else:
+            # If RepairWorkOrder.SOURCE holds a name string, use it.
             wo_dict["source"] = {
-                "Name": work_order.ShipTo or "",
+                "Name": work_order.SOURCE,
+                "FullAddress": "",  # Cannot determine address from just the string source name
+                "Phone": "",
+                "Email": "",
+            }
+        else:
+            # Final fallback to the repair order name itself
+            wo_dict["source"] = {
+                "Name": work_order.ROName or "",  # Use ROName as a fallback name
                 "FullAddress": "",
                 "Phone": "",
                 "Email": "",
@@ -762,7 +781,9 @@ def download_repair_order_pdf(repair_order_no):
         flash(f"Error generating PDF: {str(e)}", "error")
         return redirect(
             url_for(
-                "repair_order.view_repair_work_order", repair_order_no=repair_order_no
+                # Change 'repair_order.view_repair_work_order' to 'repair_work_orders.view_repair_work_order'
+                "repair_work_orders.view_repair_work_order",
+                repair_order_no=repair_order_no,
             )
         )
 
@@ -792,7 +813,7 @@ def view_repair_order_pdf(repair_order_no):
 
         wo_dict["items"] = [
             {
-                "Qty": item.Qty,
+                "Qty": item.Qty if item.Qty is not None else "0",
                 "Description": item.Description,
                 "Material": item.Material,
                 "Condition": item.Condition,
@@ -850,7 +871,8 @@ def view_repair_order_pdf(repair_order_no):
             flash(f"Error generating PDF: {str(e)}", "error")
             return redirect(
                 url_for(
-                    "repair_orders.view_repair_work_order",
+                    # Change 'repair_order.view_repair_work_order' to 'repair_work_orders.view_repair_work_order'
+                    "repair_work_orders.view_repair_work_order",
                     repair_order_no=repair_order_no,
                 )
             )
