@@ -9,6 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
+from datetime import date, datetime
 
 import pytest
 from flask import Flask
@@ -130,12 +131,12 @@ def sample_work_order():
         WorkOrderNo="TEST001",
         CustID="123",
         WOName="Test Work Order",
-        DateIn="2024-01-15",
+        DateIn=date(2024, 1, 15),
         RackNo="A1",
         SpecialInstructions="Test instructions",
         RepairsNeeded="Minor repairs",
-        RushOrder="0",
-        DateRequired="2024-01-30",
+        RushOrder=False,
+        DateRequired=date(2024, 1, 30),
         ShipTo="TEST_SOURCE",
     )
 
@@ -180,8 +181,8 @@ def sample_inventory():
             Color="Red",
             Condition="Good",
             SizeWgt="10x12",
-            Price="150.00",
-            Qty="5",
+            Price=150.00,
+            Qty=5,
         ),
         Inventory(
             InventoryKey="INV_TEST002",
@@ -191,8 +192,8 @@ def sample_inventory():
             Color="Blue",
             Condition="Excellent",
             SizeWgt="8x8",
-            Price="75.00",
-            Qty="3",
+            Price=75.00,
+            Qty=3,
         ),
     ]
 

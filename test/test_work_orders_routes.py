@@ -23,6 +23,7 @@ Covers:
 
 import pytest
 from io import BytesIO
+from datetime import date, datetime
 from werkzeug.security import generate_password_hash
 from models.work_order import WorkOrder, WorkOrderItem
 from models.work_order_file import WorkOrderFile
@@ -106,26 +107,26 @@ def sample_data(app):
             WorkOrderNo="10001",
             CustID="100",
             WOName="Test Work Order 1",
-            DateIn="2025-01-15",
-            DateRequired="2025-01-30",
+            DateIn=date(2025, 1, 15),
+            DateRequired=date(2025, 1, 30),
             RackNo="A1",
             Storage="Rack",
             ShipTo="Test Source",
             SpecialInstructions="Handle with care",
             RepairsNeeded="Clean and inspect",
-            RushOrder="0"
+            RushOrder=False
         )
         wo2 = WorkOrder(
             WorkOrderNo="10002",
             CustID="100",
             WOName="Test Work Order 2",
-            DateIn="2025-01-20",
-            DateRequired="2025-02-05",
+            DateIn=date(2025, 1, 20),
+            DateRequired=date(2025, 2, 5),
             RackNo="B2",
             Storage="Floor",
             ShipTo="Test Source",
-            RushOrder="1",
-            DateCompleted="2025-01-25"
+            RushOrder=True,
+            DateCompleted=datetime(2025, 1, 25)
         )
         db.session.add_all([wo1, wo2])
 
@@ -490,10 +491,10 @@ class TestWorkOrderBusinessLogic:
         """Rush orders should be marked correctly."""
         with app.app_context():
             wo_rush = WorkOrder.query.get("10002")
-            assert wo_rush.RushOrder == "1"
+            assert wo_rush.RushOrder == True
 
             wo_regular = WorkOrder.query.get("10001")
-            assert wo_regular.RushOrder == "0"
+            assert wo_regular.RushOrder == False
 
     def test_work_order_status_via_date_completed(self, admin_client, sample_data, app):
         """Work order status determined by DateCompleted field."""

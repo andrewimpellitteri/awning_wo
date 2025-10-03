@@ -3,6 +3,7 @@ Tests for Queue Management routes.
 """
 
 import pytest
+from datetime import date, datetime
 from models.work_order import WorkOrder
 from extensions import db
 from werkzeug.security import generate_password_hash
@@ -45,21 +46,21 @@ def sample_customers_and_work_orders(app):
         wo1 = WorkOrder(
             WorkOrderNo="1001",
             WOName="Regular Order",
-            DateIn="2024-01-10",
+            DateIn=date(2024, 1, 10),
             CustID=c1.CustID,
         )
         wo2 = WorkOrder(
             WorkOrderNo="1002",
             WOName="Rush Order",
-            RushOrder="1",
-            DateIn="2024-01-12",
+            RushOrder=True,
+            DateIn=date(2024, 1, 12),
             CustID=c2.CustID,
         )
         wo3 = WorkOrder(
             WorkOrderNo="1003",
             WOName="Firm Rush Order",
-            FirmRush="1",
-            DateIn="2024-01-11",
+            FirmRush=True,
+            DateIn=date(2024, 1, 11),
             CustID=c3.CustID,
         )
 

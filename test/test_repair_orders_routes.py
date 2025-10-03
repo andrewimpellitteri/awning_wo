@@ -3,6 +3,7 @@ Tests for Repair Order CRUD routes.
 """
 
 import pytest
+from datetime import date, datetime
 from models.repair_order import RepairWorkOrder, RepairWorkOrderItem
 from models.customer import Customer
 from models.source import Source
@@ -79,7 +80,7 @@ def sample_repair_orders(app):
             RepairOrderNo="1001",
             CustID="123",
             ROName="Completed Order",
-            DateCompleted="2024-01-01",
+            DateCompleted=datetime(2024, 1, 1),
         )
         ro2 = RepairWorkOrder(
             RepairOrderNo="1002",
@@ -88,7 +89,7 @@ def sample_repair_orders(app):
             DateCompleted=None,
         )
         ro3 = RepairWorkOrder(
-            RepairOrderNo="1003", CustID="125", ROName="Rush Order", RushOrder="YES"
+            RepairOrderNo="1003", CustID="125", ROName="Rush Order", RushOrder=True
         )
 
         db.session.add_all([source1, source2, cust1, cust2, cust3, ro1, ro2, ro3])
@@ -465,8 +466,8 @@ def sample_repair_orders_for_date_sort(app):
     with app.app_context():
         # Need a customer for the repair orders
         cust = Customer(CustID="999", Name="Test Customer")
-        ro1 = RepairWorkOrder(RepairOrderNo="1001", CustID="999", DateIn="2024-01-15")
-        ro2 = RepairWorkOrder(RepairOrderNo="1002", CustID="999", DateIn="2024-01-20")
+        ro1 = RepairWorkOrder(RepairOrderNo="1001", CustID="999", DateIn=date(2024, 1, 15))
+        ro2 = RepairWorkOrder(RepairOrderNo="1002", CustID="999", DateIn=date(2024, 1, 20))
         ro3 = RepairWorkOrder(RepairOrderNo="1003", CustID="999", DateIn=None)
 
         db.session.add_all([cust, ro1, ro2, ro3])
