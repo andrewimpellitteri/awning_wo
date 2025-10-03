@@ -192,6 +192,7 @@ class MLService:
     @staticmethod
     def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
         """Apply feature engineering to work order data"""
+        from datetime import date
         today = pd.Timestamp.today()
 
         # --- Date parsing ---
@@ -212,7 +213,7 @@ class MLService:
         df["quarter_in"] = df["datein"].dt.quarter.fillna(0).astype(int)
         df["is_weekend"] = (df["dow_in"] >= 5).astype(int)
 
-        # --- Rush order features ---
+        # --- Rush order features (now proper booleans) ---
         df["rushorder_binary"] = MLService.convert_to_binary(
             df.get("rushorder", pd.Series())
         )
@@ -233,7 +234,8 @@ class MLService:
         )
         df["has_repairs_needed"] = (df["repairs_len"] > 0).astype(int)
 
-        # --- Service features ---
+        # --- Service features (Clean and Treat are now Date fields, not booleans) ---
+        # If Clean/Treat date exists, it means cleaning/treatment was completed
         if "clean" in df.columns:
             df["needs_cleaning"] = (
                 pd.to_datetime(df["clean"], errors="coerce").notna().astype(int)
@@ -453,19 +455,20 @@ def predict():
         data = request.json
 
         # Create a minimal DataFrame for feature engineering
+        from datetime import date
         df = pd.DataFrame(
             [
                 {
                     "custid": data.get("custid", "UNKNOWN"),
-                    "datein": data.get("datein", datetime.now().strftime("%Y-%m-%d")),
+                    "datein": data.get("datein", date.today()),
                     "daterequired": data.get("daterequired"),
-                    "rushorder": data.get("rushorder", False),
-                    "firmrush": data.get("firmrush", False),
+                    "rushorder": bool(data.get("rushorder", False)),
+                    "firmrush": bool(data.get("firmrush", False)),
                     "storagetime": data.get("storagetime", 0),
                     "specialinstructions": data.get("specialinstructions", ""),
                     "repairsneeded": data.get("repairsneeded", ""),
-                    "clean": data.get("needs_cleaning", False),
-                    "treat": data.get("needs_treatment", False),
+                    "clean": data.get("clean"),  # Date object or None
+                    "treat": data.get("treat"),  # Date object or None
                 }
             ]
         )
@@ -523,13 +526,9 @@ def batch_predict():
         return jsonify({"error": "No trained model available"}), 400
 
     try:
-        # Get pending work orders - fix the query
+        # Get pending work orders (DateCompleted is now DateTime, not string)
         pending_orders = (
-            WorkOrder.query.filter(
-                (WorkOrder.DateCompleted == None)
-                | (WorkOrder.DateCompleted == "")
-                | (WorkOrder.DateCompleted.is_(None))
-            )
+            WorkOrder.query.filter(WorkOrder.DateCompleted.is_(None))
             .limit(50)
             .all()
         )
@@ -543,18 +542,19 @@ def batch_predict():
         results = []
         for order in pending_orders:
             try:
-                # Create prediction data with proper null handling
+                # Create prediction data with proper data types
+                from datetime import date
                 data = {
                     "custid": order.CustID or "UNKNOWN",
-                    "datein": order.DateIn or datetime.now().strftime("%Y-%m-%d"),
-                    "daterequired": order.DateRequired,
-                    "rushorder": order.RushOrder or False,
-                    "firmrush": order.FirmRush or False,
+                    "datein": order.DateIn or date.today(),  # Now a date object
+                    "daterequired": order.DateRequired,  # Already a date object or None
+                    "rushorder": bool(order.RushOrder),  # Now a boolean
+                    "firmrush": bool(order.FirmRush),  # Now a boolean
                     "storagetime": order.StorageTime or 0,
                     "specialinstructions": order.SpecialInstructions or "",
                     "repairsneeded": order.RepairsNeeded or "",
-                    "needs_cleaning": order.Clean or False,
-                    "needs_treatment": order.Treat or False,
+                    "clean": order.Clean,  # Date object or None (when cleaning completed)
+                    "treat": order.Treat,  # Date object or None (when treatment completed)
                 }
 
                 # Make prediction with better error handling
@@ -617,18 +617,19 @@ def predict_work_order(work_order_no):
         return jsonify({"error": f"Work order {work_order_no} not found"}), 404
 
     try:
-        # Build input data
+        # Build input data with proper data types
+        from datetime import date
         data = {
             "custid": order.CustID or "UNKNOWN",
-            "datein": order.DateIn or datetime.now().strftime("%Y-%m-%d"),
-            "daterequired": order.DateRequired,
-            "rushorder": order.RushOrder or False,
-            "firmrush": order.FirmRush or False,
+            "datein": order.DateIn or date.today(),  # Now a date object
+            "daterequired": order.DateRequired,  # Already a date object or None
+            "rushorder": bool(order.RushOrder),  # Now a boolean
+            "firmrush": bool(order.FirmRush),  # Now a boolean
             "storagetime": order.StorageTime or 0,
             "specialinstructions": order.SpecialInstructions or "",
             "repairsneeded": order.RepairsNeeded or "",
-            "needs_cleaning": order.Clean or False,
-            "needs_treatment": order.Treat or False,
+            "clean": order.Clean,  # Date object or None (when cleaning completed)
+            "treat": order.Treat,  # Date object or None (when treatment completed)
         }
 
         # Convert to DataFrame

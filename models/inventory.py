@@ -10,9 +10,9 @@ class Inventory(db.Model):
     Condition = db.Column("condition", db.Text)
     Color = db.Column("color", db.Text)
     SizeWgt = db.Column("sizewgt", db.Text)
-    Price = db.Column("price", db.Text)
+    Price = db.Column("price", db.Numeric(10, 2), nullable=True)
     CustID = db.Column("custid", db.Text)
-    Qty = db.Column("qty", db.Text)
+    Qty = db.Column("qty", db.Integer, nullable=True)
     InventoryKey = db.Column("inventorykey", db.Text, primary_key=True)
 
     def to_dict(self):

@@ -53,44 +53,43 @@ def create_app(config_class=Config):
 
     @app.template_filter("yesdash")
     def yesdash(value):
-        """Render truthy values as 'Yes' or '-'."""
+        """Render truthy values as 'Yes' or '-'. Now handles proper booleans."""
+        # Handle boolean True/False directly
+        if isinstance(value, bool):
+            return "Yes" if value else "-"
+        # Legacy string handling (for backward compatibility during migration)
         if str(value).upper() in ("1", "YES", "TRUE"):
             return "Yes"
         return "-"
 
     @app.template_filter("date_format")
     def format_date(value):
-        """Formats datetime/date/custom string to MM/DD/YYYY."""
-        print("\n[DEBUG] date_format called with:", repr(value), "of type", type(value))
-
+        """Formats datetime/date objects to MM/DD/YYYY. Handles proper date types."""
         if not value:
             return "-"
 
         try:
-            # Case 1: Already a datetime or date
-            if isinstance(value, (datetime, date)):
-                formatted = value.strftime("%m/%d/%Y")
-                # print("[DEBUG] Parsed as datetime/date ->", formatted)
-                return formatted
+            # Case 1: Already a datetime or date object (PRIMARY CASE NOW)
+            if isinstance(value, datetime):
+                return value.strftime("%m/%d/%Y %H:%M:%S")
+            if isinstance(value, date):
+                return value.strftime("%m/%d/%Y")
 
-            # Case 2: String already in MM/DD/YY HH:MM:SS format
+            # Case 2: Legacy string handling (for backward compatibility)
+            # String already in MM/DD/YY HH:MM:SS format
             try:
-                dt_object = datetime.strptime(value, "%m/%d/%y %H:%M:%S")
-                formatted = dt_object.strftime("%m/%d/%Y")
-                # print("[DEBUG] Parsed as custom string ->", formatted)
-                return formatted
+                dt_object = datetime.strptime(str(value), "%m/%d/%y %H:%M:%S")
+                return dt_object.strftime("%m/%d/%Y")
             except ValueError:
                 pass
 
             # Case 3: Try ISO string
-            dt_object = datetime.fromisoformat(value)
-            formatted = dt_object.strftime("%m/%d/%Y")
-            print("[DEBUG] Parsed as ISO string ->", formatted)
-            return formatted
+            dt_object = datetime.fromisoformat(str(value))
+            return dt_object.strftime("%m/%d/%Y")
 
         except Exception as e:
-            print("[DEBUG] Exception in date_format:", e)
-            return str(value)
+            # Fallback: return as-is
+            return str(value) if value else "-"
 
     # Import and register blueprints
     from routes.auth import auth_bp

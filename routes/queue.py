@@ -11,44 +11,48 @@ queue_bp = Blueprint("cleaning_queue", __name__)
 
 
 # Sort firm rush orders by DateRequired (closest date first), then DateIn, then WorkOrderNo
-def safe_date_sort_key(date_str):
-    """Convert date string to a sortable format"""
-    if not date_str or date_str.strip() == "":
-        return "9999-12-31"  # Put empty dates at the end
+def safe_date_sort_key(date_value):
+    """Convert date object to a sortable format - now handles proper date types"""
+    from datetime import date
 
-    # If it's already in YYYY-MM-DD format, use as-is
-    if len(date_str) == 10 and date_str[4] == "-" and date_str[7] == "-":
-        return date_str
+    # Handle None or empty
+    if not date_value:
+        return date.max  # Put empty dates at the end
 
-    # Try to parse common date formats and convert to YYYY-MM-DD
-    try:
-        from datetime import datetime
+    # Already a date object - return as-is
+    if isinstance(date_value, date):
+        return date_value
 
-        # Try MM/DD/YYYY format
-        if "/" in date_str:
-            parsed_date = datetime.strptime(date_str, "%m/%d/%Y")
-            return parsed_date.strftime("%Y-%m-%d")
-        # Try MM-DD-YYYY format
-        elif "-" in date_str and len(date_str.split("-")) == 3:
-            parts = date_str.split("-")
-            if len(parts[0]) <= 2:  # MM-DD-YYYY format
-                parsed_date = datetime.strptime(date_str, "%m-%d-%Y")
-                return parsed_date.strftime("%Y-%m-%d")
-    except Exception as e:
-        print("Error parsing dates")
-        print(e)
-        pass
+    # Legacy string handling (for backward compatibility during migration)
+    if isinstance(date_value, str):
+        if date_value.strip() == "":
+            return date.max
 
-    # If we can't parse it, return as-is and hope for the best
-    return date_str or "9999-12-31"
+        # If it's already in YYYY-MM-DD format, parse it
+        if len(date_value) == 10 and date_value[4] == "-" and date_value[7] == "-":
+            try:
+                from datetime import datetime
+                return datetime.strptime(date_value, "%Y-%m-%d").date()
+            except:
+                return date.max
+
+        # Try other formats
+        try:
+            from datetime import datetime
+            if "/" in date_value:
+                parsed_date = datetime.strptime(date_value, "%m/%d/%Y")
+                return parsed_date.date()
+        except:
+            pass
+
+    # Fallback
+    return date.max
 
 
 def initialize_queue_positions_for_unassigned():
     """Initialize queue positions for work orders that don't have them (preserves existing manual ordering)"""
     try:
-        base_filter = or_(
-            WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""
-        )
+        base_filter = WorkOrder.DateCompleted.is_(None)
 
         # Only get work orders without queue positions
         unassigned_orders = WorkOrder.query.filter(
@@ -60,27 +64,27 @@ def initialize_queue_positions_for_unassigned():
 
         # Sort unassigned orders by priority and date
         def priority_sort_key(wo):
-            if wo.FirmRush == "1":
+            if wo.FirmRush:
                 return (
                     1,
-                    wo.DateRequired or "9999-12-31",
-                    wo.DateIn or "9999-12-31",
+                    safe_date_sort_key(wo.DateRequired),
+                    safe_date_sort_key(wo.DateIn),
                     wo.WorkOrderNo,
                 )
-            elif wo.RushOrder == "1":
-                return (2, wo.DateIn or "9999-12-31", wo.WorkOrderNo)
+            elif wo.RushOrder:
+                return (2, safe_date_sort_key(wo.DateIn), wo.WorkOrderNo)
             else:
-                return (3, wo.DateIn or "9999-12-31", wo.WorkOrderNo)
+                return (3, safe_date_sort_key(wo.DateIn), wo.WorkOrderNo)
 
         sorted_unassigned = sorted(unassigned_orders, key=priority_sort_key)
 
         # Separate by priority for proper insertion and sort each group appropriately
-        firm_rush_orders = [wo for wo in sorted_unassigned if wo.FirmRush == "1"]
+        firm_rush_orders = [wo for wo in sorted_unassigned if wo.FirmRush]
         rush_orders = [
-            wo for wo in sorted_unassigned if wo.RushOrder == "1" and wo.FirmRush != "1"
+            wo for wo in sorted_unassigned if wo.RushOrder and not wo.FirmRush
         ]
         regular_orders = [
-            wo for wo in sorted_unassigned if wo.RushOrder != "1" and wo.FirmRush != "1"
+            wo for wo in sorted_unassigned if not wo.RushOrder and not wo.FirmRush
         ]
 
         firm_rush_orders.sort(
@@ -127,7 +131,7 @@ def initialize_queue_positions_for_unassigned():
                 existing_firm_rush = (
                     WorkOrder.query.filter(
                         base_filter,
-                        WorkOrder.FirmRush == "1",
+                        WorkOrder.FirmRush == True,
                         WorkOrder.QueuePosition.isnot(None),
                     )
                     .order_by(WorkOrder.QueuePosition.desc())
@@ -178,9 +182,7 @@ def initialize_queue_positions_for_unassigned():
 def initialize_all_queue_positions(force_reset=False):
     """Initialize queue positions for all work orders that don't have them"""
     try:
-        base_filter = or_(
-            WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""
-        )
+        base_filter = WorkOrder.DateCompleted.is_(None)
 
         if force_reset:
             # Clear all existing positions first
@@ -197,17 +199,17 @@ def initialize_all_queue_positions(force_reset=False):
 
         # Sort by priority and date
         def priority_sort_key(wo):
-            if wo.FirmRush == "1":
+            if wo.FirmRush:
                 return (
                     1,
-                    wo.DateRequired or "9999-12-31",
-                    wo.DateIn or "9999-12-31",
+                    safe_date_sort_key(wo.DateRequired),
+                    safe_date_sort_key(wo.DateIn),
                     wo.WorkOrderNo,
                 )
-            elif wo.RushOrder == "1":
-                return (2, wo.DateIn or "9999-12-31", wo.WorkOrderNo)
+            elif wo.RushOrder:
+                return (2, safe_date_sort_key(wo.DateIn), wo.WorkOrderNo)
             else:
-                return (3, wo.DateIn or "9999-12-31", wo.WorkOrderNo)
+                return (3, safe_date_sort_key(wo.DateIn), wo.WorkOrderNo)
 
         sorted_orders = sorted(unpositioned_orders, key=priority_sort_key)
 
@@ -233,9 +235,7 @@ def initialize_all_queue_positions(force_reset=False):
 
     """Initialize queue positions for work orders that don't have them (preserves existing manual ordering)"""
     try:
-        base_filter = or_(
-            WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""
-        )
+        base_filter = WorkOrder.DateCompleted.is_(None)
 
         # Only get work orders without queue positions
         unassigned_orders = WorkOrder.query.filter(
@@ -247,17 +247,17 @@ def initialize_all_queue_positions(force_reset=False):
 
         # Sort unassigned orders by priority and date
         def priority_sort_key(wo):
-            if wo.FirmRush == "1":
+            if wo.FirmRush:
                 return (
                     1,
-                    wo.DateRequired or "9999-12-31",
-                    wo.DateIn or "9999-12-31",
+                    safe_date_sort_key(wo.DateRequired),
+                    safe_date_sort_key(wo.DateIn),
                     wo.WorkOrderNo,
                 )
-            elif wo.RushOrder == "1":
-                return (2, wo.DateIn or "9999-12-31", wo.WorkOrderNo)
+            elif wo.RushOrder:
+                return (2, safe_date_sort_key(wo.DateIn), wo.WorkOrderNo)
             else:
-                return (3, wo.DateIn or "9999-12-31", wo.WorkOrderNo)
+                return (3, safe_date_sort_key(wo.DateIn), wo.WorkOrderNo)
 
         sorted_unassigned = sorted(unassigned_orders, key=priority_sort_key)
 
@@ -309,7 +309,7 @@ def cleaning_queue():
         )
 
     # Base filters: incomplete work orders
-    base_filter = or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == "")
+    base_filter = WorkOrder.DateCompleted.is_(None)
 
     # Initialize queue positions for any work orders that don't have them
     initialized_count = initialize_queue_positions_for_unassigned()
@@ -369,12 +369,12 @@ def cleaning_queue():
     print(f"DEBUG - Sample ShipTo values in results: {ship_to_values}")
 
     # Calculate counts for each priority (for the stats display)
-    firm_rush_orders = [wo for wo in all_orders if wo.FirmRush == "1"]
+    firm_rush_orders = [wo for wo in all_orders if wo.FirmRush]
     rush_orders = [
-        wo for wo in all_orders if wo.RushOrder == "1" and wo.FirmRush != "1"
+        wo for wo in all_orders if wo.RushOrder and not wo.FirmRush
     ]
     regular_orders = [
-        wo for wo in all_orders if wo.RushOrder != "1" and wo.FirmRush != "1"
+        wo for wo in all_orders if not wo.RushOrder and not wo.FirmRush
     ]
 
     # Manual pagination
@@ -400,10 +400,10 @@ def cleaning_queue():
 
     # Add display priority labels
     for wo in paginated_orders:
-        if wo.FirmRush == "1":
+        if wo.FirmRush:
             wo.priority_label = "FIRM RUSH"
             wo.priority_class = "priority-firm-rush"
-        elif wo.RushOrder == "1":
+        elif wo.RushOrder:
             wo.priority_label = "RUSH"
             wo.priority_class = "priority-rush"
         else:
@@ -497,23 +497,23 @@ def reorder_cleaning_queue():
 def cleaning_queue_summary():
     """API endpoint for dashboard summary of cleaning queue"""
     # Count work orders in cleaning queue by priority
-    base_filter = or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == "")
+    base_filter = WorkOrder.DateCompleted.is_(None)
 
     firm_rush_count = WorkOrder.query.filter(
         base_filter,
-        WorkOrder.FirmRush == "1",
+        WorkOrder.FirmRush == True,
     ).count()
 
     rush_count = WorkOrder.query.filter(
         base_filter,
-        WorkOrder.RushOrder == "1",
-        or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != "1"),
+        WorkOrder.RushOrder == True,
+        or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != True),
     ).count()
 
     regular_count = WorkOrder.query.filter(
         base_filter,
-        or_(WorkOrder.RushOrder.is_(None), WorkOrder.RushOrder != "1"),
-        or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != "1"),
+        or_(WorkOrder.RushOrder.is_(None), WorkOrder.RushOrder != True),
+        or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != True),
     ).count()
 
     total_count = firm_rush_count + rush_count + regular_count
@@ -523,7 +523,7 @@ def cleaning_queue_summary():
 
     # Get in priority order with queue position ordering
     firm_rush_orders = (
-        base_query.filter(WorkOrder.FirmRush == "1")
+        base_query.filter(WorkOrder.FirmRush == True)
         .order_by(
             WorkOrder.QueuePosition.asc().nullslast(),
             WorkOrder.DateRequired.asc().nullslast(),
@@ -540,8 +540,8 @@ def cleaning_queue_summary():
     if remaining_slots > 0:
         rush_orders = (
             base_query.filter(
-                WorkOrder.RushOrder == "1",
-                or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != "1"),
+                WorkOrder.RushOrder == True,
+                or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != True),
             )
             .order_by(
                 WorkOrder.QueuePosition.asc().nullslast(),
@@ -557,8 +557,8 @@ def cleaning_queue_summary():
         if remaining_slots > 0:
             regular_orders = (
                 base_query.filter(
-                    or_(WorkOrder.RushOrder.is_(None), WorkOrder.RushOrder != "1"),
-                    or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != "1"),
+                    or_(WorkOrder.RushOrder.is_(None), WorkOrder.RushOrder != True),
+                    or_(WorkOrder.FirmRush.is_(None), WorkOrder.FirmRush != True),
                 )
                 .order_by(
                     WorkOrder.QueuePosition.asc().nullslast(),
@@ -587,8 +587,8 @@ def cleaning_queue_summary():
                     "DateIn": format_date_from_str(wo.DateIn),
                     "DateRequired": format_date_from_str(wo.DateRequired),
                     "priority": "FIRM RUSH"
-                    if wo.FirmRush == "1"
-                    else ("RUSH" if wo.RushOrder == "1" else "REGULAR"),
+                    if wo.FirmRush
+                    else ("RUSH" if wo.RushOrder else "REGULAR"),
                     "detail_url": url_for(
                         "work_orders.view_work_order", work_order_no=wo.WorkOrderNo
                     ),
@@ -640,9 +640,7 @@ def initialize_queue_positions():
 def reset_all_queue_positions():
     """Reset all queue positions and reassign them from scratch (WARNING: destroys manual ordering)"""
     try:
-        base_filter = or_(
-            WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""
-        )
+        base_filter = WorkOrder.DateCompleted.is_(None)
 
         # Clear all existing queue positions
         cleared_count = WorkOrder.query.filter(base_filter).update(

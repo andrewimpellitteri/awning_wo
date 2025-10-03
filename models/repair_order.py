@@ -1,5 +1,6 @@
-from datetime import datetime
+from datetime import datetime, date
 from extensions import db
+from sqlalchemy.sql import func
 
 
 class RepairWorkOrder(db.Model):
@@ -15,43 +16,41 @@ class RepairWorkOrder(db.Model):
 
     ROName = db.Column("roname", db.String)
     SOURCE = db.Column("source", db.String)
-    WO_DATE = db.Column("WO DATE", db.String)  # Uppercase with space
-    DATE_TO_SUB = db.Column("DATE TO SUB", db.String)  # Uppercase with spaces
-    DateRequired = db.Column("daterequired", db.String)
-    RushOrder = db.Column("rushorder", db.String)
-    FirmRush = db.Column("firmrush", db.String)
-    QUOTE = db.Column("quote", db.String)
-    QUOTE_BY = db.Column(
-        "QUOTE  BY", db.String
-    )  # Note: TWO spaces between QUOTE and BY
-    APPROVED = db.Column("approved", db.String)
+
+    # Date fields with proper types
+    WO_DATE = db.Column("WO DATE", db.Date, nullable=True)  # Uppercase with space
+    DATE_TO_SUB = db.Column("DATE TO SUB", db.Date, nullable=True)  # Uppercase with spaces
+    DateRequired = db.Column("daterequired", db.Date, nullable=True)
+    DateCompleted = db.Column("datecompleted", db.DateTime, nullable=True)
+    RETURNDATE = db.Column("returndate", db.Date, nullable=True)
+    DATEOUT = db.Column("dateout", db.Date, nullable=True)
+    DateIn = db.Column("datein", db.Date, nullable=True)
+
+    # Boolean fields with proper types
+    RushOrder = db.Column("rushorder", db.Boolean, default=False)
+    FirmRush = db.Column("firmrush", db.Boolean, default=False)
+    QUOTE = db.Column("quote", db.Boolean, default=False)
+    APPROVED = db.Column("approved", db.Boolean, default=False)
+    CLEAN = db.Column("clean", db.Boolean, default=False)  # Uses "YES"/"NO" values
+    CLEANFIRST = db.Column("cleanfirst", db.Boolean, default=False)  # Uses "YES"/"NO" values
+
+    # String fields (keep as string)
+    QUOTE_BY = db.Column("QUOTE  BY", db.String)  # Note: TWO spaces between QUOTE and BY
     RackNo = db.Column("RACK#", db.String)  # Uppercase
     STORAGE = db.Column("storage", db.String)
     ITEM_TYPE = db.Column("ITEM TYPE", db.String)  # Uppercase with space
     TYPE_OF_REPAIR = db.Column("TYPE OF REPAIR", db.String)  # Uppercase with spaces
     SPECIALINSTRUCTIONS = db.Column("specialinstructions", db.Text)
-    CLEAN = db.Column("clean", db.String)
-    SEECLEAN = db.Column("seeclean", db.String)
-    CLEANFIRST = db.Column("cleanfirst", db.String)
+    SEECLEAN = db.Column("seeclean", db.String)  # Work order reference
     REPAIRSDONEBY = db.Column("repairsdoneby", db.String)
-    DateCompleted = db.Column("datecompleted", db.String)
     MaterialList = db.Column("materiallist", db.Text)
     CUSTOMERPRICE = db.Column("customerprice", db.String)
     RETURNSTATUS = db.Column("returnstatus", db.String)
-    RETURNDATE = db.Column("returndate", db.String)
     LOCATION = db.Column("location", db.String)
-    DATEOUT = db.Column("dateout", db.String)
-    DateIn = db.Column("datein", db.String)
 
-    created_at = db.Column(
-        "created_at", db.String, default=lambda: datetime.utcnow().isoformat()
-    )
-    updated_at = db.Column(
-        "updated_at",
-        db.String,
-        default=lambda: datetime.utcnow().isoformat(),
-        onupdate=lambda: datetime.utcnow().isoformat(),
-    )
+    # Timestamp fields with proper types
+    created_at = db.Column(db.DateTime, server_default=func.now())
+    updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
 
     # relationships
     customer = db.relationship("Customer", back_populates="repair_work_orders")
@@ -68,33 +67,37 @@ class RepairWorkOrder(db.Model):
             "CustID": self.CustID,
             "ROName": self.ROName,
             "SOURCE": self.SOURCE,
-            "WO_DATE": self.WO_DATE,
-            "DATE_TO_SUB": self.DATE_TO_SUB,
-            "DateRequired": self.DateRequired,
+            # Serialize dates properly
+            "WO_DATE": self.WO_DATE.strftime("%m/%d/%Y") if self.WO_DATE else None,
+            "DATE_TO_SUB": self.DATE_TO_SUB.strftime("%m/%d/%Y") if self.DATE_TO_SUB else None,
+            "DateRequired": self.DateRequired.strftime("%m/%d/%Y") if self.DateRequired else None,
+            "DateCompleted": self.DateCompleted.strftime("%m/%d/%Y %H:%M:%S") if self.DateCompleted else None,
+            "RETURNDATE": self.RETURNDATE.strftime("%m/%d/%Y") if self.RETURNDATE else None,
+            "DATEOUT": self.DATEOUT.strftime("%m/%d/%Y") if self.DATEOUT else None,
+            "DateIn": self.DateIn.strftime("%m/%d/%Y") if self.DateIn else None,
+            # Booleans serialize as is
             "RushOrder": self.RushOrder,
             "FirmRush": self.FirmRush,
             "QUOTE": self.QUOTE,
-            "QUOTE_BY": self.QUOTE_BY,
             "APPROVED": self.APPROVED,
+            "CLEAN": self.CLEAN,
+            "CLEANFIRST": self.CLEANFIRST,
+            # Strings
+            "QUOTE_BY": self.QUOTE_BY,
             "RackNo": self.RackNo,
             "STORAGE": self.STORAGE,
             "ITEM_TYPE": self.ITEM_TYPE,
             "TYPE_OF_REPAIR": self.TYPE_OF_REPAIR,
             "SPECIALINSTRUCTIONS": self.SPECIALINSTRUCTIONS,
-            "CLEAN": self.CLEAN,
             "SEECLEAN": self.SEECLEAN,
-            "CLEANFIRST": self.CLEANFIRST,
             "REPAIRSDONEBY": self.REPAIRSDONEBY,
-            "DateCompleted": self.DateCompleted,
             "MaterialList": self.MaterialList,
             "CUSTOMERPRICE": self.CUSTOMERPRICE,
             "RETURNSTATUS": self.RETURNSTATUS,
-            "RETURNDATE": self.RETURNDATE,
             "LOCATION": self.LOCATION,
-            "DATEOUT": self.DATEOUT,
-            "DateIn": self.DateIn,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
+            # Timestamps
+            "created_at": self.created_at.strftime("%m/%d/%Y %H:%M:%S") if self.created_at else None,
+            "updated_at": self.updated_at.strftime("%m/%d/%Y %H:%M:%S") if self.updated_at else None,
         }
 
     def __repr__(self):
@@ -126,11 +129,11 @@ class RepairWorkOrderItem(db.Model):
     )
 
     # Rest of the columns
-    Qty = db.Column("qty", db.String)
+    Qty = db.Column("qty", db.Integer, nullable=True)
     Condition = db.Column("condition", db.String)
     Color = db.Column("color", db.String)
     SizeWgt = db.Column("sizewgt", db.String)
-    Price = db.Column("price", db.String)
+    Price = db.Column("price", db.Numeric(10, 2), nullable=True)
 
     # relationships
     repair_work_order = db.relationship("RepairWorkOrder", back_populates="items")

@@ -83,23 +83,16 @@ def api_repair_work_orders():
     # ✅ Status quick filters
     if status == "pending":
         query = query.filter(
-            or_(
-                RepairWorkOrder.DateCompleted.is_(None),
-                RepairWorkOrder.DateCompleted == "",
-            )
+            RepairWorkOrder.DateCompleted.is_(None)
         )
     elif status == "completed":
         query = query.filter(
             RepairWorkOrder.DateCompleted.isnot(None),
-            RepairWorkOrder.DateCompleted != "",
         )
     elif status == "rush":
         query = query.filter(
-            or_(RepairWorkOrder.RushOrder == "YES", RepairWorkOrder.FirmRush == "YES"),
-            or_(
-                RepairWorkOrder.DateCompleted.is_(None),
-                RepairWorkOrder.DateCompleted == "",
-            ),
+            or_(RepairWorkOrder.RushOrder == True, RepairWorkOrder.FirmRush == True),
+            RepairWorkOrder.DateCompleted.is_(None),
         )
 
     # 🔎 Global search filter
@@ -256,7 +249,7 @@ def api_repair_work_orders():
             "Source": order.customer.source_info.SSource
             if order.customer and order.customer.source_info
             else None,
-            "is_rush": order.RushOrder == "YES" or order.FirmRush == "YES",
+            "is_rush": bool(order.RushOrder) or bool(order.FirmRush),
             "detail_url": url_for(
                 "repair_work_orders.view_repair_work_order",
                 repair_order_no=order.RepairOrderNo,
@@ -357,31 +350,31 @@ def create_repair_order(prefill_cust_id=None):
                 CustID=request.form.get("CustID"),
                 ROName=request.form.get("ROName"),
                 SOURCE=request.form.get("SOURCE"),
-                WO_DATE=request.form.get("WO_DATE"),
-                DATE_TO_SUB=request.form.get("DATE_TO_SUB"),
-                DateRequired=request.form.get("DateRequired"),
-                RushOrder=request.form.get("RushOrder", "0"),
-                FirmRush=request.form.get("FirmRush", "0"),
-                QUOTE=request.form.get("QUOTE"),
+                WO_DATE=datetime.strptime(request.form.get("WO_DATE"), "%Y-%m-%d").date() if request.form.get("WO_DATE") else None,
+                DATE_TO_SUB=datetime.strptime(request.form.get("DATE_TO_SUB"), "%Y-%m-%d").date() if request.form.get("DATE_TO_SUB") else None,
+                DateRequired=datetime.strptime(request.form.get("DateRequired"), "%Y-%m-%d").date() if request.form.get("DateRequired") else None,
+                RushOrder="RushOrder" in request.form,
+                FirmRush="FirmRush" in request.form,
+                QUOTE="QUOTE" in request.form,
                 QUOTE_BY=request.form.get("QUOTE_BY"),
-                APPROVED=request.form.get("APPROVED"),
+                APPROVED="APPROVED" in request.form,
                 RackNo=request.form.get("RackNo"),
                 STORAGE=request.form.get("STORAGE"),
                 ITEM_TYPE=request.form.get("ITEM_TYPE"),
                 TYPE_OF_REPAIR=request.form.get("TYPE_OF_REPAIR"),
                 SPECIALINSTRUCTIONS=request.form.get("SPECIALINSTRUCTIONS"),
-                CLEAN=request.form.get("CLEAN"),
+                CLEAN="CLEAN" in request.form,
                 SEECLEAN=request.form.get("SEECLEAN"),
-                CLEANFIRST=request.form.get("CLEANFIRST"),
+                CLEANFIRST="CLEANFIRST" in request.form,
                 REPAIRSDONEBY=request.form.get("REPAIRSDONEBY"),
-                DateCompleted=request.form.get("DateCompleted"),
+                DateCompleted=datetime.strptime(request.form.get("DateCompleted"), "%Y-%m-%d").date() if request.form.get("DateCompleted") else None,
                 MaterialList=request.form.get("MaterialList"),
                 CUSTOMERPRICE=request.form.get("CUSTOMERPRICE"),
                 RETURNSTATUS=request.form.get("RETURNSTATUS"),
-                RETURNDATE=request.form.get("RETURNDATE"),
+                RETURNDATE=datetime.strptime(request.form.get("RETURNDATE"), "%Y-%m-%d").date() if request.form.get("RETURNDATE") else None,
                 LOCATION=request.form.get("LOCATION"),
-                DATEOUT=request.form.get("DATEOUT"),
-                DateIn=datetime.now().strftime("%Y-%m-%d"),
+                DATEOUT=datetime.strptime(request.form.get("DATEOUT"), "%Y-%m-%d").date() if request.form.get("DATEOUT") else None,
+                DateIn=datetime.now().date(),
             )
 
             db.session.add(repair_order)
@@ -511,30 +504,30 @@ def edit_repair_order(repair_order_no):
             repair_order.CustID = cust_id
             repair_order.ROName = ro_name
             repair_order.SOURCE = request.form.get("SOURCE")
-            repair_order.WO_DATE = request.form.get("WO_DATE")
-            repair_order.DATE_TO_SUB = request.form.get("DATE_TO_SUB")
-            repair_order.DateRequired = request.form.get("DateRequired")
-            repair_order.RushOrder = "YES" if request.form.get("RushOrder") else "NO"
-            repair_order.FirmRush = "YES" if request.form.get("FirmRush") else "NO"
-            repair_order.QUOTE = request.form.get("QUOTE")
+            repair_order.WO_DATE = datetime.strptime(request.form.get("WO_DATE"), "%Y-%m-%d").date() if request.form.get("WO_DATE") else None
+            repair_order.DATE_TO_SUB = datetime.strptime(request.form.get("DATE_TO_SUB"), "%Y-%m-%d").date() if request.form.get("DATE_TO_SUB") else None
+            repair_order.DateRequired = datetime.strptime(request.form.get("DateRequired"), "%Y-%m-%d").date() if request.form.get("DateRequired") else None
+            repair_order.RushOrder = "RushOrder" in request.form
+            repair_order.FirmRush = "FirmRush" in request.form
+            repair_order.QUOTE = "QUOTE" in request.form
             repair_order.QUOTE_BY = request.form.get("QUOTE_BY")
-            repair_order.APPROVED = request.form.get("APPROVED")
+            repair_order.APPROVED = "APPROVED" in request.form
             repair_order.RackNo = request.form.get("RackNo")
             repair_order.STORAGE = request.form.get("STORAGE")
             repair_order.ITEM_TYPE = request.form.get("ITEM_TYPE")
             repair_order.TYPE_OF_REPAIR = request.form.get("TYPE_OF_REPAIR")
             repair_order.SPECIALINSTRUCTIONS = request.form.get("SPECIALINSTRUCTIONS")
-            repair_order.CLEAN = request.form.get("CLEAN")
+            repair_order.CLEAN = "CLEAN" in request.form
             repair_order.SEECLEAN = request.form.get("SEECLEAN")
-            repair_order.CLEANFIRST = request.form.get("CLEANFIRST")
+            repair_order.CLEANFIRST = "CLEANFIRST" in request.form
             repair_order.REPAIRSDONEBY = request.form.get("REPAIRSDONEBY")
-            repair_order.DateCompleted = request.form.get("DateCompleted")
+            repair_order.DateCompleted = datetime.strptime(request.form.get("DateCompleted"), "%Y-%m-%d").date() if request.form.get("DateCompleted") else None
             repair_order.MaterialList = request.form.get("MaterialList")
             repair_order.CUSTOMERPRICE = request.form.get("CUSTOMERPRICE")
             repair_order.RETURNSTATUS = request.form.get("RETURNSTATUS")
-            repair_order.RETURNDATE = request.form.get("RETURNDATE")
+            repair_order.RETURNDATE = datetime.strptime(request.form.get("RETURNDATE"), "%Y-%m-%d").date() if request.form.get("RETURNDATE") else None
             repair_order.LOCATION = request.form.get("LOCATION")
-            repair_order.DATEOUT = request.form.get("DATEOUT")
+            repair_order.DATEOUT = datetime.strptime(request.form.get("DATEOUT"), "%Y-%m-%d").date() if request.form.get("DATEOUT") else None
 
             # Handle items: delete all existing and recreate from form data
             # This is simpler than trying to update items with composite keys

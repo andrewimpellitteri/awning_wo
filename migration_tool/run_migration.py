@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import sys
 import os
+from datetime import datetime
 
 # Add project root to Python path to allow importing from other directories
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -15,6 +16,137 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from migration_tool.migration_config import ACCESS_DB_PATH, SQLITE_DB_PATH, POSTGRES_URI
 from extensions import db
 from app import create_app
+
+
+# =============================================================================
+# DATA TYPE CONVERSION FUNCTIONS
+# =============================================================================
+
+def convert_date_field(value):
+    """Convert various date string formats to proper date object - handles messy data"""
+    if pd.isna(value) or value in ['', None, '0000-00-00', '00/00/00', '00/00/0000']:
+        return None
+
+    try:
+        # Try pandas to_datetime first (handles most formats)
+        parsed = pd.to_datetime(str(value), errors='coerce')
+        if pd.notna(parsed):
+            return parsed.date()
+    except:
+        pass
+
+    # Try common formats explicitly
+    formats = [
+        "%Y-%m-%d",           # 2024-01-15
+        "%m/%d/%y %H:%M:%S",  # 01/15/24 14:30:00
+        "%m/%d/%Y",           # 01/15/2024
+        "%m/%d/%y",           # 01/15/24
+        "%Y-%m-%dT%H:%M:%S",  # ISO format
+    ]
+
+    for fmt in formats:
+        try:
+            return datetime.strptime(str(value).strip(), fmt).date()
+        except (ValueError, AttributeError):
+            continue
+
+    # Log failed conversions for review
+    click.echo(f"    ⚠️  Could not convert date value: {repr(value)}")
+    return None
+
+
+def convert_boolean_field(value):
+    """Convert string boolean to actual boolean - handles messy legacy data"""
+    if pd.isna(value) or value in ['', None]:
+        return None
+
+    # Convert to uppercase string for comparison
+    str_value = str(value).strip().upper()
+
+    # Truthy values
+    if str_value in ("1", "YES", "Y", "TRUE", "T"):
+        return True
+
+    # Falsy values (explicit false)
+    if str_value in ("0", "NO", "N", "FALSE", "F"):
+        return False
+
+    # Default to None for unexpected values
+    return None
+
+
+def convert_numeric_field(value, field_type='integer'):
+    """Convert string numeric to integer or decimal"""
+    if pd.isna(value) or value in ['', None]:
+        return None
+
+    try:
+        # Remove currency symbols and commas
+        cleaned = str(value).replace('$', '').replace(',', '').strip()
+
+        if field_type == 'integer':
+            # Convert to int
+            return int(float(cleaned))  # float first to handle "5.0" -> 5
+        else:
+            # Convert to decimal (for Price fields)
+            return round(float(cleaned), 2)
+    except (ValueError, AttributeError):
+        click.echo(f"    ⚠️  Could not convert numeric value: {repr(value)}")
+        return None
+
+
+def apply_type_conversions(df, table_name):
+    """Apply data type conversions to dataframe based on table"""
+    click.echo(f"    - Applying data type conversions...")
+
+    # WorkOrder table conversions
+    if table_name.lower() == "tblcustworkorderdetail":
+        # Date fields
+        for date_field in ['datecompleted', 'daterequired', 'datein', 'clean', 'treat']:
+            if date_field in df.columns:
+                df[date_field] = df[date_field].apply(convert_date_field)
+
+        # Boolean fields
+        for bool_field in ['rushorder', 'firmrush', 'quote', 'seerepair']:
+            if bool_field in df.columns:
+                df[bool_field] = df[bool_field].apply(convert_boolean_field)
+
+    # RepairWorkOrder table conversions
+    elif table_name.lower() == "tblrepairworkorderdetail":
+        # Date fields (note the odd column names with spaces/uppercase)
+        date_fields_map = {
+            'WO DATE': 'WO DATE',
+            'DATE TO SUB': 'DATE TO SUB',
+            'daterequired': 'daterequired',
+            'datecompleted': 'datecompleted',
+            'returndate': 'returndate',
+            'dateout': 'dateout',
+            'datein': 'datein'
+        }
+        for field_name in date_fields_map.values():
+            if field_name in df.columns:
+                df[field_name] = df[field_name].apply(convert_date_field)
+
+        # Boolean fields
+        for bool_field in ['rushorder', 'firmrush', 'quote', 'approved', 'clean', 'cleanfirst']:
+            if bool_field in df.columns:
+                df[bool_field] = df[bool_field].apply(convert_boolean_field)
+
+    # WorkOrderItem and RepairWorkOrderItem conversions
+    elif table_name.lower() in ["tblorddetcustawngs", "tblreporddetcustawngs"]:
+        if 'qty' in df.columns:
+            df['qty'] = df['qty'].apply(lambda x: convert_numeric_field(x, 'integer'))
+        if 'price' in df.columns:
+            df['price'] = df['price'].apply(lambda x: convert_numeric_field(x, 'decimal'))
+
+    # Inventory table conversions
+    elif table_name.lower() == "tblcustawngs":
+        if 'qty' in df.columns:
+            df['qty'] = df['qty'].apply(lambda x: convert_numeric_field(x, 'integer'))
+        if 'price' in df.columns:
+            df['price'] = df['price'].apply(lambda x: convert_numeric_field(x, 'decimal'))
+
+    return df
 
 
 @click.group()
@@ -335,6 +467,9 @@ def step_3_transfer_data_to_postgres():
                             inplace=True,
                         )
 
+                    # Apply data type conversions
+                    df = apply_type_conversions(df, table_name)
+
                     # FIXED: Use smaller chunks and handle errors gracefully
                     try:
                         df.to_sql(
@@ -429,6 +564,35 @@ def run(access_file):
     step_4_test_migration()
 
     click.echo("\n🎉 Migration complete!")
+
+
+@cli.command()
+@click.option(
+    "--access-file", default=ACCESS_DB_PATH, help="Path to the Access DB file."
+)
+def step1(access_file):
+    """Step 1: Convert Access DB to SQLite"""
+    global ACCESS_DB_PATH
+    ACCESS_DB_PATH = access_file
+    step_1_accdb_to_sqlite()
+
+
+@cli.command()
+def step2():
+    """Step 2: Setup PostgreSQL schema"""
+    step_2_setup_postgres_schema()
+
+
+@cli.command()
+def step3():
+    """Step 3: Transfer data to PostgreSQL with type conversions"""
+    step_3_transfer_data_to_postgres()
+
+
+@cli.command()
+def step4():
+    """Step 4: Run validation tests"""
+    step_4_test_migration()
 
 
 if __name__ == "__main__":

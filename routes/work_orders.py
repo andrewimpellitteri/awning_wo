@@ -126,9 +126,7 @@ def assign_queue_position_to_new_work_order(work_order):
 
     try:
         # Get the highest existing queue position for incomplete work orders
-        base_filter = or_(
-            WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""
-        )
+        base_filter = WorkOrder.DateCompleted.is_(None)
         max_position = (
             db.session.query(func.max(WorkOrder.QueuePosition))
             .filter(base_filter)
@@ -205,16 +203,12 @@ def list_by_status(status):
     page = request.args.get("page", 1, type=int)
     per_page = 10
 
-    # Pending = DateCompleted is NULL or empty string
+    # Pending = DateCompleted is NULL
     if status.upper() == "PENDING":
-        query = WorkOrder.query.filter(
-            or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == "")
-        )
+        query = WorkOrder.query.filter(WorkOrder.DateCompleted.is_(None))
     # Completed = DateCompleted has a value
     elif status.upper() == "COMPLETED":
-        query = WorkOrder.query.filter(
-            WorkOrder.DateCompleted.isnot(None), WorkOrder.DateCompleted != ""
-        )
+        query = WorkOrder.query.filter(WorkOrder.DateCompleted.isnot(None))
     else:
         query = WorkOrder.query  # fallback if unknown status
 
@@ -262,8 +256,8 @@ def rush_work_orders():
     per_page = 10
 
     query = WorkOrder.query.filter(
-        or_(WorkOrder.RushOrder == "1", WorkOrder.FirmRush == "1"),
-        or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""),
+        or_(WorkOrder.RushOrder == True, WorkOrder.FirmRush == True),
+        WorkOrder.DateCompleted.is_(None),
     )
 
     if search:
@@ -372,16 +366,19 @@ def create_work_order(prefill_cust_id=None):
                 RackNo=request.form.get("RackNo"),
                 SpecialInstructions=request.form.get("SpecialInstructions"),
                 RepairsNeeded=request.form.get("RepairsNeeded"),
-                SeeRepair=request.form.get("SeeRepair"),
+                # Boolean fields - checkbox present = True
+                SeeRepair="SeeRepair" in request.form,
+                Quote="Quote" in request.form,
+                RushOrder="RushOrder" in request.form,
+                FirmRush="FirmRush" in request.form,
+                # Date fields - convert from string or use defaults
+                DateIn=date.today(),
+                DateRequired=datetime.strptime(request.form.get("DateRequired"), "%Y-%m-%d").date() if request.form.get("DateRequired") else None,
+                Clean=datetime.strptime(request.form.get("Clean"), "%Y-%m-%d").date() if request.form.get("Clean") else None,
+                Treat=datetime.strptime(request.form.get("Treat"), "%Y-%m-%d").date() if request.form.get("Treat") else None,
+                # String fields
                 ReturnStatus=request.form.get("ReturnStatus"),
-                Quote=request.form.get("Quote"),
-                Clean=request.form.get("Clean"),
-                Treat=request.form.get("Treat"),
-                RushOrder=request.form.get("RushOrder", "0"),
-                DateRequired=request.form.get("DateRequired"),
-                DateIn=datetime.now().strftime("%Y-%m-%d"),
                 ShipTo=request.form.get("ShipTo"),
-                FirmRush=request.form.get("FirmRush", "0"),
                 CleanFirstWO=request.form.get("CleanFirstWO"),
             )
             db.session.add(work_order)
@@ -572,17 +569,28 @@ def edit_work_order(work_order_no):
             work_order.RackNo = request.form.get("RackNo")
             work_order.SpecialInstructions = request.form.get("SpecialInstructions")
             work_order.RepairsNeeded = request.form.get("RepairsNeeded")
-            work_order.SeeRepair = request.form.get("SeeRepair")
             work_order.ReturnStatus = request.form.get("ReturnStatus")
-            work_order.Quote = request.form.get("Quote")
-            work_order.Clean = request.form.get("Clean")
-            work_order.Treat = request.form.get("Treat")
-            work_order.RushOrder = request.form.get("RushOrder", "0")
-            work_order.DateRequired = request.form.get("DateRequired")
             work_order.ShipTo = request.form.get("ShipTo")
-            work_order.FirmRush = request.form.get("FirmRush", "0")
             work_order.CleanFirstWO = request.form.get("CleanFirstWO")
-            work_order.DateCompleted = request.form.get("DateCompleted")
+
+            # Boolean fields - checkbox present = True
+            work_order.SeeRepair = "SeeRepair" in request.form
+            work_order.Quote = "Quote" in request.form
+            work_order.RushOrder = "RushOrder" in request.form
+            work_order.FirmRush = "FirmRush" in request.form
+
+            # Date fields - convert from string
+            date_required_str = request.form.get("DateRequired")
+            work_order.DateRequired = datetime.strptime(date_required_str, "%Y-%m-%d").date() if date_required_str else None
+
+            clean_str = request.form.get("Clean")
+            work_order.Clean = datetime.strptime(clean_str, "%Y-%m-%d").date() if clean_str else None
+
+            treat_str = request.form.get("Treat")
+            work_order.Treat = datetime.strptime(treat_str, "%Y-%m-%d").date() if treat_str else None
+
+            date_completed_str = request.form.get("DateCompleted")
+            work_order.DateCompleted = datetime.strptime(date_completed_str, "%Y-%m-%d") if date_completed_str else None
 
             # Handle existing work order items (NO INVENTORY IMPACT)
             existing_items = WorkOrderItem.query.filter_by(
@@ -735,8 +743,12 @@ def cleaning_room_edit_work_order(work_order_no):
     if request.method == "POST":
         try:
             # Only allow updating Clean, Treat, and SpecialInstructions
-            work_order.Clean = request.form.get("Clean")
-            work_order.Treat = request.form.get("Treat")
+            clean_str = request.form.get("Clean")
+            work_order.Clean = datetime.strptime(clean_str, "%Y-%m-%d").date() if clean_str else None
+
+            treat_str = request.form.get("Treat")
+            work_order.Treat = datetime.strptime(treat_str, "%Y-%m-%d").date() if treat_str else None
+
             work_order.SpecialInstructions = request.form.get("SpecialInstructions")
 
             # Set ProcessingStatus based on form checkbox
@@ -915,17 +927,13 @@ def api_work_orders():
 
     # Status quick filters
     if status == "pending":
-        query = query.filter(
-            or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == "")
-        )
+        query = query.filter(WorkOrder.DateCompleted.is_(None))
     elif status == "completed":
-        query = query.filter(
-            WorkOrder.DateCompleted.isnot(None), WorkOrder.DateCompleted != ""
-        )
+        query = query.filter(WorkOrder.DateCompleted.isnot(None))
     elif status == "rush":
         query = query.filter(
-            or_(WorkOrder.RushOrder == "1", WorkOrder.FirmRush == "1"),
-            or_(WorkOrder.DateCompleted.is_(None), WorkOrder.DateCompleted == ""),
+            or_(WorkOrder.RushOrder == True, WorkOrder.FirmRush == True),
+            WorkOrder.DateCompleted.is_(None),
         )
     # --- End of Filter Logic ---
 

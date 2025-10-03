@@ -113,9 +113,9 @@ def load_work_orders():
         """
         df = pd.read_sql(query, db.engine)
 
-        # Parse dates
-        df['datein'] = pd.to_datetime(df['datein'], format='%m/%d/%y %H:%M:%S', errors='coerce')
-        df['datecompleted'] = pd.to_datetime(df['datecompleted'], format='%m/%d/%y %H:%M:%S', errors='coerce')
+        # Parse dates (now proper date/datetime objects from DB, not strings)
+        df['datein'] = pd.to_datetime(df['datein'], errors='coerce')
+        df['datecompleted'] = pd.to_datetime(df['datecompleted'], errors='coerce')
 
         # Clean quote column
         df['quote_numeric'] = df['quote'].apply(clean_numeric_string)

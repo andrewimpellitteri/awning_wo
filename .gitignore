@@ -128,6 +128,7 @@ aws_info.txt
 .elasticbeanstalk/
 
 migration_tool/*.sqlite
+migration_tool/*.json
 
 uploads/
 .env.s3
