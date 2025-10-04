@@ -60,6 +60,11 @@ def create_inventory():
             # Generate unique inventory key
             inventory_key = f"INV_{uuid.uuid4().hex[:8].upper()}"
 
+            # Convert empty string to None for Price field
+            price = data.get("Price")
+            if price == "" or price is None:
+                price = None
+
             item = Inventory(
                 InventoryKey=inventory_key,
                 Description=data.get("Description"),
@@ -67,7 +72,7 @@ def create_inventory():
                 Condition=data.get("Condition"),
                 Color=data.get("Color"),
                 SizeWgt=data.get("SizeWgt"),
-                Price=data.get("Price"),
+                Price=price,
                 CustID=data.get("CustID"),
                 Qty=data.get("Qty", "0"),
             )
@@ -99,12 +104,17 @@ def edit_inventory(inventory_key):
         data = request.form
 
         try:
+            # Convert empty string to None for Price field
+            price = data.get("Price")
+            if price == "" or price is None:
+                price = None
+
             item.Description = data.get("Description")
             item.Material = data.get("Material")
             item.Condition = data.get("Condition")
             item.Color = data.get("Color")
             item.SizeWgt = data.get("SizeWgt")
-            item.Price = data.get("Price")
+            item.Price = price
             item.CustID = data.get("CustID")
             item.Qty = data.get("Qty")
 
@@ -249,6 +259,11 @@ def add_inventory_ajax():
     inventory_key = f"INV_{uuid.uuid4().hex[:8].upper()}"
 
     try:
+        # Convert empty string to None for Price field
+        price = data.get("Price")
+        if price == "" or price is None:
+            price = None
+
         item = Inventory(
             InventoryKey=inventory_key,
             Description=data.get("Description"),
@@ -256,7 +271,7 @@ def add_inventory_ajax():
             Condition=data.get("Condition"),
             Color=data.get("Color"),
             SizeWgt=data.get("SizeWgt"),
-            Price=data.get("Price"),
+            Price=price,
             CustID=customer_id,
             Qty=data.get("Qty", "0"),
         )
@@ -278,12 +293,17 @@ def edit_inventory_ajax(inventory_key):
     data = request.form
 
     try:
+        # Convert empty string to None for Price field
+        price = data.get("Price")
+        if price == "" or price is None:
+            price = None
+
         item.Description = data.get("Description")
         item.Material = data.get("Material")
         item.Condition = data.get("Condition")
         item.Color = data.get("Color")
         item.SizeWgt = data.get("SizeWgt")
-        item.Price = data.get("Price")
+        item.Price = price
         item.Qty = data.get("Qty")
 
         db.session.commit()

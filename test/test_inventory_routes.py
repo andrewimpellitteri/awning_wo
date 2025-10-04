@@ -2,32 +2,55 @@ import pytest
 from decimal import Decimal
 from models.inventory import Inventory
 from models.customer import Customer
+from models.user import User
+from extensions import db
+from werkzeug.security import generate_password_hash
 
 
 @pytest.fixture
-def test_customer(db):
+def admin_client(client, app):
+    """Provide a logged-in client with an admin user."""
+    with app.app_context():
+        admin = User(
+            username="admin",
+            email="admin@example.com",
+            role="admin",
+            password_hash=generate_password_hash("password"),
+        )
+        db.session.add(admin)
+        db.session.commit()
+
+        client.post("/login", data={"username": "admin", "password": "password"})
+        yield client
+        client.get("/logout")
+
+
+@pytest.fixture
+def test_customer(app):
     """Create a test customer"""
-    customer = Customer(
-        CustID="TEST001",
-        Name="Test Customer",
-        Address="123 Test St",
-        City="Test City",
-        State="TS",
-        ZipCode="12345"
-    )
-    db.session.add(customer)
-    db.session.commit()
-    return customer
+    with app.app_context():
+        customer = Customer(
+            CustID="TEST001",
+            Name="Test Customer",
+            Address="123 Test St",
+            City="Test City",
+            State="TS",
+            ZipCode="12345"
+        )
+        db.session.add(customer)
+        db.session.commit()
+        yield customer
+        # Cleanup
+        db.session.query(Customer).filter_by(CustID="TEST001").delete()
+        db.session.commit()
 
 
 class TestInventoryRoutes:
     """Test inventory route handlers"""
 
-    def test_add_inventory_ajax_success(self, client, auth, test_customer):
+    def test_add_inventory_ajax_success(self, admin_client, test_customer):
         """Test AJAX inventory creation with decimal price"""
-        auth.login()
-
-        response = client.post('/inventory/add_ajax', data={
+        response = admin_client.post('/inventory/add_ajax', data={
             'CustID': test_customer.CustID,
             'Description': 'Test Awning',
             'Material': 'Canvas',
@@ -55,11 +78,9 @@ class TestInventoryRoutes:
         assert item['CustID'] == test_customer.CustID
         assert 'InventoryKey' in item
 
-    def test_add_inventory_ajax_no_price(self, client, auth, test_customer):
+    def test_add_inventory_ajax_no_price(self, admin_client, test_customer):
         """Test AJAX inventory creation without price"""
-        auth.login()
-
-        response = client.post('/inventory/add_ajax', data={
+        response = admin_client.post('/inventory/add_ajax', data={
             'CustID': test_customer.CustID,
             'Description': 'Test Awning No Price',
             'Material': 'Vinyl',
@@ -73,27 +94,47 @@ class TestInventoryRoutes:
         item = json_data['item']
         assert item['Price'] is None  # Should handle None properly
 
-    def test_edit_inventory_ajax_success(self, client, auth, test_customer, db):
-        """Test AJAX inventory editing"""
-        auth.login()
+    def test_add_inventory_ajax_empty_string_price(self, admin_client, test_customer):
+        """Test AJAX inventory creation with empty string price"""
+        response = admin_client.post('/inventory/add_ajax', data={
+            'CustID': test_customer.CustID,
+            'Description': 'Staysail',
+            'Material': '',
+            'Condition': 'Poor',
+            'Color': '',
+            'SizeWgt': '67#',
+            'Price': '',  # Empty string should be converted to None
+            'Qty': '1'
+        })
 
+        assert response.status_code == 200
+        json_data = response.get_json()
+        assert json_data['success'] is True
+
+        item = json_data['item']
+        assert item['Price'] is None  # Empty string should be converted to None
+        assert item['Description'] == 'Staysail'
+
+    def test_edit_inventory_ajax_success(self, admin_client, app, test_customer):
+        """Test AJAX inventory editing"""
         # Create an inventory item first
-        inventory = Inventory(
-            InventoryKey='TEST123',
-            Description='Original Description',
-            Material='Canvas',
-            Condition='Good',
-            Color='Red',
-            SizeWgt='8x8',
-            Price=Decimal('75.50'),
-            CustID=test_customer.CustID,
-            Qty=3
-        )
-        db.session.add(inventory)
-        db.session.commit()
+        with app.app_context():
+            inventory = Inventory(
+                InventoryKey='TEST123',
+                Description='Original Description',
+                Material='Canvas',
+                Condition='Good',
+                Color='Red',
+                SizeWgt='8x8',
+                Price=Decimal('75.50'),
+                CustID=test_customer.CustID,
+                Qty=3
+            )
+            db.session.add(inventory)
+            db.session.commit()
 
         # Edit the item
-        response = client.post(f'/inventory/edit_ajax/{inventory.InventoryKey}', data={
+        response = admin_client.post(f'/inventory/edit_ajax/TEST123', data={
             'Description': 'Updated Description',
             'Material': 'Vinyl',
             'Condition': 'Excellent',
@@ -117,23 +158,22 @@ class TestInventoryRoutes:
         assert item['Price'] == 125.99  # Should be float
         assert item['Qty'] == 7
 
-    def test_delete_inventory_ajax_success(self, client, auth, test_customer, db):
+    def test_delete_inventory_ajax_success(self, admin_client, app, test_customer):
         """Test AJAX inventory deletion"""
-        auth.login()
-
         # Create an inventory item
-        inventory = Inventory(
-            InventoryKey='DELETE123',
-            Description='Item to Delete',
-            Material='Canvas',
-            CustID=test_customer.CustID,
-            Qty=1
-        )
-        db.session.add(inventory)
-        db.session.commit()
+        with app.app_context():
+            inventory = Inventory(
+                InventoryKey='DELETE123',
+                Description='Item to Delete',
+                Material='Canvas',
+                CustID=test_customer.CustID,
+                Qty=1
+            )
+            db.session.add(inventory)
+            db.session.commit()
 
         # Delete the item
-        response = client.post(f'/inventory/delete_ajax/{inventory.InventoryKey}')
+        response = admin_client.post(f'/inventory/delete_ajax/DELETE123')
 
         assert response.status_code == 200
         json_data = response.get_json()
@@ -141,8 +181,9 @@ class TestInventoryRoutes:
         assert 'message' in json_data
 
         # Verify item is deleted from database
-        deleted_item = Inventory.query.get('DELETE123')
-        assert deleted_item is None
+        with app.app_context():
+            deleted_item = Inventory.query.get('DELETE123')
+            assert deleted_item is None
 
     def test_inventory_model_to_dict_with_decimal(self):
         """Test that to_dict properly converts Decimal to float"""
