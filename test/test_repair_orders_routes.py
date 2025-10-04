@@ -274,10 +274,12 @@ class TestRepairOrderRoutes:
         assert response.status_code == 200
         assert b"Updated Test Item 1" in response.data
 
-        # Query by composite key (RepairOrderNo, Description, Material)
-        updated_item = RepairWorkOrderItem.query.get(
-            ("2001", "Updated Test Item 1", "A")
-        )
+        # Query by filter since primary key is now 'id' (auto-increment)
+        updated_item = RepairWorkOrderItem.query.filter_by(
+            RepairOrderNo="2001",
+            Description="Updated Test Item 1",
+            Material="A"
+        ).first()
         assert updated_item is not None
         assert updated_item.Description == "Updated Test Item 1"
 
@@ -340,7 +342,11 @@ class TestRepairOrderRoutes:
         assert b"Test Item 2" not in response.data
 
         # Verify Test Item 2 was deleted by checking it doesn't exist
-        deleted_item = RepairWorkOrderItem.query.get(("2001", "Test Item 2", "A"))
+        deleted_item = RepairWorkOrderItem.query.filter_by(
+            RepairOrderNo="2001",
+            Description="Test Item 2",
+            Material="A"
+        ).first()
         assert deleted_item is None
 
     def test_generate_repair_order_pdf(
