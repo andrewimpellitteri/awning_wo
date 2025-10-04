@@ -430,7 +430,10 @@ def create_repair_order(prefill_cust_id=None):
     sources = Source.query.order_by(Source.SSource).all()
     form_data = {}
     if prefill_cust_id:
-        form_data["CustID"] = str(prefill_cust_id)
+        customer = Customer.query.get(str(prefill_cust_id))
+        if customer:
+            form_data["CustID"] = str(prefill_cust_id)
+            form_data["ROName"] = customer.Name
     return render_template(
         "repair_orders/create.html",
         customers=customers,
