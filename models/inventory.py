@@ -23,7 +23,7 @@ class Inventory(db.Model):
             "Condition": self.Condition,
             "Color": self.Color,
             "SizeWgt": self.SizeWgt,
-            "Price": self.Price,
+            "Price": float(self.Price) if self.Price is not None else None,
             "CustID": self.CustID,
             "Qty": self.Qty,
             "InventoryKey": self.InventoryKey,
