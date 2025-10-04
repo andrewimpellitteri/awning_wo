@@ -70,15 +70,27 @@ def load_latest_model_from_s3():
             print("[ML STARTUP] No models found in S3")
             return False
 
-        # Find the most recent cron model
-        model_files = [
+        # Get all .pkl model files
+        all_model_files = [
             obj for obj in response["Contents"]
-            if obj["Key"].endswith(".pkl") and "cron_" in obj["Key"]
+            if obj["Key"].endswith(".pkl")
         ]
 
-        if not model_files:
-            print("[ML STARTUP] No cron models found in S3")
+        if not all_model_files:
+            print("[ML STARTUP] No model files found in S3")
             return False
+
+        # Prefer cron models, but fall back to any model
+        cron_models = [obj for obj in all_model_files if "cron_" in obj["Key"]]
+
+        if cron_models:
+            # Use the most recent cron model
+            model_files = cron_models
+            print(f"[ML STARTUP] Found {len(cron_models)} cron model(s)")
+        else:
+            # Fall back to any available model
+            model_files = all_model_files
+            print(f"[ML STARTUP] No cron models found, using fallback - found {len(model_files)} model(s)")
 
         # Sort by last modified date, get most recent
         latest_model = sorted(model_files, key=lambda x: x["LastModified"], reverse=True)[0]

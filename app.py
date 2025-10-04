@@ -165,11 +165,15 @@ def create_app(config_class=Config):
     return app
 
 
-# Create app instance
-app = create_app()
+# Create app instance (skip during test collection to avoid DB connection errors)
+if os.environ.get("TESTING") != "True":
+    app = create_app()
+else:
+    # Create a placeholder for imports during testing
+    app = None
 
 # Debug info (only show in development)
-if os.environ.get("FLASK_ENV") == "development":
+if os.environ.get("FLASK_ENV") == "development" and app is not None:
     with app.app_context():
         from models.work_order_file import WorkOrderFile
 
@@ -196,8 +200,9 @@ if os.environ.get("FLASK_ENV") == "development":
 
 if __name__ == "__main__":
     # Local development server
-    app.run(
-        debug=os.environ.get("FLASK_DEBUG", "False").lower() == "true",
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000)),
-    )
+    if app is not None:
+        app.run(
+            debug=os.environ.get("FLASK_DEBUG", "False").lower() == "true",
+            host="0.0.0.0",
+            port=int(os.environ.get("PORT", 5000)),
+        )

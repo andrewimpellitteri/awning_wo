@@ -46,7 +46,7 @@ jobs:
           pytest test/ -v --cov=. --cov-report=term-missing --cov-report=json --maxfail=10 --disable-warnings
         env:
           FLASK_ENV: testing
-          TESTING: true
+          TESTING: True
 
       - name: Extract coverage percentage
         run: |
