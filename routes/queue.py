@@ -62,31 +62,17 @@ def initialize_queue_positions_for_unassigned():
         if not unassigned_orders:
             return 0
 
-        # Sort unassigned orders by priority and date
-        def priority_sort_key(wo):
-            if wo.FirmRush:
-                return (
-                    1,
-                    safe_date_sort_key(wo.DateRequired),
-                    safe_date_sort_key(wo.DateIn),
-                    wo.WorkOrderNo,
-                )
-            elif wo.RushOrder:
-                return (2, safe_date_sort_key(wo.DateIn), wo.WorkOrderNo)
-            else:
-                return (3, safe_date_sort_key(wo.DateIn), wo.WorkOrderNo)
-
-        sorted_unassigned = sorted(unassigned_orders, key=priority_sort_key)
-
-        # Separate by priority for proper insertion and sort each group appropriately
-        firm_rush_orders = [wo for wo in sorted_unassigned if wo.FirmRush]
+        # Separate unassigned orders by priority
+        firm_rush_orders = [wo for wo in unassigned_orders if wo.FirmRush]
         rush_orders = [
-            wo for wo in sorted_unassigned if wo.RushOrder and not wo.FirmRush
+            wo for wo in unassigned_orders if wo.RushOrder and not wo.FirmRush
         ]
         regular_orders = [
-            wo for wo in sorted_unassigned if not wo.RushOrder and not wo.FirmRush
+            wo for wo in unassigned_orders if not wo.RushOrder and not wo.FirmRush
         ]
 
+        # Sort each priority group appropriately
+        # Firm Rush: by DateRequired (closest first), then DateIn (oldest first)
         firm_rush_orders.sort(
             key=lambda wo: (
                 safe_date_sort_key(wo.DateRequired),
@@ -95,10 +81,10 @@ def initialize_queue_positions_for_unassigned():
             )
         )
 
-        # Sort rush orders by DateIn, then WorkOrderNo
+        # Rush: by DateIn (oldest first)
         rush_orders.sort(key=lambda wo: (safe_date_sort_key(wo.DateIn), wo.WorkOrderNo))
 
-        # Sort regular orders by DateIn, then WorkOrderNo
+        # Regular: by DateIn (oldest first)
         regular_orders.sort(
             key=lambda wo: (safe_date_sort_key(wo.DateIn), wo.WorkOrderNo)
         )
@@ -110,7 +96,7 @@ def initialize_queue_positions_for_unassigned():
             # Shift all existing orders down by the number of firm rush orders
             existing_orders = WorkOrder.query.filter(
                 base_filter, WorkOrder.QueuePosition.isnot(None)
-            ).all()
+            ).order_by(WorkOrder.QueuePosition).all()
 
             for existing_wo in existing_orders:
                 existing_wo.QueuePosition += len(firm_rush_orders)
@@ -122,38 +108,53 @@ def initialize_queue_positions_for_unassigned():
 
         # Handle Rush orders - insert after firm rush but before regular
         if rush_orders:
-            # Find where rush orders should start (after last firm rush)
-            last_firm_rush_position = 0
-            if firm_rush_orders:
-                last_firm_rush_position = len(firm_rush_orders)
-            else:
-                # Check existing firm rush orders
-                existing_firm_rush = (
-                    WorkOrder.query.filter(
-                        base_filter,
-                        WorkOrder.FirmRush == True,
-                        WorkOrder.QueuePosition.isnot(None),
-                    )
-                    .order_by(WorkOrder.QueuePosition.desc())
-                    .first()
+            # Find where rush orders should start (after last firm rush, before first regular)
+            # Get all existing firm rush and rush orders to find the insertion point
+            existing_firm_rush = (
+                WorkOrder.query.filter(
+                    base_filter,
+                    WorkOrder.FirmRush == True,
+                    WorkOrder.QueuePosition.isnot(None),
                 )
+                .order_by(WorkOrder.QueuePosition.desc())
+                .first()
+            )
 
-                if existing_firm_rush:
-                    last_firm_rush_position = existing_firm_rush.QueuePosition
+            existing_rush = (
+                WorkOrder.query.filter(
+                    base_filter,
+                    WorkOrder.RushOrder == True,
+                    WorkOrder.FirmRush == False,
+                    WorkOrder.QueuePosition.isnot(None),
+                )
+                .order_by(WorkOrder.QueuePosition.desc())
+                .first()
+            )
 
-            # Shift existing rush and regular orders down
-            existing_non_firm_rush = WorkOrder.query.filter(
+            # Determine insertion point
+            if existing_rush:
+                # Insert after the last existing rush order
+                insertion_point = existing_rush.QueuePosition
+            elif existing_firm_rush:
+                # Insert after the last firm rush order
+                insertion_point = existing_firm_rush.QueuePosition
+            else:
+                # No existing firm rush or rush orders, insert at position 0
+                insertion_point = 0
+
+            # Shift all orders after the insertion point down
+            orders_to_shift = WorkOrder.query.filter(
                 base_filter,
-                WorkOrder.QueuePosition > last_firm_rush_position,
+                WorkOrder.QueuePosition > insertion_point,
                 WorkOrder.QueuePosition.isnot(None),
-            ).all()
+            ).order_by(WorkOrder.QueuePosition.desc()).all()
 
-            for existing_wo in existing_non_firm_rush:
+            for existing_wo in orders_to_shift:
                 existing_wo.QueuePosition += len(rush_orders)
 
-            # Assign positions to rush orders
+            # Assign positions to rush orders starting after insertion point
             for i, wo in enumerate(rush_orders):
-                wo.QueuePosition = last_firm_rush_position + i + 1
+                wo.QueuePosition = insertion_point + i + 1
                 position_counter += 1
 
         # Handle Regular orders - add at the end
@@ -171,7 +172,7 @@ def initialize_queue_positions_for_unassigned():
                 position_counter += 1
 
         db.session.commit()
-        return len(sorted_unassigned)
+        return len(unassigned_orders)
 
     except Exception as e:
         db.session.rollback()
