@@ -100,7 +100,7 @@
                                         <p class="form-control-plaintext">
                                             {% if source.SourcePhone %}
                                                 <p>
-                                                    <i class="fas fa-phone"></i> {{ source.clean_phone() | int | format_phone }}
+                                                    <i class="fas fa-phone"></i> {{ source.SourcePhone | format_phone }}
                                                 </p>
                                             {% else %}
                                                 <span class="text-muted">Not provided</span>

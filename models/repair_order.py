@@ -110,19 +110,21 @@ class RepairWorkOrder(db.Model):
 class RepairWorkOrderItem(db.Model):
     __tablename__ = "tblreporddetcustawngs"
 
-    # Use composite primary key (matches production database schema)
-    # RepairOrderNo + Description + Material form the composite key
+    # Auto-increment primary key
+    id = db.Column("id", db.Integer, primary_key=True, autoincrement=True)
+
+    # Foreign key to repair order
     RepairOrderNo = db.Column(
         "repairorderno",
         db.String,
-        db.ForeignKey(
-            "tblrepairworkorderdetail.repairorderno"
-        ),  # Updated foreign key reference
+        db.ForeignKey("tblrepairworkorderdetail.repairorderno"),
         nullable=False,
-        primary_key=True,
+        index=True,  # Add index for faster lookups
     )
-    Description = db.Column("description", db.String, primary_key=True, default="")
-    Material = db.Column("material", db.String, primary_key=True, default="")
+
+    # Fields that were previously part of composite primary key
+    Description = db.Column("description", db.String, nullable=False, default="")
+    Material = db.Column("material", db.String, nullable=False, default="")
 
     CustID = db.Column(
         "custid", db.String, db.ForeignKey("tblcustomers.custid"), nullable=False
@@ -142,6 +144,7 @@ class RepairWorkOrderItem(db.Model):
     def to_dict(self):
         """Convert model instance to dictionary"""
         return {
+            "id": self.id,
             "RepairOrderNo": self.RepairOrderNo,
             "CustID": self.CustID,
             "Description": self.Description,

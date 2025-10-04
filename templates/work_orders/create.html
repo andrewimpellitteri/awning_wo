@@ -170,15 +170,15 @@
                                         <div class="detail-row">
                                                 <div class="detail-label">Customer <span class="text-danger">*</span></div>
                                                 <div class="detail-value">
-                                                    <input type="text" 
-                                                           class="form-control" 
-                                                           id="CustID" 
-                                                           name="CustID" 
+                                                    <input type="text"
+                                                           class="form-control"
+                                                           id="CustID"
+                                                           name="CustID"
                                                            required
                                                            value="{% if form_data and form_data.get('CustID') %}{{ form_data.get('CustID') }}{% endif %}">
-                                                </div>     
+                                                </div>
                                         </div>
-                                        
+
                                         <div class="detail-row">
                                             <div class="detail-label">Work Order Number</div>
                                             <div class="detail-value">
@@ -191,16 +191,28 @@
                                                 <small id="wo-number-display" class="text-muted"></small>
                                             </div>
                                         </div>
-                                        
-                                        
+
+                                        <div class="detail-row">
+                                            <div class="detail-label">Date In</div>
+                                            <div class="detail-value">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-calendar-alt"></i>
+                                                    </span>
+                                                    <input type="date" class="form-control" id="DateIn" name="DateIn"
+                                                           value="{{ form_data.get('DateIn', '') if form_data else '' }}">
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div class="detail-row">
                                             <div class="detail-label">Name</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" id="WOName" name="WOName" 
+                                                <input type="text" class="form-control" id="WOName" name="WOName"
                                                        value="{{ form_data.get('WOName', '') if form_data else '' }}">
                                             </div>
                                         </div>
-                                        
+
                                         <div class="detail-row">
                                             <div class="detail-label">Storage</div>
                                             <div class="detail-value">
@@ -716,22 +728,22 @@
                 </div>
                 
                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label detail-label">Description *</label>
-                        <input type="text" class="form-control" name="new_item_description[]" required list="description-list">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label detail-label">Material</label>
-                        <input type="text" class="form-control" name="new_item_material[]" list="material-list">
-                    </div>
-                </div>
-                
-                <div class="row">
                     <div class="col-md-3 mb-3">
                         <label class="form-label detail-label">Quantity</label>
                         <input type="number" class="form-control" name="new_item_qty[]" value="1" min="1">
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-md-9 mb-3">
+                        <label class="form-label detail-label">Description *</label>
+                        <input type="text" class="form-control" name="new_item_description[]" required list="description-list">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label detail-label">Material</label>
+                        <input type="text" class="form-control" name="new_item_material[]" list="material-list">
+                    </div>
+                    <div class="col-md-6 mb-3">
                         <label class="form-label detail-label">Condition</label>
                         <select class="form-select" name="new_item_condition[]">
                             <option value="">Select</option>
@@ -742,18 +754,18 @@
                             <option value="Damaged">Damaged</option>
                         </select>
                     </div>
-                    <div class="col-md-3 mb-3">
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
                         <label class="form-label detail-label">Color</label>
                         <input type="text" class="form-control" name="new_item_color[]" list="color-list">
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-md-4 mb-3">
                         <label class="form-label detail-label">Size/Weight</label>
                         <input type="text" class="form-control" name="new_item_size[]">
                     </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-4 mb-3">
                         <label class="form-label detail-label">Price</label>
                         <div class="input-group">
                             <span class="input-group-text">$</span>

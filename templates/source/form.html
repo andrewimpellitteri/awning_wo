@@ -118,21 +118,21 @@
                                         
                                         <div class="mb-3">
                                             <label for="SourcePhone" class="form-label">Phone</label>
-                                            <input type="tel" 
-                                                   class="form-control" 
-                                                   id="SourcePhone" 
+                                            <input type="tel"
+                                                   class="form-control"
+                                                   id="SourcePhone"
                                                    name="SourcePhone"
-                                                   value="{{ source.SourcePhone | format_phone if edit_mode else (form_data.SourcePhone | format_phone if form_data else '') }}"
+                                                   value="{% if edit_mode %}{{ source.SourcePhone if source.SourcePhone else '' }}{% elif form_data %}{{ form_data.SourcePhone if form_data.SourcePhone else '' }}{% else %}{% endif %}"
                                                    placeholder="e.g. 555-123-4567">
                                         </div>
                                         
                                         <div class="mb-3">
                                             <label for="SourceFax" class="form-label">Fax</label>
-                                            <input type="tel" 
-                                                   class="form-control" 
-                                                   id="SourceFax" 
+                                            <input type="tel"
+                                                   class="form-control"
+                                                   id="SourceFax"
                                                    name="SourceFax"
-                                                   value="{{ source.SourceFax | format_phone if edit_mode else (form_data.SourceFax | format_phone if form_data else '') }}"
+                                                   value="{% if edit_mode %}{{ source.SourceFax if source.SourceFax else '' }}{% elif form_data %}{{ form_data.SourceFax if form_data.SourceFax else '' }}{% else %}{% endif %}"
                                                    placeholder="e.g. 555-123-4567">
                                         </div>
                                         
@@ -204,6 +204,26 @@
 
 {% block scripts %}
 <script>
+// Clean phone fields on page load to handle legacy data with .0 suffix
+window.addEventListener('DOMContentLoaded', function() {
+    const phoneField = document.getElementById('SourcePhone');
+    const faxField = document.getElementById('SourceFax');
+
+    // Clean phone field - remove .0 suffix and extract digits
+    if (phoneField.value) {
+        let cleaned = phoneField.value.split('.')[0]; // Remove .0 suffix
+        cleaned = cleaned.replace(/\D/g, ''); // Keep only digits
+        phoneField.value = cleaned;
+    }
+
+    // Clean fax field - remove .0 suffix and extract digits
+    if (faxField.value) {
+        let cleaned = faxField.value.split('.')[0]; // Remove .0 suffix
+        cleaned = cleaned.replace(/\D/g, ''); // Keep only digits
+        faxField.value = cleaned;
+    }
+});
+
 // Phone number formatting
 document.getElementById('SourcePhone').addEventListener('input', function(e) {
     // Remove all non-digits

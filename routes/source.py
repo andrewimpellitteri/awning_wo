@@ -90,15 +90,20 @@ def create_source():
             ), 400
 
         try:
+            # Helper function to convert empty strings to None
+            def clean_field(value):
+                """Convert empty strings to None for optional fields"""
+                return value.strip() if value and value.strip() else None
+
             source = Source(
                 SSource=data["SSource"],
-                SourceAddress=data.get("SourceAddress"),
-                SourceState=data.get("SourceState"),
-                SourceCity=data.get("SourceCity"),
-                SourceZip=data.get("SourceZip"),
-                SourcePhone=data.get("SourcePhone"),
-                SourceFax=data.get("SourceFax"),
-                SourceEmail=data.get("SourceEmail"),
+                SourceAddress=clean_field(data.get("SourceAddress")),
+                SourceState=clean_field(data.get("SourceState")),
+                SourceCity=clean_field(data.get("SourceCity")),
+                SourceZip=clean_field(data.get("SourceZip")),
+                SourcePhone=clean_field(data.get("SourcePhone")),
+                SourceFax=clean_field(data.get("SourceFax")),
+                SourceEmail=clean_field(data.get("SourceEmail")),
             )
 
             db.session.add(source)
@@ -131,14 +136,19 @@ def edit_source(source_name):
         data = request.form
 
         try:
+            # Helper function to convert empty strings to None
+            def clean_field(value):
+                """Convert empty strings to None for optional fields"""
+                return value.strip() if value and value.strip() else None
+
             # Update fields if provided in request
-            source.SourceAddress = data.get("SourceAddress")
-            source.SourceState = data.get("SourceState")
-            source.SourceCity = data.get("SourceCity")
-            source.SourceZip = data.get("SourceZip")
-            source.SourcePhone = data.get("SourcePhone")
-            source.SourceFax = data.get("SourceFax")
-            source.SourceEmail = data.get("SourceEmail")
+            source.SourceAddress = clean_field(data.get("SourceAddress"))
+            source.SourceState = clean_field(data.get("SourceState"))
+            source.SourceCity = clean_field(data.get("SourceCity"))
+            source.SourceZip = clean_field(data.get("SourceZip"))
+            source.SourcePhone = clean_field(data.get("SourcePhone"))
+            source.SourceFax = clean_field(data.get("SourceFax"))
+            source.SourceEmail = clean_field(data.get("SourceEmail"))
 
             db.session.commit()
             flash("Source updated successfully", "success")

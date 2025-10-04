@@ -129,12 +129,17 @@ aws_info.txt
 
 migration_tool/*.sqlite
 migration_tool/*.json
+migration_tool/*.sql
+migration_tool/migrate_to_rds.sh
+migration_tool/backups/
+migration_tool/*.md
 
 uploads/
 .env.s3
 
 *.dump
 *.csv
+backups/
 
 cicd/
 
@@ -142,3 +147,5 @@ deploy_watcher.out
 *.csv
 
 claude.md
+
+migration_tool/intermediate.sqlite-journal

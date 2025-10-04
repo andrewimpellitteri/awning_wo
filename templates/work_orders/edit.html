@@ -677,22 +677,22 @@ function addNewItem() {
             </div>
 
             <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label detail-label">Description *</label>
-                    <input type="text" class="form-control" name="new_item_description[]" required list="description-list">
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label detail-label">Material</label>
-                    <input type="text" class="form-control" name="new_item_material[]" list="material-list">
-                </div>
-            </div>
-
-            <div class="row">
                 <div class="col-md-3 mb-3">
                     <label class="form-label detail-label">Quantity</label>
                     <input type="number" class="form-control" name="new_item_qty[]" value="1" min="1">
                 </div>
-                <div class="col-md-3 mb-3">
+                <div class="col-md-9 mb-3">
+                    <label class="form-label detail-label">Description *</label>
+                    <input type="text" class="form-control" name="new_item_description[]" required list="description-list">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label detail-label">Material</label>
+                    <input type="text" class="form-control" name="new_item_material[]" list="material-list">
+                </div>
+                <div class="col-md-6 mb-3">
                     <label class="form-label detail-label">Condition</label>
                     <select class="form-select" name="new_item_condition[]">
                         <option value="">Select</option>
@@ -703,18 +703,18 @@ function addNewItem() {
                         <option value="Damaged">Damaged</option>
                     </select>
                 </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label detail-label">Color</label>
-                    <input type="text" class="form-control" name="new_item_color[]" list="color-list">
-                </div>
-                <div class="col-md-3 mb-3">
-                    <label class="form-label detail-label">Size/Weight</label>
-                    <input type="text" class="form-control" name="new_item_size[]">
-                </div>
             </div>
 
             <div class="row">
-                <div class="col-md-6 mb-3">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label detail-label">Color</label>
+                    <input type="text" class="form-control" name="new_item_color[]" list="color-list">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label detail-label">Size/Weight</label>
+                    <input type="text" class="form-control" name="new_item_size[]">
+                </div>
+                <div class="col-md-4 mb-3">
                     <label class="form-label detail-label">Price</label>
                     <div class="input-group">
                         <span class="input-group-text">$</span>

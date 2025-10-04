@@ -372,7 +372,7 @@ def create_work_order(prefill_cust_id=None):
                 RushOrder="RushOrder" in request.form,
                 FirmRush="FirmRush" in request.form,
                 # Date fields - convert from string or use defaults
-                DateIn=date.today(),
+                DateIn=datetime.strptime(request.form.get("DateIn"), "%Y-%m-%d").date() if request.form.get("DateIn") else date.today(),
                 DateRequired=datetime.strptime(request.form.get("DateRequired"), "%Y-%m-%d").date() if request.form.get("DateRequired") else None,
                 Clean=datetime.strptime(request.form.get("Clean"), "%Y-%m-%d").date() if request.form.get("Clean") else None,
                 Treat=datetime.strptime(request.form.get("Treat"), "%Y-%m-%d").date() if request.form.get("Treat") else None,

@@ -34,11 +34,21 @@ def create_app(config_class=Config):
     @app.template_filter("format_phone")
     def format_phone(phone) -> str:
         """Format a phone number (int or str) into (XXX) XXX-XXXX."""
-        if phone is None:
+        if phone is None or phone == "":
             return ""
 
-        # Convert to string
-        digits = re.sub(r"\D", "", str(phone))
+        # Convert to string and extract only digits
+        phone_str = str(phone)
+
+        # Handle legacy floats with .0 suffix by removing decimal part
+        if "." in phone_str:
+            phone_str = phone_str.split(".")[0]
+
+        digits = re.sub(r"\D", "", phone_str)
+
+        # Return empty string if no digits
+        if not digits or digits == "0":
+            return ""
 
         # Handle 10-digit US numbers
         if len(digits) == 10:
@@ -142,6 +152,7 @@ def create_app(config_class=Config):
         return User.query.get(int(user_id))
 
     with app.app_context():
+        db.create_all()
         try:
             # Print the DB URI being used
             print(
@@ -160,6 +171,8 @@ app = create_app()
 # Debug info (only show in development)
 if os.environ.get("FLASK_ENV") == "development":
     with app.app_context():
+        from models.work_order_file import WorkOrderFile
+
         db.create_all()
         try:
             inspector = inspect(db.engine)

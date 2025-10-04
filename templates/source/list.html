@@ -95,7 +95,7 @@
                                             <td>
                                                 {% if source.SourcePhone %}
                                                         <p>
-                                                            {{ source.clean_phone()  | int | format_phone }}
+                                                            {{ source.SourcePhone | format_phone }}
                                                         </p>
                                                 {% else %}
                                                     -

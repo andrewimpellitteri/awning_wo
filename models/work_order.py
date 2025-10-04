@@ -126,20 +126,23 @@ class WorkOrder(db.Model):
 class WorkOrderItem(db.Model):
     __tablename__ = "tblorddetcustawngs"
 
+    # Auto-increment primary key
+    id = db.Column("id", db.Integer, primary_key=True, autoincrement=True)
+
     # Map to lowercase database column names
     WorkOrderNo = db.Column(
         "workorderno",
         db.String,
         db.ForeignKey("tblcustworkorderdetail.workorderno"),
         nullable=False,
-        primary_key=True,
+        index=True,  # Add index for faster lookups
     )
     CustID = db.Column(
         "custid", db.String, db.ForeignKey("tblcustomers.custid"), nullable=False
     )
 
-    # Add Description and Material to primary key
-    Description = db.Column("description", db.String, primary_key=True)
+    # Fields that were previously part of composite primary key
+    Description = db.Column("description", db.String, nullable=False)
     Material = db.Column("material", db.String, nullable=True, default="Unknown")
 
     # Rest of the columns
@@ -156,6 +159,7 @@ class WorkOrderItem(db.Model):
     def to_dict(self):
         """Convert model instance to dictionary"""
         return {
+            "id": self.id,
             "WorkOrderNo": self.WorkOrderNo,
             "CustID": self.CustID,
             "Description": self.Description,

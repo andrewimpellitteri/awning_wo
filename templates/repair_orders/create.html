@@ -276,9 +276,9 @@
                                     <table class="table table-bordered item-table" id="items-table">
                                         <thead>
                                             <tr>
+                                                <th>Qty</th>
                                                 <th>Description</th>
                                                 <th>Material</th>
-                                                <th>Qty</th>
                                                 <th>Condition</th>
                                                 <th>Color</th>
                                                 <th>Size/Weight</th>
@@ -586,9 +586,9 @@ function addItemRow() {
     const tbody = document.getElementById('items-tbody');
     const row = document.createElement('tr');
     row.innerHTML = `
+        <td><input type="number" name="item_qty[]" class="form-control" placeholder="1" min="1"></td>
         <td><input type="text" name="item_description[]" class="form-control" placeholder="Item description" list="description-list"></td>
         <td><input type="text" name="item_material[]" class="form-control" placeholder="Material" list="material-list"></td>
-        <td><input type="number" name="item_qty[]" class="form-control" placeholder="1" min="1"></td>
         <td><input type="text" name="item_condition[]" class="form-control" placeholder="Condition"></td>
         <td><input type="text" name="item_color[]" class="form-control" placeholder="Color" list="color-list"></td>
         <td><input type="text" name="item_size_wgt[]" class="form-control" placeholder="Size/Weight"></td>

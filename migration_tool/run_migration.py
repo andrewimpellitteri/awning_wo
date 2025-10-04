@@ -4,6 +4,7 @@ import click
 import subprocess
 import sqlite3
 import pandas as pd
+import numpy as np
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import sys
@@ -13,51 +14,76 @@ from datetime import datetime
 # Add project root to Python path to allow importing from other directories
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from migration_tool.migration_config import ACCESS_DB_PATH, SQLITE_DB_PATH, POSTGRES_URI
 from extensions import db
 from app import create_app
+
+# Configuration (can be overridden via CLI arguments)
+ACCESS_DB_PATH = "data/csv_export/Clean_Repair.accdb"
+SQLITE_DB_PATH = "migration_tool/intermediate.sqlite"
+POSTGRES_URI = os.environ.get(
+    "DATABASE_URL", "postgresql://postgres:password@localhost:5432/clean_repair"
+)
 
 
 # =============================================================================
 # DATA TYPE CONVERSION FUNCTIONS
 # =============================================================================
 
+
 def convert_date_field(value):
     """Convert various date string formats to proper date object - handles messy data"""
-    if pd.isna(value) or value in ['', None, '0000-00-00', '00/00/00', '00/00/0000']:
+    if pd.isna(value) or value in ["", None, "0000-00-00", "00/00/00", "00/00/0000"]:
+        return None
+
+    # Convert to string for processing
+    str_value = str(value).strip()
+
+    # Check for invalid dates with day/month = 00
+    # These are common in Access databases to represent "no date"
+    if "/00/" in str_value or str_value.startswith("00/") or "/00 " in str_value:
         return None
 
     try:
         # Try pandas to_datetime first (handles most formats)
-        parsed = pd.to_datetime(str(value), errors='coerce')
+        parsed = pd.to_datetime(str_value, errors="coerce")
         if pd.notna(parsed):
-            return parsed.date()
+            # Validate the parsed date is reasonable (not year 1900, not future)
+            date_obj = parsed.date()
+            if date_obj.year < 1970 or date_obj.year > 2050:
+                return None
+            return date_obj
     except:
         pass
 
     # Try common formats explicitly
     formats = [
-        "%Y-%m-%d",           # 2024-01-15
+        "%Y-%m-%d",  # 2024-01-15
         "%m/%d/%y %H:%M:%S",  # 01/15/24 14:30:00
-        "%m/%d/%Y",           # 01/15/2024
-        "%m/%d/%y",           # 01/15/24
+        "%m/%d/%Y %H:%M:%S",  # 01/15/2024 14:30:00
+        "%m/%d/%Y",  # 01/15/2024
+        "%m/%d/%y",  # 01/15/24
         "%Y-%m-%dT%H:%M:%S",  # ISO format
     ]
 
     for fmt in formats:
         try:
-            return datetime.strptime(str(value).strip(), fmt).date()
+            parsed_date = datetime.strptime(str_value, fmt).date()
+            # Validate year range
+            if parsed_date.year < 1970 or parsed_date.year > 2050:
+                return None
+            return parsed_date
         except (ValueError, AttributeError):
             continue
 
-    # Log failed conversions for review
-    click.echo(f"    ⚠️  Could not convert date value: {repr(value)}")
+    # Only log if it's not one of the common invalid patterns
+    if not any(invalid in str_value for invalid in ["01/00/00", "00/00/", "/00/"]):
+        click.echo(f"    ⚠️  Could not convert date value: {repr(value)}")
     return None
 
 
 def convert_boolean_field(value):
     """Convert string boolean to actual boolean - handles messy legacy data"""
-    if pd.isna(value) or value in ['', None]:
+    if pd.isna(value) or value in ["", None]:
         return None
 
     # Convert to uppercase string for comparison
@@ -75,16 +101,16 @@ def convert_boolean_field(value):
     return None
 
 
-def convert_numeric_field(value, field_type='integer'):
+def convert_numeric_field(value, field_type="integer"):
     """Convert string numeric to integer or decimal"""
-    if pd.isna(value) or value in ['', None]:
+    if pd.isna(value) or value in ["", None]:
         return None
 
     try:
         # Remove currency symbols and commas
-        cleaned = str(value).replace('$', '').replace(',', '').strip()
+        cleaned = str(value).replace("$", "").replace(",", "").strip()
 
-        if field_type == 'integer':
+        if field_type == "integer":
             # Convert to int
             return int(float(cleaned))  # float first to handle "5.0" -> 5
         else:
@@ -101,50 +127,323 @@ def apply_type_conversions(df, table_name):
 
     # WorkOrder table conversions
     if table_name.lower() == "tblcustworkorderdetail":
-        # Date fields
-        for date_field in ['datecompleted', 'daterequired', 'datein', 'clean', 'treat']:
-            if date_field in df.columns:
-                df[date_field] = df[date_field].apply(convert_date_field)
-
-        # Boolean fields
-        for bool_field in ['rushorder', 'firmrush', 'quote', 'seerepair']:
+        # Boolean fields FIRST (needed for auto-completion logic)
+        for bool_field in ["rushorder", "firmrush", "quote", "seerepair"]:
             if bool_field in df.columns:
                 df[bool_field] = df[bool_field].apply(convert_boolean_field)
+
+        # Date fields - convert to pandas datetime64[ns] format
+        # Keep as datetime during processing, convert to date objects at the end
+        for date_field in ["datecompleted", "daterequired", "datein", "clean", "treat"]:
+            if date_field in df.columns:
+                # Apply custom conversion first (handles invalid dates)
+                df[date_field] = df[date_field].apply(convert_date_field)
+                # Convert to pandas datetime (NaT for None values, not NaTType objects)
+                df[date_field] = pd.to_datetime(df[date_field], errors="coerce")
+
+        # OPTIMAL AUTO-COMPLETION: Handle Access sentinel value "01/00/00 00:00:00"
+        # Based on EDA: 732 records with this sentinel, all 1+ years old, 96.9% have no clean/treat dates
+        if "datecompleted" in df.columns and "datein" in df.columns:
+            click.echo(
+                f"    - DEBUG: Starting auto-completion (datein type: {df['datein'].dtype}, datecompleted type: {df['datecompleted'].dtype})"
+            )
+            # Configuration: Only auto-complete orders older than 1 year
+            AGE_THRESHOLD_DAYS = 365
+
+            try:
+                click.echo("    - DEBUG: Checking types before age calculation:")
+                for col in [
+                    "datein",
+                    "datecompleted",
+                    "daterequired",
+                    "clean",
+                    "treat",
+                ]:
+                    if col in df.columns:
+                        types_summary = (
+                            df[col]
+                            .map(lambda x: type(x).__name__)
+                            .value_counts()
+                            .to_dict()
+                        )
+                        click.echo(f"      {col}: {types_summary}")
+
+                # Calculate age of each work order
+                today = pd.Timestamp.now()
+                datein_ts = pd.to_datetime(df["datein"])
+                age_days = (today - datein_ts).dt.days
+                click.echo(
+                    f"    - DEBUG: age_days calculated (dtype: {age_days.dtype}, NaNs: {age_days.isna().sum()})"
+                )
+
+                # Identify old incomplete orders (NULL datecompleted from sentinel conversion)
+                # Filter out records where datein is NULL (age_days would be NaN)
+                old_incomplete_mask = (
+                    (df["datecompleted"].isna())
+                    & (df["datein"].notna())
+                    & (age_days > AGE_THRESHOLD_DAYS)
+                )
+                click.echo(f"    - DEBUG: old_incomplete_mask created")
+
+                total_incomplete = old_incomplete_mask.sum()
+            except Exception as e:
+                click.echo(
+                    f"    - DEBUG ERROR in age calculation: {type(e).__name__}: {e}"
+                )
+                import traceback
+
+                click.echo(traceback.format_exc())
+                raise
+            if total_incomplete > 0:
+                click.echo(
+                    f"    - Found {total_incomplete} old work orders (>1 year) with NULL datecompleted (sentinel: 01/00/00)"
+                )
+
+                # Track completion method statistics
+                completed_from_service = 0
+                completed_from_required = 0
+                completed_from_estimate = 0
+
+                # PRIORITY 1: Use clean/treat service dates (most accurate)
+                if "clean" in df.columns and "treat" in df.columns:
+                    # Create mask for rows that have at least one service date
+                    has_service = df["clean"].notna() | df["treat"].notna()
+                    service_candidates = old_incomplete_mask & has_service
+
+                    if service_candidates.sum() > 0:
+                        # Only compute max for rows that have at least one service date
+                        service_date = df.loc[
+                            service_candidates, ["clean", "treat"]
+                        ].max(axis=1, skipna=True)
+                        completed_from_service = service_candidates.sum()
+
+                        # Assign service dates
+                        df.loc[service_candidates, "datecompleted"] = (
+                            service_date.values
+                        )
+                        click.echo(
+                            f"      ✓ {completed_from_service} completed using clean/treat dates"
+                        )
+
+                # PRIORITY 2: Use daterequired (customer's deadline - likely done by then)
+                still_incomplete = old_incomplete_mask & df["datecompleted"].isna()
+                if "daterequired" in df.columns:
+                    required_mask = still_incomplete & df["daterequired"].notna()
+                    completed_from_required = required_mask.sum()
+
+                    if completed_from_required > 0:
+                        df.loc[required_mask, "datecompleted"] = df["daterequired"]
+                        click.echo(
+                            f"      ✓ {completed_from_required} completed using daterequired deadline"
+                        )
+
+                # PRIORITY 3: Intelligent estimate based on rush vs normal turnaround
+                still_incomplete = old_incomplete_mask & df["datecompleted"].isna()
+                completed_from_estimate = still_incomplete.sum()
+
+                if completed_from_estimate > 0:
+                    # Realistic turnaround times based on business logic
+                    # Rush orders: 3 days, Normal orders: 14 days (2 weeks)
+                    if "rushorder" in df.columns:
+                        # Get rushorder values for incomplete records (True, False, or None)
+                        rush_values = df.loc[still_incomplete, "rushorder"].fillna(
+                            False
+                        )
+                        is_rush = rush_values == True
+                        rush_count = is_rush.sum()
+                    else:
+                        is_rush = pd.Series(
+                            [False] * completed_from_estimate,
+                            index=df[still_incomplete].index,
+                        )
+                        rush_count = 0
+
+                    # Assign turnaround days: 3 for rush, 14 for normal
+                    turnaround_days = np.where(is_rush, 3, 14)
+
+                    # Get datein values for incomplete records as timestamps
+                    datein_subset = pd.to_datetime(df.loc[still_incomplete, "datein"])
+
+                    # Calculate estimated completion dates
+                    estimated_completion = datein_subset + pd.to_timedelta(
+                        turnaround_days, unit="D"
+                    )
+
+                    # Convert back to date objects (matching the column type)
+                    df.loc[still_incomplete, "datecompleted"] = estimated_completion
+
+                    normal_count = completed_from_estimate - rush_count
+
+                    click.echo(
+                        f"      ✓ {completed_from_estimate} completed using intelligent estimates:"
+                    )
+                    if rush_count > 0:
+                        click.echo(
+                            f"        - {rush_count} rush orders (3-day turnaround)"
+                        )
+                    if normal_count > 0:
+                        click.echo(
+                            f"        - {normal_count} normal orders (14-day turnaround)"
+                        )
+
+                # Summary statistics
+                click.echo(f"    - 📊 Auto-completion summary:")
+                click.echo(
+                    f"      - From service dates: {completed_from_service} ({completed_from_service / total_incomplete * 100:.1f}%)"
+                )
+                click.echo(
+                    f"      - From deadline dates: {completed_from_required} ({completed_from_required / total_incomplete * 100:.1f}%)"
+                )
+                click.echo(
+                    f"      - From estimates: {completed_from_estimate} ({completed_from_estimate / total_incomplete * 100:.1f}%)"
+                )
+
+        # Convert datetime64[ns] columns back to date objects for database insertion
+        for date_field in ["datecompleted", "daterequired", "datein", "clean", "treat"]:
+            if date_field in df.columns:
+                df[date_field] = df[date_field].dt.date
 
     # RepairWorkOrder table conversions
     elif table_name.lower() == "tblrepairworkorderdetail":
-        # Date fields (note the odd column names with spaces/uppercase)
+        # Date fields - convert to pandas datetime64[ns] format
+        # Keep as datetime during processing, convert to date objects at the end
         date_fields_map = {
-            'WO DATE': 'WO DATE',
-            'DATE TO SUB': 'DATE TO SUB',
-            'daterequired': 'daterequired',
-            'datecompleted': 'datecompleted',
-            'returndate': 'returndate',
-            'dateout': 'dateout',
-            'datein': 'datein'
+            "WO DATE": "WO DATE",
+            "DATE TO SUB": "DATE TO SUB",
+            "daterequired": "daterequired",
+            "datecompleted": "datecompleted",
+            "returndate": "returndate",
+            "dateout": "dateout",
+            "datein": "datein",
         }
         for field_name in date_fields_map.values():
             if field_name in df.columns:
+                # Apply custom conversion first (handles invalid dates)
                 df[field_name] = df[field_name].apply(convert_date_field)
+                # Convert to pandas datetime (NaT for None values)
+                df[field_name] = pd.to_datetime(df[field_name], errors="coerce")
+
+        # OPTIMAL AUTO-COMPLETION: Handle Access sentinel value for repair orders
+        if "datecompleted" in df.columns and "datein" in df.columns:
+            # Configuration: Only auto-complete orders older than 1 year
+            AGE_THRESHOLD_DAYS = 365
+
+            # Calculate age of each repair order
+            today = pd.Timestamp.now()
+            datein_ts = pd.to_datetime(df["datein"])
+            age_days = (today - datein_ts).dt.days
+
+            # Identify old incomplete repair orders
+            # Filter out records where datein is NULL (age_days would be NaN)
+            old_incomplete_mask = (
+                (df["datecompleted"].isna())
+                & (df["datein"].notna())
+                & (age_days > AGE_THRESHOLD_DAYS)
+            )
+
+            total_incomplete = old_incomplete_mask.sum()
+            if total_incomplete > 0:
+                click.echo(
+                    f"    - Found {total_incomplete} old repair orders (>1 year) with NULL datecompleted"
+                )
+
+                # Track completion method statistics
+                completed_from_return = 0
+                completed_from_required = 0
+                completed_from_estimate = 0
+
+                # PRIORITY 1: Use returndate (most accurate for repairs)
+                if "returndate" in df.columns:
+                    return_mask = old_incomplete_mask & df["returndate"].notna()
+                    completed_from_return = return_mask.sum()
+
+                    if completed_from_return > 0:
+                        df.loc[return_mask, "datecompleted"] = df["returndate"]
+                        click.echo(
+                            f"      ✓ {completed_from_return} completed using returndate"
+                        )
+
+                # PRIORITY 2: Use daterequired
+                still_incomplete = old_incomplete_mask & df["datecompleted"].isna()
+                if "daterequired" in df.columns:
+                    required_mask = still_incomplete & df["daterequired"].notna()
+                    completed_from_required = required_mask.sum()
+
+                    if completed_from_required > 0:
+                        df.loc[required_mask, "datecompleted"] = df["daterequired"]
+                        click.echo(
+                            f"      ✓ {completed_from_required} completed using daterequired deadline"
+                        )
+
+                # PRIORITY 3: Intelligent estimate (repairs take longer - use 21 days)
+                still_incomplete = old_incomplete_mask & df["datecompleted"].isna()
+                completed_from_estimate = still_incomplete.sum()
+
+                if completed_from_estimate > 0:
+                    # Repairs typically take 3 weeks (21 days)
+                    # Get datein values for incomplete records as timestamps
+                    datein_subset = pd.to_datetime(df.loc[still_incomplete, "datein"])
+
+                    # Calculate estimated completion dates
+                    estimated_completion = datein_subset + pd.Timedelta(days=21)
+
+                    # Assign estimated completion (still as datetime64[ns])
+                    df.loc[still_incomplete, "datecompleted"] = estimated_completion
+
+                    click.echo(
+                        f"      ✓ {completed_from_estimate} completed using intelligent estimate (21-day turnaround)"
+                    )
+
+                # Summary statistics
+                click.echo(f"    - 📊 Auto-completion summary:")
+                click.echo(
+                    f"      - From return dates: {completed_from_return} ({completed_from_return / total_incomplete * 100:.1f}%)"
+                )
+                click.echo(
+                    f"      - From deadline dates: {completed_from_required} ({completed_from_required / total_incomplete * 100:.1f}%)"
+                )
+                click.echo(
+                    f"      - From estimates: {completed_from_estimate} ({completed_from_estimate / total_incomplete * 100:.1f}%)"
+                )
 
         # Boolean fields
-        for bool_field in ['rushorder', 'firmrush', 'quote', 'approved', 'clean', 'cleanfirst']:
+        for bool_field in [
+            "rushorder",
+            "firmrush",
+            "quote",
+            "approved",
+            "clean",
+            "cleanfirst",
+        ]:
             if bool_field in df.columns:
                 df[bool_field] = df[bool_field].apply(convert_boolean_field)
 
+        # Convert datetime64[ns] columns back to date objects for database insertion
+        for field_name in date_fields_map.values():
+            if field_name in df.columns:
+                df[field_name] = df[field_name].dt.date
+
     # WorkOrderItem and RepairWorkOrderItem conversions
     elif table_name.lower() in ["tblorddetcustawngs", "tblreporddetcustawngs"]:
-        if 'qty' in df.columns:
-            df['qty'] = df['qty'].apply(lambda x: convert_numeric_field(x, 'integer'))
-        if 'price' in df.columns:
-            df['price'] = df['price'].apply(lambda x: convert_numeric_field(x, 'decimal'))
+        if "qty" in df.columns:
+            df["qty"] = df["qty"].apply(lambda x: convert_numeric_field(x, "integer"))
+        if "price" in df.columns:
+            df["price"] = df["price"].apply(
+                lambda x: convert_numeric_field(x, "decimal")
+            )
 
     # Inventory table conversions
     elif table_name.lower() == "tblcustawngs":
-        if 'qty' in df.columns:
-            df['qty'] = df['qty'].apply(lambda x: convert_numeric_field(x, 'integer'))
-        if 'price' in df.columns:
-            df['price'] = df['price'].apply(lambda x: convert_numeric_field(x, 'decimal'))
+        if "qty" in df.columns:
+            df["qty"] = df["qty"].apply(lambda x: convert_numeric_field(x, "integer"))
+        if "price" in df.columns:
+            df["price"] = df["price"].apply(
+                lambda x: convert_numeric_field(x, "decimal")
+            )
+
+    # Remove temporary columns that shouldn't be inserted into database
+    if "_original_datecompleted" in df.columns:
+        df = df.drop(columns=["_original_datecompleted"])
 
     return df
 
@@ -245,31 +544,6 @@ def step_3_transfer_data_to_postgres():
         )["name"].tolist()
         sqlite_table_map = {t.lower(): t for t in all_sqlite_tables}
 
-        click.echo("  - Pre-cleaning sources...")
-
-        customers_df = pd.read_sql_table("tblCustomers", sqlite_conn)
-        customer_sources = customers_df["Source"].dropna().unique()
-
-        sources_df = pd.read_sql_table("tblSource", sqlite_conn)
-        existing_sources = sources_df["SSource"].dropna().unique()
-
-        # FIXED: Add common shipto values that are missing
-        common_shipto_values = ["Customer", "Source", "Ship To", "Pick Up"]
-        all_needed_sources = list(customer_sources) + common_shipto_values
-
-        new_sources = [
-            s for s in all_needed_sources if s not in existing_sources and pd.notna(s)
-        ]
-        if new_sources:
-            click.echo(f"    - Found {len(new_sources)} new sources to add.")
-            new_sources_df = pd.DataFrame(new_sources, columns=["SSource"])
-            sources_df = pd.concat([sources_df, new_sources_df], ignore_index=True)
-
-            sources_df.to_sql(
-                "tblSource", sqlite_conn, if_exists="replace", index=False
-            )
-            click.echo("    - Updated tblSource in intermediate SQLite DB.")
-
         for table_name in migration_order:
             source_table_name = sqlite_table_map.get(table_name.lower())
 
@@ -295,29 +569,54 @@ def step_3_transfer_data_to_postgres():
 
                     # FIXED: Enhanced cleaning for WorkOrderDetail
                     if table_name.lower() == "tblcustworkorderdetail":
-                        df.dropna(subset=["custid"], inplace=True)
+                        # custid filtering already done above (line 567)
+                        # datein filtering happens after type conversion (below)
                         # Clean shipto values - replace invalid ones with 'Customer'
                         if "shipto" in df.columns:
-                            # Get valid sources
-                            valid_sources = set(sources_df["SSource"].dropna().unique())
-                            # Replace invalid shipto values
-                            df.loc[~df["shipto"].isin(valid_sources), "shipto"] = (
-                                "Customer"
+                            # Get valid sources from PostgreSQL (already migrated)
+                            valid_sources_df = pd.read_sql(
+                                "SELECT DISTINCT ssource FROM tblsource",
+                                postgres_engine,
                             )
+                            valid_sources = set(
+                                valid_sources_df["ssource"].dropna().unique()
+                            )
+
+                            # Add any missing sources referenced in shipto
+                            missing_sources = df[
+                                ~df["shipto"].isin(valid_sources) & df["shipto"].notna()
+                            ]["shipto"].unique()
+                            if len(missing_sources) > 0:
+                                click.echo(
+                                    f"    - Found {len(missing_sources)} shipto values not in source table, adding skeleton records..."
+                                )
+                                # Create skeleton source records for missing shipto values
+                                missing_sources_df = pd.DataFrame(
+                                    {"ssource": missing_sources}
+                                )
+                                missing_sources_df.to_sql(
+                                    "tblsource",
+                                    postgres_engine,
+                                    if_exists="append",
+                                    index=False,
+                                )
+                                click.echo(
+                                    f"    - Added {len(missing_sources)} skeleton source records for shipto references"
+                                )
 
                     # FIXED: Enhanced cleaning for WorkOrderItems
                     if table_name.lower() == "tblorddetcustawngs":
-                        # Material is required (primary key), so drop rows with null material
+                        # Description is required (NOT NULL constraint), drop rows with null
                         initial_count = len(df)
-                        df.dropna(subset=["material"], inplace=True)
+                        df.dropna(subset=["description"], inplace=True)
                         dropped_count = initial_count - len(df)
                         if dropped_count > 0:
                             click.echo(
-                                f"    - Dropped {dropped_count} rows with null material"
+                                f"    - Dropped {dropped_count} rows with null description"
                             )
 
-                        # Also ensure description is not null (also primary key)
-                        df.dropna(subset=["description"], inplace=True)
+                        # Material can be empty string (not null, just empty)
+                        df["material"] = df["material"].fillna("")
 
                         # FIXED: Remove orphaned records - workorders that don't exist in parent table
                         if "workorderno" in df.columns:
@@ -470,6 +769,17 @@ def step_3_transfer_data_to_postgres():
                     # Apply data type conversions
                     df = apply_type_conversions(df, table_name)
 
+                    # Filter out rows with NULL datein after type conversions
+                    if table_name.lower() == "tblcustworkorderdetail":
+                        if "datein" in df.columns:
+                            before_count = len(df)
+                            df = df[df["datein"].notna()]
+                            after_count = len(df)
+                            if before_count > after_count:
+                                click.echo(
+                                    f"    - Filtered out {before_count - after_count} rows with NULL datein (after type conversion)"
+                                )
+
                     # FIXED: Use smaller chunks and handle errors gracefully
                     try:
                         df.to_sql(
@@ -480,6 +790,67 @@ def step_3_transfer_data_to_postgres():
                             chunksize=500,
                         )
                         click.echo(f"    - ✅ Successfully transferred {len(df)} rows")
+
+                        # POST-MIGRATION: After sources are migrated, check for missing customer source references
+                        if table_name.lower() == "tblsource":
+                            click.echo(
+                                "  - Checking for customer source references not in tblsource..."
+                            )
+                            customers_df = pd.read_sql_table(
+                                "tblCustomers", sqlite_conn
+                            )
+                            customer_sources = customers_df["Source"].dropna().unique()
+
+                            # Get sources already migrated
+                            migrated_sources_df = pd.read_sql(
+                                "SELECT DISTINCT ssource FROM tblsource",
+                                postgres_engine,
+                            )
+                            migrated_sources = set(
+                                migrated_sources_df["ssource"].dropna().unique()
+                            )
+
+                            # Find missing sources
+                            missing_sources = [
+                                s
+                                for s in customer_sources
+                                if s not in migrated_sources and pd.notna(s)
+                            ]
+
+                            # Also add common shipto values
+                            common_shipto_values = [
+                                "Customer",
+                                "Source",
+                                "Ship To",
+                                "Pick Up",
+                            ]
+                            missing_sources.extend(
+                                [
+                                    s
+                                    for s in common_shipto_values
+                                    if s not in migrated_sources
+                                ]
+                            )
+
+                            if missing_sources:
+                                click.echo(
+                                    f"    - Found {len(missing_sources)} source references not in Access tblsource"
+                                )
+                                click.echo(
+                                    f"    - Adding skeleton records: {missing_sources[:10]}..."
+                                )
+                                missing_sources_df = pd.DataFrame(
+                                    {"ssource": missing_sources}
+                                )
+                                missing_sources_df.to_sql(
+                                    "tblsource",
+                                    postgres_engine,
+                                    if_exists="append",
+                                    index=False,
+                                )
+                                click.echo(
+                                    f"    - Added {len(missing_sources)} skeleton source records"
+                                )
                     except Exception as chunk_error:
                         click.echo(
                             f"    - ⚠️  Partial transfer failed for {table_name}: {chunk_error}"
@@ -517,7 +888,9 @@ def step_3_transfer_data_to_postgres():
             else:
                 click.echo(f"  - Skipping table (not found in source): {table_name}")
 
+        # Close connections
         sqlite_conn.close()
+        postgres_engine.dispose()
         click.echo("✅ Data transfer to PostgreSQL finished.")
     except Exception as e:
         click.echo(f"❌ Error in Step 3: {e}")

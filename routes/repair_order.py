@@ -58,44 +58,46 @@ def view_repair_work_order(repair_order_no):
 @repair_work_orders_bp.route("/api/repair_work_orders")
 def api_repair_work_orders():
     """
-    API endpoint to provide repair work order data with robust date sorting.
+    API endpoint to provide repair work order data with robust filtering,
+    searching, sorting, and pagination.
     """
+    # Pagination params
     page = request.args.get("page", 1, type=int)
     size = request.args.get("size", 25, type=int)
     status = request.args.get("status", "").lower()
     search = request.args.get("search", "").strip()
 
     query = RepairWorkOrder.query
-
-    # Flag to check if we need to join the customer and source tables
     needs_source_join = False
 
-    # Check for filters and sorting on the 'Source' field
+    # Check if "Source" filtering/sorting is required
     if request.args.get("filter_Source") or any(
         request.args.get(f"sort[{i}][field]") == "Source" for i in range(5)
     ):
         needs_source_join = True
 
-    # Apply joins if needed for Source filtering or sorting
     if needs_source_join:
         query = query.join(Customer).join(Source)
 
-    # ✅ Status quick filters
+    # ---------------------------
+    # ✅ Status filters
+    # ---------------------------
     if status == "pending":
-        query = query.filter(
-            RepairWorkOrder.DateCompleted.is_(None)
-        )
+        query = query.filter(RepairWorkOrder.DateCompleted.is_(None))
     elif status == "completed":
-        query = query.filter(
-            RepairWorkOrder.DateCompleted.isnot(None),
-        )
+        query = query.filter(RepairWorkOrder.DateCompleted.isnot(None))
     elif status == "rush":
         query = query.filter(
-            or_(RepairWorkOrder.RushOrder == True, RepairWorkOrder.FirmRush == True),
+            or_(
+                RepairWorkOrder.RushOrder.is_(True),
+                RepairWorkOrder.FirmRush.is_(True),
+            ),
             RepairWorkOrder.DateCompleted.is_(None),
         )
 
-    # 🔎 Global search filter
+    # ---------------------------
+    # 🔎 Global search
+    # ---------------------------
     if search:
         search_term = f"%{search}%"
         query = query.filter(
@@ -109,52 +111,46 @@ def api_repair_work_orders():
             )
         )
 
-    # 📝 Per-column filters
-    filterable_columns = [
-        "RepairOrderNo",
-        "CustID",
-        "ROName",
-        "DateIn",
-        "DateCompleted",
-        "Source",
-    ]
-    for col in filterable_columns:
+    # ---------------------------
+    # 🎯 Column filters
+    # ---------------------------
+    filterable_columns = {
+        "RepairOrderNo": RepairWorkOrder.RepairOrderNo,
+        "CustID": RepairWorkOrder.CustID,
+        "ROName": RepairWorkOrder.ROName,
+        "DateIn": RepairWorkOrder.DateIn,
+        "DateCompleted": RepairWorkOrder.DateCompleted,
+    }
+
+    for col, column in filterable_columns.items():
         filter_val = request.args.get(f"filter_{col}")
         if filter_val:
-            # Check for exact match on RepairOrderNo and CustID
             if col in ["RepairOrderNo", "CustID"]:
-                query = query.filter(getattr(RepairWorkOrder, col) == filter_val)
-            elif col == "Source":
-                # Filter on the correct column from the joined table
-                query = query.filter(Source.SSource.ilike(f"%{filter_val}%"))
+                query = query.filter(column == filter_val)
             else:
-                # Use partial match for all other columns
-                query = query.filter(
-                    getattr(RepairWorkOrder, col).ilike(f"%{filter_val}%")
-                )
+                query = query.filter(column.ilike(f"%{filter_val}%"))
 
-    # ↕️ Sorting logic with date parsing
+    # Special handling for Source filter
+    filter_val = request.args.get("filter_Source")
+    if filter_val:
+        query = query.filter(Source.SSource.ilike(f"%{filter_val}%"))
+
+    # ---------------------------
+    # ↕️ Sorting
+    # ---------------------------
     order_by_clauses = []
-
-    # Check for simple sort/dir parameters (used by tests and some clients)
     simple_sort = request.args.get("sort")
     simple_dir = request.args.get("dir", "asc")
 
-    if simple_sort:
-        # Handle simple sort parameter
+    if simple_sort:  # Simple sort mode
         column = getattr(RepairWorkOrder, simple_sort, None)
         if column:
             if simple_sort in ["RepairOrderNo", "CustID"]:
-                cast_column = cast(column, Integer)
-                order_by_clauses.append(
-                    cast_column.desc() if simple_dir == "desc" else cast_column.asc()
-                )
-            else:
-                order_by_clauses.append(
-                    column.desc() if simple_dir == "desc" else column.asc()
-                )
-    else:
-        # Check for Tabulator-style sort parameters
+                column = cast(column, Integer)
+            order_by_clauses.append(
+                column.desc() if simple_dir == "desc" else column.asc()
+            )
+    else:  # Tabulator multi-sort mode
         i = 0
         while True:
             field = request.args.get(f"sort[{i}][field]")
@@ -162,114 +158,67 @@ def api_repair_work_orders():
                 break
             direction = request.args.get(f"sort[{i}][dir]", "asc")
 
-            # Handle the special case of 'Source'
             if field == "Source":
-                # The query is already joined, so we can sort on the joined table's column
-                column_to_sort = Source.SSource
-                if direction == "desc":
-                    order_by_clauses.append(column_to_sort.desc())
-                else:
-                    order_by_clauses.append(column_to_sort.asc())
+                column = Source.SSource
             else:
-                # Handle all other fields on the RepairWorkOrder model
                 column = getattr(RepairWorkOrder, field, None)
-                if column:
-                    if field in ["RepairOrderNo", "CustID"]:
-                        cast_column = cast(column, Integer)
-                        order_by_clauses.append(
-                            cast_column.desc()
-                            if direction == "desc"
-                            else cast_column.asc()
-                        )
 
-                    elif (
-                        field in ["DateIn", "DateCompleted"]
-                        and db.engine.dialect.name != "sqlite"
-                    ):
-                        # Use CASE with multiple formats for dates (PostgreSQL only)
-                        cast_column = case(
-                            (
-                                column.op("~")(
-                                    "^[0-1][0-9]/[0-3][0-9]/[0-9]{2} [0-2][0-9]:[0-5][0-9]:[0-5][0-9]$"
-                                ),
-                                func.to_date(column, "MM/DD/YY HH24:MI:SS"),
-                            ),
-                            (
-                                column.op("~")("^[0-2][0-9]{3}-[0-1][0-9]-[0-3][0-9]$"),
-                                func.to_date(column, "YYYY-MM-DD"),
-                            ),
-                            else_=literal(None),
-                        )
-                        order_by_clauses.append(
-                            cast_column.desc().nulls_last()
-                            if direction == "desc"
-                            else cast_column.asc().nulls_last()
-                        )
-                    else:
-                        order_by_clauses.append(
-                            column.desc() if direction == "desc" else column.asc()
-                        )
+            if column:
+                if field in ["RepairOrderNo", "CustID"]:
+                    column = cast(column, Integer)
+                order_by_clauses.append(
+                    column.desc() if direction == "desc" else column.asc()
+                )
             i += 1
 
-    # Default sorting if none provided
+    # Apply default sort if none provided
     if order_by_clauses:
         query = query.order_by(*order_by_clauses)
-    elif db.engine.dialect.name != "sqlite":
+    else:
         query = query.order_by(
-            case(
-                (
-                    RepairWorkOrder.DateIn.op("~")(
-                        "^[0-1][0-9]/[0-3][0-9]/[0-9]{2} [0-2][0-9]:[0-5][0-9]:[0-5][0-9]$"
-                    ),
-                    func.to_date(RepairWorkOrder.DateIn, "MM/DD/YY HH24:MI:SS"),
-                ),
-                (
-                    RepairWorkOrder.DateIn.op("~")(
-                        "^[0-2][0-9]{3}-[0-1][0-9]-[0-3][0-9]$"
-                    ),
-                    func.to_date(RepairWorkOrder.DateIn, "YYYY-MM-DD"),
-                ),
-                else_=literal(None),
-            )
-            .desc()
-            .nulls_last(),
-            RepairWorkOrder.RepairOrderNo.desc(),
+            RepairWorkOrder.DateIn.desc(), RepairWorkOrder.RepairOrderNo.desc()
         )
 
+    # ---------------------------
+    # 📊 Pagination & results
+    # ---------------------------
     total = query.count()
     pagination = query.paginate(page=page, per_page=size, error_out=False)
 
-    data = [
-        {
-            "RepairOrderNo": order.RepairOrderNo,
-            "CustID": order.CustID,
-            "ROName": order.ROName,
-            "DateIn": format_date_from_str(order.DateIn),
-            "DateCompleted": format_date_from_str(order.DateCompleted),
-            "Source": order.customer.source_info.SSource
-            if order.customer and order.customer.source_info
-            else None,
-            "is_rush": bool(order.RushOrder) or bool(order.FirmRush),
-            "detail_url": url_for(
-                "repair_work_orders.view_repair_work_order",
-                repair_order_no=order.RepairOrderNo,
-            ),
-            "customer_url": url_for(
-                "customers.customer_detail", customer_id=order.CustID
-            )
-            if order.customer
-            else None,
-            "edit_url": url_for(
-                "repair_work_orders.edit_repair_order",
-                repair_order_no=order.RepairOrderNo,
-            ),
-            "delete_url": url_for(
-                "repair_work_orders.delete_repair_order",
-                repair_order_no=order.RepairOrderNo,
-            ),
-        }
-        for order in pagination.items
-    ]
+    data = []
+    for order in pagination.items:
+        data.append(
+            {
+                "RepairOrderNo": order.RepairOrderNo,
+                "CustID": order.CustID,
+                "ROName": order.ROName,
+                "DateIn": format_date_from_str(order.DateIn),
+                "DateCompleted": format_date_from_str(order.DateCompleted),
+                "Source": (
+                    order.customer.source_info.SSource
+                    if order.customer and order.customer.source_info
+                    else None
+                ),
+                "is_rush": bool(order.RushOrder) or bool(order.FirmRush),
+                "detail_url": url_for(
+                    "repair_work_orders.view_repair_work_order",
+                    repair_order_no=order.RepairOrderNo,
+                ),
+                "customer_url": (
+                    url_for("customers.customer_detail", customer_id=order.CustID)
+                    if order.customer
+                    else None
+                ),
+                "edit_url": url_for(
+                    "repair_work_orders.edit_repair_order",
+                    repair_order_no=order.RepairOrderNo,
+                ),
+                "delete_url": url_for(
+                    "repair_work_orders.delete_repair_order",
+                    repair_order_no=order.RepairOrderNo,
+                ),
+            }
+        )
 
     return jsonify(
         {
@@ -350,9 +299,21 @@ def create_repair_order(prefill_cust_id=None):
                 CustID=request.form.get("CustID"),
                 ROName=request.form.get("ROName"),
                 SOURCE=request.form.get("SOURCE"),
-                WO_DATE=datetime.strptime(request.form.get("WO_DATE"), "%Y-%m-%d").date() if request.form.get("WO_DATE") else None,
-                DATE_TO_SUB=datetime.strptime(request.form.get("DATE_TO_SUB"), "%Y-%m-%d").date() if request.form.get("DATE_TO_SUB") else None,
-                DateRequired=datetime.strptime(request.form.get("DateRequired"), "%Y-%m-%d").date() if request.form.get("DateRequired") else None,
+                WO_DATE=datetime.strptime(
+                    request.form.get("WO_DATE"), "%Y-%m-%d"
+                ).date()
+                if request.form.get("WO_DATE")
+                else None,
+                DATE_TO_SUB=datetime.strptime(
+                    request.form.get("DATE_TO_SUB"), "%Y-%m-%d"
+                ).date()
+                if request.form.get("DATE_TO_SUB")
+                else None,
+                DateRequired=datetime.strptime(
+                    request.form.get("DateRequired"), "%Y-%m-%d"
+                ).date()
+                if request.form.get("DateRequired")
+                else None,
                 RushOrder="RushOrder" in request.form,
                 FirmRush="FirmRush" in request.form,
                 QUOTE="QUOTE" in request.form,
@@ -367,13 +328,25 @@ def create_repair_order(prefill_cust_id=None):
                 SEECLEAN=request.form.get("SEECLEAN"),
                 CLEANFIRST="CLEANFIRST" in request.form,
                 REPAIRSDONEBY=request.form.get("REPAIRSDONEBY"),
-                DateCompleted=datetime.strptime(request.form.get("DateCompleted"), "%Y-%m-%d").date() if request.form.get("DateCompleted") else None,
+                DateCompleted=datetime.strptime(
+                    request.form.get("DateCompleted"), "%Y-%m-%d"
+                ).date()
+                if request.form.get("DateCompleted")
+                else None,
                 MaterialList=request.form.get("MaterialList"),
                 CUSTOMERPRICE=request.form.get("CUSTOMERPRICE"),
                 RETURNSTATUS=request.form.get("RETURNSTATUS"),
-                RETURNDATE=datetime.strptime(request.form.get("RETURNDATE"), "%Y-%m-%d").date() if request.form.get("RETURNDATE") else None,
+                RETURNDATE=datetime.strptime(
+                    request.form.get("RETURNDATE"), "%Y-%m-%d"
+                ).date()
+                if request.form.get("RETURNDATE")
+                else None,
                 LOCATION=request.form.get("LOCATION"),
-                DATEOUT=datetime.strptime(request.form.get("DATEOUT"), "%Y-%m-%d").date() if request.form.get("DATEOUT") else None,
+                DATEOUT=datetime.strptime(
+                    request.form.get("DATEOUT"), "%Y-%m-%d"
+                ).date()
+                if request.form.get("DATEOUT")
+                else None,
                 DateIn=datetime.now().date(),
             )
 
@@ -504,9 +477,21 @@ def edit_repair_order(repair_order_no):
             repair_order.CustID = cust_id
             repair_order.ROName = ro_name
             repair_order.SOURCE = request.form.get("SOURCE")
-            repair_order.WO_DATE = datetime.strptime(request.form.get("WO_DATE"), "%Y-%m-%d").date() if request.form.get("WO_DATE") else None
-            repair_order.DATE_TO_SUB = datetime.strptime(request.form.get("DATE_TO_SUB"), "%Y-%m-%d").date() if request.form.get("DATE_TO_SUB") else None
-            repair_order.DateRequired = datetime.strptime(request.form.get("DateRequired"), "%Y-%m-%d").date() if request.form.get("DateRequired") else None
+            repair_order.WO_DATE = (
+                datetime.strptime(request.form.get("WO_DATE"), "%Y-%m-%d").date()
+                if request.form.get("WO_DATE")
+                else None
+            )
+            repair_order.DATE_TO_SUB = (
+                datetime.strptime(request.form.get("DATE_TO_SUB"), "%Y-%m-%d").date()
+                if request.form.get("DATE_TO_SUB")
+                else None
+            )
+            repair_order.DateRequired = (
+                datetime.strptime(request.form.get("DateRequired"), "%Y-%m-%d").date()
+                if request.form.get("DateRequired")
+                else None
+            )
             repair_order.RushOrder = "RushOrder" in request.form
             repair_order.FirmRush = "FirmRush" in request.form
             repair_order.QUOTE = "QUOTE" in request.form
@@ -521,13 +506,25 @@ def edit_repair_order(repair_order_no):
             repair_order.SEECLEAN = request.form.get("SEECLEAN")
             repair_order.CLEANFIRST = "CLEANFIRST" in request.form
             repair_order.REPAIRSDONEBY = request.form.get("REPAIRSDONEBY")
-            repair_order.DateCompleted = datetime.strptime(request.form.get("DateCompleted"), "%Y-%m-%d").date() if request.form.get("DateCompleted") else None
+            repair_order.DateCompleted = (
+                datetime.strptime(request.form.get("DateCompleted"), "%Y-%m-%d").date()
+                if request.form.get("DateCompleted")
+                else None
+            )
             repair_order.MaterialList = request.form.get("MaterialList")
             repair_order.CUSTOMERPRICE = request.form.get("CUSTOMERPRICE")
             repair_order.RETURNSTATUS = request.form.get("RETURNSTATUS")
-            repair_order.RETURNDATE = datetime.strptime(request.form.get("RETURNDATE"), "%Y-%m-%d").date() if request.form.get("RETURNDATE") else None
+            repair_order.RETURNDATE = (
+                datetime.strptime(request.form.get("RETURNDATE"), "%Y-%m-%d").date()
+                if request.form.get("RETURNDATE")
+                else None
+            )
             repair_order.LOCATION = request.form.get("LOCATION")
-            repair_order.DATEOUT = datetime.strptime(request.form.get("DATEOUT"), "%Y-%m-%d").date() if request.form.get("DATEOUT") else None
+            repair_order.DATEOUT = (
+                datetime.strptime(request.form.get("DATEOUT"), "%Y-%m-%d").date()
+                if request.form.get("DATEOUT")
+                else None
+            )
 
             # Handle items: delete all existing and recreate from form data
             # This is simpler than trying to update items with composite keys
