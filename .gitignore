@@ -72,7 +72,7 @@ ipython_config.py
 
 # pyenv
 .python-version
-.platform/
+# .platform/  # Commented out - we need .platform/ for EB hooks
 
 # celery beat schedule file
 celerybeat-schedule
