@@ -166,7 +166,12 @@
                     </div>
 
                     <!-- Address Card -->
-                    {% if source.SourceAddress or source.SourceCity or source.SourceState %}
+                    {% set has_address = source.SourceAddress and source.SourceAddress.strip() %}
+                    {% set has_city = source.SourceCity and source.SourceCity.strip() %}
+                    {% set has_state = source.SourceState and source.SourceState.strip() %}
+                    {% set has_zip = source.SourceZip and source.SourceZip.strip() %}
+
+                    {% if has_address or has_city or has_state or has_zip %}
                         <div class="card">
                             <div class="card-header">
                                 <h6 class="card-title mb-0">
@@ -175,11 +180,11 @@
                             </div>
                             <div class="card-body">
                                 <address class="mb-0">
-                                    {% if source.SourceAddress %}
+                                    {% if has_address %}
                                         {{ source.SourceAddress }}<br>
                                     {% endif %}
-                                    {% if source.SourceCity or source.SourceState or source.SourceZip %}
-                                        {{ source.SourceCity or '' }}{% if source.SourceCity and source.SourceState %}, {% endif %}{{ source.SourceState or '' }} {{ source.SourceZip or '' }}
+                                    {% if has_city or has_state or has_zip %}
+                                        {{ source.SourceCity if has_city else '' }}{% if has_city and has_state %}, {% endif %}{{ source.SourceState if has_state else '' }}{% if has_zip %} {{ source.SourceZip }}{% endif %}
                                     {% endif %}
                                 </address>
                             </div>
