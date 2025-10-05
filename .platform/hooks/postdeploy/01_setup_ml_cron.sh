@@ -17,18 +17,15 @@ cp -f /var/app/current/.platform/files/usr/local/bin/ml-cron-health.sh "$SCRIPT_
 # Ensure scripts are executable
 chmod +x "$SCRIPT_RETRAIN" "$SCRIPT_HEALTH"
 
-# TEST MODE: Run every 5 minutes for immediate verification
-# Change to production schedule after confirming it works
-# Production: 0 2 * * * (daily at 2:00 AM)
+# PRODUCTION MODE: Run daily at 2:00 AM
 cat <<EOF > "$CRON_FILE_RETRAIN"
 CRON_SECRET=${CRON_SECRET}
-*/5 * * * * root $SCRIPT_RETRAIN >> $LOG_FILE 2>&1
+0 2 * * * root $SCRIPT_RETRAIN >> $LOG_FILE 2>&1
 EOF
 
-# Health check runs 5 minutes after retrain in test mode
-# Production: 0 3 * * * (daily at 3:00 AM)
+# Health check runs daily at 3:00 AM (after retrain)
 cat <<EOF > "$CRON_FILE_HEALTH"
-*/10 * * * * root $SCRIPT_HEALTH >> $HEALTH_LOG 2>&1
+0 3 * * * root $SCRIPT_HEALTH >> $HEALTH_LOG 2>&1
 EOF
 
 # Set permissions and ownership
@@ -42,7 +39,7 @@ chmod 644 "$LOG_FILE" "$HEALTH_LOG"
 # Make sure cron service is running
 service crond restart || systemctl restart crond || true
 
-echo "✅ ML cron jobs installed successfully (TEST MODE: every 5 minutes)"
+echo "✅ ML cron jobs installed successfully (PRODUCTION: daily at 2 AM)"
 echo "Cron jobs:"
 cat "$CRON_FILE_RETRAIN"
 cat "$CRON_FILE_HEALTH"
