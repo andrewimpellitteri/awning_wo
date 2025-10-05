@@ -54,6 +54,9 @@
     <!-- Table Container -->
     <div class="bg-white rounded-3 shadow-sm border-0">
         <div class="d-flex justify-content-end p-2">
+            <button id="clear-table-filters-btn" class="btn btn-outline-warning btn-sm me-2">
+                <i class="fas fa-filter-circle-xmark me-1"></i> Clear Filters
+            </button>
             <button id="print-table" class="btn btn-outline-secondary btn-sm me-2">
                 <i class="fas fa-print me-1"></i> Print
             </button>
@@ -253,9 +256,15 @@ document.addEventListener("DOMContentLoaded", function() {
         table.setData(); // Reloads table with current form values
     });
 
-    // Clear all filters button
+    // Clear all filters button (in filter form)
     document.getElementById("clear-filters-btn")?.addEventListener("click", () => {
         document.getElementById("search").value = "";
+        table.clearHeaderFilter();
+        table.setData();
+    });
+
+    // Clear table filters button (next to print/export)
+    document.getElementById("clear-table-filters-btn")?.addEventListener("click", () => {
         table.clearHeaderFilter();
         table.setData();
     });
@@ -275,5 +284,3 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 {% endblock %}
-
-{% include "_help_panel.html" %}

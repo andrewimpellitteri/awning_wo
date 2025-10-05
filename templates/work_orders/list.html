@@ -55,6 +55,9 @@
     <!-- Table Container -->
     <div class="bg-white rounded-3 shadow-sm border-0">
         <div class="d-flex justify-content-end p-2">
+            <button id="clear-filters-btn" class="btn btn-outline-warning btn-sm me-2">
+                <i class="fas fa-filter-circle-xmark me-1"></i> Clear Filters
+            </button>
             <button id="print-table" class="btn btn-outline-secondary btn-sm me-2">
                 <i class="fas fa-print me-1"></i> Print
             </button>
@@ -238,6 +241,12 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("print-table").addEventListener("click", () => table.print(false, true));
     document.getElementById("download-csv").addEventListener("click", () => table.download("csv", "work_orders.csv"));
 
+    // Clear all filters button
+    document.getElementById("clear-filters-btn").addEventListener("click", () => {
+        table.clearHeaderFilter();
+        table.setData();
+    });
+
     // Column filter debounce
     let filterTimeout;
     table.on("headerFilterUpdated", (field, value) => {
@@ -269,5 +278,3 @@ document.addEventListener("DOMContentLoaded", function() {
 
 </script>
 {% endblock %}
-
-{% include "_help_panel.html" %}

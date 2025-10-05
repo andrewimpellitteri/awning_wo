@@ -581,7 +581,39 @@ function initializeTableShortcuts() {
     navigationHandler('ctrl+k', () => tableNavigator.prevPage());
     navigationHandler('pageup', () => tableNavigator.prevPage());
 
+    // Clear all table filters
+    hotkeys('alt+x', (e) => {
+        if (!tableNavigator || tableNavigator.isInputFocused()) return;
+        e.preventDefault();
+        clearAllFilters();
+    });
+
     console.log('Table navigation shortcuts initialized');
+}
+
+// Clear all Tabulator filters function
+function clearAllFilters() {
+    // Find the clear filters button and click it
+    const clearBtn = document.getElementById('clear-filters-btn') ||
+                     document.getElementById('clear-table-filters-btn');
+
+    if (clearBtn) {
+        clearBtn.click();
+        console.log('Cleared all table filters via button');
+    } else {
+        // Fallback: try to clear directly via table instance
+        const table = window.workOrdersTable ||
+                     window.repairOrdersTable ||
+                     window.customersTable;
+
+        if (table && typeof table.clearHeaderFilter === 'function') {
+            table.clearHeaderFilter();
+            table.setData();
+            console.log('Cleared all table filters directly');
+        } else {
+            console.warn('No table or clear button found');
+        }
+    }
 }
 
 // Auto-initialize when DOM is ready
