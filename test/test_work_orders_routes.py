@@ -404,6 +404,45 @@ class TestWorkOrderAPIRoutes:
         assert "data" in data
         assert isinstance(data["data"], list)
 
+    def test_api_work_orders_sort_by_datein_asc(self, admin_client, sample_data):
+        """GET /work_orders/api/work_orders with DateIn sort ascending should work."""
+        response = admin_client.get("/work_orders/api/work_orders?sort[0][field]=DateIn&sort[0][dir]=asc")
+        assert response.status_code == 200
+        assert response.is_json
+        data = response.get_json()
+        assert "data" in data
+        # Should have work orders sorted by DateIn ascending
+        work_orders = data["data"]
+        if len(work_orders) >= 2:
+            # 10001 has DateIn=2025-01-15, 10002 has DateIn=2025-01-20
+            # Ascending sort should show 10001 before 10002
+            dates = [wo["DateIn"] for wo in work_orders if wo["DateIn"]]
+            # Dates should be in ascending order
+            assert dates == sorted(dates)
+
+    def test_api_work_orders_sort_by_datein_desc(self, admin_client, sample_data):
+        """GET /work_orders/api/work_orders with DateIn sort descending should work."""
+        response = admin_client.get("/work_orders/api/work_orders?sort[0][field]=DateIn&sort[0][dir]=desc")
+        assert response.status_code == 200
+        assert response.is_json
+        data = response.get_json()
+        assert "data" in data
+        # Should have work orders sorted by DateIn descending
+        work_orders = data["data"]
+        if len(work_orders) >= 2:
+            dates = [wo["DateIn"] for wo in work_orders if wo["DateIn"]]
+            # Dates should be in descending order
+            assert dates == sorted(dates, reverse=True)
+
+    def test_api_work_orders_sort_by_daterequired(self, admin_client, sample_data):
+        """GET /work_orders/api/work_orders with DateRequired sort should work."""
+        response = admin_client.get("/work_orders/api/work_orders?sort[0][field]=DateRequired&sort[0][dir]=asc")
+        assert response.status_code == 200
+        assert response.is_json
+        data = response.get_json()
+        assert "data" in data
+        # Should not crash - DATE type columns should be sortable
+
 
 class TestWorkOrderFileRoutes:
     """Test work order file upload/download HTTP routes."""

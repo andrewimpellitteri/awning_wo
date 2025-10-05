@@ -965,24 +965,12 @@ def api_work_orders():
                     else:
                         order_by_clauses.append(cast_column.asc())
                 elif field in ["DateIn", "DateRequired"]:
-                    # Your existing date sorting logic (which is fine)
-                    cast_column = case(
-                        (
-                            column.op("~")(
-                                "^[0-1][0-9]/[0-3][0-9]/[0-9]{2} [0-2][0-9]:[0-5][0-9]:[0-5][0-9]$"
-                            ),
-                            func.to_date(column, "MM/DD/YY HH24:MI:SS"),
-                        ),
-                        (
-                            column.op("~")("^[0-2][0-9]{3}-[0-1][0-9]-[0-3][0-9]$"),
-                            func.to_date(column, "YYYY-MM-DD"),
-                        ),
-                        else_=literal(None),
-                    )
+                    # These are proper DATE types in the database, sort them directly
+                    # No need for regex parsing or to_date conversion
                     if direction == "desc":
-                        order_by_clauses.append(cast_column.desc().nulls_last())
+                        order_by_clauses.append(column.desc().nulls_last())
                     else:
-                        order_by_clauses.append(cast_column.asc().nulls_last())
+                        order_by_clauses.append(column.asc().nulls_last())
                 else:
                     if direction == "desc":
                         order_by_clauses.append(column.desc())
