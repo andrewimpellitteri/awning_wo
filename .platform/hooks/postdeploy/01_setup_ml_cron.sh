@@ -21,6 +21,7 @@ chmod +x "$SCRIPT_RETRAIN" "$SCRIPT_HEALTH"
 # Change to production schedule after confirming it works
 # Production: 0 2 * * * (daily at 2:00 AM)
 cat <<EOF > "$CRON_FILE_RETRAIN"
+CRON_SECRET=${CRON_SECRET}
 */5 * * * * root $SCRIPT_RETRAIN >> $LOG_FILE 2>&1
 EOF
 
