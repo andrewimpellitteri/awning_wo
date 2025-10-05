@@ -182,7 +182,7 @@ document.addEventListener("DOMContentLoaded", function() {
             { title: "Customer", field: "CustID", width: 120, headerFilter: "input",
               formatter: cell => {
                   const row = cell.getRow().getData();
-                  return row.customer_url ? `<a href="${row.customer_url}" class="badge bg-primary">${cell.getValue()}</a>` : `<span class="text-muted">—</span>`;
+                  return row.customer_url ? `<a href="${row.customer_url}" class="badge bg-info">${cell.getValue()}</a>` : `<span class="text-muted">—</span>`;
               }
             },
             { title: "WO Name", field: "WOName", headerFilter: "input" },

@@ -88,9 +88,9 @@
                                         <div class="detail-label">Customer ID</div>
                                         <div class="detail-value">
                                             {% if work_order.customer %}
-                                                <a href="{{ url_for('customers.customer_detail', customer_id=work_order.customer.CustID) }}" 
+                                                <a href="{{ url_for('customers.customer_detail', customer_id=work_order.customer.CustID) }}"
                                                    class="text-decoration-none">
-                                                    <span class="badge bg-primary">
+                                                    <span class="badge bg-info">
                                                         <i class="fas fa-user me-1"></i>{{ work_order.CustID }}
                                                     </span>
                                                 </a>
@@ -146,7 +146,7 @@
                                                 {% if repair_num.startswith('R') %}
                                                     {% set repair_num = repair_num[1:] %}
                                                 {% endif %}
-                                                <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=repair_num) }}" class="badge bg-primary">
+                                                <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=repair_num) }}" class="badge bg-warning text-dark">
                                                     {{ work_order.SeeRepair }}
                                                 </a>
                                             {% else %}

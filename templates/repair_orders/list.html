@@ -172,11 +172,11 @@ document.addEventListener("DOMContentLoaded", function() {
                     return `<a href="${rowData.detail_url}">R${cell.getValue()}</a>${rushBadge}`;
                 }
             },
-            { 
+            {
                 title: "Customer", field: "CustID", width: 120, headerFilter: "input",
                 formatter: (cell) => {
                     const row = cell.getRow().getData();
-                    return row.customer_url ? `<a href="${row.customer_url}" class="badge bg-primary">${cell.getValue()}</a>` : `<span class="text-muted">—</span>`;
+                    return row.customer_url ? `<a href="${row.customer_url}" class="badge bg-info">${cell.getValue()}</a>` : `<span class="text-muted">—</span>`;
                 }
             },
             { title: "Name", field: "ROName", headerFilter: "input" },

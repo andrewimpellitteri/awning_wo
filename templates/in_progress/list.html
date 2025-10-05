@@ -41,7 +41,7 @@
                                     <div class="col-md-3">{{ work_order.WOName or 'Untitled' }}</div>
                                     <div class="col-md-2">
                                         {% if work_order.CustID %}
-                                          <a href="{{ url_for('customers.customer_detail', customer_id=work_order.CustID) }}" class="badge bg-primary">{{ work_order.CustID }}</a>
+                                          <a href="{{ url_for('customers.customer_detail', customer_id=work_order.CustID) }}" class="badge bg-info">{{ work_order.CustID }}</a>
                                         {% else %}
                                           <span class="text-muted"></span>
                                         {% endif %}

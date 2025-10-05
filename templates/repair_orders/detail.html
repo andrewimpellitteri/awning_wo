@@ -79,7 +79,7 @@
                   <div class="detail-row">
                     <div class="detail-label">Order Number</div>
                     <div class="detail-value">
-                      <span class="badge bg-primary">
+                      <span class="badge bg-warning text-dark">
                         <i class="fas fa-hashtag me-1"></i>R{{ repair_work_order.RepairOrderNo }}
                       </span>
                     </div>
@@ -92,7 +92,7 @@
                           <a href="{{ url_for('customers.customer_detail', customer_id=repair_work_order.customer.CustID) }}"
                           class="text-decoration-none">
                               <i class="fas fa-user me-1"></i>{{ repair_work_order.customer.Name }}
-                              <span class="badge bg-primary ms-2">
+                              <span class="badge bg-info ms-2">
                                   <i class="fas fa-hashtag me-1"></i>{{ repair_work_order.CustID }}
                               </span>
                           </a>

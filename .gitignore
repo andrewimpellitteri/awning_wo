@@ -149,3 +149,4 @@ deploy_watcher.out
 claude.md
 
 migration_tool/intermediate.sqlite-journal
+.claude/
