@@ -10,6 +10,10 @@ SCRIPT_HEALTH="/usr/local/bin/ml-cron-health.sh"
 LOG_FILE="/var/log/ml-retrain.log"
 HEALTH_LOG="/var/log/ml-cron-health.log"
 
+# Copy scripts from app directory to /usr/local/bin (EB doesn't auto-copy .platform/files)
+cp -f /var/app/current/.platform/files/usr/local/bin/ml-cron-retrain.sh "$SCRIPT_RETRAIN"
+cp -f /var/app/current/.platform/files/usr/local/bin/ml-cron-health.sh "$SCRIPT_HEALTH"
+
 # Ensure scripts are executable
 chmod +x "$SCRIPT_RETRAIN" "$SCRIPT_HEALTH"
 
