@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}In Progress{% endblock %}
+{% block title %}Work Orders{% endblock %}
 
 {% block content %}
 <head>
@@ -12,26 +12,48 @@
 
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>In Progress Work Orders</h2>
+                <h2>Work Orders</h2>
                 <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-secondary">
                     <i class="fas fa-list"></i> All Work Orders
                 </a>
             </div>
 
+            <!-- Tabs -->
+            <ul class="nav nav-tabs mb-4">
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'in_progress' %}active{% endif %}" href="{{ url_for('in_progress.list_in_progress') }}">In Progress</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'recently_cleaned' %}active{% endif %}" href="{{ url_for('in_progress.list_recently_cleaned') }}">Recently Cleaned</a>
+                </li>
+            </ul>
+
             <!-- Work Orders Container -->
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Work Orders Currently Being Processed</h5>
-                    <small class="text-muted">{{ work_orders|length }} items</small>
+                    {% if tab == 'in_progress' %}
+                        <h5 class="mb-0">Work Orders Currently Being Processed</h5>
+                        <small class="text-muted">{{ work_orders|length }} items</small>
+                    {% elif tab == 'recently_cleaned' %}
+                        <h5 class="mb-0">Recently Cleaned/Treated Work Orders</h5>
+                        <small class="text-muted">{{ work_orders|length }} items</small>
+                    {% endif %}
                 </div>
                 <div class="card-body p-0">
                     {% if work_orders %}
                         <ul class="list-group list-group-flush">
                             {% for work_order in work_orders %}
                             <li class="list-group-item d-flex align-items-center">
-                                <span class="badge bg-success me-3">
-                                    <i class="fas fa-spinner fa-spin"></i> In Progress
-                                </span>
+                                {% if tab == 'in_progress' %}
+                                    <span class="badge bg-success me-3">
+                                        <i class="fas fa-spinner fa-spin"></i> In Progress
+                                    </span>
+                                {% elif tab == 'recently_cleaned' %}
+                                    <span class="badge bg-primary me-3">
+                                        <i class="fas fa-check-circle"></i> Cleaned/Treated
+                                    </span>
+                                {% endif %}
+
                                 <div class="flex-grow-1 row">
                                     <div class="col-md-2 fw-bold text-primary">
                                         <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}">
@@ -41,9 +63,9 @@
                                     <div class="col-md-3">{{ work_order.WOName or 'Untitled' }}</div>
                                     <div class="col-md-2">
                                         {% if work_order.CustID %}
-                                          <a href="{{ url_for('customers.customer_detail', customer_id=work_order.CustID) }}" class="badge bg-info">{{ work_order.CustID }}</a>
+                                            <a href="{{ url_for('customers.customer_detail', customer_id=work_order.CustID) }}" class="badge bg-info">{{ work_order.CustID }}</a>
                                         {% else %}
-                                          <span class="text-muted"></span>
+                                            <span class="text-muted">N/A</span>
                                         {% endif %}
                                     </div>
                                     <div class="col-md-3 text-muted small">
@@ -74,8 +96,13 @@
                     {% else %}
                         <div class="text-center py-5">
                             <i class="fas fa-check-circle fa-3x text-muted mb-3"></i>
-                            <h4>No work orders in progress</h4>
-                            <p class="text-muted">No work orders are currently being processed.</p>
+                            {% if tab == 'in_progress' %}
+                                <h4>No work orders in progress</h4>
+                                <p class="text-muted">No work orders are currently being processed.</p>
+                            {% elif tab == 'recently_cleaned' %}
+                                <h4>No recently cleaned/treatment work orders</h4>
+                                <p class="text-muted">No work orders have been cleaned or treated recently.</p>
+                            {% endif %}
                         </div>
                     {% endif %}
                 </div>
@@ -83,11 +110,13 @@
 
             <!-- Pagination -->
             {% if pagination.pages > 1 %}
-            <nav aria-label="In Progress pagination" class="mt-4">
+            <nav aria-label="Pagination" class="mt-4">
                 <ul class="pagination justify-content-center">
+                    {% set current_route = 'in_progress.list_in_progress' if tab == 'in_progress' else 'in_progress.list_recently_cleaned' %}
+
                     {% if pagination.has_prev %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('in_progress.list_in_progress', page=pagination.prev_num) }}">
+                            <a class="page-link" href="{{ url_for(current_route, page=pagination.prev_num) }}">
                                 Previous
                             </a>
                         </li>
@@ -98,7 +127,7 @@
                             <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
                         {% else %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('in_progress.list_in_progress', page=page_num) }}">
+                                <a class="page-link" href="{{ url_for(current_route, page=page_num) }}">
                                     {{ page_num }}
                                 </a>
                             </li>
@@ -107,7 +136,7 @@
 
                     {% if pagination.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('in_progress.list_in_progress', page=pagination.next_num) }}">
+                            <a class="page-link" href="{{ url_for(current_route, page=pagination.next_num) }}">
                                 Next
                             </a>
                         </li>

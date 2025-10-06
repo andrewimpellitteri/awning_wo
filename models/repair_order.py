@@ -19,7 +19,9 @@ class RepairWorkOrder(db.Model):
 
     # Date fields with proper types
     WO_DATE = db.Column("WO DATE", db.Date, nullable=True)  # Uppercase with space
-    DATE_TO_SUB = db.Column("DATE TO SUB", db.Date, nullable=True)  # Uppercase with spaces
+    DATE_TO_SUB = db.Column(
+        "DATE TO SUB", db.Date, nullable=True
+    )  # Uppercase with spaces
     DateRequired = db.Column("daterequired", db.Date, nullable=True)
     DateCompleted = db.Column("datecompleted", db.DateTime, nullable=True)
     RETURNDATE = db.Column("returndate", db.Date, nullable=True)
@@ -29,13 +31,17 @@ class RepairWorkOrder(db.Model):
     # Boolean fields with proper types
     RushOrder = db.Column("rushorder", db.Boolean, default=False)
     FirmRush = db.Column("firmrush", db.Boolean, default=False)
-    QUOTE = db.Column("quote", db.Boolean, default=False)
+    QUOTE = db.Column("quote", db.Boolean, default=False)  # need to change to str
     APPROVED = db.Column("approved", db.Boolean, default=False)
     CLEAN = db.Column("clean", db.Boolean, default=False)  # Uses "YES"/"NO" values
-    CLEANFIRST = db.Column("cleanfirst", db.Boolean, default=False)  # Uses "YES"/"NO" values
+    CLEANFIRST = db.Column(
+        "cleanfirst", db.Boolean, default=False
+    )  # deprecated only for historical
 
     # String fields (keep as string)
-    QUOTE_BY = db.Column("QUOTE  BY", db.String)  # Note: TWO spaces between QUOTE and BY
+    QUOTE_BY = db.Column(
+        "QUOTE  BY", db.String
+    )  # Note: TWO spaces between QUOTE and BY
     RackNo = db.Column("RACK#", db.String)  # Uppercase
     STORAGE = db.Column("storage", db.String)
     ITEM_TYPE = db.Column("ITEM TYPE", db.String)  # Uppercase with space
@@ -69,10 +75,18 @@ class RepairWorkOrder(db.Model):
             "SOURCE": self.SOURCE,
             # Serialize dates properly
             "WO_DATE": self.WO_DATE.strftime("%m/%d/%Y") if self.WO_DATE else None,
-            "DATE_TO_SUB": self.DATE_TO_SUB.strftime("%m/%d/%Y") if self.DATE_TO_SUB else None,
-            "DateRequired": self.DateRequired.strftime("%m/%d/%Y") if self.DateRequired else None,
-            "DateCompleted": self.DateCompleted.strftime("%m/%d/%Y %H:%M:%S") if self.DateCompleted else None,
-            "RETURNDATE": self.RETURNDATE.strftime("%m/%d/%Y") if self.RETURNDATE else None,
+            "DATE_TO_SUB": self.DATE_TO_SUB.strftime("%m/%d/%Y")
+            if self.DATE_TO_SUB
+            else None,
+            "DateRequired": self.DateRequired.strftime("%m/%d/%Y")
+            if self.DateRequired
+            else None,
+            "DateCompleted": self.DateCompleted.strftime("%m/%d/%Y %H:%M:%S")
+            if self.DateCompleted
+            else None,
+            "RETURNDATE": self.RETURNDATE.strftime("%m/%d/%Y")
+            if self.RETURNDATE
+            else None,
             "DATEOUT": self.DATEOUT.strftime("%m/%d/%Y") if self.DATEOUT else None,
             "DateIn": self.DateIn.strftime("%m/%d/%Y") if self.DateIn else None,
             # Booleans serialize as is
@@ -96,8 +110,12 @@ class RepairWorkOrder(db.Model):
             "RETURNSTATUS": self.RETURNSTATUS,
             "LOCATION": self.LOCATION,
             # Timestamps
-            "created_at": self.created_at.strftime("%m/%d/%Y %H:%M:%S") if self.created_at else None,
-            "updated_at": self.updated_at.strftime("%m/%d/%Y %H:%M:%S") if self.updated_at else None,
+            "created_at": self.created_at.strftime("%m/%d/%Y %H:%M:%S")
+            if self.created_at
+            else None,
+            "updated_at": self.updated_at.strftime("%m/%d/%Y %H:%M:%S")
+            if self.updated_at
+            else None,
         }
 
     def __repr__(self):

@@ -809,6 +809,8 @@ def cleaning_room_edit_work_order(work_order_no):
                         if wo_file.thumbnail_path:
                             print(f"  - Thumbnail generated: {wo_file.thumbnail_path}")
 
+            work_order.final_location = request.form.get("final_location")
+
             db.session.commit()
             flash(
                 f"Work Order {work_order_no} (cleaning room update) saved successfully!",

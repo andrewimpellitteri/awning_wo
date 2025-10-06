@@ -32,6 +32,7 @@ def safe_date_sort_key(date_value):
         if len(date_value) == 10 and date_value[4] == "-" and date_value[7] == "-":
             try:
                 from datetime import datetime
+
                 return datetime.strptime(date_value, "%Y-%m-%d").date()
             except:
                 return date.max
@@ -39,6 +40,7 @@ def safe_date_sort_key(date_value):
         # Try other formats
         try:
             from datetime import datetime
+
             if "/" in date_value:
                 parsed_date = datetime.strptime(date_value, "%m/%d/%Y")
                 return parsed_date.date()
@@ -94,9 +96,11 @@ def initialize_queue_positions_for_unassigned():
         # Handle Firm Rush orders - insert at the very beginning
         if firm_rush_orders:
             # Shift all existing orders down by the number of firm rush orders
-            existing_orders = WorkOrder.query.filter(
-                base_filter, WorkOrder.QueuePosition.isnot(None)
-            ).order_by(WorkOrder.QueuePosition).all()
+            existing_orders = (
+                WorkOrder.query.filter(base_filter, WorkOrder.QueuePosition.isnot(None))
+                .order_by(WorkOrder.QueuePosition)
+                .all()
+            )
 
             for existing_wo in existing_orders:
                 existing_wo.QueuePosition += len(firm_rush_orders)
@@ -143,11 +147,15 @@ def initialize_queue_positions_for_unassigned():
                 insertion_point = 0
 
             # Shift all orders after the insertion point down
-            orders_to_shift = WorkOrder.query.filter(
-                base_filter,
-                WorkOrder.QueuePosition > insertion_point,
-                WorkOrder.QueuePosition.isnot(None),
-            ).order_by(WorkOrder.QueuePosition.desc()).all()
+            orders_to_shift = (
+                WorkOrder.query.filter(
+                    base_filter,
+                    WorkOrder.QueuePosition > insertion_point,
+                    WorkOrder.QueuePosition.isnot(None),
+                )
+                .order_by(WorkOrder.QueuePosition.desc())
+                .all()
+            )
 
             for existing_wo in orders_to_shift:
                 existing_wo.QueuePosition += len(rush_orders)
@@ -371,12 +379,8 @@ def cleaning_queue():
 
     # Calculate counts for each priority (for the stats display)
     firm_rush_orders = [wo for wo in all_orders if wo.FirmRush]
-    rush_orders = [
-        wo for wo in all_orders if wo.RushOrder and not wo.FirmRush
-    ]
-    regular_orders = [
-        wo for wo in all_orders if not wo.RushOrder and not wo.FirmRush
-    ]
+    rush_orders = [wo for wo in all_orders if wo.RushOrder and not wo.FirmRush]
+    regular_orders = [wo for wo in all_orders if not wo.RushOrder and not wo.FirmRush]
 
     # Manual pagination
     total = len(all_orders)

@@ -17,7 +17,7 @@ class WorkOrder(db.Model):
     # FIXED: Quote the column name to match the actual database column
     RackNo = db.Column("rack_number", db.String)
     SpecialInstructions = db.Column("specialinstructions", db.Text)
-    RepairsNeeded = db.Column("repairsneeded", db.Text)
+    RepairsNeeded = db.Column("repairsneeded", db.Text)  # should be bool
     ReturnStatus = db.Column("returnstatus", db.String)
     # Date/DateTime fields with proper types
     DateCompleted = db.Column("datecompleted", db.DateTime, nullable=True)
@@ -26,16 +26,20 @@ class WorkOrder(db.Model):
     Clean = db.Column("clean", db.Date, nullable=True)  # Date when cleaning completed
     Treat = db.Column("treat", db.Date, nullable=True)  # Date when treatment completed
     # Boolean fields with proper types
-    Quote = db.Column("quote", db.Boolean, default=False)
+    Quote = db.Column("quote", db.Boolean, default=False)  # needs to be sting
     RushOrder = db.Column("rushorder", db.Boolean, default=False)
     FirmRush = db.Column("firmrush", db.Boolean, default=False)
-    SeeRepair = db.Column("seerepair", db.Boolean, default=False)
+    SeeRepair = db.Column("seerepair", db.Boolean, default=False)  # needs to be string
     # String fields (keep as string)
     ShipTo = db.Column("shipto", db.String, db.ForeignKey("tblsource.ssource"))
-    CleanFirstWO = db.Column("cleanfirstwo", db.String)  # Work order reference
+    CleanFirstWO = db.Column(
+        "cleanfirstwo", db.String
+    )  # deprecated only for historical
     StorageTime = db.Column("storagetime", db.String)  # "Seasonal" or "Temporary"
     created_at = db.Column(db.DateTime, server_default=func.now())
     updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
+
+    final_location = db.Column("finallocation", db.String, nullable=True)
 
     # relationships
     customer = db.relationship("Customer", back_populates="work_orders")
@@ -86,6 +90,7 @@ class WorkOrder(db.Model):
 
     def to_dict(self, include_items=True):
         from datetime import date, datetime
+
         data = {
             "WorkOrderNo": self.WorkOrderNo,
             "CustID": self.CustID,
@@ -98,8 +103,12 @@ class WorkOrder(db.Model):
             "SeeRepair": self.SeeRepair,
             "ReturnStatus": self.ReturnStatus,
             # Serialize dates properly
-            "DateCompleted": self.DateCompleted.strftime("%m/%d/%Y %H:%M:%S") if self.DateCompleted else None,
-            "DateRequired": self.DateRequired.strftime("%m/%d/%Y") if self.DateRequired else None,
+            "DateCompleted": self.DateCompleted.strftime("%m/%d/%Y %H:%M:%S")
+            if self.DateCompleted
+            else None,
+            "DateRequired": self.DateRequired.strftime("%m/%d/%Y")
+            if self.DateRequired
+            else None,
             "DateIn": self.DateIn.strftime("%m/%d/%Y") if self.DateIn else None,
             "Clean": self.Clean.strftime("%m/%d/%Y") if self.Clean else None,
             "Treat": self.Treat.strftime("%m/%d/%Y") if self.Treat else None,
@@ -109,8 +118,12 @@ class WorkOrder(db.Model):
             "FirmRush": self.FirmRush,
             "ShipTo": self.ShipTo,
             "CleanFirstWO": self.CleanFirstWO,
-            "created_at": self.created_at.strftime("%m/%d/%Y %H:%M:%S") if self.created_at else None,
-            "updated_at": self.updated_at.strftime("%m/%d/%Y %H:%M:%S") if self.updated_at else None,
+            "created_at": self.created_at.strftime("%m/%d/%Y %H:%M:%S")
+            if self.created_at
+            else None,
+            "updated_at": self.updated_at.strftime("%m/%d/%Y %H:%M:%S")
+            if self.updated_at
+            else None,
         }
         if include_items:
             data["items"] = [item.to_dict() for item in self.items]
