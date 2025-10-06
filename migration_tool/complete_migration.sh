@@ -35,6 +35,19 @@ print_error() {
     echo -e "${RED}✗${NC} $1"
 }
 
+get_test_url() {
+    local prod_url="$1"
+    # Extract everything before the last '/' (the database name)
+    local prefix="${prod_url%/*}"
+    # Extract the original database name
+    local dbname="${prod_url##*/}"
+    # Append _test to the database name
+    local test_db="${dbname}_test"
+    echo "${prefix}/${test_db}"
+}
+
+
+
 # Check arguments
 if [ $# -ne 2 ]; then
     print_error "Usage: $0 <path-to-accdb-file> <postgres-url>"
@@ -49,6 +62,18 @@ fi
 
 ACCDB_FILE="$1"
 DATABASE_URL="$2"
+
+# Default mode: prod
+MODE="${3:-prod}"
+
+if [ "$MODE" == "test" ]; then
+    DATABASE_URL=$(get_test_url "$2")
+    print_step "Using TEST database: $DATABASE_URL"
+else
+    DATABASE_URL="$2"
+    print_step "Using PROD database: $DATABASE_URL"
+fi
+
 
 # Check if Access database file exists
 if [ ! -f "$ACCDB_FILE" ]; then

@@ -182,6 +182,13 @@ def api_customers():
 
 @customers_bp.route("/view/<customer_id>")
 @login_required
+def view_customer(customer_id):
+    """Alias route for backwards compatibility with tests."""
+    return customer_detail(customer_id)
+
+
+@customers_bp.route("/view/<customer_id>")
+@login_required
 def customer_detail(customer_id):
     """Display detailed view of a customer"""
     customer = Customer.query.get_or_404(customer_id)
@@ -268,7 +275,7 @@ def create_customer():
 
             flash("Customer created successfully", "success")
             return redirect(
-                url_for("customers.customer_detail", customer_id=customer.CustID)
+                url_for("customers.view_customer", customer_id=customer.CustID)
             )
 
         except Exception as e:

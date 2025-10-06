@@ -116,17 +116,19 @@
                                 <span class="badge bg-light text-dark me-3 queue-position">
                                     {{ loop.index + (pagination.page - 1) * pagination.per_page }}
                                 </span>
-                                <span class="badge me-3 
+                                <div class="priority-col me-3">
+                                    <span class="badge me-3 
                                     {% if work_order.priority_class == 'priority-firm-rush' %} bg-danger
                                     {% elif work_order.priority_class == 'priority-rush' %} bg-warning text-dark
                                     {% else %} bg-success
                                     {% endif %}">
                                     {{ work_order.priority_label }}
-                                </span>
+                                    </span>
+                                </div>
                                 <div class="flex-grow-1 row">
                                     <div class="col-md-2 fw-bold text-primary">
                                         <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}">
-                                            WO-{{ work_order.WorkOrderNo }}
+                                            {{ work_order.WorkOrderNo }}
                                         </a>
                                     </div>
                                     <div class="col-md-3 work-order-name">{{ work_order.WOName or 'Untitled' }}</div>
@@ -142,8 +144,8 @@
                                         {% if work_order.DateRequired %}
                                             <div>Req: {{ work_order.DateRequired | date_format }}</div>
                                         {% endif %}
-                                        {% if work_order.ShipTo %}
-                                            <div class="badge badge-secondary">{{ work_order.ShipTo }}</div>
+                                        {% if work_order.Source %}
+                                            <div class="badge badge-primary">{{ work_order.Source }}</div>
                                         {% endif %}
                                     </div>
                                     <div class="col-md-2 d-flex gap-1">
