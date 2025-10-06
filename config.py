@@ -105,6 +105,7 @@ class TestingConfig(Config):
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SQLALCHEMY_ENGINE_OPTIONS = {}
+    SECRET_KEY = "test-secret-key-for-testing-only"
 
     # Disable caching in tests to avoid stale data
     CACHE_TYPE = "NullCache"  # No caching during tests

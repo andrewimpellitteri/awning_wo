@@ -11,15 +11,6 @@ Tests for Customer CRUD routes.
 
 # Here is a completely revised and more robust set of fixtures for your test_customers_routes.py file. Replace all your existing fixtures (logged_in_client, admin_client, and sample_customers) with this new code.
 
-# Python
-
-# import pytest
-# from models.customer import Customer
-# from models.source import Source
-# from models.user import User
-# from extensions import db
-# from werkzeug.security import generate_password_hash
-
 # # This replaces your logged_in_client and admin_client fixtures
 # @pytest.fixture
 # def admin_client(client, app):
@@ -98,11 +89,16 @@ def logged_in_client(client, app):
 
 @pytest.fixture
 def admin_client(client, app):
-    """Provide a logged-in client with an admin user."""
+    """Provide a logged-in client with an admin user and sample data."""
     with app.app_context():
+        # Create sources first (required for foreign key constraint)
+        sources = [Source(SSource=s) for s in ["SRC1", "SRC2", "SRC3"]]
+        db.session.add_all(sources)
+
+        # Create admin user
         admin = User(
             username="admin",
-            email="admin@example.com",  # <-- Add email
+            email="admin@example.com",
             role="admin",
             password_hash=generate_password_hash("password"),
         )
@@ -116,28 +112,27 @@ def admin_client(client, app):
 
 @pytest.fixture
 def sample_customers(app):
-    """Fixture to create sample sources and customers for testing."""
+    """Fixture to create sample customers for testing (assumes sources already exist)."""
     with app.app_context():
-        # Using a nested transaction ensures data is committed
-        # and available to the app's request context.
-        with db.session.begin_nested():
+        # Create sample sources if they don't exist
+        if not Source.query.filter_by(SSource="SRC1").first():
             sources = [Source(SSource=s) for s in ["SRC1", "SRC2", "SRC3"]]
             db.session.add_all(sources)
+            db.session.commit()
 
-            customers = [
-                Customer(CustID="123", Name="Customer 1", Source="SRC1", State="CA"),
-                Customer(CustID="124", Name="Customer 2", Source="SRC2", State="NY"),
-                Customer(CustID="125", Name="Customer 3", Source="SRC1", State="CA"),
-            ]
-            db.session.add_all(customers)
-
+        # Create sample customers
+        customers = [
+            Customer(CustID="123", Name="Customer 1", Source="SRC1", State="CA"),
+            Customer(CustID="124", Name="Customer 2", Source="SRC2", State="NY"),
+            Customer(CustID="125", Name="Customer 3", Source="SRC1", State="CA"),
+        ]
+        db.session.add_all(customers)
         db.session.commit()
 
         yield
 
-        # Teardown: Clean up the database
+        # Teardown: Clean up the database (leave sources for other tests)
         db.session.query(Customer).delete()
-        db.session.query(Source).delete()
         db.session.commit()
 
 
@@ -220,7 +215,7 @@ class TestCustomerRoutes:
         assert response.status_code == 200
         assert b"Create Customer" in response.data
 
-    def test_create_customer(self, admin_client, sample_customers):
+    def test_create_customer(self, admin_client):
         """Test creating a new customer."""
         response = admin_client.post(
             "/customers/new",

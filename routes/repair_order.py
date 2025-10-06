@@ -13,11 +13,11 @@ from models.repair_order import RepairWorkOrder, RepairWorkOrderItem
 from models.customer import Customer  # Assuming you might need this for joins
 from models.source import Source
 from sqlalchemy import or_, case, func, literal, desc, cast, Integer
-from sqlalchemy.orm import joinedload
 from datetime import datetime
 from extensions import db
 from decorators import role_required
 from repair_order_pdf import generate_repair_order_pdf
+from sqlalchemy.orm import joinedload
 from utils.pdf_helpers import prepare_order_data_for_pdf
 
 
@@ -126,6 +126,7 @@ def api_repair_work_orders():
     # Special handling for Source filter
     filter_val = request.args.get("filter_Source")
     if filter_val:
+        query = query.join(RepairWorkOrder.customer).join(Customer.source_info)
         query = query.filter(Source.SSource.ilike(f"%{filter_val}%"))
 
     # ---------------------------
