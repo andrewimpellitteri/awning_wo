@@ -21,6 +21,7 @@ from utils.file_upload import (
     get_file_size,
 )
 from sqlalchemy import or_, func, cast, Integer, case, literal
+from sqlalchemy.orm import joinedload
 from extensions import db
 from datetime import datetime, date
 import uuid
@@ -373,10 +374,20 @@ def create_work_order(prefill_cust_id=None):
                 RushOrder="RushOrder" in request.form,
                 FirmRush="FirmRush" in request.form,
                 # Date fields - convert from string or use defaults
-                DateIn=datetime.strptime(request.form.get("DateIn"), "%Y-%m-%d").date() if request.form.get("DateIn") else date.today(),
-                DateRequired=datetime.strptime(request.form.get("DateRequired"), "%Y-%m-%d").date() if request.form.get("DateRequired") else None,
-                Clean=datetime.strptime(request.form.get("Clean"), "%Y-%m-%d").date() if request.form.get("Clean") else None,
-                Treat=datetime.strptime(request.form.get("Treat"), "%Y-%m-%d").date() if request.form.get("Treat") else None,
+                DateIn=datetime.strptime(request.form.get("DateIn"), "%Y-%m-%d").date()
+                if request.form.get("DateIn")
+                else date.today(),
+                DateRequired=datetime.strptime(
+                    request.form.get("DateRequired"), "%Y-%m-%d"
+                ).date()
+                if request.form.get("DateRequired")
+                else None,
+                Clean=datetime.strptime(request.form.get("Clean"), "%Y-%m-%d").date()
+                if request.form.get("Clean")
+                else None,
+                Treat=datetime.strptime(request.form.get("Treat"), "%Y-%m-%d").date()
+                if request.form.get("Treat")
+                else None,
                 # String fields
                 ReturnStatus=request.form.get("ReturnStatus"),
                 ShipTo=request.form.get("ShipTo"),
@@ -582,16 +593,28 @@ def edit_work_order(work_order_no):
 
             # Date fields - convert from string
             date_required_str = request.form.get("DateRequired")
-            work_order.DateRequired = datetime.strptime(date_required_str, "%Y-%m-%d").date() if date_required_str else None
+            work_order.DateRequired = (
+                datetime.strptime(date_required_str, "%Y-%m-%d").date()
+                if date_required_str
+                else None
+            )
 
             clean_str = request.form.get("Clean")
-            work_order.Clean = datetime.strptime(clean_str, "%Y-%m-%d").date() if clean_str else None
+            work_order.Clean = (
+                datetime.strptime(clean_str, "%Y-%m-%d").date() if clean_str else None
+            )
 
             treat_str = request.form.get("Treat")
-            work_order.Treat = datetime.strptime(treat_str, "%Y-%m-%d").date() if treat_str else None
+            work_order.Treat = (
+                datetime.strptime(treat_str, "%Y-%m-%d").date() if treat_str else None
+            )
 
             date_completed_str = request.form.get("DateCompleted")
-            work_order.DateCompleted = datetime.strptime(date_completed_str, "%Y-%m-%d") if date_completed_str else None
+            work_order.DateCompleted = (
+                datetime.strptime(date_completed_str, "%Y-%m-%d")
+                if date_completed_str
+                else None
+            )
 
             # Handle existing work order items (NO INVENTORY IMPACT)
             existing_items = WorkOrderItem.query.filter_by(
@@ -745,10 +768,14 @@ def cleaning_room_edit_work_order(work_order_no):
         try:
             # Only allow updating Clean, Treat, and SpecialInstructions
             clean_str = request.form.get("Clean")
-            work_order.Clean = datetime.strptime(clean_str, "%Y-%m-%d").date() if clean_str else None
+            work_order.Clean = (
+                datetime.strptime(clean_str, "%Y-%m-%d").date() if clean_str else None
+            )
 
             treat_str = request.form.get("Treat")
-            work_order.Treat = datetime.strptime(treat_str, "%Y-%m-%d").date() if treat_str else None
+            work_order.Treat = (
+                datetime.strptime(treat_str, "%Y-%m-%d").date() if treat_str else None
+            )
 
             work_order.SpecialInstructions = request.form.get("SpecialInstructions")
 
@@ -856,21 +883,22 @@ def api_work_orders():
     size = request.args.get("size", 25, type=int)
     status = request.args.get("status", "").lower()
 
-    # Start with base query
-    query = WorkOrder.query
+    query = WorkOrder.query.options(
+        joinedload(WorkOrder.customer).joinedload(Customer.source_info)
+    )
 
-    # Flag to check if we need to join the customer and source tables
-    needs_source_join = False
+    # # Flag to check if we need to join the customer and source tables
+    # needs_source_join = False
 
-    # Check for filters and sorting on the 'Source' field
-    if request.args.get("filter_Source") or any(
-        request.args.get(f"sort[{i}][field]") == "Source" for i in range(5)
-    ):
-        needs_source_join = True
+    # # Check for filters and sorting on the 'Source' field
+    # if request.args.get("filter_Source") or any(
+    #     request.args.get(f"sort[{i}][field]") == "Source" for i in range(5)
+    # ):
+    #     needs_source_join = True
 
-    # Apply joins if needed for Source filtering or sorting
-    if needs_source_join:
-        query = query.join(Customer).join(Source)
+    # # Apply joins if needed for Source filtering or sorting
+    # if needs_source_join:
+    #     query = query.join(Customer).join(Source)
 
     # --- Start of Filter Logic ---
     # Per-column filters

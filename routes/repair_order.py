@@ -13,11 +13,11 @@ from models.repair_order import RepairWorkOrder, RepairWorkOrderItem
 from models.customer import Customer  # Assuming you might need this for joins
 from models.source import Source
 from sqlalchemy import or_, case, func, literal, desc, cast, Integer
+from sqlalchemy.orm import joinedload
 from datetime import datetime
 from extensions import db
 from decorators import role_required
 from repair_order_pdf import generate_repair_order_pdf
-from sqlalchemy.orm import joinedload
 from utils.pdf_helpers import prepare_order_data_for_pdf
 
 
@@ -68,17 +68,9 @@ def api_repair_work_orders():
     status = request.args.get("status", "").lower()
     search = request.args.get("search", "").strip()
 
-    query = RepairWorkOrder.query
-    needs_source_join = False
-
-    # Check if "Source" filtering/sorting is required
-    if request.args.get("filter_Source") or any(
-        request.args.get(f"sort[{i}][field]") == "Source" for i in range(5)
-    ):
-        needs_source_join = True
-
-    if needs_source_join:
-        query = query.join(Customer).join(Source)
+    query = RepairWorkOrder.query.options(
+        joinedload(RepairWorkOrder.customer).joinedload(Customer.source_info)
+    )
 
     # ---------------------------
     # ✅ Status filters
@@ -729,9 +721,7 @@ def view_repair_order_pdf(repair_order_no):
     """View PDF in browser for a work order"""
     # Fetch work order + relationships in one query
     repair_order = (
-        RepairWorkOrder.query.options(
-            joinedload(RepairWorkOrder.customer)
-        )
+        RepairWorkOrder.query.options(joinedload(RepairWorkOrder.customer))
         .filter_by(RepairOrderNo=repair_order_no)
         .first_or_404()
     )

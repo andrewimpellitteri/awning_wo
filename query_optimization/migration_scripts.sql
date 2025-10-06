@@ -109,6 +109,19 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_repairorder_pending
     ON tblrepairworkorder(datecompleted)
     WHERE datecompleted IS NULL;
 
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_repairorder_roname_trgm
+ON tblrepairworkorder USING gin(ROName gin_trgm_ops);
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_repairorder_item_type_trgm
+ON tblrepairworkorder USING gin(ITEM_TYPE gin_trgm_ops);
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_repairorder_type_of_repair_trgm
+ON tblrepairworkorder USING gin(TYPE_OF_REPAIR gin_trgm_ops);
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_repairorder_location_trgm
+ON tblrepairworkorder USING gin(LOCATION gin_trgm_ops);
+
+
 \echo 'Repair order indexes created.'
 
 -- ============================================================================
@@ -200,6 +213,13 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_inventory_description_trgm
 
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_inventory_material_trgm
     ON tblinventory USING gin(material gin_trgm_ops);
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_workorder_woname_trgm
+ON tblcustworkorderdetail USING gin(WOName gin_trgm_ops);
+
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_source_ssource_trgm
+ON tblsource USING gin(SSource gin_trgm_ops);
+
 
 \echo 'Full-text search indexes created.'
 
