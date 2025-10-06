@@ -26,6 +26,7 @@ from datetime import datetime, date
 import uuid
 from work_order_pdf import generate_work_order_pdf
 from decorators import role_required
+from utils.pdf_helpers import prepare_order_data_for_pdf
 
 work_orders_bp = Blueprint("work_orders", __name__, url_prefix="/work_orders")
 
@@ -1058,46 +1059,8 @@ def download_work_order_pdf(work_order_no):
         .first_or_404()
     )
 
-    # Base dict from work order
-    wo_dict = work_order.to_dict()
-
-    # Enrich with customer info
-    if work_order.customer:
-        wo_dict["customer"] = work_order.customer.to_dict()
-        wo_dict["customer"]["PrimaryPhone"] = work_order.customer.get_primary_phone()
-        wo_dict["customer"]["FullAddress"] = work_order.customer.get_full_address()
-        wo_dict["customer"]["MailingAddress"] = (
-            work_order.customer.get_mailing_address()
-        )
-
-    if work_order.customer and work_order.customer.Source:
-        wo_dict["source"] = {
-            "Name": work_order.customer.Source,
-            "FullAddress": " ".join(
-                filter(
-                    None,
-                    [
-                        work_order.customer.SourceAddress,
-                        work_order.customer.SourceCity,
-                        work_order.customer.SourceState,
-                        work_order.customer.SourceZip,
-                    ],
-                )
-            ).strip(),
-        }
-    else:
-        # fallback to ShipTo relationship if no customer.Source
-        if work_order.ship_to_source:
-            wo_dict["source"] = work_order.ship_to_source.to_dict()
-        else:
-            wo_dict["source"] = {
-                "Name": work_order.ShipTo or "",
-                "FullAddress": "",
-                "Phone": "",
-                "Email": "",
-            }
-
-    print(wo_dict)
+    # Prepare order data using shared helper
+    wo_dict = prepare_order_data_for_pdf(work_order, order_type="work_order")
 
     try:
         pdf_buffer = generate_work_order_pdf(
@@ -1134,34 +1097,8 @@ def view_work_order_pdf(work_order_no):
         .first_or_404()
     )
 
-    # Base dict from work order
-    wo_dict = work_order.to_dict()
-
-    # Enrich with customer info
-    if work_order.customer:
-        wo_dict["customer"] = work_order.customer.to_dict()
-        wo_dict["customer"]["PrimaryPhone"] = work_order.customer.get_primary_phone()
-        wo_dict["customer"]["FullAddress"] = work_order.customer.get_full_address()
-        wo_dict["customer"]["MailingAddress"] = (
-            work_order.customer.get_mailing_address()
-        )
-
-    if work_order.ship_to_source:
-        wo_dict["source"] = work_order.ship_to_source.to_dict()
-        wo_dict["source"]["FullAddress"] = work_order.ship_to_source.get_full_address()
-        wo_dict["source"]["Phone"] = work_order.ship_to_source.clean_phone()
-        wo_dict["source"]["Email"] = work_order.ship_to_source.clean_email()
-
-    else:
-        # fallback if the relationship is broken / missing
-        wo_dict["source"] = {
-            "Name": work_order.ShipTo or "",
-            "FullAddress": "",
-            "Phone": "",
-            "Email": "",
-        }
-
-    print(wo_dict)
+    # Prepare order data using shared helper
+    wo_dict = prepare_order_data_for_pdf(work_order, order_type="work_order")
 
     try:
         pdf_buffer = generate_work_order_pdf(

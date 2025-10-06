@@ -453,6 +453,235 @@ body {
     color: var(--text-primary) !important;
 }
 
+/* ===== Tabulator Pagination Styling ===== */
+
+/* Footer container */
+.tabulator .tabulator-footer {
+    padding: 16px 20px !important;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    background: linear-gradient(to bottom, var(--bg-primary), var(--bg-secondary)) !important;
+    border-top: 2px solid var(--border-color) !important;
+    border-radius: 0 0 8px 8px;
+}
+
+/* Page size selector */
+.tabulator .tabulator-page-size {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.875rem;
+    color: var(--text-secondary) !important;
+}
+
+.tabulator .tabulator-page-size label {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text-primary) !important;
+    letter-spacing: 0.3px;
+}
+
+.tabulator .tabulator-page-size select {
+    padding: 8px 36px 8px 14px;
+    border: 2px solid var(--border-color) !important;
+    border-radius: 8px;
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%230d6efd' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tabulator .tabulator-page-size select:hover {
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.12), 0 2px 6px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
+}
+
+.tabulator .tabulator-page-size select:focus {
+    outline: none;
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.2), 0 2px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
+}
+
+/* Dark mode page size selector arrow */
+[data-theme="dark"] .tabulator .tabulator-page-size select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2366b3ff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+/* Pagination container */
+.tabulator .tabulator-paginator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary) !important;
+    font-size: 0.875rem;
+}
+
+/* Page number buttons */
+.tabulator .tabulator-page {
+    min-width: 38px;
+    height: 38px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle shine effect on hover */
+.tabulator .tabulator-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.tabulator .tabulator-page:hover::before {
+    left: 100%;
+}
+
+.tabulator .tabulator-page:hover:not(.disabled):not([data-page="active"]) {
+    background-color: var(--bg-primary) !important;
+    border-color: #0d6efd !important;
+    color: #0d6efd !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.2);
+}
+
+/* Active page - standout design */
+.tabulator .tabulator-page[data-page="active"],
+.tabulator .tabulator-page.active {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%) !important;
+    border-color: #0d6efd !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4), 0 0 0 3px rgba(13, 110, 253, 0.1);
+    transform: scale(1.05);
+}
+
+/* Dark mode active button */
+[data-theme="dark"] .tabulator .tabulator-page[data-page="active"],
+[data-theme="dark"] .tabulator .tabulator-page.active {
+    background: linear-gradient(135deg, #66b3ff 0%, #3399ff 100%) !important;
+    border-color: #66b3ff !important;
+    box-shadow: 0 4px 12px rgba(102, 179, 255, 0.4), 0 0 0 3px rgba(102, 179, 255, 0.15);
+}
+
+/* Disabled state - much better visibility in dark mode */
+.tabulator .tabulator-page.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+    background-color: var(--bg-primary) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-muted) !important;
+    box-shadow: none;
+}
+
+/* Dark mode disabled fix */
+[data-theme="dark"] .tabulator .tabulator-page.disabled {
+    opacity: 0.25;
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* First/Last/Prev/Next buttons - make them special */
+.tabulator .tabulator-page[data-page="first"],
+.tabulator .tabulator-page[data-page="prev"],
+.tabulator .tabulator-page[data-page="next"],
+.tabulator .tabulator-page[data-page="last"] {
+    font-weight: 700;
+    padding: 0 14px;
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%) !important;
+}
+
+.tabulator .tabulator-page[data-page="first"]:hover:not(.disabled),
+.tabulator .tabulator-page[data-page="prev"]:hover:not(.disabled),
+.tabulator .tabulator-page[data-page="next"]:hover:not(.disabled),
+.tabulator .tabulator-page[data-page="last"]:hover:not(.disabled) {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%) !important;
+    color: #ffffff !important;
+    border-color: #0d6efd !important;
+}
+
+/* Dark mode navigation buttons */
+[data-theme="dark"] .tabulator .tabulator-page[data-page="first"]:hover:not(.disabled),
+[data-theme="dark"] .tabulator .tabulator-page[data-page="prev"]:hover:not(.disabled),
+[data-theme="dark"] .tabulator .tabulator-page[data-page="next"]:hover:not(.disabled),
+[data-theme="dark"] .tabulator .tabulator-page[data-page="last"]:hover:not(.disabled) {
+    background: linear-gradient(135deg, #66b3ff 0%, #3399ff 100%) !important;
+    border-color: #66b3ff !important;
+}
+
+/* Page counter text - more prominent */
+.tabulator .tabulator-page-counter {
+    margin: 0 12px;
+    font-weight: 600;
+    color: var(--text-primary) !important;
+    white-space: nowrap;
+    padding: 8px 16px;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .tabulator .tabulator-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+        padding: 14px 16px !important;
+    }
+
+    .tabulator .tabulator-page-size {
+        justify-content: center;
+    }
+
+    .tabulator .tabulator-paginator {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .tabulator .tabulator-page {
+        min-width: 34px;
+        height: 34px;
+        font-size: 0.8125rem;
+    }
+
+    .tabulator .tabulator-page-counter {
+        padding: 6px 12px;
+        font-size: 0.8125rem;
+    }
+}
+
 
 /* NEW: Styles for header filter inputs (fixes search functionality) */
 .tabulator .tabulator-header .tabulator-col input {

@@ -1,7 +1,7 @@
 from flask import Flask, render_template, jsonify
 from flask_login import login_required, current_user
 from config import Config
-from extensions import db, login_manager
+from extensions import db, login_manager, cache
 from sqlalchemy import inspect
 from datetime import datetime, date
 import os
@@ -17,6 +17,7 @@ def create_app(config_class=Config):
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
+    cache.init_app(app)
 
     @app.template_filter("price_format")
     def format_price(price):

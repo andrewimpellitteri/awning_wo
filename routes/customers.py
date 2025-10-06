@@ -5,11 +5,12 @@ from models.source import Source
 from models.inventory import Inventory
 from models.work_order import WorkOrder
 from models.repair_order import RepairWorkOrder
-from extensions import db
+from extensions import db, cache
 from sqlalchemy import or_, func, cast, Integer, desc, asc
 import json
 from decorators import role_required
 from flask_login import current_user
+from utils.cache_helpers import invalidate_customer_cache
 
 
 customers_bp = Blueprint("customers", __name__)
@@ -19,15 +20,12 @@ def user_can_edit():
     return current_user.role in ("admin", "manager")
 
 
-@customers_bp.route("/")
-@login_required
-def list_customers():
-    """Render the customer list page with filters"""
-    search_query = request.args.get("search", "").strip()
-    source_filter = request.args.get("source", "").strip()
-    state_filter = request.args.get("state", "").strip()
-
-    # Get unique sources and states for filter dropdowns
+@cache.memoize(timeout=600)  # Cache for 10 minutes
+def get_customer_filter_options():
+    """
+    Get unique sources and states for customer filter dropdowns.
+    Cached to avoid repeated queries on every page load.
+    """
     sources = (
         db.session.query(Customer.Source)
         .filter(Customer.Source.isnot(None), Customer.Source != "")
@@ -45,6 +43,20 @@ def list_customers():
         .all()
     )
     unique_states = [state[0] for state in states]
+
+    return unique_sources, unique_states
+
+
+@customers_bp.route("/")
+@login_required
+def list_customers():
+    """Render the customer list page with filters"""
+    search_query = request.args.get("search", "").strip()
+    source_filter = request.args.get("source", "").strip()
+    state_filter = request.args.get("state", "").strip()
+
+    # Get cached filter options (saves 2 queries on every page load)
+    unique_sources, unique_states = get_customer_filter_options()
 
     return render_template(
         "customers/list.html",
@@ -251,6 +263,9 @@ def create_customer():
             db.session.add(customer)
             db.session.commit()
 
+            # Invalidate cache since customer data changed
+            invalidate_customer_cache()
+
             flash("Customer created successfully", "success")
             return redirect(
                 url_for("customers.customer_detail", customer_id=customer.CustID)
@@ -316,6 +331,10 @@ def edit_customer(customer_id):
                     customer.SourceZip = source.SourceZip
 
             db.session.commit()
+
+            # Invalidate cache since customer data changed
+            invalidate_customer_cache()
+
             flash("Customer updated successfully", "success")
             return redirect(
                 url_for("customers.customer_detail", customer_id=customer.CustID)
@@ -356,6 +375,10 @@ def delete_customer(customer_id):
     try:
         db.session.delete(customer)
         db.session.commit()
+
+        # Invalidate cache since customer data changed
+        invalidate_customer_cache()
+
         flash(f"Customer {customer_id} deleted.", "success")  # <-- match test
     except Exception as e:
         db.session.rollback()

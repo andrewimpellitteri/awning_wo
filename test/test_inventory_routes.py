@@ -26,6 +26,24 @@ def admin_client(client, app):
 
 
 @pytest.fixture
+def regular_client(client, app):
+    """Provide a logged-in client with a regular user."""
+    with app.app_context():
+        user = User(
+            username="user",
+            email="user@example.com",
+            role="user",
+            password_hash=generate_password_hash("password"),
+        )
+        db.session.add(user)
+        db.session.commit()
+
+        client.post("/login", data={"username": "user", "password": "password"})
+        yield client
+        client.get("/logout")
+
+
+@pytest.fixture
 def test_customer(app):
     """Create a test customer"""
     with app.app_context():
@@ -227,3 +245,173 @@ class TestInventoryRoutes:
         import json
         json_str = json.dumps(result)
         assert json_str is not None
+
+
+
+
+class TestInventoryAPI:
+    """Test inventory API endpoints"""
+
+    def test_api_search_inventory(self, admin_client, app, test_customer):
+        """Test inventory search API"""
+        with app.app_context():
+            item = Inventory(
+                InventoryKey='API001',
+                Description='Blue Canvas Awning',
+                Material='Canvas',
+                Color='Blue',
+                CustID=test_customer.CustID,
+                Qty=5
+            )
+            db.session.add(item)
+            db.session.commit()
+
+        response = admin_client.get('/inventory/api/search?q=Blue')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert isinstance(data, list)
+        assert len(data) >= 1
+        assert any(item['description'] == 'Blue Canvas Awning' for item in data)
+
+    def test_api_search_inventory_by_customer(self, admin_client, app, test_customer):
+        """Test inventory search API filtered by customer"""
+        with app.app_context():
+            item = Inventory(
+                InventoryKey='API002',
+                Description='Customer Specific Item',
+                CustID=test_customer.CustID,
+                Qty=1
+            )
+            db.session.add(item)
+            db.session.commit()
+
+        response = admin_client.get(f'/inventory/api/search?cust_id={test_customer.CustID}')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert isinstance(data, list)
+        assert all(item['cust_id'] == test_customer.CustID for item in data)
+
+    def test_api_customer_inventory(self, admin_client, app, test_customer):
+        """Test getting all inventory for a customer"""
+        with app.app_context():
+            item1 = Inventory(
+                InventoryKey='CUST001',
+                Description='Item 1',
+                CustID=test_customer.CustID,
+                Qty=1
+            )
+            item2 = Inventory(
+                InventoryKey='CUST002',
+                Description='Item 2',
+                CustID=test_customer.CustID,
+                Qty=2
+            )
+            db.session.add_all([item1, item2])
+            db.session.commit()
+
+        response = admin_client.get(f'/inventory/api/customer/{test_customer.CustID}')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert isinstance(data, list)
+        assert len(data) == 2
+
+    def test_api_bulk_update_inventory(self, admin_client, app, test_customer):
+        """Test bulk updating inventory quantities"""
+        with app.app_context():
+            item1 = Inventory(InventoryKey='BULK001', Description='Item 1', CustID=test_customer.CustID, Qty='5')
+            item2 = Inventory(InventoryKey='BULK002', Description='Item 2', CustID=test_customer.CustID, Qty='10')
+            db.session.add_all([item1, item2])
+            db.session.commit()
+
+        updates = [
+            {'inventory_key': 'BULK001', 'qty': 15},
+            {'inventory_key': 'BULK002', 'qty': 25}
+        ]
+
+        response = admin_client.post('/inventory/api/bulk_update',
+                                     json=updates,
+                                     content_type='application/json')
+        assert response.status_code == 200
+        data = response.get_json()
+        assert 'message' in data
+
+        # Verify updates
+        with app.app_context():
+            item1 = Inventory.query.get('BULK001')
+            item2 = Inventory.query.get('BULK002')
+            # Qty is stored as string in format, but may be int after bulk update
+            assert str(item1.Qty) == '15'
+            assert str(item2.Qty) == '25'
+
+
+class TestInventoryAuthorization:
+    """Test inventory authorization"""
+
+    def test_regular_user_cannot_create_inventory(self, regular_client):
+        """Test that regular users cannot create inventory"""
+        response = regular_client.post('/inventory/new', data={
+            'Description': 'Unauthorized Item',
+            'Qty': '1'
+        })
+        assert response.status_code == 403
+
+    def test_regular_user_cannot_edit_inventory(self, regular_client, app, test_customer):
+        """Test that regular users cannot edit inventory"""
+        with app.app_context():
+            item = Inventory(
+                InventoryKey='AUTH001',
+                Description='Item',
+                CustID=test_customer.CustID,
+                Qty=1
+            )
+            db.session.add(item)
+            db.session.commit()
+
+        response = regular_client.post('/inventory/edit/AUTH001', data={
+            'Description': 'Updated',
+            'Qty': '5'
+        })
+        assert response.status_code == 403
+
+    def test_regular_user_cannot_add_ajax(self, regular_client, test_customer):
+        """Test that regular users cannot add inventory via AJAX"""
+        response = regular_client.post('/inventory/add_ajax', data={
+            'CustID': test_customer.CustID,
+            'Description': 'Unauthorized',
+            'Qty': '1'
+        })
+        assert response.status_code == 403
+
+    def test_regular_user_cannot_edit_ajax(self, regular_client, app, test_customer):
+        """Test that regular users cannot edit inventory via AJAX"""
+        with app.app_context():
+            item = Inventory(
+                InventoryKey='AUTH002',
+                Description='Item',
+                CustID=test_customer.CustID,
+                Qty=1
+            )
+            db.session.add(item)
+            db.session.commit()
+
+        response = regular_client.post('/inventory/edit_ajax/AUTH002', data={
+            'Description': 'Updated',
+            'Qty': '5'
+        })
+        assert response.status_code == 403
+
+    def test_regular_user_cannot_delete_ajax(self, regular_client, app, test_customer):
+        """Test that regular users cannot delete inventory via AJAX"""
+        with app.app_context():
+            item = Inventory(
+                InventoryKey='AUTH003',
+                Description='Item',
+                CustID=test_customer.CustID,
+                Qty=1
+            )
+            db.session.add(item)
+            db.session.commit()
+
+        response = regular_client.post('/inventory/delete_ajax/AUTH003')
+        assert response.status_code == 403
+

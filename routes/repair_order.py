@@ -18,6 +18,7 @@ from extensions import db
 from decorators import role_required
 from repair_order_pdf import generate_repair_order_pdf
 from sqlalchemy.orm import joinedload
+from utils.pdf_helpers import prepare_order_data_for_pdf
 
 
 repair_work_orders_bp = Blueprint(
@@ -688,7 +689,7 @@ def delete_repair_order(repair_order_no):
 def download_repair_order_pdf(repair_order_no):
     """download PDF in browser for a work order"""
     # Fetch work order + relationships in one query
-    work_order = (
+    repair_order = (
         RepairWorkOrder.query.filter_by(RepairOrderNo=repair_order_no)
         .options(
             db.joinedload(RepairWorkOrder.customer),
@@ -696,70 +697,12 @@ def download_repair_order_pdf(repair_order_no):
         .first_or_404()
     )
 
-    # Base dict from work order
-    wo_dict = work_order.to_dict()
-
-    wo_dict["items"] = [
-        {
-            "Qty": item.Qty if item.Qty is not None else "0",
-            "Description": item.Description,
-            "Material": item.Material,
-            "Condition": item.Condition,
-            "Color": item.Color,
-            "SizeWgt": item.SizeWgt,
-            "Price": item.Price,
-        }
-        for item in work_order.items  # <-- relationship
-    ]
-
-    # Enrich with customer info
-    if work_order.customer:
-        wo_dict["customer"] = work_order.customer.to_dict()
-        wo_dict["customer"]["PrimaryPhone"] = work_order.customer.get_primary_phone()
-        wo_dict["customer"]["FullAddress"] = work_order.customer.get_full_address()
-        wo_dict["customer"]["MailingAddress"] = (
-            work_order.customer.get_mailing_address()
-        )
-
-    if work_order.customer and work_order.customer.Source:
-        wo_dict["source"] = {
-            "Name": work_order.customer.Source,
-            "FullAddress": " ".join(
-                filter(
-                    None,
-                    [
-                        work_order.customer.SourceAddress,
-                        work_order.customer.SourceCity,
-                        work_order.customer.SourceState,
-                        work_order.customer.SourceZip,
-                    ],
-                )
-            ).strip(),
-        }
-    else:
-        # fallback to ShipTo relationship if no customer.Source
-        if work_order.SOURCE:
-            # If RepairWorkOrder.SOURCE holds a name string, use it.
-            wo_dict["source"] = {
-                "Name": work_order.SOURCE,
-                "FullAddress": "",  # Cannot determine address from just the string source name
-                "Phone": "",
-                "Email": "",
-            }
-        else:
-            # Final fallback to the repair order name itself
-            wo_dict["source"] = {
-                "Name": work_order.ROName or "",  # Use ROName as a fallback name
-                "FullAddress": "",
-                "Phone": "",
-                "Email": "",
-            }
-
-    print(wo_dict)
+    # Prepare order data using shared helper
+    ro_dict = prepare_order_data_for_pdf(repair_order, order_type="repair_order")
 
     try:
         pdf_buffer = generate_repair_order_pdf(
-            wo_dict,
+            ro_dict,
             company_info={"name": "Awning Cleaning Industries - Repair Work Order"},
         )
 
@@ -774,7 +717,6 @@ def download_repair_order_pdf(repair_order_no):
         flash(f"Error generating PDF: {str(e)}", "error")
         return redirect(
             url_for(
-                # Change 'repair_order.view_repair_work_order' to 'repair_work_orders.view_repair_work_order'
                 "repair_work_orders.view_repair_work_order",
                 repair_order_no=repair_order_no,
             )
@@ -789,83 +731,32 @@ def view_repair_order_pdf(repair_order_no):
     repair_order = (
         RepairWorkOrder.query.options(
             joinedload(RepairWorkOrder.customer)
-        )  # <-- correct usage
+        )
         .filter_by(RepairOrderNo=repair_order_no)
-        .first()
+        .first_or_404()
     )
 
-    if repair_order:
-        print("Repair Order No:", repair_order.RepairOrderNo)
-        print("Customer Name:", repair_order.customer.Name)
-        print(
-            "Customer Ship To:", repair_order.customer.Source
-        )  # whatever your column is
+    # Prepare order data using shared helper
+    ro_dict = prepare_order_data_for_pdf(repair_order, order_type="repair_order")
 
-        # Base dict from work order
-        wo_dict = repair_order.to_dict()
+    try:
+        pdf_buffer = generate_repair_order_pdf(
+            ro_dict,
+            company_info={"name": "Awning Cleaning Industries - Repair Work Order"},
+        )
 
-        wo_dict["items"] = [
-            {
-                "Qty": item.Qty if item.Qty is not None else "0",
-                "Description": item.Description,
-                "Material": item.Material,
-                "Condition": item.Condition,
-                "Color": item.Color,
-                "SizeWgt": item.SizeWgt,
-                "Price": item.Price,
-            }
-            for item in repair_order.items  # <-- relationship
-        ]
+        return send_file(
+            pdf_buffer,
+            as_attachment=False,
+            download_name=f"WorkOrder_{repair_order_no}.pdf",
+            mimetype="application/pdf",
+        )
 
-        # Enrich with customer info
-        if repair_order.customer:
-            wo_dict["customer"] = repair_order.customer.to_dict()
-            wo_dict["customer"]["PrimaryPhone"] = (
-                repair_order.customer.get_primary_phone()
+    except Exception as e:
+        flash(f"Error generating PDF: {str(e)}", "error")
+        return redirect(
+            url_for(
+                "repair_work_orders.view_repair_work_order",
+                repair_order_no=repair_order_no,
             )
-            wo_dict["customer"]["FullAddress"] = (
-                repair_order.customer.get_full_address()
-            )
-            wo_dict["customer"]["MailingAddress"] = (
-                repair_order.customer.get_mailing_address()
-            )
-
-        if repair_order.SOURCE:
-            wo_dict["source"] = repair_order.SOURCE.to_dict()
-            wo_dict["source"]["FullAddress"] = repair_order.SOURCE.get_full_address()
-            wo_dict["source"]["Phone"] = repair_order.SOURCE.clean_phone()
-            wo_dict["source"]["Email"] = repair_order.SOURCE.clean_email()
-
-        else:
-            # fallback if the relationship is broken / missing
-            wo_dict["source"] = {
-                "Name": repair_order.customer.Source or "",
-                "FullAddress": "",
-                "Phone": "",
-                "Email": "",
-            }
-
-        print(wo_dict)
-
-        try:
-            pdf_buffer = generate_repair_order_pdf(
-                wo_dict,
-                company_info={"name": "Awning Cleaning Industries - Repair Work Order"},
-            )
-
-            return send_file(
-                pdf_buffer,
-                as_attachment=False,
-                download_name=f"WorkOrder_{repair_order_no}.pdf",
-                mimetype="application/pdf",
-            )
-
-        except Exception as e:
-            flash(f"Error generating PDF: {str(e)}", "error")
-            return redirect(
-                url_for(
-                    # Change 'repair_order.view_repair_work_order' to 'repair_work_orders.view_repair_work_order'
-                    "repair_work_orders.view_repair_work_order",
-                    repair_order_no=repair_order_no,
-                )
-            )
+        )

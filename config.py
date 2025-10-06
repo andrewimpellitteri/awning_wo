@@ -84,6 +84,11 @@ class Config:
         "Z Sails",
     ]
 
+    # Cache configuration
+    CACHE_TYPE = "SimpleCache"  # In-memory, thread-safe
+    CACHE_DEFAULT_TIMEOUT = 300  # 5 minutes
+    CACHE_KEY_PREFIX = "awning_"
+
 
 class DevelopmentConfig(Config):
     DEBUG = True
@@ -100,6 +105,10 @@ class TestingConfig(Config):
     WTF_CSRF_ENABLED = False
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SQLALCHEMY_ENGINE_OPTIONS = {}
+
+    # Disable caching in tests to avoid stale data
+    CACHE_TYPE = "NullCache"  # No caching during tests
+    CACHE_NO_NULL_WARNING = True
 
 
 config = {
