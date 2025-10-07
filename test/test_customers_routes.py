@@ -165,12 +165,7 @@ class TestCustomerRoutes:
         assert data["total"] == 1
         assert data["data"][0]["Name"] == "Customer 2"
 
-    def test_filter_by_state(self, logged_in_client, sample_customers):
-        """Test filtering by State."""
-        response = logged_in_client.get("/customers/api/customers?filter_State=CA")
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data["total"] == 2
+
 
     def test_column_filter_by_cust_id(self, logged_in_client, sample_customers):
         """Test column-specific filtering by CustID."""

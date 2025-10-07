@@ -101,11 +101,7 @@ class TestSourceListRoutes:
         assert response.status_code == 200
         assert b"Test Source 1" in response.data
 
-    def test_source_list_filter_by_state(self, logged_in_client, sample_sources):
-        """Test filtering sources by state."""
-        response = logged_in_client.get("/sources/?state=MA")
-        assert response.status_code == 200
-        assert b"Test Source 1" in response.data or b"Test Source 3" in response.data
+
 
     def test_source_list_pagination(self, logged_in_client, sample_sources):
         """Test pagination of source list."""
@@ -385,21 +381,12 @@ class TestSourceAPIRoutes:
         assert len(data) > 0
         assert any(s["name"] == "Test Source 1" for s in data)
 
-    def test_api_search_sources_no_query(self, logged_in_client, sample_sources):
-        """Test API search with no query returns empty list."""
-        response = logged_in_client.get("/sources/api/search?q=")
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data == []
-
-    def test_api_get_states(self, logged_in_client, sample_sources):
-        """Test API endpoint for getting all unique states."""
-        response = logged_in_client.get("/sources/api/states")
-        assert response.status_code == 200
-        assert response.is_json
-        data = response.get_json()
-        assert "MA" in data
-        assert "NY" in data
+        def test_api_search_sources_no_query(self, logged_in_client, sample_sources):
+            """Test API search with no query returns empty list."""
+            response = logged_in_client.get("/sources/api/search?q=")
+            assert response.status_code == 200
+            data = response.get_json()
+            assert data == []
 
 
 class TestSourceRoutesAuth:

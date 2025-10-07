@@ -20,10 +20,11 @@ def source_list():
 
     # Apply search filter
     if search_query:
+        term = f"%{search_query}%"
         query = query.filter(
             or_(
-                Source.SSource.contains(search_query),
-                Source.SourceCity.contains(search_query),
+                Source.SSource.ilike(term),
+                Source.SourceCity.ilike(term),
             )
         )
 
