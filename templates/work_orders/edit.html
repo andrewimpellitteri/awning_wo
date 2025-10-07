@@ -71,10 +71,9 @@
                                             <div class="detail-label">Quote</div>
                                             <div class="detail-value">
                                                 <select class="form-select" id="Quote" name="Quote">
-                                                    <option value="">Select</option>
-                                                    <option value="yes" {{ 'selected' if form_data and form_data.get('Quote') == 'yes' else '' }}>Yes</option>
-                                                    <option value="done" {{ 'selected' if form_data and form_data.get('Quote') == 'done' else '' }}>Done</option>
-                                                    <option value="approved" {{ 'selected' if form_data and form_data.get('Quote') == 'approved' else '' }}>Approved</option>
+                                                    <option value="No" {% if work_order.Quote == 'No' %}selected{% endif %}>No</option>
+                                                    <option value="Approved" {% if work_order.Quote == 'Approved' %}selected{% endif %}>Approved</option>
+                                                    <option value="Done" {% if work_order.Quote == 'Done' %}selected{% endif %}>Done</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -239,11 +238,21 @@
                                     </div>
                                     
                                     <div class="col-md-6">
+                                        <div class="form-check mt-3">
+                                            <input class="form-check-input" type="checkbox" id="RepairsNeeded" name="RepairsNeeded" value="true" {% if work_order.RepairsNeeded %}checked{% endif %}>
+                                            <label class="form-check-label" for="RepairsNeeded">
+                                                Repairs Needed
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
                                         <div class="detail-row">
-                                            <div class="detail-label">Repairs Needed</div>
+                                            <div class="detail-label">See Repair</div>
                                             <div class="detail-value">
-                                                <textarea class="form-control" id="RepairsNeeded" name="RepairsNeeded" rows="4"
-                                                          placeholder="Describe repairs needed...">{{ work_order.RepairsNeeded or '' }}</textarea>
+                                                <input type="text" class="form-control" id="SeeRepair" name="SeeRepair" list="open-repair-orders-list"
+                                                       value="{{ work_order.SeeRepair or '' }}">
+                                                <datalist id="open-repair-orders-list"></datalist>
                                             </div>
                                         </div>
                                     </div>
@@ -786,6 +795,7 @@ function updateRushStatus() {
 // Customer change handler
 document.getElementById('CustID').addEventListener('change', function() {
     loadCustomerInventory(this.value);
+    loadOpenRepairOrders(this.value);
 });
 
 // Load customer inventory on page load
@@ -793,6 +803,7 @@ window.addEventListener('DOMContentLoaded', function() {
     const custInput = document.getElementById('CustID');
     if (custInput.value) {
         loadCustomerInventory(custInput.value);
+        loadOpenRepairOrders(custInput.value);
     }
 
     // Create datalists for autocomplete
@@ -801,6 +812,28 @@ window.addEventListener('DOMContentLoaded', function() {
     // Initialize counts
     updateCounts();
 });
+
+function loadOpenRepairOrders(custId) {
+    const datalist = document.getElementById('open-repair-orders-list');
+    if (!custId) {
+        datalist.innerHTML = '';
+        return;
+    }
+
+    fetch(`/work_orders/api/open_repair_orders/${custId}`)
+        .then(response => response.json())
+        .then(data => {
+            datalist.innerHTML = '';
+            data.forEach(order => {
+                const option = document.createElement('option');
+                option.value = order.RepairOrderNo;
+                datalist.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading open repair orders:', error);
+        });
+}
 
 // Form validation
 document.getElementById('workOrderForm').addEventListener('submit', function(e) {

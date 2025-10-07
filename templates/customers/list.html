@@ -25,7 +25,7 @@
                            id="search" 
                            name="search" 
                            placeholder="Search customers..."
-                           value="{{ search_query }}">
+                           value="{{ search_query }}" autofocus>
                 </div>
                 <div class="col-md-2">
                     <label for="source" class="form-label text-muted small mb-1">Source</label>
@@ -38,17 +38,6 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label for="state" class="form-label text-muted small mb-1">State</label>
-                    <select class="form-select form-select-sm border-0 bg-light" id="state" name="state">
-                        <option value="">All States</option>
-                        {% for state in unique_states %}
-                            <option value="{{ state }}" {% if state == state_filter %}selected{% endif %}>
-                                {{ state }}
-                            </option>
-                        {% endfor %}
-                    </select>
-               </div>
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-outline-primary btn-sm me-2">
                         <i class="fas fa-search me-1"></i>Filter
@@ -117,7 +106,6 @@ document.addEventListener("DOMContentLoaded", function() {
             const params = {
                 search: document.getElementById("search")?.value || "",
                 source: document.getElementById("source")?.value || "",
-                state: document.getElementById("state")?.value || ""
             };
             
             // Add column filters

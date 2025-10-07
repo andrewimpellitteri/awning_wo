@@ -13,7 +13,6 @@ source_bp = Blueprint("source", __name__)
 def source_list():
     """Display all sources with search functionality"""
     search_query = request.args.get("search", "").strip()
-    state_filter = request.args.get("state", "").strip()
     page = request.args.get("page", 1, type=int)
     per_page = 10
 
@@ -25,32 +24,15 @@ def source_list():
             or_(
                 Source.SSource.contains(search_query),
                 Source.SourceCity.contains(search_query),
-                Source.SourceState.contains(search_query),
             )
         )
 
-    # Apply state filter
-    if state_filter:
-        query = query.filter(Source.SourceState.ilike(f"%{state_filter}%"))
-
     sources = query.paginate(page=page, per_page=per_page, error_out=False)
-
-    # Get unique states for filter dropdown
-    states = (
-        db.session.query(Source.SourceState)
-        .filter(Source.SourceState.isnot(None), Source.SourceState != "")
-        .distinct()
-        .order_by(Source.SourceState)
-        .all()
-    )
-    unique_states = [state[0] for state in states]
 
     return render_template(
         "source/list.html",
         sources=sources,
         search_query=search_query,
-        state_filter=state_filter,
-        unique_states=unique_states,
     )
 
 
@@ -194,7 +176,6 @@ def api_search():
             or_(
                 Source.SSource.contains(query),
                 Source.SourceCity.contains(query),
-                Source.SourceState.contains(query),
             )
         )
         .limit(10)
@@ -214,16 +195,4 @@ def api_search():
     )
 
 
-@source_bp.route("/api/states")
-@login_required
-def api_states():
-    """API endpoint to get all unique states"""
-    states = (
-        db.session.query(Source.SourceState)
-        .filter(Source.SourceState.isnot(None), Source.SourceState != "")
-        .distinct()
-        .order_by(Source.SourceState)
-        .all()
-    )
 
-    return jsonify([state[0] for state in states])

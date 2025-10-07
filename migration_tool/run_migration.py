@@ -128,7 +128,7 @@ def apply_type_conversions(df, table_name):
     # WorkOrder table conversions
     if table_name.lower() == "tblcustworkorderdetail":
         # Boolean fields FIRST (needed for auto-completion logic)
-        for bool_field in ["rushorder", "firmrush", "quote", "seerepair"]:
+        for bool_field in ["rushorder", "firmrush", "repairsneeded"]:
             if bool_field in df.columns:
                 df[bool_field] = df[bool_field].apply(convert_boolean_field)
 

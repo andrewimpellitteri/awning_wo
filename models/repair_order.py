@@ -31,7 +31,9 @@ class RepairWorkOrder(db.Model):
     # Boolean fields with proper types
     RushOrder = db.Column("rushorder", db.Boolean, default=False)
     FirmRush = db.Column("firmrush", db.Boolean, default=False)
-    QUOTE = db.Column("quote", db.Boolean, default=False)  # need to change to str
+    QUOTE = db.Column(
+        "quote", db.Boolean, default=False
+    )  # need to change to str?? might be same a wo dropdown or could be a bool?
     APPROVED = db.Column("approved", db.Boolean, default=False)
     CLEAN = db.Column("clean", db.Boolean, default=False)  # Uses "YES"/"NO" values
     CLEANFIRST = db.Column(

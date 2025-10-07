@@ -23,7 +23,7 @@ def user_can_edit():
 @cache.memoize(timeout=600)  # Cache for 10 minutes
 def get_customer_filter_options():
     """
-    Get unique sources and states for customer filter dropdowns.
+    Get unique sources for customer filter dropdowns.
     Cached to avoid repeated queries on every page load.
     """
     sources = (
@@ -35,16 +35,7 @@ def get_customer_filter_options():
     )
     unique_sources = [source[0] for source in sources]
 
-    states = (
-        db.session.query(Customer.State)
-        .filter(Customer.State.isnot(None), Customer.State != "")
-        .distinct()
-        .order_by(Customer.State)
-        .all()
-    )
-    unique_states = [state[0] for state in states]
-
-    return unique_sources, unique_states
+    return unique_sources
 
 
 @customers_bp.route("/")
@@ -53,18 +44,15 @@ def list_customers():
     """Render the customer list page with filters"""
     search_query = request.args.get("search", "").strip()
     source_filter = request.args.get("source", "").strip()
-    state_filter = request.args.get("state", "").strip()
 
     # Get cached filter options (saves 2 queries on every page load)
-    unique_sources, unique_states = get_customer_filter_options()
+    unique_sources = get_customer_filter_options()
 
     return render_template(
         "customers/list.html",
         search_query=search_query,
         source_filter=source_filter,
-        state_filter=state_filter,
         unique_sources=unique_sources,
-        unique_states=unique_states,
     )
 
 
@@ -88,7 +76,6 @@ def api_customers():
                 Customer.CustID.ilike(term),
                 Customer.Contact.ilike(term),
                 Customer.City.ilike(term),
-                Customer.State.ilike(term),
                 Customer.HomePhone.ilike(term),
                 Customer.EmailAddress.ilike(term),
                 Customer.Source.ilike(term),
@@ -104,7 +91,6 @@ def api_customers():
         "filter_Phone": Customer.HomePhone,
         "filter_EmailAddress": Customer.EmailAddress,
         "filter_Source": Customer.Source,
-        "filter_State": Customer.State,
     }
 
     for key, column in filter_mapping.items():
@@ -124,7 +110,6 @@ def api_customers():
         "Phone": Customer.HomePhone,
         "EmailAddress": Customer.EmailAddress,
         "Source": Customer.Source,
-        "State": Customer.State,
     }
 
     i = 0

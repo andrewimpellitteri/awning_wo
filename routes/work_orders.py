@@ -14,6 +14,7 @@ from models.work_order import WorkOrder, WorkOrderItem
 from models.customer import Customer
 from models.source import Source
 from models.inventory import Inventory
+from models.repair_order import RepairWorkOrder
 from models.work_order_file import WorkOrderFile
 from utils.file_upload import (
     save_work_order_file,
@@ -30,6 +31,25 @@ from decorators import role_required
 from utils.pdf_helpers import prepare_order_data_for_pdf
 
 work_orders_bp = Blueprint("work_orders", __name__, url_prefix="/work_orders")
+
+
+@work_orders_bp.route("/api/open_repair_orders/<cust_id>")
+@login_required
+def get_open_repair_orders(cust_id):
+    """Get all open repair orders for a specific customer"""
+    open_repair_orders = RepairWorkOrder.query.filter(
+        RepairWorkOrder.CustID == cust_id,
+        RepairWorkOrder.DateCompleted.is_(None)
+    ).all()
+
+    return jsonify(
+        [
+            {
+                "RepairOrderNo": order.RepairOrderNo,
+            }
+            for order in open_repair_orders
+        ]
+    )
 
 
 @work_orders_bp.route("/<work_order_no>/files/upload", methods=["POST"])
@@ -367,10 +387,10 @@ def create_work_order(prefill_cust_id=None):
                 StorageTime=request.form.get("StorageTime"),
                 RackNo=request.form.get("RackNo"),
                 SpecialInstructions=request.form.get("SpecialInstructions"),
-                RepairsNeeded=request.form.get("RepairsNeeded"),
+                RepairsNeeded="RepairsNeeded" in request.form,
                 # Boolean fields - checkbox present = True
-                SeeRepair="SeeRepair" in request.form,
-                Quote="Quote" in request.form,
+                SeeRepair=request.form.get("SeeRepair"),
+                Quote=request.form.get("Quote"),
                 RushOrder="RushOrder" in request.form,
                 FirmRush="FirmRush" in request.form,
                 # Date fields - convert from string or use defaults
@@ -580,14 +600,14 @@ def edit_work_order(work_order_no):
             work_order.StorageTime = request.form.get("StorageTime")
             work_order.RackNo = request.form.get("RackNo")
             work_order.SpecialInstructions = request.form.get("SpecialInstructions")
-            work_order.RepairsNeeded = request.form.get("RepairsNeeded")
+            work_order.RepairsNeeded = "RepairsNeeded" in request.form
             work_order.ReturnStatus = request.form.get("ReturnStatus")
             work_order.ShipTo = request.form.get("ShipTo")
             work_order.CleanFirstWO = request.form.get("CleanFirstWO")
 
             # Boolean fields - checkbox present = True
-            work_order.SeeRepair = "SeeRepair" in request.form
-            work_order.Quote = "Quote" in request.form
+            work_order.SeeRepair = request.form.get("SeeRepair")
+            work_order.Quote = request.form.get("Quote")
             work_order.RushOrder = "RushOrder" in request.form
             work_order.FirmRush = "FirmRush" in request.form
 

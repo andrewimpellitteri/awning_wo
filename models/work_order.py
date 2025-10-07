@@ -17,19 +17,19 @@ class WorkOrder(db.Model):
     # FIXED: Quote the column name to match the actual database column
     RackNo = db.Column("rack_number", db.String)
     SpecialInstructions = db.Column("specialinstructions", db.Text)
-    RepairsNeeded = db.Column("repairsneeded", db.Text)  # should be bool
+    RepairsNeeded = db.Column("repairsneeded", db.Boolean)  # should be bool
     ReturnStatus = db.Column("returnstatus", db.String)
     # Date/DateTime fields with proper types
     DateCompleted = db.Column("datecompleted", db.DateTime, nullable=True)
     DateRequired = db.Column("daterequired", db.Date, nullable=True)
-    DateIn = db.Column("datein", db.Date, nullable=False, default=func.current_date())
+    DateIn = db.Column("datein", db.Date, nullable=True)
     Clean = db.Column("clean", db.Date, nullable=True)  # Date when cleaning completed
     Treat = db.Column("treat", db.Date, nullable=True)  # Date when treatment completed
     # Boolean fields with proper types
-    Quote = db.Column("quote", db.Boolean, default=False)  # needs to be sting
+    Quote = db.Column("quote", db.String)  # needs to be sting
     RushOrder = db.Column("rushorder", db.Boolean, default=False)
     FirmRush = db.Column("firmrush", db.Boolean, default=False)
-    SeeRepair = db.Column("seerepair", db.Boolean, default=False)  # needs to be string
+    SeeRepair = db.Column("seerepair", db.String)  # needs to be string
     # String fields (keep as string)
     ShipTo = db.Column("shipto", db.String, db.ForeignKey("tblsource.ssource"))
     CleanFirstWO = db.Column(
