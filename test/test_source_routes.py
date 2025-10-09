@@ -381,12 +381,7 @@ class TestSourceAPIRoutes:
         assert len(data) > 0
         assert any(s["name"] == "Test Source 1" for s in data)
 
-        def test_api_search_sources_no_query(self, logged_in_client, sample_sources):
-            """Test API search with no query returns empty list."""
-            response = logged_in_client.get("/sources/api/search?q=")
-            assert response.status_code == 200
-            data = response.get_json()
-            assert data == []
+
 
 
 class TestSourceRoutesAuth:

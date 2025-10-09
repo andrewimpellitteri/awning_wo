@@ -26,7 +26,7 @@
                                    id="search" 
                                    name="search" 
                                    placeholder="Search by name or city..."
-                                   value="{{ search_query }}" autofocus>
+                                   value="{{ search_query }}">
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
                             <button type="submit" class="btn btn-secondary me-2">
@@ -225,5 +225,17 @@ function confirmDelete(sourceName) {
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
     deleteModal.show();
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+    const searchInput = document.getElementById("search");
+    if (searchInput) {
+        searchInput.focus();
+        // If there's a value (a search has been performed), move the cursor to the end.
+        if (searchInput.value) {
+            const len = searchInput.value.length;
+            searchInput.setSelectionRange(len, len);
+        }
+    }
+});
 </script>
 {% endblock %}

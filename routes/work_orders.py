@@ -413,6 +413,8 @@ def create_work_order(prefill_cust_id=None):
                 ShipTo=request.form.get("ShipTo"),
                 CleanFirstWO=request.form.get("CleanFirstWO"),
             )
+            if work_order.Clean:
+                work_order.ProcessingStatus = False
             db.session.add(work_order)
             db.session.flush()  # ensures parent exists in DB for FK references
 
@@ -623,6 +625,8 @@ def edit_work_order(work_order_no):
             work_order.Clean = (
                 datetime.strptime(clean_str, "%Y-%m-%d").date() if clean_str else None
             )
+            if work_order.Clean:
+                work_order.ProcessingStatus = False
 
             treat_str = request.form.get("Treat")
             work_order.Treat = (
@@ -786,11 +790,12 @@ def cleaning_room_edit_work_order(work_order_no):
 
     if request.method == "POST":
         try:
-            # Only allow updating Clean, Treat, and SpecialInstructions
             clean_str = request.form.get("Clean")
             work_order.Clean = (
                 datetime.strptime(clean_str, "%Y-%m-%d").date() if clean_str else None
             )
+            if work_order.Clean:
+                work_order.ProcessingStatus = False
 
             treat_str = request.form.get("Treat")
             work_order.Treat = (
@@ -905,22 +910,21 @@ def api_work_orders():
     size = request.args.get("size", 25, type=int)
     status = request.args.get("status", "").lower()
 
-    query = WorkOrder.query.options(
-        joinedload(WorkOrder.customer).joinedload(Customer.source_info)
-    )
+    query = WorkOrder.query
 
-    # # Flag to check if we need to join the customer and source tables
-    # needs_source_join = False
+    # Check for filters and sorting on the 'Source' field
+    is_source_filter = request.args.get("filter_Source")
+    is_source_sort = any(request.args.get(f"sort[{i}][field]") == "Source" for i in range(5))
 
-    # # Check for filters and sorting on the 'Source' field
-    # if request.args.get("filter_Source") or any(
-    #     request.args.get(f"sort[{i}][field]") == "Source" for i in range(5)
-    # ):
-    #     needs_source_join = True
+    # Conditionally join and eager load relationships
+    if is_source_filter or is_source_sort:
+        query = query.join(WorkOrder.customer).join(Customer.source_info)
+        query = query.options(
+            joinedload(WorkOrder.customer).joinedload(Customer.source_info)
+        )
+    else:
+        query = query.options(joinedload(WorkOrder.customer))
 
-    # # Apply joins if needed for Source filtering or sorting
-    # if needs_source_join:
-    #     query = query.join(Customer).join(Source)
 
     # --- Start of Filter Logic ---
     # Per-column filters
@@ -930,7 +934,6 @@ def api_work_orders():
         "CustID",
         "DateIn",
         "DateRequired",
-        "Source",
     ]:
         filter_val = request.args.get(f"filter_{field}")
         if filter_val:
@@ -968,13 +971,13 @@ def api_work_orders():
                 except ValueError:
                     pass
 
-            elif field == "Source":
-                # Filter on the correct column from the joined table
-                query = query.filter(Source.SSource.ilike(f"%{filter_val}%"))
-
             else:
                 # For other text fields (WOName, DateIn, DateRequired)
                 query = query.filter(getattr(WorkOrder, field).ilike(f"%{filter_val}%"))
+
+    if is_source_filter:
+        query = query.filter(Source.SSource.ilike(f"%{is_source_filter}%"))
+
 
     # Status quick filters
     if status == "pending":

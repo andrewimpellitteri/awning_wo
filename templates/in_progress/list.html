@@ -21,10 +21,19 @@
             <!-- Tabs -->
             <ul class="nav nav-tabs mb-4">
                 <li class="nav-item">
+                    <a class="nav-link {% if tab == 'all_recent' %}active{% endif %}" href="{{ url_for('in_progress.all_recent') }}">All Recent</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {% if tab == 'in_progress' %}active{% endif %}" href="{{ url_for('in_progress.list_in_progress') }}">In Progress</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {% if tab == 'recently_cleaned' %}active{% endif %}" href="{{ url_for('in_progress.list_recently_cleaned') }}">Recently Cleaned</a>
+                    <a class="nav-link {% if tab == 'cleaned' %}active{% endif %}" href="{{ url_for('in_progress.list_cleaned') }}">Cleaned</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'treated' %}active{% endif %}" href="{{ url_for('in_progress.list_treated') }}">Treated</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if tab == 'packaged' %}active{% endif %}" href="{{ url_for('in_progress.list_packaged') }}">Packaged</a>
                 </li>
             </ul>
 
@@ -34,8 +43,17 @@
                     {% if tab == 'in_progress' %}
                         <h5 class="mb-0">Work Orders Currently Being Processed</h5>
                         <small class="text-muted">{{ work_orders|length }} items</small>
-                    {% elif tab == 'recently_cleaned' %}
-                        <h5 class="mb-0">Recently Cleaned/Treated Work Orders</h5>
+                    {% elif tab == 'cleaned' %}
+                        <h5 class="mb-0">Work Orders Recently Cleaned</h5>
+                        <small class="text-muted">{{ work_orders|length }} items</small>
+                    {% elif tab == 'treated' %}
+                        <h5 class="mb-0">Work Orders Recently Treated</h5>
+                        <small class="text-muted">{{ work_orders|length }} items</small>
+                    {% elif tab == 'packaged' %}
+                        <h5 class="mb-0">Work Orders Recently Packaged</h5>
+                        <small class="text-muted">{{ work_orders|length }} items</small>
+                    {% else %}
+                        <h5 class="mb-0">All Recent Work Orders</h5>
                         <small class="text-muted">{{ work_orders|length }} items</small>
                     {% endif %}
                 </div>
@@ -48,10 +66,40 @@
                                     <span class="badge bg-success me-3">
                                         <i class="fas fa-spinner fa-spin"></i> In Progress
                                     </span>
-                                {% elif tab == 'recently_cleaned' %}
+                                {% elif tab == 'cleaned' %}
                                     <span class="badge bg-primary me-3">
-                                        <i class="fas fa-check-circle"></i> Cleaned/Treated
+                                        <i class="fas fa-check-circle"></i> Cleaned
                                     </span>
+                                {% elif tab == 'treated' %}
+                                    <span class="badge bg-info me-3">
+                                        <i class="fas fa-flask"></i> Treated
+                                    </span>
+                                {% elif tab == 'packaged' %}
+                                    <span class="badge bg-secondary me-3">
+                                        <i class="fas fa-box"></i> Packaged
+                                    </span>
+                                {% else %}
+                                    {% if work_order.ProcessingStatus %}
+                                        <span class="badge bg-success me-3">
+                                            <i class="fas fa-spinner fa-spin"></i> In Progress
+                                        </span>
+                                    {% elif work_order.Clean and not work_order.Treat %}
+                                        <span class="badge bg-primary me-3">
+                                            <i class="fas fa-check-circle"></i> Cleaned
+                                        </span>
+                                    {% elif work_order.Treat and not work_order.final_location %}
+                                        <span class="badge bg-info me-3">
+                                            <i class="fas fa-flask"></i> Treated
+                                        </span>
+                                    {% elif work_order.final_location %}
+                                        <span class="badge bg-secondary me-3">
+                                            <i class="fas fa-box"></i> Packaged
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-dark me-3">
+                                            <i class="fas fa-clock"></i> Recent
+                                        </span>
+                                    {% endif %}
                                 {% endif %}
 
                                 <div class="flex-grow-1 row">
@@ -74,7 +122,7 @@
                                             <div>Req: {{ work_order.DateRequired | date_format }}</div>
                                         {% endif %}
                                         {% if work_order.ShipTo %}
-                                            <div class="badge badge-secondary">{{ work_order.ShipTo }}</div>
+                                            <div class="badge badge-primary">{{ work_order.ShipTo }}</div>
                                         {% endif %}
                                     </div>
                                     <div class="col-md-2 d-flex gap-1">
@@ -82,11 +130,41 @@
                                            class="btn btn-sm btn-outline-primary">
                                            <i class="fas fa-eye"></i>
                                         </a>
-                                        {% if current_user.role != 'user' %}
-                                        <a href="{{ url_for('work_orders.edit_work_order', work_order_no=work_order.WorkOrderNo) }}"
-                                           class="btn btn-sm btn-outline-warning">
-                                           <i class="fas fa-edit"></i>
+                                        {% set edit_endpoint = 'work_orders.cleaning_room_edit_work_order' if current_user.role == 'user' else 'work_orders.edit_work_order' %}
+                                        <a href="{{ url_for(edit_endpoint, work_order_no=work_order.WorkOrderNo) }}"
+                                        class="btn btn-sm btn-outline-warning">
+                                        <i class="fas fa-edit"></i>
                                         </a>
+                                        {% if tab == 'cleaned' %}
+                                        <button class="btn btn-sm btn-outline-info treat-button" data-work-order-no="{{ work_order.WorkOrderNo }}">
+                                            <i class="fas fa-flask"></i>
+                                        </button>
+                                        {% elif tab == 'treated' %}
+                                        <button class="btn btn-sm btn-outline-secondary package-button" data-work-order-no="{{ work_order.WorkOrderNo }}">
+                                            <i class="fas fa-box"></i>
+                                        </button>
+                                        {% elif tab == 'packaged' %}
+                                        {% if current_user.role != 'user' %}
+                                        <button class="btn btn-sm btn-outline-success complete-button" data-work-order-no="{{ work_order.WorkOrderNo }}">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        {% endif %}
+                                        {% elif tab == 'all_recent' %}
+                                            {% if work_order.Clean and not work_order.Treat %}
+                                                <button class="btn btn-sm btn-outline-info treat-button" data-work-order-no="{{ work_order.WorkOrderNo }}">
+                                                    <i class="fas fa-flask"></i>
+                                                </button>
+                                            {% elif work_order.Treat and not work_order.final_location %}
+                                                <button class="btn btn-sm btn-outline-secondary package-button" data-work-order-no="{{ work_order.WorkOrderNo }}">
+                                                    <i class="fas fa-box"></i>
+                                                </button>
+                                            {% elif work_order.final_location %}
+                                                {% if current_user.role != 'user' %}
+                                                    <button class="btn btn-sm btn-outline-success complete-button" data-work-order-no="{{ work_order.WorkOrderNo }}">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                {% endif %}
+                                            {% endif %}
                                         {% endif %}
                                     </div>
                                 </div>
@@ -99,9 +177,18 @@
                             {% if tab == 'in_progress' %}
                                 <h4>No work orders in progress</h4>
                                 <p class="text-muted">No work orders are currently being processed.</p>
-                            {% elif tab == 'recently_cleaned' %}
-                                <h4>No recently cleaned/treatment work orders</h4>
-                                <p class="text-muted">No work orders have been cleaned or treated recently.</p>
+                            {% elif tab == 'cleaned' %}
+                                <h4>No recently cleaned work orders</h4>
+                                <p class="text-muted">No work orders have been cleaned recently.</p>
+                            {% elif tab == 'treated' %}
+                                <h4>No recently treated work orders</h4>
+                                <p class="text-muted">No work orders have been treated recently.</p>
+                            {% elif tab == 'packaged' %}
+                                <h4>No recently packaged work orders</h4>
+                                <p class="text-muted">No work orders have been packaged recently.</p>
+                            {% else %}
+                                <h4>No recent work orders</h4>
+                                <p class="text-muted">There have been no recent updates.</p>
                             {% endif %}
                         </div>
                     {% endif %}
@@ -112,7 +199,14 @@
             {% if pagination.pages > 1 %}
             <nav aria-label="Pagination" class="mt-4">
                 <ul class="pagination justify-content-center">
-                    {% set current_route = 'in_progress.list_in_progress' if tab == 'in_progress' else 'in_progress.list_recently_cleaned' %}
+                    {% set tab_routes = {
+                        'all_recent': 'in_progress.all_recent',
+                        'in_progress': 'in_progress.list_in_progress',
+                        'cleaned': 'in_progress.list_cleaned',
+                        'treated': 'in_progress.list_treated',
+                        'packaged': 'in_progress.list_packaged'
+                    } %}
+                    {% set current_route = tab_routes[tab] %}
 
                     {% if pagination.has_prev %}
                         <li class="page-item">
@@ -148,4 +242,181 @@
         </div>
     </div>
 </div>
+
+<!-- Treat Modal -->
+<div class="modal fade" id="treatModal" tabindex="-1" aria-labelledby="treatModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="treatModalLabel">Enter Treat Date</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="treatForm">
+                    <input type="hidden" id="treatWorkOrderNo" name="workOrderNo">
+                    <div class="mb-3">
+                        <label for="treatDate" class="form-label">Treat Date</label>
+                        <input type="date" class="form-control" id="treatDate" name="treatDate" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveTreatDate">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Package Modal -->
+<div class="modal fade" id="packageModal" tabindex="-1" aria-labelledby="packageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="packageModalLabel">Enter Final Location</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="packageForm">
+                    <input type="hidden" id="packageWorkOrderNo" name="workOrderNo">
+                    <div class="mb-3">
+                        <label for="finalLocation" class="form-label">Final Location</label>
+                        <input type="text" class="form-control" id="finalLocation" name="finalLocation" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="savePackageLocation">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Complete Modal -->
+<div class="modal fade" id="completeModal" tabindex="-1" aria-labelledby="completeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="completeModalLabel">Enter Date Completed</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="completeForm">
+                    <input type="hidden" id="completeWorkOrderNo" name="workOrderNo">
+                    <div class="mb-3">
+                        <label for="dateCompleted" class="form-label">Date Completed</label>
+                        <input type="date" class="form-control" id="dateCompleted" name="dateCompleted" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveDateCompleted">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Treat Modal
+        const treatModal = new bootstrap.Modal(document.getElementById('treatModal'));
+        document.querySelectorAll('.treat-button').forEach(button => {
+            button.addEventListener('click', function () {
+                const workOrderNo = this.dataset.workOrderNo;
+                document.getElementById('treatWorkOrderNo').value = workOrderNo;
+                treatModal.show();
+            });
+        });
+
+        document.getElementById('saveTreatDate').addEventListener('click', function () {
+            const workOrderNo = document.getElementById('treatWorkOrderNo').value;
+            const treatDate = document.getElementById('treatDate').value;
+            fetch(`/in_progress/treat_work_order/${workOrderNo}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ treatDate: treatDate })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        treatModal.hide();
+                        location.reload();
+                    } else {
+                        alert(data.message);
+                    }
+                });
+        });
+
+        // Package Modal
+        const packageModal = new bootstrap.Modal(document.getElementById('packageModal'));
+        document.querySelectorAll('.package-button').forEach(button => {
+            button.addEventListener('click', function () {
+                const workOrderNo = this.dataset.workOrderNo;
+                document.getElementById('packageWorkOrderNo').value = workOrderNo;
+                packageModal.show();
+            });
+        });
+
+        document.getElementById('savePackageLocation').addEventListener('click', function () {
+            const workOrderNo = document.getElementById('packageWorkOrderNo').value;
+            const finalLocation = document.getElementById('finalLocation').value;
+            fetch(`/in_progress/package_work_order/${workOrderNo}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ finalLocation: finalLocation })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        packageModal.hide();
+                        location.reload();
+                    } else {
+                        alert(data.message);
+                    }
+                });
+        });
+
+        // Complete Modal
+        const completeModal = new bootstrap.Modal(document.getElementById('completeModal'));
+        document.querySelectorAll('.complete-button').forEach(button => {
+            button.addEventListener('click', function () {
+                const workOrderNo = this.dataset.workOrderNo;
+                document.getElementById('completeWorkOrderNo').value = workOrderNo;
+                completeModal.show();
+            });
+        });
+
+        document.getElementById('saveDateCompleted').addEventListener('click', function () {
+            const workOrderNo = document.getElementById('completeWorkOrderNo').value;
+            const dateCompleted = document.getElementById('dateCompleted').value;
+            fetch(`/in_progress/complete_work_order/${workOrderNo}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ dateCompleted: dateCompleted })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        completeModal.hide();
+                        location.reload();
+                    } else {
+                        alert(data.message);
+                    }
+                });
+        });
+    });
+</script>
 {% endblock %}

@@ -21,14 +21,16 @@
                     <p class="text-muted">Customer ID: {{ customer.CustID }}</p>
                 </div>
                 {% if current_user.role != 'user' %}
-                <div class="btn-group">
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;" role="group" aria-label="Customer actions">
                     <a href="{{ url_for('customers.edit_customer', customer_id=customer.CustID) }}" 
-                       class="btn btn-warning">
+                    class="btn btn-warning" 
+                    style="border-radius: 0.375rem; border: 1px solid var(--border-color);">
                         <i class="fas fa-edit"></i> Edit
                     </a>
                     <button type="button" 
                             class="btn btn-danger" 
-                            onclick="confirmDelete('{{ customer.CustID }}', '{{ customer.Name }}')">
+                            onclick="confirmDelete('{{ customer.CustID }}', '{{ customer.Name }}')"
+                            style="border-radius: 0.375rem; border: 1px solid var(--border-color);">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </div>

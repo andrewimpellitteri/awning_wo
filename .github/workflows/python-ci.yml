@@ -43,6 +43,7 @@ jobs:
           # - Configuration tests (test_config.py)
           # - Basic setup tests (test_basic_setup.py)
           # - Work order unit tests (work_order_test.py)
+          # - In-progress routes unit tests (in_progress_routes_test.py)
           pytest test/ -v --cov=. --cov-report=term-missing --cov-report=json --maxfail=10 --disable-warnings
         env:
           FLASK_ENV: testing

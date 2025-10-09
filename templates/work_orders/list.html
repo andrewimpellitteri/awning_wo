@@ -212,10 +212,11 @@ document.addEventListener("DOMContentLoaded", function() {
                         <a href="${data.detail_url}" class="btn btn-outline-primary" title="View">
                             <i class="fas fa-eye"></i>
                         </a>
-                        {% if current_user.role != 'user' %}
+                        {% set edit_endpoint = 'work_orders.cleaning_room_edit_work_order' if current_user.role == 'user' else 'work_orders.edit_work_order' %}
                         <a href="${data.edit_url}" class="btn btn-outline-warning" title="Edit">
                             <i class="fas fa-edit"></i>
                         </a>
+                        {% if current_user.role != 'user' %}
                         <form method="POST" action="${data.delete_url}" style="display:inline;" 
                             onsubmit="return confirm('Are you sure you want to delete this order?');">
                             <button type="submit" class="btn btn-outline-danger" title="Delete">

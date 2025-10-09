@@ -113,7 +113,7 @@ def sample_data(app):
             Storage="Rack",
             ShipTo="Test Source",
             SpecialInstructions="Handle with care",
-            RepairsNeeded="Clean and inspect",
+            RepairsNeeded=True,
             RushOrder=False
         )
         wo2 = WorkOrder(

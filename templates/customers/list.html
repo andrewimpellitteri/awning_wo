@@ -267,6 +267,24 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
+    // Handle global filter form
+    let searchTimeout;
+    document.getElementById("search").addEventListener("keyup", function(e) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            table.setData();
+        }, 300); // 300ms debounce
+    });
+
+    document.getElementById("source").addEventListener("change", function(e) {
+        table.setData();
+    });
+
+    document.getElementById("filter-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        table.setData();
+    });
+
     // Print button
     document.getElementById("print-table").addEventListener("click", function () {
         table.print(false, true); // (false = no style overrides, true = include table headers/filters)
@@ -297,13 +315,6 @@ document.addEventListener("DOMContentLoaded", function() {
     // Handle sorting updates
     table.on("dataSorted", function(sorters) {
         console.log("Table sorted:", sorters);
-    });
-
-    // Handle global filter form
-    document.getElementById("filter-form")?.addEventListener("submit", function(e) {
-        e.preventDefault();
-        table.clearHeaderFilter();
-        table.setData();
     });
 
     // Handle clear button

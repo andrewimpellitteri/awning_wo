@@ -68,11 +68,23 @@ def api_repair_work_orders():
     status = request.args.get("status", "").lower()
     search = request.args.get("search", "").strip()
 
-    query = RepairWorkOrder.query.options(
-        joinedload(RepairWorkOrder.customer).joinedload(Customer.source_info)
+    query = RepairWorkOrder.query
+
+    is_source_filter = request.args.get("filter_Source")
+    is_source_sort = any(
+        request.args.get(f"sort[{i}][field]") == "Source" for i in range(5)
     )
 
-    # ---------------------------
+    # If sorting or filtering by source, join necessary tables
+    if is_source_filter or is_source_sort:
+        query = query.join(RepairWorkOrder.customer).join(Customer.source_info)
+        query = query.options(
+            joinedload(RepairWorkOrder.customer).joinedload(Customer.source_info)
+        )
+    else:
+        query = query.options(joinedload(RepairWorkOrder.customer))
+
+    # --------------------------
     # ✅ Status filters
     # ---------------------------
     if status == "pending":

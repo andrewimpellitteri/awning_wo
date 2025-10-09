@@ -172,11 +172,12 @@ def api_search():
     if not query:
         return jsonify([])
 
+    term = f"%{query}%"
     sources = (
         Source.query.filter(
             or_(
-                Source.SSource.contains(query),
-                Source.SourceCity.contains(query),
+                Source.SSource.ilike(term),
+                Source.SourceCity.ilike(term),
             )
         )
         .limit(10)
