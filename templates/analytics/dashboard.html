@@ -76,7 +76,7 @@
 
     .charts-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(800px, 1fr));
         gap: 2rem;
         margin-bottom: 2rem;
     }
@@ -221,8 +221,8 @@
         </div>
 
         <div class="chart-container">
-            <div class="chart-title">Order Status Distribution</div>
-            <div id="status-chart"><div class="loading">Loading chart...</div></div>
+            <div class="chart-title">Revenue by Product Type</div>
+            <div id="revenue-by-product-chart"><div class="loading">Loading chart...</div></div>
         </div>
 
         <div class="chart-container">
@@ -233,6 +233,11 @@
         <div class="chart-container">
             <div class="chart-title">Backlog Over Time (90 days)</div>
             <div id="backlog-chart"><div class="loading">Loading chart...</div></div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-title">Weekly Sq Ft Cleaned Distribution (KDE)</div>
+            <div id="kde-chart"><div class="loading">Loading chart...</div></div>
         </div>
     </div>
 </div>
@@ -253,7 +258,8 @@ document.addEventListener('DOMContentLoaded', function() {
         font: { color: fontColor },
         xaxis: { gridcolor: gridColor },
         yaxis: { gridcolor: gridColor },
-        margin: { l: 50, r: 30, t: 30, b: 50 }
+        margin: { l: 50, r: 30, t: 30, b: 50 },
+        height: 400
     };
 
     // Fetch chart data
@@ -286,24 +292,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('monthly-chart').innerHTML = '<div class="loading">No data available</div>';
             }
 
-            // Status Distribution Pie Chart
-            if (data.status_distribution) {
-                const statusTrace = {
-                    labels: Object.keys(data.status_distribution),
-                    values: Object.values(data.status_distribution),
+            // Revenue by Product Type Chart
+            if (data.revenue_by_product) {
+                const productLabels = Object.keys(data.revenue_by_product);
+                const productValues = Object.values(data.revenue_by_product);
+                const revenueByProductTrace = {
+                    labels: productLabels,
+                    values: productValues,
                     type: 'pie',
                     hole: 0.4,
                     marker: {
-                        colors: ['#2ecc71', '#f39c12']
+                        colors: ['#3498db', '#2ecc71']
                     }
                 };
-                Plotly.newPlot('status-chart', [statusTrace], {
+                Plotly.newPlot('revenue-by-product-chart', [revenueByProductTrace], {
                     ...commonLayout,
-                    showlegend: true
+                    showlegend: true,
+                    title: 'Revenue by Product Type'
                 }, { responsive: true, displayModeBar: true });
             } else {
-                document.getElementById('status-chart').innerHTML = '<div class="loading">No data available</div>';
+                document.getElementById('revenue-by-product-chart').innerHTML = '<div class="loading">No data available</div>';
             }
+
+
 
             // Daily Throughput Chart
             if (data.daily_throughput && data.daily_throughput.length > 0) {
@@ -352,6 +363,90 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 document.getElementById('backlog-chart').innerHTML = '<div class="loading">No data available</div>';
             }
+
+            // Weekly Sq Ft Cleaned KDE Chart
+            if (data.weekly_sq_ft_cleaned_kde && data.weekly_sq_ft_cleaned_kde.length > 0) {
+                const xVals = data.weekly_sq_ft_cleaned_kde;
+                const yVals = data.weekly_sq_ft_cleaned_densities;
+                const thisWeekSqFt = data.this_week_sq_ft_cleaned;
+
+                // Interpolate density for this week (instead of exact index match)
+                function interpolateDensity(x, y, val) {
+                    for (let i = 1; i < x.length; i++) {
+                        if (val >= x[i - 1] && val <= x[i]) {
+                            const ratio = (val - x[i - 1]) / (x[i] - x[i - 1]);
+                            return y[i - 1] + ratio * (y[i] - y[i - 1]);
+                        }
+                    }
+                    return 0;
+                }
+
+                const thisWeekDensity = interpolateDensity(xVals, yVals, thisWeekSqFt);
+
+                const kdeTrace = {
+                    x: xVals,
+                    y: yVals,
+                    mode: 'lines',
+                    fill: 'tozeroy',
+                    name: 'Distribution',
+                    line: { color: '#9b59b6' }
+                };
+
+                const currentWeekMarker = {
+                    x: [thisWeekSqFt],
+                    y: [thisWeekDensity],
+                    mode: 'markers',
+                    type: 'scatter',
+                    name: 'This Week',
+                    marker: {
+                        color: '#f39c12',
+                        size: 10,
+                        symbol: 'star'
+                    },
+                    text: `This Week: ${thisWeekSqFt.toFixed(0)} sq ft`,
+                    hoverinfo: 'text'
+                };
+
+                // 🟢 NEW: Add vertical line for mean or median
+                const meanLine = {
+                    x: [data.weekly_sq_ft_cleaned_mean, data.weekly_sq_ft_cleaned_mean],
+                    y: [0, Math.max(...yVals)],
+                    mode: 'lines',
+                    line: { dash: 'dash', color: '#2ecc71' },
+                    name: 'Mean'
+                };
+
+                // 🟢 NEW: Add annotation for percentile rank
+                const percentile = data.weekly_sq_ft_cleaned_percentile;
+                const percentileText = `This week is in the ${percentile.toFixed(1)}th percentile`;
+
+                const layout = {
+                    ...commonLayout,
+                    xaxis: { ...commonLayout.xaxis, title: 'Weekly Sq Ft Cleaned' },
+                    yaxis: { ...commonLayout.yaxis, title: 'Density' },
+                    title: 'Weekly Sq Ft Cleaned Distribution',
+                    annotations: [
+                        {
+                            text: percentileText,
+                            xref: 'paper',
+                            yref: 'paper',
+                            x: 0.5,
+                            y: 3,
+                            showarrow: false,
+                            font: { size: 14, color: '#f39c12' }
+                        }
+                    ]
+                };
+
+                Plotly.newPlot('kde-chart', [kdeTrace, meanLine, currentWeekMarker], layout, {
+                    responsive: true,
+                    displayModeBar: true
+                });
+            } else {
+                document.getElementById('kde-chart').innerHTML =
+                    '<div class="loading">No data available</div>';
+            }
+
         })
         .catch(error => {
             console.error('Error loading chart data:', error);
@@ -362,7 +457,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Re-render charts on window resize
     window.addEventListener('resize', () => {
-        ['monthly-chart', 'status-chart', 'throughput-chart', 'backlog-chart'].forEach(id => {
+        ['monthly-chart', 'revenue-by-product-chart', 'throughput-chart', 'backlog-chart', 'kde-chart'].forEach(id => {
             const element = document.getElementById(id);
             if (element && element.data) {
                 Plotly.Plots.resize(element);

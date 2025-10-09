@@ -150,3 +150,6 @@ claude.md
 
 migration_tool/intermediate.sqlite-journal
 .claude/
+routes/analytics/test_analytics_data.py
+
+*.csv
