@@ -35,7 +35,7 @@
                            id="search" 
                            name="search" 
                            placeholder="Search work orders..."
-                           value="{{ search_query }}" autofocus>
+                           value="{{ search_query }}">
                 </div>
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-outline-primary btn-sm me-2">
@@ -236,6 +236,15 @@ document.addEventListener("DOMContentLoaded", function() {
             return { last_page: response.last_page, data: response.data };
         }
     });
+
+    table.on("tableBuilt", function() {
+        // Focus the header filter for the 'WOName' column
+        const woNameColumn = table.getColumn("WOName");
+        if (woNameColumn) {
+            woNameColumn.headerFilterFocus();
+        }
+    });
+
     
 
     // Print & CSV
@@ -274,7 +283,6 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("btn-rush").addEventListener("click", e => setStatus("rush", e.target));
     document.getElementById("btn-completed").addEventListener("click", e => setStatus("completed", e.target));
 });
-
 
 
 </script>
