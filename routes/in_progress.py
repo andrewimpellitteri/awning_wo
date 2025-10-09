@@ -1,7 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from models.work_order import WorkOrder
+from models.customer import Customer
+from models.source import Source
 from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
 from extensions import db
 from datetime import datetime
 
@@ -21,7 +24,9 @@ def list_in_progress():
     page = request.args.get("page", 1, type=int)
     per_page = 10
 
-    query = WorkOrder.query.filter(WorkOrder.ProcessingStatus == True)
+    query = WorkOrder.query.options(
+        joinedload(WorkOrder.customer).joinedload(Customer.source_info)
+    ).filter(WorkOrder.ProcessingStatus == True)
 
     pagination = query.order_by(WorkOrder.updated_at.desc()).paginate(
         page=page, per_page=per_page
@@ -43,7 +48,9 @@ def list_recently_cleaned():
     page = request.args.get("page", 1, type=int)
     per_page = 10
 
-    query = WorkOrder.query.filter(
+    query = WorkOrder.query.options(
+        joinedload(WorkOrder.customer).joinedload(Customer.source_info)
+    ).filter(
         or_(WorkOrder.Clean.isnot(None), WorkOrder.Treat.isnot(None)),
         WorkOrder.DateCompleted.is_(None),
     )
@@ -68,7 +75,9 @@ def list_cleaned():
     page = request.args.get("page", 1, type=int)
     per_page = 10
 
-    query = WorkOrder.query.filter(
+    query = WorkOrder.query.options(
+        joinedload(WorkOrder.customer).joinedload(Customer.source_info)
+    ).filter(
         WorkOrder.Clean.isnot(None),
         WorkOrder.DateCompleted.is_(None),
         WorkOrder.Treat.is_(None),
@@ -94,9 +103,9 @@ def list_treated():
     page = request.args.get("page", 1, type=int)
     per_page = 10
 
-    query = WorkOrder.query.filter(
-        WorkOrder.Treat.isnot(None), WorkOrder.DateCompleted.is_(None)
-    )
+    query = WorkOrder.query.options(
+        joinedload(WorkOrder.customer).joinedload(Customer.source_info)
+    ).filter(WorkOrder.Treat.isnot(None), WorkOrder.DateCompleted.is_(None))
 
     pagination = query.order_by(WorkOrder.updated_at.desc()).paginate(
         page=page, per_page=per_page
@@ -118,7 +127,11 @@ def list_packaged():
     page = request.args.get("page", 1, type=int)
     per_page = 10
 
-    query = WorkOrder.query.filter(WorkOrder.final_location.isnot(None))
+    query = WorkOrder.query.options(
+        joinedload(WorkOrder.customer).joinedload(Customer.source_info)
+    ).filter(
+        WorkOrder.final_location.isnot(None), WorkOrder.DateCompleted.is_(None)
+    )
 
     pagination = query.order_by(WorkOrder.updated_at.desc()).paginate(
         page=page, per_page=per_page
@@ -140,7 +153,9 @@ def all_recent():
     page = request.args.get("page", 1, type=int)
     per_page = 10
 
-    query = WorkOrder.query.filter(
+    query = WorkOrder.query.options(
+        joinedload(WorkOrder.customer).joinedload(Customer.source_info)
+    ).filter(
         or_(
             WorkOrder.ProcessingStatus == True,
             WorkOrder.Clean.isnot(None),
@@ -171,7 +186,7 @@ def treat_work_order(work_order_no):
         return jsonify({"success": False, "message": "Work order not found"}), 404
     data = request.get_json()
     treat_date = data.get("treatDate")
-    if not WorkOrder.Treat:
+    if not work_order.Clean:
         return jsonify(
             {
                 "success": False,
@@ -197,10 +212,16 @@ def package_work_order(work_order_no):
     if not final_location:
         return jsonify({"success": False, "message": "Final location is required"}), 400
 
-    # if not WorkOrder.Treat:
-    #     return jsonify(
-    #         {"success": True, "message": "Are you sure? Work order has no treat date."}
-    #     )
+    if not work_order.Clean or not work_order.Treat:
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "message": "Work order must be cleaned and treated before packaging.",
+                }
+            ),
+            400,
+        )
 
     work_order.final_location = final_location
     db.session.commit()

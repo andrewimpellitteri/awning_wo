@@ -1,6 +1,9 @@
 from flask import Blueprint, render_template, request, jsonify, url_for
 from flask_login import login_required
 from models.work_order import WorkOrder
+from models.customer import Customer
+from models.source import Source
+from sqlalchemy.orm import joinedload
 from .work_orders import format_date_from_str
 from sqlalchemy import or_, func
 from extensions import db
@@ -326,7 +329,9 @@ def cleaning_queue():
         print(f"Auto-initialized {initialized_count} work orders with queue positions")
 
     # Build the main query with all filters
-    all_orders_query = WorkOrder.query.filter(base_filter)
+    all_orders_query = WorkOrder.query.options(
+        joinedload(WorkOrder.customer).joinedload(Customer.source_info)
+    ).filter(base_filter)
 
     # Apply search filter
     all_orders_query = search_filter(all_orders_query)
@@ -403,8 +408,9 @@ def cleaning_queue():
 
     pagination = ManualPagination(paginated_orders, page, per_page, total)
 
-    # Add display priority labels
+    # Add display priority labels and customer URL
     for wo in paginated_orders:
+        # Assign priority labels
         if wo.FirmRush:
             wo.priority_label = "FIRM RUSH"
             wo.priority_class = "priority-firm-rush"
@@ -414,6 +420,12 @@ def cleaning_queue():
         else:
             wo.priority_label = "REGULAR"
             wo.priority_class = "priority-regular"
+
+        # Add customer URL if CustID exists
+        if wo.CustID:
+            wo.customer_url = url_for("customers.customer_detail", customer_id=wo.CustID)
+        else:
+            wo.customer_url = None
 
     # Queue counts
     queue_counts = {

@@ -335,6 +335,76 @@ class TestWorkOrderEditRoutes:
             assert updated_wo.DateCompleted is not None
 
 
+    def test_update_work_order_preserves_and_updates_items(self, admin_client, sample_data, app):
+        """
+        CRITICAL TEST: Ensures editing a work order does not drop its items.
+        This test simulates the form submission to preserve existing items,
+        update their quantities, and remove a specific item.
+        """
+        with app.app_context():
+            # --- Setup: Create a work order with multiple items ---
+            wo = WorkOrder.query.get("10001")
+            item1 = WorkOrderItem(WorkOrderNo="10001", CustID="100", Description="Item A", Qty=1)
+            item2 = WorkOrderItem(WorkOrderNo="10001", CustID="100", Description="Item B", Qty=2)
+            db.session.add_all([item1, item2])
+            db.session.commit()
+
+            # Get the IDs of the newly created items
+            item1_id = item1.id
+            item2_id = item2.id
+            
+            # There should be 3 items now (1 from fixture, 2 new)
+            assert len(wo.items) == 3
+
+            # --- Test 1: Preserve existing items and update a quantity ---
+            # Simulate a POST request that keeps both items and changes the quantity of item1
+            response = admin_client.post("/work_orders/edit/10001", data={
+                "CustID": "100",
+                "WOName": "Updated Name",
+                "DateIn": "2025-01-15",
+                # IMPORTANT: Submit the IDs of the items to keep
+                "existing_item_id[]": [str(item1_id), str(item2_id)],
+                # Update the quantity of item1
+                f"existing_item_qty_{item1_id}": "5",
+                # The price field for item1
+                f"existing_item_price_{item1_id}": "10.00",
+            }, follow_redirects=True)
+
+            assert response.status_code == 200
+
+            # Verify that the items are still there and the quantity was updated
+            wo_after_update = WorkOrder.query.get("10001")
+            assert len(wo_after_update.items) == 2 # The original item from the fixture is not included
+            
+            updated_item1 = WorkOrderItem.query.get(item1_id)
+            assert updated_item1 is not None
+            assert updated_item1.Qty == 5
+            assert updated_item1.Price == 10.00
+
+            updated_item2 = WorkOrderItem.query.get(item2_id)
+            assert updated_item2 is not None
+            assert updated_item2.Qty == 2 # Should be unchanged
+
+            # --- Test 2: Remove one item ---
+            # Simulate a POST that only includes item2's ID, effectively removing item1
+            response_remove = admin_client.post("/work_orders/edit/10001", data={
+                "CustID": "100",
+                "WOName": "Updated Name Again",
+                "DateIn": "2025-01-15",
+                # IMPORTANT: Only submit the ID of the item to keep
+                "existing_item_id[]": [str(item2_id)],
+            }, follow_redirects=True)
+
+            assert response_remove.status_code == 200
+
+            # Verify that item1 is gone and item2 remains
+            wo_after_removal = WorkOrder.query.get("10001")
+            assert len(wo_after_removal.items) == 1
+            
+            assert WorkOrderItem.query.get(item1_id) is None
+            assert WorkOrderItem.query.get(item2_id) is not None
+
+
 class TestWorkOrderDeleteRoutes:
     """Test work order deletion HTTP routes."""
 

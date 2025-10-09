@@ -135,7 +135,13 @@
                                     
                                     <div class="detail-row">
                                         <div class="detail-label">Repairs Needed</div>
-                                        <div class="detail-value">{{ work_order.RepairsNeeded or '<span class="text-muted">-</span>' | safe }}</div>
+                                        <div class="detail-value">
+                                            {% if work_order.RepairsNeeded %}
+                                                <i class="fas fa-check text-success"></i>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </div>
                                     </div>
                                     
                                     <div class="detail-row">
@@ -204,6 +210,11 @@
                                         <div class="detail-value">
                                             <span class="badge bg-info">{{ work_order.ReturnStatus or 'Not Set' }}</span>
                                         </div>
+                                    </div>
+
+                                    <div class="detail-row">
+                                        <div class="detail-label">Final Location</div>
+                                        <div class="detail-value">{{ work_order.final_location or '-' }}</div>
                                     </div>
                                     
                                     <div class="detail-row">

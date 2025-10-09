@@ -347,7 +347,7 @@
                                         </div>
                                     </div>
 
-                                    <div class="col-md-6">
+                                    <div class="col-md-6" id="see-repair-field">
                                         <div class="detail-row">
                                             <div class="detail-label">See Repair</div>
                                             <div class="detail-value">
@@ -513,6 +513,27 @@
         </div>
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const repairsNeededCheckbox = document.getElementById('RepairsNeeded');
+    const seeRepairField = document.getElementById('see-repair-field');
+
+    function updateSeeRepairFieldVisibility() {
+        if (repairsNeededCheckbox.checked) {
+            seeRepairField.style.display = 'block';
+        } else {
+            seeRepairField.style.display = 'none';
+        }
+    }
+
+    // Initial check
+    updateSeeRepairFieldVisibility();
+
+    // Listen for changes
+    repairsNeededCheckbox.addEventListener('change', updateSeeRepairFieldVisibility);
+});
+</script>
+
 <script>
     let newItemCounter = 0;
     let selectedItemsCount = 0;

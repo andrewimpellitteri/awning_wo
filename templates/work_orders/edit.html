@@ -189,6 +189,14 @@
                                                 </select>
                                             </div>
                                         </div>
+
+                                        <div class="detail-row">
+                                            <div class="detail-label">Final Location</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" id="final_location" name="final_location" 
+                                                       value="{{ work_order.final_location or '' }}">
+                                            </div>
+                                        </div>
                                         
                                         <div class="detail-row">
                                             <div class="detail-label">Priority Options</div>
@@ -246,7 +254,7 @@
                                         </div>
                                     </div>
 
-                                    <div class="col-md-6">
+                                    <div class="col-md-6" id="see-repair-field">
                                         <div class="detail-row">
                                             <div class="detail-label">See Repair</div>
                                             <div class="detail-value">
@@ -341,7 +349,7 @@
                                                         <!-- Editable price input -->
                                                         <label class="form-label small">Price:</label>
                                                         <input type="text" class="form-control form-control-sm price-input"
-                                                            name="existing_item_price_{{ item.Description }}_{{ item.Material }}"
+                                                            name="existing_item_price_{{ item.id if item.id else loop.index }}"
                                                             value="{{ "%.2f"|format(item.Price|float) if item.Price else "0.00" }}"
                                                             onclick="event.stopPropagation()">
                                                     </div>
@@ -509,6 +517,27 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const repairsNeededCheckbox = document.getElementById('RepairsNeeded');
+    const seeRepairField = document.getElementById('see-repair-field');
+
+    function updateSeeRepairFieldVisibility() {
+        if (repairsNeededCheckbox.checked) {
+            seeRepairField.style.display = 'block';
+        } else {
+            seeRepairField.style.display = 'none';
+        }
+    }
+
+    // Initial check
+    updateSeeRepairFieldVisibility();
+
+    // Listen for changes
+    repairsNeededCheckbox.addEventListener('change', updateSeeRepairFieldVisibility);
+});
+</script>
 
 <script>
 let newItemCounter = 0;

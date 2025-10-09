@@ -886,6 +886,14 @@ def cron_retrain():
 
         if save_result:
             response_data["save_details"] = save_result
+        
+        if save_success:
+            try:
+                cleanup_old_s3_models(keep=5)
+                print("[CRON RETRAIN] Old models cleaned up successfully.")
+            except Exception as cleanup_error:
+                print(f"[CRON RETRAIN] WARNING: Failed to clean up old models: {cleanup_error}")
+
 
         return jsonify(response_data)
 
@@ -901,3 +909,54 @@ def cron_retrain():
                 "training_type": "cron_full_data",
             }
         ), 500
+
+
+def cleanup_old_s3_models(keep=5):
+    """Clean up old cron models in S3, keeping the specified number of newest models."""
+    from utils.file_upload import s3_client, AWS_S3_BUCKET
+
+    print(f"[S3 CLEANUP] Starting cleanup, keeping the {keep} newest cron models.")
+
+    # List all objects in the ml_models/ prefix
+    response = s3_client.list_objects_v2(
+        Bucket=AWS_S3_BUCKET,
+        Prefix="ml_models/cron_"
+    )
+
+    if "Contents" not in response:
+        print("[S3 CLEANUP] No cron models found to clean up.")
+        return
+
+    # Filter for .pkl files and sort by date
+    cron_models = sorted(
+        [obj for obj in response["Contents"] if obj["Key"].endswith(".pkl")],
+        key=lambda x: x["LastModified"],
+        reverse=True
+    )
+
+    if len(cron_models) <= keep:
+        print(f"[S3 CLEANUP] Found {len(cron_models)} models, which is within the limit of {keep}. No cleanup needed.")
+        return
+
+    # Identify models to delete
+    models_to_delete = cron_models[keep:]
+    print(f"[S3 CLEANUP] Found {len(cron_models)} models. Deleting {len(models_to_delete)} old models.")
+
+    # Create a list of objects to delete
+    delete_keys = []
+    for model_obj in models_to_delete:
+        model_key = model_obj["Key"]
+        metadata_key = model_key.replace(".pkl", "_metadata.json")
+        delete_keys.extend([{"Key": model_key}, {"Key": metadata_key}])
+        print(f"[S3 CLEANUP] Marking for deletion: {model_key}")
+
+    # Batch delete the objects
+    if delete_keys:
+        delete_response = s3_client.delete_objects(
+            Bucket=AWS_S3_BUCKET,
+            Delete={'Objects': delete_keys}
+        )
+        if 'Errors' in delete_response:
+            print(f"[S3 CLEANUP] ERROR: Failed to delete some objects: {delete_response['Errors']}")
+        else:
+            print(f"[S3 CLEANUP] Successfully deleted {len(models_to_delete)} models and their metadata.")

@@ -34,7 +34,7 @@ RESPONSE=$(curl -s -w "HTTPSTATUS:%{http_code}" \
   -X POST \
   -H "Content-Type: application/json" \
   -H "X-Cron-Secret: $CRON_SECRET" \
-  -d '{"config": "baseline"}' \
+  -d '{"config": "deep_wide"}' \
   $APP_URL/ml/cron/retrain 2>&1)
 
 # Parse response

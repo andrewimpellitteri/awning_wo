@@ -108,7 +108,7 @@
                                             WO-{{ work_order.WorkOrderNo }}
                                         </a>
                                     </div>
-                                    <div class="col-md-3">{{ work_order.WOName or 'Untitled' }}</div>
+                                    <div class="col-md-2">{{ work_order.WOName or 'Untitled' }}</div>
                                     <div class="col-md-2">
                                         {% if work_order.CustID %}
                                             <a href="{{ url_for('customers.customer_detail', customer_id=work_order.CustID) }}" class="badge bg-info">{{ work_order.CustID }}</a>
@@ -116,13 +116,17 @@
                                             <span class="text-muted">N/A</span>
                                         {% endif %}
                                     </div>
-                                    <div class="col-md-3 text-muted small">
+                                    <div class="col-md-2">
+                                        {% if work_order.customer and work_order.customer.source_info %}
+                                            <span class="badge bg-secondary">{{ work_order.customer.source_info.SSource }}</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-2 text-muted small">
                                         <div>In: {{ (work_order.DateIn | date_format) or 'N/A' }}</div>
                                         {% if work_order.DateRequired %}
                                             <div>Req: {{ work_order.DateRequired | date_format }}</div>
-                                        {% endif %}
-                                        {% if work_order.ShipTo %}
-                                            <div class="badge badge-primary">{{ work_order.ShipTo }}</div>
                                         {% endif %}
                                     </div>
                                     <div class="col-md-2 d-flex gap-1">

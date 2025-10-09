@@ -116,14 +116,15 @@
                                 <span class="badge bg-light text-dark me-3 queue-position">
                                     {{ loop.index + (pagination.page - 1) * pagination.per_page }}
                                 </span>
-                                <div class="priority-col me-3">
-                                    <span class="badge me-3 
+                                <div class="priority-col me-3" style="width: 90px; text-align: center;">
+                                    {% if work_order.priority_class != 'priority-regular' %}
+                                    <span class="badge 
                                     {% if work_order.priority_class == 'priority-firm-rush' %} bg-danger
                                     {% elif work_order.priority_class == 'priority-rush' %} bg-warning text-dark
-                                    {% else %} bg-success
                                     {% endif %}">
                                     {{ work_order.priority_label }}
                                     </span>
+                                    {% endif %}
                                 </div>
                                 <div class="flex-grow-1 row">
                                     <div class="col-md-2 fw-bold text-primary">
@@ -131,7 +132,7 @@
                                             {{ work_order.WorkOrderNo }}
                                         </a>
                                     </div>
-                                    <div class="col-md-3 work-order-name">{{ work_order.WOName or 'Untitled' }}</div>
+                                    <div class="col-md-2 work-order-name">{{ work_order.WOName or 'Untitled' }}</div>
                                     <div class="col-md-2">
                                         {% if work_order.customer_url %}
                                           <a href="{{ work_order.customer_url }}" class="badge bg-info">{{ work_order.CustID }}</a>
@@ -139,13 +140,23 @@
                                           <span class="text-muted">—</span>
                                         {% endif %}
                                     </div>
-                                    <div class="col-md-3 text-muted small">
-                                        <div>In: {{ (work_order.DateIn | date_format) or 'N/A' }}</div>
-                                        {% if work_order.DateRequired %}
-                                            <div>Req: {{ work_order.DateRequired | date_format }}</div>
+                                    <div class="col-md-2">
+                                        {% if work_order.customer and work_order.customer.source_info %}
+                                            <span class="badge bg-secondary">{{ work_order.customer.source_info.SSource }}</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
                                         {% endif %}
-                                        {% if work_order.Source %}
-                                            <div class="badge badge-primary">{{ work_order.Source }}</div>
+                                    </div>
+                                    <div class="col-md-2 small">
+                                        <div class="d-flex justify-content-between border-bottom pb-1 mb-1">
+                                            <strong class="text-muted">In:</strong>
+                                            <span>{{ (work_order.DateIn | date_format) or 'N/A' }}</span>
+                                        </div>
+                                        {% if work_order.DateRequired %}
+                                        <div class="d-flex justify-content-between">
+                                            <strong class="text-danger">Req:</strong>
+                                            <span class="text-danger">{{ work_order.DateRequired | date_format }}</span>
+                                        </div>
                                         {% endif %}
                                     </div>
                                     <div class="col-md-2 d-flex gap-1">

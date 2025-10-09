@@ -601,6 +601,7 @@ def edit_work_order(work_order_no):
             work_order.WOName = request.form.get("WOName")
             work_order.StorageTime = request.form.get("StorageTime")
             work_order.RackNo = request.form.get("RackNo")
+            work_order.final_location = request.form.get("final_location")
             work_order.SpecialInstructions = request.form.get("SpecialInstructions")
             work_order.RepairsNeeded = "RepairsNeeded" in request.form
             work_order.ReturnStatus = request.form.get("ReturnStatus")
@@ -640,43 +641,47 @@ def edit_work_order(work_order_no):
                 else None
             )
 
-            # Handle existing work order items (NO INVENTORY IMPACT)
-            existing_items = WorkOrderItem.query.filter_by(
-                WorkOrderNo=work_order_no
-            ).all()
+            # --- Handle Existing Work Order Items (Robust ID-based logic) ---
+            existing_items = WorkOrderItem.query.filter_by(WorkOrderNo=work_order_no).all()
+            
+            # Get the IDs of items that should remain in the work order from the form
+            updated_item_ids = set(request.form.getlist("existing_item_id[]"))
 
-            # Get updated items from form
-            updated_items = request.form.getlist("existing_item_key[]")
+
+            # Parse updated quantities and prices, keyed by item ID
             updated_quantities = {}
             updated_prices = {}
-
-            # Parse quantities for existing items
             for key, value in request.form.items():
                 if key.startswith("existing_item_qty_"):
-                    item_key = key.replace("existing_item_qty_", "")
-                    if item_key in updated_items and value:
-                        updated_quantities[item_key] = safe_int_conversion(value)
+                    item_id = key.replace("existing_item_qty_", "")
+                    if value:
+                        updated_quantities[item_id] = safe_int_conversion(value)
                 elif key.startswith("existing_item_price_"):
-                    item_key = key.replace("existing_item_price_", "")
-                    if item_key in updated_items and value:
+                    item_id = key.replace("existing_item_price_", "")
+                    if value:
                         try:
-                            updated_prices[item_key] = float(value)
-                        except ValueError:
-                            updated_prices[item_key] = 0.0  # fallback if invalid input
+                            updated_prices[item_id] = float(value)
+                        except (ValueError, TypeError):
+                            updated_prices[item_id] = 0.0
 
-            # Update or remove existing items (NO INVENTORY CHANGES)
+            # Loop through items currently in the database for this work order
             for item in existing_items:
-                item_key = f"{item.Description}_{item.Material}"
-                if item_key in updated_items:
-                    # Update quantity in work order only
-                    if item_key in updated_quantities:
-                        item.Qty = str(updated_quantities[item_key])
-                    # Update price
-                    if item_key in updated_prices:
-                        item.Price = updated_prices[item_key]
+                item_id_str = str(item.id)
+                
+                # If the item's ID is in the list from the form, it's an existing item to be updated
+                if item_id_str in updated_item_ids:
+                    # Update quantity if provided
+                    if item_id_str in updated_quantities:
+                        item.Qty = str(updated_quantities[item_id_str])
+                        
+                    # Update price if provided
+                    if item_id_str in updated_prices:
+                        item.Price = updated_prices[item_id_str]
                 else:
-                    # Remove from work order only (catalog unchanged)
+                    # If the item's ID is not in the form's list, it means the user unchecked it.
+                    # Therefore, delete it from the work order.
                     db.session.delete(item)
+                    flash(f"Removed item '{item.Description}' from work order.", "info")
 
             # Handle new items being added to this work order
             new_item_descriptions = request.form.getlist("new_item_description[]")
