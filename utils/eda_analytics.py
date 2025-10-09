@@ -2,6 +2,7 @@
 EDA script for analytics dashboard
 Run this to understand data structure before building dashboard
 """
+
 import pandas as pd
 from extensions import db
 from app import create_app
@@ -19,7 +20,9 @@ with app.app_context():
     print("-" * 80)
     query = text("SELECT * FROM tblcustworkorderdetail LIMIT 10")
     df_wo = pd.read_sql(query, db.engine)
-    print(f"Total rows: {len(pd.read_sql(text('SELECT * FROM tblcustworkorderdetail'), db.engine))}")
+    print(
+        f"Total rows: {len(pd.read_sql(text('SELECT * FROM tblcustworkorderdetail'), db.engine))}"
+    )
     print(f"Columns: {list(df_wo.columns)}")
     print(f"\nSample data:")
     print(df_wo.head(3))
@@ -33,7 +36,9 @@ with app.app_context():
     print("-" * 80)
     query = text("SELECT * FROM tblorddetcustawngs LIMIT 10")
     df_items = pd.read_sql(query, db.engine)
-    print(f"Total rows: {len(pd.read_sql(text('SELECT * FROM tblorddetcustawngs'), db.engine))}")
+    print(
+        f"Total rows: {len(pd.read_sql(text('SELECT * FROM tblorddetcustawngs'), db.engine))}"
+    )
     print(f"Columns: {list(df_items.columns)}")
     print(f"\nSample data:")
     print(df_items.head(3))

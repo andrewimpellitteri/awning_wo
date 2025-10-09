@@ -6,6 +6,8 @@ import re
 from datetime import datetime, timedelta
 from sqlalchemy import text
 from decorators import role_required
+import numpy as np
+from scipy import stats
 
 analytics_bp = Blueprint("analytics", __name__)
 
@@ -284,7 +286,56 @@ def get_status_distribution(df):
     completed = df['datecompleted'].notna().sum()
     pending = df['datecompleted'].isna().sum()
 
-    return {'Completed': completed, 'Pending': pending}
+    return {'Completed': int(completed), 'Pending': int(pending)}
+
+
+def get_weekly_sq_ft_cleaned_kde(df):
+    """
+    Calculates the KDE distribution of weekly square footage cleaned and
+    the current week's total square footage cleaned.
+    """
+    if df.empty:
+        return {'kde_values': [], 'kde_densities': [], 'this_week_sq_ft': 0}
+
+    # Ensure 'datecompleted' is datetime and 'totalsize' is numeric
+    df_cleaned = df[df['datecompleted'].notna()].copy()
+    df_cleaned['datecompleted'] = pd.to_datetime(df_cleaned['datecompleted'])
+    df_cleaned['totalsize'] = pd.to_numeric(df_cleaned['totalsize'], errors='coerce').fillna(0)
+
+    # Group by week and sum 'totalsize'
+    weekly_sq_ft = df_cleaned.groupby(pd.Grouper(key='datecompleted', freq='W'))['totalsize'].sum().reset_index()
+    weekly_sq_ft.columns = ['week', 'total_sq_ft']
+
+    # Filter out weeks with 0 sq ft cleaned if they are not representative
+    weekly_sq_ft = weekly_sq_ft[weekly_sq_ft['total_sq_ft'] > 0]
+
+    if weekly_sq_ft.empty:
+        return {'kde_values': [], 'kde_densities': [], 'this_week_sq_ft': 0}
+
+    # Calculate KDE
+    data = weekly_sq_ft['total_sq_ft'].values
+    if len(data) < 2: # KDE requires at least 2 data points
+        return {'kde_values': data.tolist(), 'kde_densities': [1.0/len(data)]*len(data) if len(data) > 0 else [], 'this_week_sq_ft': 0}
+
+    kde = stats.gaussian_kde(data)
+    # Generate values for the KDE plot
+    x_values = np.linspace(data.min(), data.max(), 500)
+    kde_densities = kde(x_values)
+
+    # Get this week's square footage
+    today = datetime.now()
+    this_week_start = today - timedelta(days=today.weekday()) # Monday as start of week
+    this_week_end = this_week_start + timedelta(days=6)
+
+    this_week_data = df_cleaned[(df_cleaned['datecompleted'] >= this_week_start) &
+                                (df_cleaned['datecompleted'] <= this_week_end)]
+    this_week_sq_ft = this_week_data['totalsize'].sum()
+
+    return {
+        'kde_values': x_values.tolist(),
+        'kde_densities': kde_densities.tolist(),
+        'this_week_sq_ft': float(this_week_sq_ft) # Ensure it's a standard float
+    }
 
 
 # -----------------------------
@@ -329,11 +380,17 @@ def get_analytics_data():
         backlog = get_backlog_data(df)
         status_dist = get_status_distribution(df)
 
+        weekly_kde_data = get_weekly_sq_ft_cleaned_kde(df)
+        print(f"[DEBUG] Analytics data prepared for jsonify: monthly_trends={len(monthly_trends)}, daily_throughput={len(daily_throughput)}, backlog={len(backlog)}, status_dist={status_dist}, weekly_kde_data_points={len(weekly_kde_data['kde_values'])}, this_week_sq_ft={weekly_kde_data['this_week_sq_ft']}")
+
         return jsonify({
             'monthly_trends': monthly_trends.to_dict('records'),
             'daily_throughput': daily_throughput.to_dict('records'),
             'backlog': backlog.to_dict('records'),
-            'status_distribution': status_dist
+            'status_distribution': status_dist,
+            'weekly_sq_ft_cleaned_kde': weekly_kde_data['kde_values'],
+            'weekly_sq_ft_cleaned_densities': weekly_kde_data['kde_densities'],
+            'this_week_sq_ft_cleaned': weekly_kde_data['this_week_sq_ft']
         })
 
     except Exception as e:
