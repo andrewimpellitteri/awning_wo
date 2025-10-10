@@ -2,7 +2,6 @@ from flask import Blueprint, render_template, jsonify
 from flask_login import login_required
 import pandas as pd
 from extensions import db
-import re
 from datetime import datetime, timedelta
 from sqlalchemy import text
 from decorators import role_required
@@ -10,102 +9,14 @@ import numpy as np
 from scipy import stats
 from scipy.stats import percentileofscore
 
+# Import data processing utilities
+from utils.data_processing import (
+    clean_numeric_string,
+    clean_square_footage,
+    parse_work_order_items,
+)
+
 analytics_bp = Blueprint("analytics", __name__)
-
-
-# -----------------------------
-# Utility Functions
-# -----------------------------
-
-
-def clean_numeric_string(value):
-    """Clean currency strings to float."""
-    if pd.isna(value) or value in ["", None, "Approved"]:
-        return 0.0
-    try:
-        cleaned = str(value).replace("$", "").replace(",", "").strip()
-        return float(cleaned)
-    except (ValueError, AttributeError):
-        return 0.0
-
-
-def clean_square_footage(value):
-    """Parse size strings like '8x10', '8'9\"x10'2\"', or plain numbers."""
-    if pd.isna(value) or value in ["", ".", "na", "n/a", None]:
-        return 0.0
-
-    val = str(value).strip().lower()
-
-    # Remove currency and unit markers
-    val = re.sub(r"[\$,]", "", val)
-    val = re.sub(r"\s*(ea\.?|yds?\.?|yards?|pcs?|each)\s*$", "", val)
-
-    # Handle dimensions like 2x5 or 8'9"x10'2"
-    dims_match = re.match(r'^~?(\d+\'?\d*"?)\s*x\s*(\d+\'?\d*"?)(?:=\s*([\d.]+))?', val)
-    if dims_match:
-
-        def convert_to_feet(dim):
-            try:
-                if "'" in dim:
-                    feet = float(dim.split("'")[0])
-                    inches = 0
-                    if '"' in dim:
-                        inches_str = dim.split("'")[1].replace('"', "")
-                        if inches_str:
-                            inches = float(inches_str) / 12
-                    return feet + inches
-                elif '"' in dim:
-                    return float(dim.replace('"', "")) / 12
-                else:
-                    return float(dim)
-            except:
-                return 0
-
-        length = convert_to_feet(dims_match.group(1))
-        width = convert_to_feet(dims_match.group(2))
-        calculated_sqft = round(length * width, 2)
-
-        # If there's an explicit calculation after '=', use it if it's not zero
-        if dims_match.group(3):
-            try:
-                explicit_sqft = float(dims_match.group(3))
-                if explicit_sqft > 0:
-                    return explicit_sqft
-            except ValueError:
-                pass
-        return calculated_sqft
-
-    # Handle "8'9wide=90.00 ea." style or "7x10=70'??/1400'"
-    if "=" in val:
-        parts = val.split("=")
-        if len(parts) > 1:
-            # Try to get the number right after '=' and before any non-numeric chars
-            numeric_part = re.match(r"([\d.]+)", parts[1].strip())
-            if numeric_part:
-                try:
-                    return float(numeric_part.group(1))
-                except ValueError:
-                    pass
-
-    # Try plain number
-    val = val.strip("'")
-    try:
-        return float(val)
-    except ValueError:
-        return 0.0
-
-
-def clean_sail_weight(value):
-    """Parse sail weight strings like '95#'."""
-    if pd.isna(value) or str(value).strip() in ["", "."]:
-        return 0.0
-    match = re.match(r"^([\d.]+)#$", str(value).strip())
-    if match:
-        try:
-            return float(match.group(1))
-        except:
-            return 0.0
-    return 0.0
 
 
 # -----------------------------
@@ -142,28 +53,8 @@ def load_work_orders(db_engine):
         )
         items = pd.read_sql(items_query, db_engine)
 
-        # Clean price column
-        items["price_numeric"] = pd.to_numeric(items["price"], errors="coerce").fillna(
-            0
-        )
-
-        # Separate awnings and sails
-        items["sizewgt"] = items["sizewgt"].astype(str)
-        items["product_type"] = items["sizewgt"].apply(
-            lambda x: "Sail" if "#" in x else "Awning"
-        )
-
-        # Calculate sizes
-        items["qty_numeric"] = pd.to_numeric(items["qty"], errors="coerce").fillna(0)
-        items["sqft"] = items.apply(
-            lambda row: row["qty_numeric"]
-            * (
-                clean_sail_weight(row["sizewgt"])
-                if row["product_type"] == "Sail"
-                else clean_square_footage(row["sizewgt"])
-            ),
-            axis=1,
-        )
+        # Parse items using new utility function (excludes sails from sqft calculation)
+        items = parse_work_order_items(items)
 
         # Aggregate by work order
         totals = (

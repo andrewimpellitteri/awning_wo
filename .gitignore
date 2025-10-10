@@ -153,3 +153,4 @@ migration_tool/intermediate.sqlite-journal
 routes/analytics/test_analytics_data.py
 
 *.csv
+test_analytics_parsing.py

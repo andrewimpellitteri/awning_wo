@@ -70,12 +70,33 @@ else:
     )
 
 
-def save_work_order_file(work_order_no, file, to_s3=True, generate_thumbnails=True):
+def save_order_file_generic(
+    order_no,
+    file,
+    order_type="work_order",
+    to_s3=True,
+    generate_thumbnails=True,
+    file_model_class=None,
+):
     """
-    Save work order file and generate thumbnail but don't commit to DB
-    Returns the WorkOrderFile object for batch processing
+    Generic function to save order files (work orders or repair orders)
+
+    Args:
+        order_no: The order number
+        file: The file object to save
+        order_type: "work_order" or "repair_order"
+        to_s3: Whether to save to S3 (True) or locally (False)
+        generate_thumbnails: Whether to generate thumbnails
+        file_model_class: The model class to use (WorkOrderFile or RepairOrderFile)
+
+    Returns:
+        File model instance (not committed to DB)
     """
     filename = secure_filename(file.filename)
+
+    # Validate file type
+    if not allowed_file(filename):
+        return None
 
     # Read file content for thumbnail generation
     file_content = None
@@ -84,8 +105,11 @@ def save_work_order_file(work_order_no, file, to_s3=True, generate_thumbnails=Tr
         file_content = file.read()
         file.seek(0)  # Reset file pointer for upload
 
+    # Determine folder prefix based on order type
+    folder_prefix = "work_orders" if order_type == "work_order" else "repair_orders"
+
     if to_s3:
-        s3_key = f"work_orders/{work_order_no}/{filename}"
+        s3_key = f"{folder_prefix}/{order_no}/{filename}"
         s3_client.upload_fileobj(file, AWS_S3_BUCKET, s3_key)
         file_path = f"s3://{AWS_S3_BUCKET}/{s3_key}"
 
@@ -102,9 +126,9 @@ def save_work_order_file(work_order_no, file, to_s3=True, generate_thumbnails=Tr
             except Exception as e:
                 print(f"Error generating thumbnail for {filename}: {e}")
     else:
-        wo_folder = os.path.join(UPLOAD_FOLDER, str(work_order_no))
-        os.makedirs(wo_folder, exist_ok=True)
-        file_path = os.path.join(wo_folder, filename)
+        order_folder = os.path.join(UPLOAD_FOLDER, folder_prefix, str(order_no))
+        os.makedirs(order_folder, exist_ok=True)
+        file_path = os.path.join(order_folder, filename)
         file.save(file_path)
 
         # Generate and save thumbnail locally
@@ -117,15 +141,60 @@ def save_work_order_file(work_order_no, file, to_s3=True, generate_thumbnails=Tr
             except Exception as e:
                 print(f"Error generating thumbnail for {filename}: {e}")
 
-    # Create WorkOrderFile object but don't commit yet
-    wo_file = WorkOrderFile(
-        WorkOrderNo=work_order_no,
-        filename=filename,
-        file_path=file_path,
-        thumbnail_path=thumbnail_path if generate_thumbnails else None,
+    # Determine field name based on order type
+    order_no_field = "WorkOrderNo" if order_type == "work_order" else "RepairOrderNo"
+
+    # Create file object but don't commit yet
+    if file_model_class is None:
+        from models.work_order_file import WorkOrderFile
+        file_model_class = WorkOrderFile
+
+    file_obj = file_model_class(
+        **{
+            order_no_field: order_no,
+            "filename": filename,
+            "file_path": file_path,
+            "thumbnail_path": thumbnail_path if generate_thumbnails else None,
+        }
     )
 
-    return wo_file
+    return file_obj
+
+
+def save_work_order_file(work_order_no, file, to_s3=True, generate_thumbnails=True):
+    """
+    Save work order file and generate thumbnail but don't commit to DB
+    Returns the WorkOrderFile object for batch processing
+
+    This is a wrapper around save_order_file_generic for backward compatibility
+    """
+    from models.work_order_file import WorkOrderFile
+
+    return save_order_file_generic(
+        order_no=work_order_no,
+        file=file,
+        order_type="work_order",
+        to_s3=to_s3,
+        generate_thumbnails=generate_thumbnails,
+        file_model_class=WorkOrderFile,
+    )
+
+
+def save_repair_order_file(repair_order_no, file, to_s3=True, generate_thumbnails=True):
+    """
+    Save repair order file and generate thumbnail but don't commit to DB
+    Returns the RepairOrderFile object for batch processing
+    """
+    from models.repair_order_file import RepairOrderFile
+
+    return save_order_file_generic(
+        order_no=repair_order_no,
+        file=file,
+        order_type="repair_order",
+        to_s3=to_s3,
+        generate_thumbnails=generate_thumbnails,
+        file_model_class=RepairOrderFile,
+    )
 
 
 def get_file_size(file_path):

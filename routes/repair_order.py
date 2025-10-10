@@ -332,7 +332,6 @@ def create_repair_order(prefill_cust_id=None):
                 SPECIALINSTRUCTIONS=request.form.get("SPECIALINSTRUCTIONS"),
                 CLEAN="CLEAN" in request.form,
                 SEECLEAN=request.form.get("SEECLEAN"),
-                CLEANFIRST="CLEANFIRST" in request.form,
                 REPAIRSDONEBY=request.form.get("REPAIRSDONEBY"),
                 DateCompleted=datetime.strptime(
                     request.form.get("DateCompleted"), "%Y-%m-%d"
@@ -348,6 +347,7 @@ def create_repair_order(prefill_cust_id=None):
                 if request.form.get("RETURNDATE")
                 else None,
                 LOCATION=request.form.get("LOCATION"),
+                final_location=request.form.get("final_location"),
                 DATEOUT=datetime.strptime(
                     request.form.get("DATEOUT"), "%Y-%m-%d"
                 ).date()
@@ -513,7 +513,6 @@ def edit_repair_order(repair_order_no):
             repair_order.SPECIALINSTRUCTIONS = request.form.get("SPECIALINSTRUCTIONS")
             repair_order.CLEAN = "CLEAN" in request.form
             repair_order.SEECLEAN = request.form.get("SEECLEAN")
-            repair_order.CLEANFIRST = "CLEANFIRST" in request.form
             repair_order.REPAIRSDONEBY = request.form.get("REPAIRSDONEBY")
             repair_order.DateCompleted = (
                 datetime.strptime(request.form.get("DateCompleted"), "%Y-%m-%d").date()
@@ -529,6 +528,7 @@ def edit_repair_order(repair_order_no):
                 else None
             )
             repair_order.LOCATION = request.form.get("LOCATION")
+            repair_order.final_location = request.form.get("final_location")
             repair_order.DATEOUT = (
                 datetime.strptime(request.form.get("DATEOUT"), "%Y-%m-%d").date()
                 if request.form.get("DATEOUT")

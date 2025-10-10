@@ -118,18 +118,6 @@
                                     </div>
                                     
                                     <div class="col-md-6">
-                                        <div class="detail-row">
-                                            <div class="detail-label">Date Required</div>
-                                            <div class="detail-value">
-                                                <div class="input-group">
-                                                    <span class="input-group-text">
-                                                        <i class="fas fa-calendar-check text-danger"></i>
-                                                    </span>
-                                                    <input type="date" class="form-control" id="DateRequired" name="DateRequired"
-                                                           value="{{ work_order.DateRequired or '' }}">
-                                                </div>
-                                            </div>
-                                        </div>
                                         
                                         <div class="detail-row">
                                             <div class="detail-label">Date Completed</div>
@@ -218,6 +206,21 @@
                                                             <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
                                                         </span>
                                                     </label>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="detail-row" id="date-required-row">
+                                                        <div class="detail-label">Date Required</div>
+                                                        <div class="detail-value">
+                                                            <div class="input-group">
+                                                                <span class="input-group-text">
+                                                                    <i class="fas fa-calendar-check text-danger"></i>
+                                                                </span>
+                                                                <input type="date" class="form-control" id="DateRequired" name="DateRequired"
+                                                                       value="{{ work_order.DateRequired or '' }}">
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -801,9 +804,22 @@ function updateCounts() {
     document.getElementById('total-count').textContent = existingItemsCount + selectedItemsCount + newItemsCount;
 }
 
+// Toggle Date Required field based on Firm Rush checkbox
+function toggleFirmRush(isChecked) {
+    const dateRequiredInput = document.getElementById("date-required-row");
+
+    if (dateRequiredInput) {
+        // Hide or show the input itself
+        dateRequiredInput.style.display = isChecked ? "flex" : "none";
+    }
+}
+
 // Monitor rush order checkboxes
 document.getElementById('RushOrder').addEventListener('change', updateRushStatus);
-document.getElementById('FirmRush').addEventListener('change', updateRushStatus);
+document.getElementById('FirmRush').addEventListener('change', function() {
+    updateRushStatus();
+    toggleFirmRush(this.checked);
+});
 
 function updateRushStatus() {
     const rushOrder = document.getElementById('RushOrder').checked;
@@ -840,6 +856,12 @@ window.addEventListener('DOMContentLoaded', function() {
 
     // Initialize counts
     updateCounts();
+
+    // Initialize Firm Rush toggle
+    const firmRushCheckbox = document.getElementById("FirmRush");
+    if (firmRushCheckbox) {
+        toggleFirmRush(firmRushCheckbox.checked);
+    }
 });
 
 function loadOpenRepairOrders(custId) {

@@ -411,7 +411,6 @@ def create_work_order(prefill_cust_id=None):
                 # String fields
                 ReturnStatus=request.form.get("ReturnStatus"),
                 ShipTo=request.form.get("ShipTo"),
-                CleanFirstWO=request.form.get("CleanFirstWO"),
             )
             if work_order.Clean:
                 work_order.ProcessingStatus = False
@@ -606,7 +605,6 @@ def edit_work_order(work_order_no):
             work_order.RepairsNeeded = "RepairsNeeded" in request.form
             work_order.ReturnStatus = request.form.get("ReturnStatus")
             work_order.ShipTo = request.form.get("ShipTo")
-            work_order.CleanFirstWO = request.form.get("CleanFirstWO")
 
             # Boolean fields - checkbox present = True
             work_order.SeeRepair = request.form.get("SeeRepair")
@@ -763,8 +761,33 @@ def edit_work_order(work_order_no):
                         )
                         db.session.add(new_inventory_item)
 
+            # Handle file uploads
+            uploaded_files = []
+            if "files[]" in request.files:
+                files = request.files.getlist("files[]")
+                print(f"Processing {len(files)} files")
+
+                for i, file in enumerate(files):
+                    if file and file.filename:
+                        wo_file = save_work_order_file(
+                            work_order_no, file, to_s3=True, generate_thumbnails=True
+                        )
+                        if not wo_file:
+                            raise Exception(f"Failed to process file: {file.filename}")
+
+                        uploaded_files.append(wo_file)
+                        db.session.add(wo_file)
+                        print(f"Prepared file {i + 1}/{len(files)}: {wo_file.filename}")
+
+                        if wo_file.thumbnail_path:
+                            print(f"  - Thumbnail generated: {wo_file.thumbnail_path}")
+
             db.session.commit()
-            flash(f"Work Order {work_order_no} updated successfully!", "success")
+            flash(
+                f"Work Order {work_order_no} updated successfully"
+                + (f" with {len(uploaded_files)} files!" if uploaded_files else "!"),
+                "success",
+            )
             return redirect(
                 url_for("work_orders.view_work_order", work_order_no=work_order_no)
             )

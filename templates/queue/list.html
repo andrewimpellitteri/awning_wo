@@ -350,10 +350,211 @@ document.getElementById('showSailOrders').addEventListener('change', function() 
     // Get current URL and update the parameter
     const url = new URL(window.location);
     url.searchParams.set('show_sail_orders', this.checked ? 'true' : 'false');
-    
+
     // Preserve other parameters like search, page, etc.
     window.location.href = url.toString();
 });
+
+// Check repair status before allowing edit
+document.querySelectorAll('.btn-outline-warning').forEach(editBtn => {
+    editBtn.addEventListener('click', async function(e) {
+        // Get the work order number from the parent list item
+        const listItem = this.closest('li[data-wo-id]');
+        if (!listItem) return;
+
+        const workOrderNo = listItem.dataset.woId;
+        const editUrl = this.href;
+
+        try {
+            const response = await fetch(`/api/work-order/${workOrderNo}/check-repair-status`);
+            const data = await response.json();
+
+            // If there's a repair, show modal (whether complete or not)
+            if (data.has_repair && data.repair_found) {
+                e.preventDefault(); // Stop the navigation
+                showRepairStatusModal(data, editUrl);
+            }
+            // If no repair, allow normal navigation
+        } catch (error) {
+            console.error('Error checking repair status:', error);
+            // On error, allow navigation to proceed
+        }
+    });
+});
+
+// Create styled modal for repair status
+function showRepairStatusModal(data, editUrl) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('repair-status-modal');
+    if (existingModal) existingModal.remove();
+
+    const isComplete = data.is_complete;
+    const bgColor = isComplete ? '#28a745' : '#dc3545';
+    const icon = isComplete ? '✓' : '⚠';
+    const statusText = isComplete ? 'COMPLETED' : 'NOT COMPLETE';
+    const messageText = isComplete
+        ? 'This repair has been completed. You can proceed with cleaning.'
+        : 'This repair is NOT yet complete. According to the workflow, all repairs should be completed before cleaning.';
+
+    // Create modal HTML
+    const modalHtml = `
+        <div id="repair-status-modal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s ease;
+        ">
+            <div style="
+                background: white;
+                border-radius: 12px;
+                max-width: 500px;
+                width: 90%;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+                animation: slideUp 0.3s ease;
+                overflow: hidden;
+            ">
+                <div style="
+                    background: ${bgColor};
+                    color: white;
+                    padding: 24px;
+                    text-align: center;
+                    ${!isComplete ? 'animation: pulseRed 1.5s infinite;' : ''}
+                ">
+                    <div style="
+                        font-size: 48px;
+                        margin-bottom: 8px;
+                        ${!isComplete ? 'animation: shake 0.5s ease;' : ''}
+                    ">${icon}</div>
+                    <h3 style="margin: 0; font-size: 24px; font-weight: bold;">
+                        REPAIR ORDER ${statusText}
+                    </h3>
+                </div>
+
+                <div style="padding: 24px;">
+                    <div style="
+                        background: ${isComplete ? '#d4edda' : '#f8d7da'};
+                        border: 2px solid ${isComplete ? '#28a745' : '#dc3545'};
+                        border-radius: 8px;
+                        padding: 16px;
+                        margin-bottom: 20px;
+                    ">
+                        <p style="margin: 0 0 12px 0; font-weight: 600; color: #333;">
+                            Repair Order: <span style="color: ${bgColor}; font-size: 18px;">${data.repair_no}</span>
+                        </p>
+                        ${data.date_completed ? `
+                            <p style="margin: 0; color: #666;">
+                                <strong>Completed:</strong> ${data.date_completed}
+                            </p>
+                        ` : `
+                            <p style="margin: 0; color: #721c24; font-weight: 600;">
+                                ⚠️ Status: Incomplete
+                            </p>
+                        `}
+                    </div>
+
+                    <p style="
+                        color: ${isComplete ? '#155724' : '#721c24'};
+                        font-size: 15px;
+                        line-height: 1.5;
+                        margin: 0 0 24px 0;
+                        text-align: center;
+                    ">
+                        ${messageText}
+                    </p>
+
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <button id="modal-cancel" style="
+                            padding: 12px 24px;
+                            background: #6c757d;
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: background 0.2s;
+                        ">Cancel</button>
+                        <button id="modal-proceed" style="
+                            padding: 12px 24px;
+                            background: ${isComplete ? '#007bff' : '#ffc107'};
+                            color: ${isComplete ? 'white' : '#000'};
+                            border: none;
+                            border-radius: 6px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: background 0.2s;
+                            ${!isComplete ? 'box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.3);' : ''}
+                        ">${isComplete ? 'Proceed to Edit' : 'Proceed Anyway'}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideUp {
+                from { transform: translateY(30px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+            @keyframes pulseRed {
+                0%, 100% { background: #dc3545; }
+                50% { background: #c82333; }
+            }
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-10px); }
+                75% { transform: translateX(10px); }
+            }
+            #modal-cancel:hover {
+                background: #5a6268 !important;
+            }
+            #modal-proceed:hover {
+                background: ${isComplete ? '#0056b3' : '#e0a800'} !important;
+            }
+        </style>
+    `;
+
+    // Insert modal into page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Add event listeners
+    document.getElementById('modal-cancel').addEventListener('click', () => {
+        document.getElementById('repair-status-modal').remove();
+    });
+
+    document.getElementById('modal-proceed').addEventListener('click', () => {
+        document.getElementById('repair-status-modal').remove();
+        window.location.href = editUrl;
+    });
+
+    // Close on background click
+    document.getElementById('repair-status-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'repair-status-modal') {
+            e.target.remove();
+        }
+    });
+
+    // Close on ESC key
+    const escHandler = (e) => {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('repair-status-modal');
+            if (modal) modal.remove();
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
+}
 
 </script>
 {% endblock %}

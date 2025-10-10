@@ -201,20 +201,6 @@
                                                 <small class="form-text text-muted">Reference to cleaning work order</small>
                                             </div>
                                         </div>
-                                        
-                                        <div class="detail-row">
-                                            <div class="detail-label">Clean First</div>
-                                            <div class="detail-value">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="CLEANFIRST" name="CLEANFIRST" value="YES"
-                                                           {% if form_data and form_data.get('CLEANFIRST') == 'YES' %}checked{% endif %}>
-                                                    <label class="form-check-label" for="CLEANFIRST">
-                                                        
-                                                    </label>
-                                                </div>
-                                                <small class="form-text text-muted">Item must be cleaned before repair</small>
-                                            </div>
-                                        </div>
                                     </div>
                                     
                                     <div class="col-md-6">
@@ -228,7 +214,16 @@
                                                        placeholder="Current location">
                                             </div>
                                         </div>
-                                    
+
+                                        <div class="detail-row">
+                                            <div class="detail-label">Final Location</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="final_location"
+                                                       value="{{ form_data.get('final_location', '') if form_data else '' }}"
+                                                       placeholder="Final location">
+                                            </div>
+                                        </div>
+
                                         <div class="detail-row">
                                             <div class="detail-label">Storage</div>
                                             <div class="detail-value">

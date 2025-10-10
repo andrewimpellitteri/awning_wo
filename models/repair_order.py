@@ -55,6 +55,7 @@ class RepairWorkOrder(db.Model):
     CUSTOMERPRICE = db.Column("customerprice", db.String)
     RETURNSTATUS = db.Column("returnstatus", db.String)
     LOCATION = db.Column("location", db.String)
+    final_location = db.Column("finallocation", db.String, nullable=True)
 
     # Timestamp fields with proper types
     created_at = db.Column(db.DateTime, server_default=func.now())
@@ -65,6 +66,11 @@ class RepairWorkOrder(db.Model):
     items = db.relationship(
         "RepairWorkOrderItem",
         back_populates="repair_work_order",
+        cascade="all, delete-orphan",
+    )
+    files = db.relationship(
+        "RepairOrderFile",
+        back_populates="repair_order",
         cascade="all, delete-orphan",
     )
 
@@ -111,6 +117,7 @@ class RepairWorkOrder(db.Model):
             "CUSTOMERPRICE": self.CUSTOMERPRICE,
             "RETURNSTATUS": self.RETURNSTATUS,
             "LOCATION": self.LOCATION,
+            "final_location": self.final_location,
             # Timestamps
             "created_at": self.created_at.strftime("%m/%d/%Y %H:%M:%S")
             if self.created_at

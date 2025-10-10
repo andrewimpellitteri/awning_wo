@@ -95,9 +95,17 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Location</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" name="LOCATION" 
-                                                       value="{{ repair_work_order.LOCATION or repair_work_order.RackNo or '' }}" 
+                                                <input type="text" class="form-control" name="LOCATION"
+                                                       value="{{ repair_work_order.LOCATION or repair_work_order.RackNo or '' }}"
                                                        placeholder="Location/Rack number">
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Final Location</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="final_location"
+                                                       value="{{ repair_work_order.final_location or '' }}"
+                                                       placeholder="Final location">
                                             </div>
                                         </div>
                                         <div class="detail-row">

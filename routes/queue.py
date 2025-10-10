@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, url_for
 from flask_login import login_required
 from models.work_order import WorkOrder
+from models.repair_order import RepairWorkOrder
 from models.customer import Customer
 from models.source import Source
 from sqlalchemy.orm import joinedload
@@ -682,3 +683,47 @@ def reset_all_queue_positions():
         return jsonify(
             {"success": False, "message": f"Error resetting queue positions: {str(e)}"}
         )
+
+
+@queue_bp.route("/api/work-order/<work_order_no>/check-repair-status")
+@login_required
+def check_repair_status(work_order_no):
+    """Check if a work order has an incomplete repair that should be done first"""
+    try:
+        work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first()
+
+        if not work_order:
+            return jsonify({"error": "Work order not found"}), 404
+
+        # Check if work order has a repair reference
+        if not work_order.SeeRepair:
+            return jsonify({"has_repair": False})
+
+        # Strip 'R' prefix if present and get repair order number
+        repair_no = work_order.SeeRepair.lstrip('R').lstrip('r')
+
+        # Look up the repair order
+        repair_order = RepairWorkOrder.query.filter_by(RepairOrderNo=repair_no).first()
+
+        if not repair_order:
+            return jsonify({
+                "has_repair": True,
+                "repair_found": False,
+                "repair_no": work_order.SeeRepair,
+                "message": f"Repair order {work_order.SeeRepair} not found in system"
+            })
+
+        # Check if repair is complete
+        is_complete = repair_order.DateCompleted is not None
+
+        return jsonify({
+            "has_repair": True,
+            "repair_found": True,
+            "repair_no": work_order.SeeRepair,
+            "is_complete": is_complete,
+            "date_completed": repair_order.DateCompleted.strftime("%m/%d/%Y") if repair_order.DateCompleted else None,
+            "message": f"Repair order {work_order.SeeRepair} is {'complete' if is_complete else 'NOT complete'}"
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

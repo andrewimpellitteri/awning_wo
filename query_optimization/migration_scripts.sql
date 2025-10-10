@@ -93,33 +93,33 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_workorderitem_custid
 \echo ''
 \echo 'Creating indexes for repair work orders...'
 
--- Assuming table name is tblrepairworkorder
+-- Actual table name is tblrepairworkorderdetail
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_repairorder_custid
-    ON tblrepairworkorder(custid);
+    ON tblrepairworkorderdetail(custid);
 
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_repairorder_datecompleted
-    ON tblrepairworkorder(datecompleted);
+    ON tblrepairworkorderdetail(datecompleted);
 
 -- Index for getting next repair order number efficiently
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_repairorder_no_desc
-    ON tblrepairworkorder(repairorderno DESC);
+    ON tblrepairworkorderdetail(repairorderno DESC);
 
 -- Pending repair orders
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_repairorder_pending
-    ON tblrepairworkorder(datecompleted)
+    ON tblrepairworkorderdetail(datecompleted)
     WHERE datecompleted IS NULL;
 
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_repairorder_roname_trgm
-ON tblrepairworkorder USING gin(ROName gin_trgm_ops);
+ON tblrepairworkorderdetail USING gin(roname gin_trgm_ops);
 
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_repairorder_item_type_trgm
-ON tblrepairworkorder USING gin(ITEM_TYPE gin_trgm_ops);
+ON tblrepairworkorderdetail USING gin("ITEM TYPE" gin_trgm_ops);
 
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_repairorder_type_of_repair_trgm
-ON tblrepairworkorder USING gin(TYPE_OF_REPAIR gin_trgm_ops);
+ON tblrepairworkorderdetail USING gin("TYPE OF REPAIR" gin_trgm_ops);
 
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_repairorder_location_trgm
-ON tblrepairworkorder USING gin(LOCATION gin_trgm_ops);
+ON tblrepairworkorderdetail USING gin(location gin_trgm_ops);
 
 
 \echo 'Repair order indexes created.'
@@ -131,9 +131,9 @@ ON tblrepairworkorder USING gin(LOCATION gin_trgm_ops);
 \echo ''
 \echo 'Creating indexes for repair order items...'
 
--- Assuming table name is tblrepairworkorderitems
+-- Actual table name is tblreporddetcustawngs
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_repairorderitem_repairorderno
-    ON tblrepairworkorderitems(repairorderno);
+    ON tblreporddetcustawngs(repairorderno);
 
 \echo 'Repair order item indexes created.'
 
@@ -166,13 +166,14 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_customer_name_contact
 \echo ''
 \echo 'Creating indexes for tblinventory (Inventory)...'
 
+-- Actual table name is tblcustawngs
 -- Foreign key for customer relationship
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_inventory_custid
-    ON tblinventory(custid);
+    ON tblcustawngs(custid);
 
 -- Index for description searches
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_inventory_description
-    ON tblinventory(LOWER(description));
+    ON tblcustawngs(LOWER(description));
 
 \echo 'Inventory indexes created.'
 
@@ -207,12 +208,12 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_customer_name_trgm
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_customer_contact_trgm
     ON tblcustomers USING gin(contact gin_trgm_ops);
 
--- Inventory full-text search
+-- Inventory full-text search (tblcustawngs)
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_inventory_description_trgm
-    ON tblinventory USING gin(description gin_trgm_ops);
+    ON tblcustawngs USING gin(description gin_trgm_ops);
 
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_inventory_material_trgm
-    ON tblinventory USING gin(material gin_trgm_ops);
+    ON tblcustawngs USING gin(material gin_trgm_ops);
 
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_workorder_woname_trgm
 ON tblcustworkorderdetail USING gin(WOName gin_trgm_ops);
@@ -262,7 +263,7 @@ BEGIN
     -- Get current max RepairOrderNo
     SELECT COALESCE(MAX(CAST(repairorderno AS INTEGER)), 0)
     INTO max_val
-    FROM tblrepairworkorder
+    FROM tblrepairworkorderdetail
     WHERE repairorderno ~ '^[0-9]+$';  -- Only numeric values
 
     -- Set sequence start value
@@ -282,10 +283,10 @@ END $$;
 
 ANALYZE tblcustworkorderdetail;
 ANALYZE tblorddetcustawngs;
-ANALYZE tblrepairworkorder;
-ANALYZE tblrepairworkorderitems;
+ANALYZE tblrepairworkorderdetail;
+ANALYZE tblreporddetcustawngs;
 ANALYZE tblcustomers;
-ANALYZE tblinventory;
+ANALYZE tblcustawngs;
 ANALYZE tblsource;
 
 \echo 'Table analysis complete.'
@@ -307,13 +308,14 @@ SELECT
     indexname,
     indexdef
 FROM pg_indexes
-WHERE tablename IN (
+WHERE schemaname = 'public'
+  AND tablename IN (
     'tblcustworkorderdetail',
     'tblorddetcustawngs',
-    'tblrepairworkorder',
-    'tblrepairworkorderitems',
+    'tblrepairworkorderdetail',
+    'tblreporddetcustawngs',
     'tblcustomers',
-    'tblinventory',
+    'tblcustawngs',
     'tblsource'
 )
 ORDER BY tablename, indexname;
@@ -327,13 +329,14 @@ SELECT
     indexname,
     pg_size_pretty(pg_relation_size(indexrelid)) AS index_size
 FROM pg_stat_user_indexes
-WHERE tablename IN (
+WHERE schemaname = 'public'
+  AND tablename IN (
     'tblcustworkorderdetail',
     'tblorddetcustawngs',
-    'tblrepairworkorder',
-    'tblrepairworkorderitems',
+    'tblrepairworkorderdetail',
+    'tblreporddetcustawngs',
     'tblcustomers',
-    'tblinventory',
+    'tblcustawngs',
     'tblsource'
 )
 ORDER BY tablename, indexname;
