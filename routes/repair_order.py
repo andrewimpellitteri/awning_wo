@@ -7,9 +7,11 @@ from flask import (
     flash,
     redirect,
     send_file,
+    abort,
 )
 from flask_login import login_required
 from models.repair_order import RepairWorkOrder, RepairWorkOrderItem
+from models.repair_order_file import RepairOrderFile
 from models.customer import Customer  # Assuming you might need this for joins
 from models.source import Source
 from sqlalchemy import or_, case, func, literal, desc, cast, Integer
@@ -19,11 +21,111 @@ from decorators import role_required
 from repair_order_pdf import generate_repair_order_pdf
 from sqlalchemy.orm import joinedload
 from utils.pdf_helpers import prepare_order_data_for_pdf
+from utils.file_upload import (
+    save_repair_order_file,
+    generate_presigned_url,
+    get_file_size,
+)
 
 
 repair_work_orders_bp = Blueprint(
     "repair_work_orders", __name__, url_prefix="/repair_work_orders"
 )
+
+
+@repair_work_orders_bp.route("/<repair_order_no>/files/upload", methods=["POST"])
+@login_required
+def upload_repair_order_file(repair_order_no):
+    """Upload a file to a repair order"""
+    if "file" not in request.files:
+        return jsonify({"error": "No file part"}), 400
+
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"error": "No selected file"}), 400
+
+    saved_file = save_repair_order_file(repair_order_no, file)
+    if saved_file:
+        db.session.add(saved_file)
+        db.session.commit()
+        return jsonify(
+            {"message": "File uploaded successfully", "file_id": saved_file.id}
+        )
+    return jsonify({"error": "Invalid file type"}), 400
+
+
+@repair_work_orders_bp.route("/<repair_order_no>/files/<int:file_id>/download")
+@login_required
+def download_repair_order_file(repair_order_no, file_id):
+    """
+    Download a file attached to a repair order.
+    Supports local files or S3 files (via pre-signed URLs).
+    """
+    ro_file = RepairOrderFile.query.filter_by(
+        id=file_id, RepairOrderNo=repair_order_no
+    ).first()
+
+    if not ro_file:
+        abort(404, description="File not found for this repair order.")
+
+    if ro_file.file_path.startswith("s3://"):
+        # S3 file → redirect to pre-signed URL
+        presigned_url = generate_presigned_url(ro_file.file_path)
+        return redirect(presigned_url)
+
+    # Local file → serve directly
+    return send_file(
+        ro_file.file_path,
+        as_attachment=True,
+        download_name=ro_file.filename,
+    )
+
+
+@repair_work_orders_bp.route("/thumbnail/<int:file_id>")
+@login_required
+def get_repair_order_thumbnail(file_id):
+    """Serve thumbnail for a repair order file"""
+    try:
+        # Get the file record
+        ro_file = RepairOrderFile.query.get_or_404(file_id)
+
+        if ro_file.thumbnail_path:
+            if ro_file.thumbnail_path.startswith("s3://"):
+                # Generate presigned URL for S3 thumbnail
+                thumbnail_url = generate_presigned_url(
+                    ro_file.thumbnail_path, expires_in=3600
+                )
+                return redirect(thumbnail_url)
+            else:
+                # Serve local thumbnail
+                return send_file(ro_file.thumbnail_path)
+        else:
+            # No thumbnail available, return 404
+            abort(404)
+
+    except Exception as e:
+        print(f"Error serving thumbnail for file {file_id}: {e}")
+        abort(404)
+
+
+@repair_work_orders_bp.context_processor
+def utility_processor():
+    """Add utility functions to template context"""
+    return dict(get_file_size=get_file_size)
+
+
+@repair_work_orders_bp.route("/<repair_order_no>/files")
+@login_required
+def list_repair_order_files(repair_order_no):
+    """List all files for a repair order"""
+    repair_order = RepairWorkOrder.query.filter_by(
+        RepairOrderNo=repair_order_no
+    ).first_or_404()
+    files = [
+        {"id": f.id, "filename": f.filename, "uploaded": f.uploaded_at.isoformat()}
+        for f in repair_order.files
+    ]
+    return jsonify(files)
 
 
 def format_date_from_str(value):
@@ -47,12 +149,16 @@ def list_repair_work_orders():
 def view_repair_work_order(repair_order_no):
     """Displays the detail page for a single repair work order."""
     repair_work_order = (
-        RepairWorkOrder.query.options(joinedload(RepairWorkOrder.customer))
+        RepairWorkOrder.query.options(
+            joinedload(RepairWorkOrder.customer), joinedload(RepairWorkOrder.files)
+        )
         .filter_by(RepairOrderNo=repair_order_no)
         .first_or_404()
     )
     return render_template(
-        "repair_orders/detail.html", repair_work_order=repair_work_order
+        "repair_orders/detail.html",
+        repair_work_order=repair_work_order,
+        files=repair_work_order.files,
     )
 
 
@@ -412,8 +518,33 @@ def create_repair_order(prefill_cust_id=None):
                     )
                     db.session.add(repair_item)
 
+            # Handle file uploads
+            uploaded_files = []
+            if "files[]" in request.files:
+                files = request.files.getlist("files[]")
+                print(f"Processing {len(files)} files")
+
+                for i, file in enumerate(files):
+                    if file and file.filename:
+                        ro_file = save_repair_order_file(
+                            next_order_no, file, to_s3=True, generate_thumbnails=True
+                        )
+                        if not ro_file:
+                            raise Exception(f"Failed to process file: {file.filename}")
+
+                        uploaded_files.append(ro_file)
+                        db.session.add(ro_file)
+                        print(f"Prepared file {i + 1}/{len(files)}: {ro_file.filename}")
+
+                        if ro_file.thumbnail_path:
+                            print(f"  - Thumbnail generated: {ro_file.thumbnail_path}")
+
             db.session.commit()
-            flash(f"Repair Work Order {next_order_no} created successfully!", "success")
+            flash(
+                f"Repair Work Order {next_order_no} created successfully"
+                + (f" with {len(uploaded_files)} files!" if uploaded_files else "!"),
+                "success",
+            )
             return redirect(
                 url_for(
                     "repair_work_orders.view_repair_work_order",
@@ -619,9 +750,32 @@ def edit_repair_order(repair_order_no):
                     )
                     db.session.add(repair_item)
 
+            # Handle file uploads
+            uploaded_files = []
+            if "files[]" in request.files:
+                files = request.files.getlist("files[]")
+                print(f"Processing {len(files)} files")
+
+                for i, file in enumerate(files):
+                    if file and file.filename:
+                        ro_file = save_repair_order_file(
+                            repair_order_no, file, to_s3=True, generate_thumbnails=True
+                        )
+                        if not ro_file:
+                            raise Exception(f"Failed to process file: {file.filename}")
+
+                        uploaded_files.append(ro_file)
+                        db.session.add(ro_file)
+                        print(f"Prepared file {i + 1}/{len(files)}: {ro_file.filename}")
+
+                        if ro_file.thumbnail_path:
+                            print(f"  - Thumbnail generated: {ro_file.thumbnail_path}")
+
             db.session.commit()
             flash(
-                f"Repair Work Order {repair_order_no} updated successfully!", "success"
+                f"Repair Work Order {repair_order_no} updated successfully"
+                + (f" with {len(uploaded_files)} files!" if uploaded_files else "!"),
+                "success",
             )
             return redirect(
                 url_for(

@@ -12,7 +12,7 @@ class RepairOrderFile(db.Model):
     RepairOrderNo = db.Column(
         "repairorderno",
         db.String,
-        db.ForeignKey("tblrepairworkorder.repairorderno"),
+        db.ForeignKey("tblrepairworkorderdetail.repairorderno"),
         nullable=False,
     )
 
