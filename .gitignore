@@ -134,6 +134,10 @@ migration_tool/migrate_to_rds.sh
 migration_tool/backups/
 migration_tool/*.md
 
+query_optimization/*.txt
+query_optimization/analyze_work_orders.sql
+query_optimization/*.md
+
 uploads/
 .env.s3
 

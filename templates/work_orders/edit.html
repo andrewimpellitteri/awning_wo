@@ -40,7 +40,7 @@
                 </div>
             </div>
 
-            <form method="POST" id="workOrderForm">
+            <form method="POST" id="workOrderForm" enctype="multipart/form-data">
                 <div class="row">
                     <!-- Main Form -->
                     <div class="col-lg-8">
@@ -407,6 +407,35 @@
                                 <button type="button" class="btn btn-add-item" onclick="addNewItem()">
                                     <i class="fas fa-plus me-2"></i>Add New Item
                                 </button>
+                            </div>
+                        </div>
+
+                        <!-- File Upload -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-cloud-upload-alt me-2"></i>Upload Files
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="card mb-3" id="fileDropzone" style="cursor: pointer;">
+                                    <div class="card-body text-center">
+                                        <p class="card-text">Drag & drop files here, or click to select</p>
+                                        <small class="text-muted">Supported: PDF, JPG, PNG, DOCX, XLSX, TXT, CSV (Max 10MB each)</small>
+
+                                        <input type="file" name="files[]" id="files" multiple
+                                            accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx,.txt,.csv"
+                                            style="display: none;">
+
+                                        <div class="mt-3" id="fileListContainer" style="display: none;">
+                                            <h6>Selected Files:</h6>
+                                            <ul class="list-group list-group-flush" id="fileList"></ul>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="clearFiles()">
+                                                <i class="fas fa-trash me-1"></i>Clear All
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
