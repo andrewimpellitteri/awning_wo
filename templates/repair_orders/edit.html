@@ -44,7 +44,7 @@
                 </div>
             </div>
 
-            <form method="POST" id="editOrderForm">
+            <form method="POST" id="editOrderForm" enctype="multipart/form-data">
                 <div class="row">
                     <div class="col-lg-8">
                         <!-- Work Order Details Card -->
@@ -280,6 +280,35 @@
                                 <button type="button" class="btn btn-add-item" onclick="addNewItem()">
                                     <i class="fas fa-plus me-2"></i>Add New Item
                                 </button>
+                            </div>
+                        </div>
+
+                        <!-- File Upload -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-cloud-upload-alt me-2"></i>Upload Files
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="card mb-3" id="fileDropzone" style="cursor: pointer;">
+                                    <div class="card-body text-center">
+                                        <p class="card-text">Drag & drop files here, or click to select</p>
+                                        <small class="text-muted">Supported: PDF, JPG, PNG, DOCX, XLSX, TXT, CSV (Max 10MB each)</small>
+
+                                        <input type="file" name="files[]" id="files" multiple
+                                            accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx,.txt,.csv"
+                                            style="display: none;">
+
+                                        <div class="mt-3" id="fileListContainer" style="display: none;">
+                                            <h6>Selected Files:</h6>
+                                            <ul class="list-group list-group-flush" id="fileList"></ul>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="clearFiles()">
+                                                <i class="fas fa-trash me-1"></i>Clear All
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -641,5 +670,135 @@ document.getElementById('editOrderForm').addEventListener('submit', function(e) 
 
 // Initialize counts on load
 updateCounts();
+
+// File upload handling
+const dropzone = document.getElementById('fileDropzone');
+const fileInput = document.getElementById('files');
+const fileList = document.getElementById('fileList');
+const fileListContainer = document.getElementById('fileListContainer');
+
+const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'docx', 'xlsx', 'txt', 'csv'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+function validateFile(file) {
+    const extension = file.name.split('.').pop().toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(extension)) {
+        alert(`File type not allowed: ${file.name}\nAllowed types: ${ALLOWED_EXTENSIONS.join(', ')}`);
+        return false;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+        alert(`File too large: ${file.name}\nMaximum size: 10MB`);
+        return false;
+    }
+    return true;
+}
+
+dropzone.addEventListener('click', (e) => {
+    if (e.target.tagName !== 'BUTTON') {
+        fileInput.click();
+    }
+});
+
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    }, false);
+});
+
+['dragenter', 'dragover'].forEach(eventName => {
+    dropzone.addEventListener(eventName, () => {
+        dropzone.classList.add('border-primary', 'border-2', 'bg-light');
+    }, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+    dropzone.addEventListener(eventName, () => {
+        dropzone.classList.remove('border-primary', 'border-2', 'bg-light');
+    }, false);
+});
+
+dropzone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    const validFiles = [];
+    for (let i = 0; i < files.length; i++) {
+        if (validateFile(files[i])) {
+            validFiles.push(files[i]);
+        }
+    }
+    if (validFiles.length > 0) {
+        const dataTransfer = new DataTransfer();
+        validFiles.forEach(file => dataTransfer.items.add(file));
+        fileInput.files = dataTransfer.files;
+        updateFileList();
+    }
+}, false);
+
+fileInput.addEventListener('change', () => {
+    const validFiles = [];
+    for (let i = 0; i < fileInput.files.length; i++) {
+        if (validateFile(fileInput.files[i])) {
+            validFiles.push(fileInput.files[i]);
+        }
+    }
+    if (validFiles.length !== fileInput.files.length) {
+        const dataTransfer = new DataTransfer();
+        validFiles.forEach(file => dataTransfer.items.add(file));
+        fileInput.files = dataTransfer.files;
+    }
+    updateFileList();
+});
+
+function updateFileList() {
+    const files = fileInput.files;
+    if (files.length === 0) {
+        fileListContainer.style.display = 'none';
+        return;
+    }
+    fileListContainer.style.display = 'block';
+    fileList.innerHTML = '';
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+        const fileInfo = document.createElement('div');
+        fileInfo.innerHTML = `
+            <i class="fas fa-file me-2"></i>
+            <strong>${file.name}</strong>
+            <small class="text-muted ms-2">(${formatFileSize(file.size)})</small>
+        `;
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn btn-sm btn-outline-danger';
+        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+        removeBtn.onclick = () => removeFile(i);
+        li.appendChild(fileInfo);
+        li.appendChild(removeBtn);
+        fileList.appendChild(li);
+    }
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function removeFile(index) {
+    const files = Array.from(fileInput.files);
+    files.splice(index, 1);
+    const dataTransfer = new DataTransfer();
+    files.forEach(file => dataTransfer.items.add(file));
+    fileInput.files = dataTransfer.files;
+    updateFileList();
+}
+
+function clearFiles() {
+    fileInput.value = '';
+    updateFileList();
+}
 </script>
 {% endblock %}
