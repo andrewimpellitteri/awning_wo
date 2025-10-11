@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, jsonify
 from flask_login import login_required
 import pandas as pd
-from extensions import db
+from extensions import db, cache
 from datetime import datetime, timedelta
 from sqlalchemy import text
 from decorators import role_required
@@ -324,6 +324,7 @@ def get_weekly_sq_ft_cleaned_kde(df):
 @analytics_bp.route("/")
 @login_required
 @role_required("admin", "manager")
+@cache.cached(timeout=300, key_prefix="analytics_dashboard")
 def analytics_dashboard():
     """Main analytics dashboard."""
     try:
@@ -345,6 +346,7 @@ def analytics_dashboard():
 @analytics_bp.route("/api/data")
 @login_required
 @role_required("admin", "manager")
+@cache.cached(timeout=300, key_prefix="analytics_api_data")
 def get_analytics_data():
     """API endpoint for chart data."""
     try:

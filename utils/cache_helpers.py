@@ -143,9 +143,12 @@ def invalidate_analytics_cache():
     Invalidate analytics-related cache entries.
     Should be called when underlying data changes significantly.
     """
+    cache.delete("analytics_dashboard")
+    cache.delete("analytics_api_data")
     cache.delete("analytics:revenue_chart")
     cache.delete("analytics:completion_trends")
     cache.delete("analytics:customer_stats")
+    print("[CACHE] Invalidated analytics cache entries")
 
 
 def clear_all_caches():

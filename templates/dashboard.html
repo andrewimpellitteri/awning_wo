@@ -150,13 +150,29 @@
                                                 </td>
                                                 <td class="py-2">
                                                     {% if wo.DateCompleted %}
-                                                        <span class="status-badge status-completed">Completed</span>
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-check-circle"></i> Completed
+                                                        </span>
+                                                    {% elif wo.final_location %}
+                                                        <span class="badge bg-secondary">
+                                                            <i class="fas fa-box"></i> Packaged
+                                                        </span>
                                                     {% elif wo.Treat %}
-                                                        <span class="status-badge status-pending">Ready to ship/pick up</span>
+                                                        <span class="badge bg-info">
+                                                            <i class="fas fa-flask"></i> Treated
+                                                        </span>
+                                                    {% elif wo.Clean %}
+                                                        <span class="badge bg-primary">
+                                                            <i class="fas fa-check-circle"></i> Cleaned
+                                                        </span>
                                                     {% elif wo.ProcessingStatus %}
-                                                        <span class="status-badge status-processing">In progress</span>
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-spinner fa-spin"></i> In Progress
+                                                        </span>
                                                     {% else %}
-                                                        <span class="status-badge status-active">Not started</span>
+                                                        <span class="badge bg-dark">
+                                                            <i class="fas fa-clock"></i> Not Started
+                                                        </span>
                                                     {% endif %}
                                                 </td>
                                                 <td class="py-2">
