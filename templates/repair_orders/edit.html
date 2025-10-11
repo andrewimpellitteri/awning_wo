@@ -52,10 +52,10 @@
                             <div class="card-header">
                                 <h5 class="card-title mb-0">
                                     <i class="fas fa-info-circle me-2"></i>Work Order Information
-                                    {% if repair_work_order.RushOrder == "YES" %}
+                                    {% if repair_work_order.RushOrder %}
                                         <span class="badge bg-warning text-dark ms-2"><i class="fas fa-bolt me-1"></i>Rush</span>
                                     {% endif %}
-                                    {% if repair_work_order.FirmRush == "YES" %}
+                                    {% if repair_work_order.FirmRush %}
                                         <span class="badge bg-danger ms-2"><i class="fas fa-exclamation-triangle me-1"></i>Firm Rush</span>
                                     {% endif %}
                                 </h5>
@@ -149,13 +149,13 @@
                                             <div class="detail-label">Priority Options</div>
                                             <div class="detail-value">
                                                 <div class="form-check form-check-inline">
-                                                    <input class="form-check-input" type="checkbox" id="RushOrder" name="RushOrder" value="1" {% if repair_work_order.RushOrder == "YES" %}checked{% endif %}>
+                                                    <input class="form-check-input" type="checkbox" id="RushOrder" name="RushOrder" value="1" {% if repair_work_order.RushOrder %}checked{% endif %}>
                                                     <label class="form-check-label" for="RushOrder">
                                                         <span class="badge bg-warning text-dark"><i class="fas fa-bolt me-1"></i>Rush Order</span>
                                                     </label>
                                                 </div>
                                                 <div class="form-check form-check-inline">
-                                                    <input class="form-check-input" type="checkbox" id="FirmRush" name="FirmRush" value="1" {% if repair_work_order.FirmRush == "YES" %}checked{% endif %}>
+                                                    <input class="form-check-input" type="checkbox" id="FirmRush" name="FirmRush" value="1" {% if repair_work_order.FirmRush %}checked{% endif %}>
                                                     <label class="form-check-label" for="FirmRush">
                                                         <span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>Firm Rush</span>
                                                     </label>

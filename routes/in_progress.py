@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash
 from flask_login import login_required, current_user
 from models.work_order import WorkOrder
 from models.customer import Customer
@@ -212,20 +212,21 @@ def package_work_order(work_order_no):
     if not final_location:
         return jsonify({"success": False, "message": "Final location is required"}), 400
 
-    if not work_order.Clean or not work_order.Treat:
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "message": "Work order must be cleaned and treated before packaging.",
-                }
-            ),
-            400,
-        )
+    # Flash warning if Clean or Treat dates are missing (but allow the operation)
+    warning = None
+    if not work_order.Clean and not work_order.Treat:
+        warning = "Warning: Work order packaged without clean or treat dates."
+    elif not work_order.Clean:
+        warning = "Warning: Work order packaged without clean date."
+    elif not work_order.Treat:
+        warning = "Warning: Work order packaged without treat date."
+
+    if warning:
+        flash(warning, "warning")
 
     work_order.final_location = final_location
     db.session.commit()
-    return jsonify({"success": True})
+    return jsonify({"success": True, "warning": warning})
 
 
 @in_progress_bp.route("/complete_work_order/<work_order_no>", methods=["POST"])

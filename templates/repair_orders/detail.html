@@ -16,7 +16,7 @@
           <h1 class="h3">
             <i class="fas fa-scissors me-2"></i> 
             Repair Order R{{ repair_work_order.RepairOrderNo }}
-            {% if repair_work_order.RushOrder == "YES" or repair_work_order.FirmRush == "YES" %}
+            {% if repair_work_order.RushOrder or repair_work_order.FirmRush %}
             <span class="badge bg-danger ms-2">
               <i class="fas fa-bolt me-1"></i>RUSH ORDER
             </span>
@@ -156,7 +156,7 @@
                     <div class="detail-value">
                       <i class="fas fa-calendar-check text-danger me-2"></i>
                       {{ (repair_work_order.DateRequired | date_format) or '<span class="text-muted">-</span>' | safe }}
-                      {% if repair_work_order.RushOrder == "YES" or repair_work_order.FirmRush == "YES" %}
+                      {% if repair_work_order.RushOrder or repair_work_order.FirmRush %}
                       <i class="fas fa-exclamation-triangle text-danger ms-1"></i>
                       {% endif %}
                     </div>
@@ -449,17 +449,17 @@
               <div class="detail-row">
                 <div class="detail-label">Priority</div>
                 <div class="detail-value">
-                  {% if repair_work_order.RushOrder == "YES" %}
+                  {% if repair_work_order.RushOrder %}
                   <span class="badge bg-warning text-dark">
                     <i class="fas fa-bolt me-1"></i>Rush Order
                   </span>
                   {% endif %}
-                  {% if repair_work_order.FirmRush == "YES" %}
+                  {% if repair_work_order.FirmRush %}
                   <span class="badge bg-danger">
                     <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
                   </span>
                   {% endif %}
-                  {% if repair_work_order.RushOrder != "YES" and repair_work_order.FirmRush != "YES" %}
+                  {% if not repair_work_order.RushOrder and not repair_work_order.FirmRush %}
                   <span class="text-muted">Normal Priority</span>
                   {% endif %}
                 </div>

@@ -539,6 +539,21 @@ def create_repair_order(prefill_cust_id=None):
                         if ro_file.thumbnail_path:
                             print(f"  - Thumbnail generated: {ro_file.thumbnail_path}")
 
+            # --- Handle SEECLEAN backlink ---
+            see_clean = request.form.get("SEECLEAN")
+            if see_clean and see_clean.strip():
+                # Find the referenced work order and update its SeeRepair field
+                from models.work_order import WorkOrder
+                referenced_work_order = WorkOrder.query.filter_by(
+                    WorkOrderNo=see_clean.strip()
+                ).first()
+                if referenced_work_order:
+                    referenced_work_order.SeeRepair = next_order_no
+                    flash(
+                        f"Auto-linked Work Order {see_clean} to this Repair Order",
+                        "info",
+                    )
+
             db.session.commit()
             flash(
                 f"Repair Work Order {next_order_no} created successfully"
@@ -770,6 +785,36 @@ def edit_repair_order(repair_order_no):
 
                         if ro_file.thumbnail_path:
                             print(f"  - Thumbnail generated: {ro_file.thumbnail_path}")
+
+            # --- Handle SEECLEAN backlink ---
+            see_clean_new = request.form.get("SEECLEAN")
+            see_clean_old = (
+                repair_order.SEECLEAN.strip() if repair_order.SEECLEAN else None
+            )
+
+            # If SEECLEAN changed, update backlinks
+            if see_clean_new != see_clean_old:
+                # Remove old backlink if it existed
+                if see_clean_old:
+                    from models.work_order import WorkOrder
+                    old_work_order = WorkOrder.query.filter_by(
+                        WorkOrderNo=see_clean_old
+                    ).first()
+                    if old_work_order and old_work_order.SeeRepair == repair_order_no:
+                        old_work_order.SeeRepair = None
+
+                # Add new backlink if provided
+                if see_clean_new and see_clean_new.strip():
+                    from models.work_order import WorkOrder
+                    new_work_order = WorkOrder.query.filter_by(
+                        WorkOrderNo=see_clean_new.strip()
+                    ).first()
+                    if new_work_order:
+                        new_work_order.SeeRepair = repair_order_no
+                        flash(
+                            f"Auto-linked Work Order {see_clean_new} to this Repair Order",
+                            "info",
+                        )
 
             db.session.commit()
             flash(

@@ -543,6 +543,20 @@ def create_work_order(prefill_cust_id=None):
                         if wo_file.thumbnail_path:
                             print(f"  - Thumbnail generated: {wo_file.thumbnail_path}")
 
+            # --- Handle SeeRepair backlink ---
+            see_repair = request.form.get("SeeRepair")
+            if see_repair and see_repair.strip():
+                # Find the referenced repair order and update its SEECLEAN field
+                referenced_repair = RepairWorkOrder.query.filter_by(
+                    RepairOrderNo=see_repair.strip()
+                ).first()
+                if referenced_repair:
+                    referenced_repair.SEECLEAN = next_wo_no
+                    flash(
+                        f"Auto-linked Repair Order {see_repair} to this Work Order",
+                        "info",
+                    )
+
             # --- Final Commit (everything at once) ---
             db.session.commit()
 
@@ -781,6 +795,34 @@ def edit_work_order(work_order_no):
 
                         if wo_file.thumbnail_path:
                             print(f"  - Thumbnail generated: {wo_file.thumbnail_path}")
+
+            # --- Handle SeeRepair backlink ---
+            see_repair_new = request.form.get("SeeRepair")
+            see_repair_old = (
+                work_order.SeeRepair.strip() if work_order.SeeRepair else None
+            )
+
+            # If SeeRepair changed, update backlinks
+            if see_repair_new != see_repair_old:
+                # Remove old backlink if it existed
+                if see_repair_old:
+                    old_repair = RepairWorkOrder.query.filter_by(
+                        RepairOrderNo=see_repair_old
+                    ).first()
+                    if old_repair and old_repair.SEECLEAN == work_order_no:
+                        old_repair.SEECLEAN = None
+
+                # Add new backlink if provided
+                if see_repair_new and see_repair_new.strip():
+                    new_repair = RepairWorkOrder.query.filter_by(
+                        RepairOrderNo=see_repair_new.strip()
+                    ).first()
+                    if new_repair:
+                        new_repair.SEECLEAN = work_order_no
+                        flash(
+                            f"Auto-linked Repair Order {see_repair_new} to this Work Order",
+                            "info",
+                        )
 
             db.session.commit()
             flash(

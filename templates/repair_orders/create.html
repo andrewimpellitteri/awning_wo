@@ -100,8 +100,8 @@
                                             <div class="detail-label">Priority Options</div>
                                             <div class="detail-value">
                                                 <div class="form-check form-check-inline">
-                                                    <input class="form-check-input" type="checkbox" id="RushOrder" name="RushOrder" value="YES" 
-                                                           {% if form_data and form_data.get('RushOrder') == 'YES' %}checked{% endif %}>
+                                                    <input class="form-check-input" type="checkbox" id="RushOrder" name="RushOrder" value="1"
+                                                           {% if form_data and form_data.get('RushOrder') %}checked{% endif %}>
                                                     <label class="form-check-label" for="RushOrder">
                                                         <span class="badge bg-warning text-dark">
                                                             <i class="fas fa-bolt me-1"></i>Rush Order
@@ -109,8 +109,8 @@
                                                     </label>
                                                 </div>
                                                 <div class="form-check form-check-inline">
-                                                    <input class="form-check-input" type="checkbox" id="FirmRush" name="FirmRush" value="YES" 
-                                                           {% if form_data and form_data.get('FirmRush') == 'YES' %}checked{% endif %}>
+                                                    <input class="form-check-input" type="checkbox" id="FirmRush" name="FirmRush" value="1"
+                                                           {% if form_data and form_data.get('FirmRush') %}checked{% endif %}>
                                                     <label class="form-check-label" for="FirmRush">
                                                         <span class="badge bg-danger">
                                                             <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
