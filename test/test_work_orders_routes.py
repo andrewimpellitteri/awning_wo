@@ -593,6 +593,176 @@ class TestWorkOrderPDFRoutes:
         assert "attachment" in response.headers.get("Content-Disposition", "").lower()
 
 
+class TestWorkOrderBulkPDFRoutes:
+    """Test bulk PDF generation for filtered work orders (Issue #29)."""
+
+    def test_bulk_pdf_with_single_work_order(self, admin_client, sample_data, mocker):
+        """POST /work_orders/api/bulk_pdf should generate PDF for single work order."""
+        # Mock PDF generation
+        mock_pdf = mocker.patch("work_order_pdf.generate_work_order_pdf")
+        mock_pdf.return_value = BytesIO(b"%PDF-1.4\nfake pdf content")
+
+        response = admin_client.post(
+            "/work_orders/api/bulk_pdf",
+            json={"work_order_numbers": ["10001"]},
+            content_type="application/json"
+        )
+
+        assert response.status_code == 200
+        assert response.content_type == "application/pdf"
+        assert "attachment" in response.headers.get("Content-Disposition", "").lower()
+        assert "WorkOrders_Bulk_" in response.headers.get("Content-Disposition", "")
+
+    def test_bulk_pdf_with_multiple_work_orders(self, admin_client, sample_data, mocker):
+        """POST /work_orders/api/bulk_pdf should generate concatenated PDF for multiple work orders."""
+        # Mock PDF generation
+        mock_pdf = mocker.patch("work_order_pdf.generate_work_order_pdf")
+        mock_pdf.return_value = BytesIO(b"%PDF-1.4\nfake pdf content")
+
+        response = admin_client.post(
+            "/work_orders/api/bulk_pdf",
+            json={"work_order_numbers": ["10001", "10002"]},
+            content_type="application/json"
+        )
+
+        assert response.status_code == 200
+        assert response.content_type == "application/pdf"
+        assert "attachment" in response.headers.get("Content-Disposition", "").lower()
+        # Should have called PDF generation twice (once per work order)
+        assert mock_pdf.call_count == 2
+
+    def test_bulk_pdf_with_no_work_orders(self, admin_client, sample_data):
+        """POST /work_orders/api/bulk_pdf with empty list should return 400."""
+        response = admin_client.post(
+            "/work_orders/api/bulk_pdf",
+            json={"work_order_numbers": []},
+            content_type="application/json"
+        )
+
+        assert response.status_code == 400
+        assert response.is_json
+        data = response.get_json()
+        assert "error" in data
+        assert "No work orders provided" in data["error"]
+
+    def test_bulk_pdf_without_json_data(self, admin_client, sample_data):
+        """POST /work_orders/api/bulk_pdf without JSON should handle gracefully."""
+        response = admin_client.post("/work_orders/api/bulk_pdf")
+
+        # Should return 400 or 500 depending on error handling
+        assert response.status_code in [400, 500]
+
+    def test_bulk_pdf_skips_nonexistent_work_orders(self, admin_client, sample_data, mocker):
+        """POST /work_orders/api/bulk_pdf should skip non-existent work orders gracefully."""
+        # Mock PDF generation
+        mock_pdf = mocker.patch("work_order_pdf.generate_work_order_pdf")
+        mock_pdf.return_value = BytesIO(b"%PDF-1.4\nfake pdf content")
+
+        # Request includes one valid and one invalid work order number
+        response = admin_client.post(
+            "/work_orders/api/bulk_pdf",
+            json={"work_order_numbers": ["10001", "99999"]},
+            content_type="application/json"
+        )
+
+        # Should still succeed and generate PDF for valid work order
+        assert response.status_code == 200
+        assert response.content_type == "application/pdf"
+        # Should only generate PDF for the one valid work order
+        assert mock_pdf.call_count == 1
+
+    def test_bulk_pdf_with_large_batch(self, admin_client, sample_data, app, mocker):
+        """POST /work_orders/api/bulk_pdf should handle large batches."""
+        with app.app_context():
+            # Create additional work orders for testing
+            for i in range(10003, 10013):  # Create 10 more work orders
+                wo = WorkOrder(
+                    WorkOrderNo=str(i),
+                    CustID="100",
+                    WOName=f"Test WO {i}",
+                    DateIn=date(2025, 1, 15),
+                    RackNo="A1"
+                )
+                db.session.add(wo)
+            db.session.commit()
+
+            # Mock PDF generation
+            mock_pdf = mocker.patch("work_order_pdf.generate_work_order_pdf")
+            mock_pdf.return_value = BytesIO(b"%PDF-1.4\nfake pdf content")
+
+            # Request 12 work orders (10001, 10002, and 10003-10012)
+            work_order_numbers = ["10001", "10002"] + [str(i) for i in range(10003, 10013)]
+
+            response = admin_client.post(
+                "/work_orders/api/bulk_pdf",
+                json={"work_order_numbers": work_order_numbers},
+                content_type="application/json"
+            )
+
+            assert response.status_code == 200
+            assert response.content_type == "application/pdf"
+            # Should have called PDF generation 12 times
+            assert mock_pdf.call_count == 12
+
+    def test_bulk_pdf_preserves_work_order_data(self, admin_client, sample_data, app, mocker):
+        """POST /work_orders/api/bulk_pdf should include all work order data in PDFs."""
+        # Don't mock generate_work_order_pdf, but mock the prepare function to verify data
+        mock_prepare = mocker.patch("routes.work_orders.prepare_order_data_for_pdf")
+        mock_prepare.return_value = {
+            "WorkOrderNo": "10001",
+            "CustID": "100",
+            "items": [],
+            "customer": {}
+        }
+
+        # Mock the actual PDF generation
+        mock_pdf = mocker.patch("work_order_pdf.generate_work_order_pdf")
+        mock_pdf.return_value = BytesIO(b"%PDF-1.4\nfake pdf content")
+
+        response = admin_client.post(
+            "/work_orders/api/bulk_pdf",
+            json={"work_order_numbers": ["10001", "10002"]},
+            content_type="application/json"
+        )
+
+        assert response.status_code == 200
+        # Verify prepare_order_data_for_pdf was called with correct parameters
+        assert mock_prepare.call_count == 2
+        # Each call should specify order_type="work_order"
+        for call in mock_prepare.call_args_list:
+            assert call[1]["order_type"] == "work_order"
+
+    def test_bulk_pdf_includes_timestamp_in_filename(self, admin_client, sample_data, mocker):
+        """POST /work_orders/api/bulk_pdf should include timestamp in filename."""
+        # Mock PDF generation
+        mock_pdf = mocker.patch("work_order_pdf.generate_work_order_pdf")
+        mock_pdf.return_value = BytesIO(b"%PDF-1.4\nfake pdf content")
+
+        response = admin_client.post(
+            "/work_orders/api/bulk_pdf",
+            json={"work_order_numbers": ["10001"]},
+            content_type="application/json"
+        )
+
+        assert response.status_code == 200
+        disposition = response.headers.get("Content-Disposition", "")
+        # Filename should be like: WorkOrders_Bulk_20250111_123456.pdf
+        assert "WorkOrders_Bulk_" in disposition
+        assert ".pdf" in disposition
+
+    def test_bulk_pdf_requires_authentication(self, client, sample_data):
+        """POST /work_orders/api/bulk_pdf should require login."""
+        # Try to access without logging in
+        response = client.post(
+            "/work_orders/api/bulk_pdf",
+            json={"work_order_numbers": ["10001"]},
+            content_type="application/json"
+        )
+
+        # Should redirect to login or return 401
+        assert response.status_code in [302, 401]
+
+
 class TestWorkOrderBusinessLogic:
     """Test business logic through HTTP routes."""
 

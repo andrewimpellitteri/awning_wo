@@ -58,8 +58,11 @@
             <button id="clear-filters-btn" class="btn btn-outline-warning btn-sm me-2">
                 <i class="fas fa-filter-circle-xmark me-1"></i> Clear Filters
             </button>
+            <button id="print-all-pdfs" class="btn btn-outline-primary btn-sm me-2">
+                <i class="fas fa-file-pdf me-1"></i> Print All PDFs
+            </button>
             <button id="print-table" class="btn btn-outline-secondary btn-sm me-2">
-                <i class="fas fa-print me-1"></i> Print
+                <i class="fas fa-print me-1"></i> Print Table
             </button>
             <button id="download-csv" class="btn btn-outline-success btn-sm">
                 <i class="fas fa-file-csv me-1"></i> Export CSV
@@ -245,11 +248,72 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    
+
 
     // Print & CSV
     document.getElementById("print-table").addEventListener("click", () => table.print(false, true));
     document.getElementById("download-csv").addEventListener("click", () => table.download("csv", "work_orders.csv"));
+
+    // Print All PDFs - concatenate filtered work orders
+    document.getElementById("print-all-pdfs").addEventListener("click", async () => {
+        const btn = document.getElementById("print-all-pdfs");
+        const originalText = btn.innerHTML;
+
+        try {
+            // Get all currently displayed work order numbers
+            const data = table.getData();
+            const workOrderNumbers = data.map(row => row.WorkOrderNo);
+
+            if (workOrderNumbers.length === 0) {
+                alert("No work orders to print");
+                return;
+            }
+
+            if (workOrderNumbers.length > 100) {
+                if (!confirm(`You are about to generate ${workOrderNumbers.length} PDFs. This may take a while. Continue?`)) {
+                    return;
+                }
+            }
+
+            // Show loading state
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Generating PDFs...';
+
+            // Send request to backend
+            const response = await fetch("{{ url_for('work_orders.bulk_pdf_work_orders') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    work_order_numbers: workOrderNumbers
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to generate PDFs: ${response.statusText}`);
+            }
+
+            // Download the PDF
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `WorkOrders_${new Date().toISOString().slice(0,10)}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+        } catch (error) {
+            console.error("Error generating bulk PDF:", error);
+            alert("Error generating PDFs: " + error.message);
+        } finally {
+            // Restore button state
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
 
     // Clear all filters button
     document.getElementById("clear-filters-btn").addEventListener("click", () => {

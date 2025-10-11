@@ -29,6 +29,7 @@ import uuid
 from work_order_pdf import generate_work_order_pdf
 from decorators import role_required
 from utils.pdf_helpers import prepare_order_data_for_pdf
+from io import BytesIO
 
 work_orders_bp = Blueprint("work_orders", __name__, url_prefix="/work_orders")
 
@@ -38,8 +39,7 @@ work_orders_bp = Blueprint("work_orders", __name__, url_prefix="/work_orders")
 def get_open_repair_orders(cust_id):
     """Get all open repair orders for a specific customer"""
     open_repair_orders = RepairWorkOrder.query.filter(
-        RepairWorkOrder.CustID == cust_id,
-        RepairWorkOrder.DateCompleted.is_(None)
+        RepairWorkOrder.CustID == cust_id, RepairWorkOrder.DateCompleted.is_(None)
     ).all()
 
     return jsonify(
@@ -654,11 +654,12 @@ def edit_work_order(work_order_no):
             )
 
             # --- Handle Existing Work Order Items (Robust ID-based logic) ---
-            existing_items = WorkOrderItem.query.filter_by(WorkOrderNo=work_order_no).all()
-            
+            existing_items = WorkOrderItem.query.filter_by(
+                WorkOrderNo=work_order_no
+            ).all()
+
             # Get the IDs of items that should remain in the work order from the form
             updated_item_ids = set(request.form.getlist("existing_item_id[]"))
-
 
             # Parse updated quantities and prices, keyed by item ID
             updated_quantities = {}
@@ -679,13 +680,13 @@ def edit_work_order(work_order_no):
             # Loop through items currently in the database for this work order
             for item in existing_items:
                 item_id_str = str(item.id)
-                
+
                 # If the item's ID is in the list from the form, it's an existing item to be updated
                 if item_id_str in updated_item_ids:
                     # Update quantity if provided
                     if item_id_str in updated_quantities:
                         item.Qty = str(updated_quantities[item_id_str])
-                        
+
                     # Update price if provided
                     if item_id_str in updated_prices:
                         item.Price = updated_prices[item_id_str]
@@ -984,7 +985,9 @@ def api_work_orders():
 
     # Check for filters and sorting on the 'Source' field
     is_source_filter = request.args.get("filter_Source")
-    is_source_sort = any(request.args.get(f"sort[{i}][field]") == "Source" for i in range(5))
+    is_source_sort = any(
+        request.args.get(f"sort[{i}][field]") == "Source" for i in range(5)
+    )
 
     # Conditionally join and eager load relationships
     if is_source_filter or is_source_sort:
@@ -994,7 +997,6 @@ def api_work_orders():
         )
     else:
         query = query.options(joinedload(WorkOrder.customer))
-
 
     # --- Start of Filter Logic ---
     # Per-column filters
@@ -1047,7 +1049,6 @@ def api_work_orders():
 
     if is_source_filter:
         query = query.filter(Source.SSource.ilike(f"%{is_source_filter}%"))
-
 
     # Status quick filters
     if status == "pending":
@@ -1243,3 +1244,67 @@ def view_work_order_pdf(work_order_no):
         return redirect(
             url_for("work_orders.view_work_order", work_order_no=work_order_no)
         )
+
+
+@work_orders_bp.route("/api/bulk_pdf", methods=["POST"])
+@login_required
+def bulk_pdf_work_orders():
+    """Generate a concatenated PDF for multiple work orders"""
+    import fitz  # PyMuPDF
+
+    try:
+        data = request.get_json()
+        work_order_numbers = data.get("work_order_numbers", [])
+
+        if not work_order_numbers:
+            return jsonify({"error": "No work orders provided"}), 400
+
+        # Create a new PDF document
+        merged_pdf = fitz.open()
+
+        # Generate PDF for each work order and merge
+        for wo_no in work_order_numbers:
+            work_order = (
+                WorkOrder.query.filter_by(WorkOrderNo=wo_no)
+                .options(
+                    db.joinedload(WorkOrder.customer),
+                    db.joinedload(WorkOrder.ship_to_source),
+                )
+                .first()
+            )
+
+            if not work_order:
+                continue
+
+            # Prepare order data using shared helper
+            wo_dict = prepare_order_data_for_pdf(work_order, order_type="work_order")
+
+            # Generate PDF for this work order
+            pdf_buffer = generate_work_order_pdf(
+                wo_dict,
+                company_info={
+                    "name": "Awning Cleaning Industries - In House Cleaning Work Order"
+                },
+            )
+
+            # Open the generated PDF and append to merged PDF
+            temp_pdf = fitz.open(stream=pdf_buffer.read(), filetype="pdf")
+            merged_pdf.insert_pdf(temp_pdf)
+            temp_pdf.close()
+
+        # Save merged PDF to buffer
+        output_buffer = BytesIO()
+        merged_pdf.save(output_buffer)
+        merged_pdf.close()
+        output_buffer.seek(0)
+
+        return send_file(
+            output_buffer,
+            as_attachment=True,
+            download_name=f"WorkOrders_Bulk_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+            mimetype="application/pdf",
+        )
+
+    except Exception as e:
+        print(f"Error generating bulk PDF: {str(e)}")
+        return jsonify({"error": str(e)}), 500
