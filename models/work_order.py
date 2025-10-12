@@ -41,6 +41,9 @@ class WorkOrder(db.Model):
 
     final_location = db.Column("finallocation", db.String, nullable=True)
 
+    # Denormalized source name from customer (for performance)
+    source_name = db.Column("source_name", db.Text, nullable=True)
+
     # relationships
     customer = db.relationship("Customer", back_populates="work_orders")
     items = db.relationship(
@@ -87,6 +90,33 @@ class WorkOrder(db.Model):
             return current_app.config.get("SAIL_ORDER_SOURCES", [])
         except RuntimeError:
             return []
+
+    def sync_source_name(self):
+        """
+        Update source_name from customer's source.
+        Call this after creating or updating a work order's customer.
+
+        The database trigger will handle this automatically, but this
+        method provides explicit control when needed.
+        """
+        if self.customer and self.customer.source_info:
+            self.source_name = self.customer.source_info.SSource
+        else:
+            self.source_name = None
+
+    @property
+    def customer_source_name(self):
+        """
+        Get customer's source name with fallback to relationship.
+        Prefer using the denormalized source_name for performance.
+        """
+        # Use denormalized value if available
+        if self.source_name:
+            return self.source_name
+        # Fallback to relationship (for backward compatibility)
+        if self.customer and self.customer.source_info:
+            return self.customer.source_info.SSource
+        return None
 
     def to_dict(self, include_items=True):
         from datetime import date, datetime

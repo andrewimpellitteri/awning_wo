@@ -57,6 +57,9 @@ class RepairWorkOrder(db.Model):
     LOCATION = db.Column("location", db.String)
     final_location = db.Column("finallocation", db.String, nullable=True)
 
+    # Denormalized source name from customer (for performance)
+    source_name = db.Column("source_name", db.Text, nullable=True)
+
     # Timestamp fields with proper types
     created_at = db.Column(db.DateTime, server_default=func.now())
     updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
@@ -73,6 +76,33 @@ class RepairWorkOrder(db.Model):
         back_populates="repair_order",
         cascade="all, delete-orphan",
     )
+
+    def sync_source_name(self):
+        """
+        Update source_name from customer's source.
+        Call this after creating or updating a repair order's customer.
+
+        The database trigger will handle this automatically, but this
+        method provides explicit control when needed.
+        """
+        if self.customer and self.customer.source_info:
+            self.source_name = self.customer.source_info.SSource
+        else:
+            self.source_name = None
+
+    @property
+    def customer_source_name(self):
+        """
+        Get customer's source name with fallback to relationship.
+        Prefer using the denormalized source_name for performance.
+        """
+        # Use denormalized value if available
+        if self.source_name:
+            return self.source_name
+        # Fallback to relationship (for backward compatibility)
+        if self.customer and self.customer.source_info:
+            return self.customer.source_info.SSource
+        return None
 
     def to_dict(self):
         """Convert model instance to dictionary"""

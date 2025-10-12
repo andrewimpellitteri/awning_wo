@@ -81,15 +81,21 @@ def sample_repair_orders(app):
             CustID="123",
             ROName="Completed Order",
             DateCompleted=datetime(2024, 1, 1),
+            source_name="SRC1",  # Denormalized source name
         )
         ro2 = RepairWorkOrder(
             RepairOrderNo="1002",
             CustID="124",
             ROName="Pending Order",
             DateCompleted=None,
+            source_name="SRC2",  # Denormalized source name
         )
         ro3 = RepairWorkOrder(
-            RepairOrderNo="1003", CustID="125", ROName="Rush Order", RushOrder=True
+            RepairOrderNo="1003",
+            CustID="125",
+            ROName="Rush Order",
+            RushOrder=True,
+            source_name="SRC1",  # Denormalized source name
         )
 
         db.session.add_all([source1, source2, cust1, cust2, cust3, ro1, ro2, ro3])

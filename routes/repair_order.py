@@ -12,7 +12,7 @@ from flask import (
 from flask_login import login_required
 from models.repair_order import RepairWorkOrder, RepairWorkOrderItem
 from models.repair_order_file import RepairOrderFile
-from models.customer import Customer  # Assuming you might need this for joins
+from models.customer import Customer
 from models.source import Source
 from sqlalchemy import or_, case, func, literal, desc, cast, Integer
 from datetime import datetime
@@ -25,6 +25,11 @@ from utils.file_upload import (
     save_repair_order_file,
     generate_presigned_url,
     get_file_size,
+)
+from utils.query_helpers import (
+    apply_column_filters,
+    apply_tabulator_sorting,
+    apply_search_filter,
 )
 
 
@@ -176,23 +181,10 @@ def api_repair_work_orders():
 
     query = RepairWorkOrder.query
 
-    is_source_filter = request.args.get("filter_Source")
-    is_source_sort = any(
-        request.args.get(f"sort[{i}][field]") == "Source" for i in range(5)
-    )
+    # Optimize relationship loading - Source is denormalized, so just load customer
+    query = query.options(joinedload(RepairWorkOrder.customer))
 
-    # If sorting or filtering by source, join necessary tables
-    if is_source_filter or is_source_sort:
-        query = query.join(RepairWorkOrder.customer).join(Customer.source_info)
-        query = query.options(
-            joinedload(RepairWorkOrder.customer).joinedload(Customer.source_info)
-        )
-    else:
-        query = query.options(joinedload(RepairWorkOrder.customer))
-
-    # --------------------------
-    # ✅ Status filters
-    # ---------------------------
+    # Apply status filters
     if status == "pending":
         query = query.filter(RepairWorkOrder.DateCompleted.is_(None))
     elif status == "completed":
@@ -206,97 +198,80 @@ def api_repair_work_orders():
             RepairWorkOrder.DateCompleted.is_(None),
         )
 
-    # ---------------------------
-    # 🔎 Global search
-    # ---------------------------
-    if search:
-        search_term = f"%{search}%"
-        query = query.filter(
-            or_(
-                RepairWorkOrder.RepairOrderNo.ilike(search_term),
-                RepairWorkOrder.CustID.ilike(search_term),
-                RepairWorkOrder.ROName.ilike(search_term),
-                RepairWorkOrder.ITEM_TYPE.ilike(search_term),
-                RepairWorkOrder.TYPE_OF_REPAIR.ilike(search_term),
-                RepairWorkOrder.LOCATION.ilike(search_term),
-            )
-        )
+    # Apply global search
+    query = apply_search_filter(
+        query,
+        RepairWorkOrder,
+        search,
+        [
+            "RepairOrderNo",
+            "CustID",
+            "ROName",
+            "ITEM_TYPE",
+            "TYPE_OF_REPAIR",
+            "LOCATION",
+        ],
+    )
 
-    # ---------------------------
-    # 🎯 Column filters
-    # ---------------------------
-    filterable_columns = {
-        "RepairOrderNo": RepairWorkOrder.RepairOrderNo,
-        "CustID": RepairWorkOrder.CustID,
-        "ROName": RepairWorkOrder.ROName,
-        "DateIn": RepairWorkOrder.DateIn,
-        "DateCompleted": RepairWorkOrder.DateCompleted,
-    }
+    # Apply column-specific filters
+    query = apply_column_filters(
+        query,
+        RepairWorkOrder,
+        request.args,
+        {
+            "filter_RepairOrderNo": {
+                "column": RepairWorkOrder.RepairOrderNo,
+                "type": "exact",
+            },
+            "filter_CustID": {"column": RepairWorkOrder.CustID, "type": "exact"},
+            "filter_ROName": {"column": RepairWorkOrder.ROName, "type": "like"},
+            "filter_DateIn": {"column": RepairWorkOrder.DateIn, "type": "like"},
+            "filter_DateCompleted": {
+                "column": RepairWorkOrder.DateCompleted,
+                "type": "like",
+            },
+            "filter_Source": {"column": RepairWorkOrder.source_name, "type": "like"},  # Use denormalized column
+        },
+    )
 
-    for col, column in filterable_columns.items():
-        filter_val = request.args.get(f"filter_{col}")
-        if filter_val:
-            if col in ["RepairOrderNo", "CustID"]:
-                query = query.filter(column == filter_val)
-            else:
-                query = query.filter(column.ilike(f"%{filter_val}%"))
-
-    # Special handling for Source filter
-    filter_val = request.args.get("filter_Source")
-    if filter_val:
-        query = query.join(RepairWorkOrder.customer).join(Customer.source_info)
-        query = query.filter(Source.SSource.ilike(f"%{filter_val}%"))
-
-    # ---------------------------
-    # ↕️ Sorting
-    # ---------------------------
-    order_by_clauses = []
+    # Apply sorting (support both simple and Tabulator multi-sort)
     simple_sort = request.args.get("sort")
-    simple_dir = request.args.get("dir", "asc")
-
-    if simple_sort:  # Simple sort mode
+    if simple_sort:
+        # Simple sort mode
+        simple_dir = request.args.get("dir", "asc")
         column = getattr(RepairWorkOrder, simple_sort, None)
         if column:
             if simple_sort in ["RepairOrderNo", "CustID"]:
                 column = cast(column, Integer)
-            order_by_clauses.append(
-                column.desc() if simple_dir == "desc" else column.asc()
-            )
-    else:  # Tabulator multi-sort mode
-        i = 0
-        while True:
-            field = request.args.get(f"sort[{i}][field]")
-            if not field:
-                break
-            direction = request.args.get(f"sort[{i}][dir]", "asc")
-
-            if field == "Source":
-                column = Source.SSource
-            else:
-                column = getattr(RepairWorkOrder, field, None)
-
-            if column:
-                if field in ["RepairOrderNo", "CustID"]:
-                    column = cast(column, Integer)
-                order_by_clauses.append(
-                    column.desc() if direction == "desc" else column.asc()
-                )
-            i += 1
+            query = query.order_by(column.desc() if simple_dir == "desc" else column.asc())
+    else:
+        # Tabulator multi-sort mode
+        query = apply_tabulator_sorting(
+            query,
+            RepairWorkOrder,
+            request.args,
+            {
+                "RepairOrderNo": "integer",
+                "CustID": "integer",
+                "DateIn": "date",
+                "DateCompleted": "date",
+                "Source": RepairWorkOrder.source_name,  # Use denormalized column
+            },
+        )
 
     # Apply default sort if none provided
-    if order_by_clauses:
-        query = query.order_by(*order_by_clauses)
-    else:
+    if not simple_sort and not any(
+        request.args.get(f"sort[{i}][field]") for i in range(10)
+    ):
         query = query.order_by(
             RepairWorkOrder.DateIn.desc(), RepairWorkOrder.RepairOrderNo.desc()
         )
 
-    # ---------------------------
-    # 📊 Pagination & results
-    # ---------------------------
+    # Pagination & results
     total = query.count()
     pagination = query.paginate(page=page, per_page=size, error_out=False)
 
+    # Build response data
     data = []
     for order in pagination.items:
         data.append(
@@ -306,11 +281,7 @@ def api_repair_work_orders():
                 "ROName": order.ROName,
                 "DateIn": format_date_from_str(order.DateIn),
                 "DateCompleted": format_date_from_str(order.DateCompleted),
-                "Source": (
-                    order.customer.source_info.SSource
-                    if order.customer and order.customer.source_info
-                    else None
-                ),
+                "Source": order.source_name,  # Use denormalized column for performance
                 "is_rush": bool(order.RushOrder) or bool(order.FirmRush),
                 "detail_url": url_for(
                     "repair_work_orders.view_repair_work_order",
@@ -464,6 +435,9 @@ def create_repair_order(prefill_cust_id=None):
 
             db.session.add(repair_order)
             db.session.flush()  # to get the RepairOrderNo
+
+            # Sync source_name from customer (database trigger will also handle this)
+            repair_order.sync_source_name()
 
             # Handle selected items from customer inventory
             from models.work_order import WorkOrderItem
@@ -628,6 +602,9 @@ def edit_repair_order(repair_order_no):
             )
 
         try:
+            # Track if customer changed (for source_name sync)
+            old_cust_id = repair_order.CustID
+
             # Update the repair work order fields
             repair_order.CustID = cust_id
             repair_order.ROName = ro_name
@@ -815,6 +792,10 @@ def edit_repair_order(repair_order_no):
                             f"Auto-linked Work Order {see_clean_new} to this Repair Order",
                             "info",
                         )
+
+            # Sync source_name if customer changed
+            if repair_order.CustID != old_cust_id:
+                repair_order.sync_source_name()
 
             db.session.commit()
             flash(

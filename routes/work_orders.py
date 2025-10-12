@@ -29,7 +29,18 @@ import uuid
 from utils.work_order_pdf import generate_work_order_pdf
 from decorators import role_required
 from utils.pdf_helpers import prepare_order_data_for_pdf
+from utils.query_helpers import (
+    apply_column_filters,
+    apply_tabulator_sorting,
+)
+from utils.form_helpers import extract_work_order_fields
+from utils.order_item_helpers import (
+    process_selected_inventory_items,
+    process_new_items,
+    safe_int_conversion,
+)
 from io import BytesIO
+import fitz  # PyMuPDF
 
 work_orders_bp = Blueprint("work_orders", __name__, url_prefix="/work_orders")
 
@@ -306,32 +317,6 @@ def rush_work_orders():
     )
 
 
-def safe_int_conversion(value):
-    """
-    Safely convert a value to integer, handling various input types
-    """
-    if value is None or value == "":
-        return 1  # Default to 1 if empty
-
-    try:
-        # Handle string inputs
-        if isinstance(value, str):
-            value = value.strip()
-            if not value:
-                return 1
-
-        # Convert to float first, then int (handles decimal strings like "1.0")
-        float_val = float(value)
-        int_val = int(float_val)
-
-        # Ensure positive value
-        return max(1, int_val)
-
-    except (ValueError, TypeError):
-        print(f"Warning: Could not convert '{value}' to integer, defaulting to 1")
-        return 1
-
-
 # Corrected work order routes - Inventory as static catalog only:
 
 
@@ -366,7 +351,7 @@ def create_work_order(prefill_cust_id=None):
     """Create a new work order - inventory quantities never change"""
     if request.method == "POST":
         try:
-            # --- Generate next WorkOrderNo ---
+            # Generate next WorkOrderNo
             latest_num = db.session.query(
                 func.max(cast(WorkOrder.WorkOrderNo, Integer))
             ).scalar()
@@ -379,148 +364,41 @@ def create_work_order(prefill_cust_id=None):
                 f"New Item Descriptions: {request.form.getlist('new_item_description[]')}"
             )
 
-            # --- Create Work Order ---
-            work_order = WorkOrder(
-                WorkOrderNo=next_wo_no,
-                CustID=request.form.get("CustID"),
-                WOName=request.form.get("WOName"),
-                StorageTime=request.form.get("StorageTime"),
-                RackNo=request.form.get("RackNo"),
-                SpecialInstructions=request.form.get("SpecialInstructions"),
-                RepairsNeeded="RepairsNeeded" in request.form,
-                # Boolean fields - checkbox present = True
-                SeeRepair=request.form.get("SeeRepair"),
-                Quote=request.form.get("Quote"),
-                RushOrder="RushOrder" in request.form,
-                FirmRush="FirmRush" in request.form,
-                # Date fields - convert from string or use defaults
-                DateIn=datetime.strptime(request.form.get("DateIn"), "%Y-%m-%d").date()
-                if request.form.get("DateIn")
-                else date.today(),
-                DateRequired=datetime.strptime(
-                    request.form.get("DateRequired"), "%Y-%m-%d"
-                ).date()
-                if request.form.get("DateRequired")
-                else None,
-                Clean=datetime.strptime(request.form.get("Clean"), "%Y-%m-%d").date()
-                if request.form.get("Clean")
-                else None,
-                Treat=datetime.strptime(request.form.get("Treat"), "%Y-%m-%d").date()
-                if request.form.get("Treat")
-                else None,
-                # String fields
-                ReturnStatus=request.form.get("ReturnStatus"),
-                ShipTo=request.form.get("ShipTo"),
-            )
+            # Extract work order fields from form
+            wo_data = extract_work_order_fields(request.form)
+            work_order = WorkOrder(WorkOrderNo=next_wo_no, **wo_data)
+
+            # Set ProcessingStatus based on Clean date
             if work_order.Clean:
                 work_order.ProcessingStatus = False
+
             db.session.add(work_order)
             db.session.flush()  # ensures parent exists in DB for FK references
 
-            # --- Handle Selected Inventory Items ---
-            selected_items = request.form.getlist("selected_items[]")
-            item_quantities = {
-                key.replace("item_qty_", ""): safe_int_conversion(value)
-                for key, value in request.form.items()
-                if key.startswith("item_qty_") and value
-            }
+            # Sync source_name from customer (database trigger will also handle this)
+            work_order.sync_source_name()
 
-            for inventory_key in selected_items:
-                requested_qty = item_quantities.get(inventory_key, 1)
-                inventory_item = Inventory.query.get(inventory_key)
-                if inventory_item:
-                    work_order_item = WorkOrderItem(
-                        WorkOrderNo=next_wo_no,
-                        CustID=request.form.get("CustID"),
-                        Description=inventory_item.Description,
-                        Material=inventory_item.Material,
-                        Qty=str(requested_qty),
-                        Condition=inventory_item.Condition,
-                        Color=inventory_item.Color,
-                        SizeWgt=inventory_item.SizeWgt,
-                        Price=inventory_item.Price,
-                    )
-                    db.session.add(work_order_item)
+            # Process selected inventory items
+            selected_items = process_selected_inventory_items(
+                request.form, next_wo_no, request.form.get("CustID"), WorkOrderItem
+            )
+            for item in selected_items:
+                db.session.add(item)
 
-            # --- Handle New Inventory Items ---
-            new_item_descriptions = request.form.getlist("new_item_description[]")
-            new_item_materials = request.form.getlist("new_item_material[]")
-            new_item_quantities = request.form.getlist("new_item_qty[]")
-            new_item_conditions = request.form.getlist("new_item_condition[]")
-            new_item_colors = request.form.getlist("new_item_color[]")
-            new_item_sizes = request.form.getlist("new_item_size[]")
-            new_item_prices = request.form.getlist("new_item_price[]")
+            # Process new items and update catalog
+            new_items, catalog_updates = process_new_items(
+                request.form,
+                next_wo_no,
+                request.form.get("CustID"),
+                WorkOrderItem,
+                update_catalog=True,
+            )
+            for item in new_items:
+                db.session.add(item)
+            for catalog_item in catalog_updates:
+                db.session.add(catalog_item)
 
-            for i, description in enumerate(new_item_descriptions):
-                if not description:
-                    continue
-
-                work_order_qty = safe_int_conversion(
-                    new_item_quantities[i] if i < len(new_item_quantities) else "1"
-                )
-
-                work_order_item = WorkOrderItem(
-                    WorkOrderNo=next_wo_no,
-                    CustID=request.form.get("CustID"),
-                    Description=description,
-                    Material=new_item_materials[i]
-                    if i < len(new_item_materials)
-                    else "",
-                    Qty=str(work_order_qty),
-                    Condition=new_item_conditions[i]
-                    if i < len(new_item_conditions)
-                    else "",
-                    Color=new_item_colors[i] if i < len(new_item_colors) else "",
-                    SizeWgt=new_item_sizes[i] if i < len(new_item_sizes) else "",
-                    Price=new_item_prices[i] if i < len(new_item_prices) else "",
-                )
-                db.session.add(work_order_item)
-
-                # Update or insert into inventory catalog
-                existing_inventory = Inventory.query.filter_by(
-                    CustID=request.form.get("CustID"),
-                    Description=description,
-                    Material=new_item_materials[i]
-                    if i < len(new_item_materials)
-                    else "",
-                    Condition=new_item_conditions[i]
-                    if i < len(new_item_conditions)
-                    else "",
-                    Color=new_item_colors[i] if i < len(new_item_colors) else "",
-                    SizeWgt=new_item_sizes[i] if i < len(new_item_sizes) else "",
-                ).first()
-
-                if existing_inventory:
-                    existing_inventory.Qty = str(
-                        safe_int_conversion(existing_inventory.Qty) + work_order_qty
-                    )
-                    flash(
-                        f"Updated catalog: Customer now has {existing_inventory.Qty} total of '{description}'",
-                        "info",
-                    )
-                else:
-                    inventory_key = f"INV_{uuid.uuid4().hex[:8].upper()}"
-                    new_inventory_item = Inventory(
-                        InventoryKey=inventory_key,
-                        CustID=request.form.get("CustID"),
-                        Description=description,
-                        Material=new_item_materials[i]
-                        if i < len(new_item_materials)
-                        else "",
-                        Condition=new_item_conditions[i]
-                        if i < len(new_item_conditions)
-                        else "",
-                        Color=new_item_colors[i] if i < len(new_item_colors) else "",
-                        SizeWgt=new_item_sizes[i] if i < len(new_item_sizes) else "",
-                        Price=new_item_prices[i] if i < len(new_item_prices) else "",
-                        Qty=str(work_order_qty),
-                    )
-                    db.session.add(new_inventory_item)
-                    flash(
-                        f"New item '{description}' added to catalog with quantity {work_order_qty}",
-                        "success",
-                    )
-
+            # Handle file uploads
             uploaded_files = []
             if "files[]" in request.files:
                 files = request.files.getlist("files[]")
@@ -528,7 +406,6 @@ def create_work_order(prefill_cust_id=None):
 
                 for i, file in enumerate(files):
                     if file and file.filename:
-                        # Use the no-commit version for batch processing
                         wo_file = save_work_order_file(
                             next_wo_no, file, to_s3=True, generate_thumbnails=True
                         )
@@ -536,17 +413,15 @@ def create_work_order(prefill_cust_id=None):
                             raise Exception(f"Failed to process file: {file.filename}")
 
                         uploaded_files.append(wo_file)
-                        db.session.add(wo_file)  # Add to session but don't commit yet
+                        db.session.add(wo_file)
                         print(f"Prepared file {i + 1}/{len(files)}: {wo_file.filename}")
 
-                        # Log thumbnail info
                         if wo_file.thumbnail_path:
                             print(f"  - Thumbnail generated: {wo_file.thumbnail_path}")
 
-            # --- Handle SeeRepair backlink ---
+            # Handle SeeRepair backlink
             see_repair = request.form.get("SeeRepair")
             if see_repair and see_repair.strip():
-                # Find the referenced repair order and update its SEECLEAN field
                 referenced_repair = RepairWorkOrder.query.filter_by(
                     RepairOrderNo=see_repair.strip()
                 ).first()
@@ -557,7 +432,7 @@ def create_work_order(prefill_cust_id=None):
                         "info",
                     )
 
-            # --- Final Commit (everything at once) ---
+            # Final commit
             db.session.commit()
 
             flash(
@@ -579,7 +454,7 @@ def create_work_order(prefill_cust_id=None):
                 form_data=request.form,
             )
 
-    # --- GET Request: Render Form ---
+    # GET Request: Render Form
     customers = Customer.query.order_by(Customer.CustID).all()
     sources = Source.query.order_by(Source.SSource).all()
 
@@ -609,6 +484,9 @@ def edit_work_order(work_order_no):
 
     if request.method == "POST":
         try:
+            # Track if customer changed (for source_name sync)
+            old_cust_id = work_order.CustID
+
             # Update work order fields
             work_order.CustID = request.form.get("CustID")
             work_order.WOName = request.form.get("WOName")
@@ -825,6 +703,10 @@ def edit_work_order(work_order_no):
                             "info",
                         )
 
+            # Sync source_name if customer changed
+            if work_order.CustID != old_cust_id:
+                work_order.sync_source_name()
+
             db.session.commit()
             flash(
                 f"Work Order {work_order_no} updated successfully"
@@ -983,74 +865,10 @@ def api_work_orders():
 
     query = WorkOrder.query
 
-    # Check for filters and sorting on the 'Source' field
-    is_source_filter = request.args.get("filter_Source")
-    is_source_sort = any(
-        request.args.get(f"sort[{i}][field]") == "Source" for i in range(5)
-    )
+    # Optimize relationship loading - Source is denormalized, so just load customer
+    query = query.options(joinedload(WorkOrder.customer))
 
-    # Conditionally join and eager load relationships
-    if is_source_filter or is_source_sort:
-        query = query.join(WorkOrder.customer).join(Customer.source_info)
-        query = query.options(
-            joinedload(WorkOrder.customer).joinedload(Customer.source_info)
-        )
-    else:
-        query = query.options(joinedload(WorkOrder.customer))
-
-    # --- Start of Filter Logic ---
-    # Per-column filters
-    for field in [
-        "WorkOrderNo",
-        "WOName",
-        "CustID",
-        "DateIn",
-        "DateRequired",
-    ]:
-        filter_val = request.args.get(f"filter_{field}")
-        if filter_val:
-            filter_val = filter_val.strip()
-
-            if field == "WorkOrderNo":
-                # Handle range or exact match with casting
-                if "-" in filter_val:
-                    try:
-                        start, end = map(
-                            int, filter_val.split("-", 1)
-                        )  # Only split on first dash
-                        query = query.filter(
-                            cast(WorkOrder.WorkOrderNo, Integer) >= start,
-                            cast(WorkOrder.WorkOrderNo, Integer) <= end,
-                        )
-                    except ValueError:
-                        # If parsing fails, ignore this filter
-                        pass
-                else:
-                    try:
-                        val = int(filter_val)
-                        query = query.filter(
-                            cast(WorkOrder.WorkOrderNo, Integer) == val
-                        )
-                    except ValueError:
-                        # If parsing fails, ignore this filter
-                        pass
-
-            elif field == "CustID":
-                # exact match only
-                try:
-                    val = int(filter_val)
-                    query = query.filter(WorkOrder.CustID == val)
-                except ValueError:
-                    pass
-
-            else:
-                # For other text fields (WOName, DateIn, DateRequired)
-                query = query.filter(getattr(WorkOrder, field).ilike(f"%{filter_val}%"))
-
-    if is_source_filter:
-        query = query.filter(Source.SSource.ilike(f"%{is_source_filter}%"))
-
-    # Status quick filters
+    # Apply status quick filters
     if status == "pending":
         query = query.filter(WorkOrder.DateCompleted.is_(None))
     elif status == "completed":
@@ -1060,59 +878,48 @@ def api_work_orders():
             or_(WorkOrder.RushOrder == True, WorkOrder.FirmRush == True),
             WorkOrder.DateCompleted.is_(None),
         )
-    # --- End of Filter Logic ---
 
-    # --- Start of Sorting Logic ---
-    order_by_clauses = []
-    i = 0
-    while True:
-        field = request.args.get(f"sort[{i}][field]")
-        if not field:
-            break
-        direction = request.args.get(f"sort[{i}][dir]", "asc")
-
-        # Handle the special case of 'Source'
-        if field == "Source":
-            # The query is already joined, so we can sort on the joined table's column
-            column_to_sort = Source.SSource
-            if direction == "desc":
-                order_by_clauses.append(column_to_sort.desc())
-            else:
-                order_by_clauses.append(column_to_sort.asc())
-        else:
-            # Handle all other fields on the WorkOrder model
-            column = getattr(WorkOrder, field, None)
-            if column:
-                if field in ["WorkOrderNo", "CustID"]:
-                    cast_column = cast(column, Integer)
-                    if direction == "desc":
-                        order_by_clauses.append(cast_column.desc())
-                    else:
-                        order_by_clauses.append(cast_column.asc())
-                elif field in ["DateIn", "DateRequired"]:
-                    # These are proper DATE types in the database, sort them directly
-                    # No need for regex parsing or to_date conversion
-                    if direction == "desc":
-                        order_by_clauses.append(column.desc().nulls_last())
-                    else:
-                        order_by_clauses.append(column.asc().nulls_last())
-                else:
-                    if direction == "desc":
-                        order_by_clauses.append(column.desc())
-                    else:
-                        order_by_clauses.append(column.asc())
-        i += 1
+    # Apply column-specific filters
+    query = apply_column_filters(
+        query,
+        WorkOrder,
+        request.args,
+        {
+            "filter_WorkOrderNo": {
+                "column": WorkOrder.WorkOrderNo,
+                "type": "range_or_exact",
+            },
+            "filter_CustID": {"column": WorkOrder.CustID, "type": "integer_exact"},
+            "filter_WOName": {"column": WorkOrder.WOName, "type": "like"},
+            "filter_DateIn": {"column": WorkOrder.DateIn, "type": "like"},
+            "filter_DateRequired": {"column": WorkOrder.DateRequired, "type": "like"},
+            "filter_Source": {"column": WorkOrder.source_name, "type": "like"},  # Use denormalized column
+        },
+    )
 
     # Apply sorting
-    if order_by_clauses:
-        query = query.order_by(*order_by_clauses)
-    else:
-        query = query.order_by(WorkOrder.WorkOrderNo.desc())
-    # --- End of Sorting Logic ---
+    query = apply_tabulator_sorting(
+        query,
+        WorkOrder,
+        request.args,
+        {
+            "WorkOrderNo": "integer",
+            "CustID": "integer",
+            "DateIn": "date",
+            "DateRequired": "date",
+            "Source": WorkOrder.source_name,  # Use denormalized column
+        },
+    )
 
+    # Default sort if no sort specified
+    if not any(request.args.get(f"sort[{i}][field]") for i in range(10)):
+        query = query.order_by(WorkOrder.WorkOrderNo.desc())
+
+    # Paginate
     total = query.count()
     work_orders = query.paginate(page=page, per_page=size, error_out=False)
 
+    # Build response data
     data = [
         {
             "WorkOrderNo": wo.WorkOrderNo,
@@ -1120,9 +927,7 @@ def api_work_orders():
             "WOName": wo.WOName,
             "DateIn": format_date_from_str(wo.DateIn),
             "DateRequired": format_date_from_str(wo.DateRequired),
-            "Source": wo.customer.source_info.SSource
-            if wo.customer and wo.customer.source_info
-            else None,
+            "Source": wo.source_name,  # Use denormalized column for performance
             "detail_url": url_for(
                 "work_orders.view_work_order", work_order_no=wo.WorkOrderNo
             ),
@@ -1250,8 +1055,6 @@ def view_work_order_pdf(work_order_no):
 @login_required
 def bulk_pdf_work_orders():
     """Generate a concatenated PDF for multiple work orders"""
-    import fitz  # PyMuPDF
-
     try:
         data = request.get_json()
         work_order_numbers = data.get("work_order_numbers", [])

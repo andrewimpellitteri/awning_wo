@@ -602,6 +602,11 @@ class TestWorkOrderBulkPDFRoutes:
         mock_pdf = mocker.patch("routes.work_orders.generate_work_order_pdf")
         mock_pdf.return_value = BytesIO(b"%PDF-1.4\nfake pdf content")
 
+        # Mock PyMuPDF operations
+        mock_fitz_doc = mocker.MagicMock()
+        mock_fitz_open = mocker.patch("routes.work_orders.fitz.open")
+        mock_fitz_open.return_value = mock_fitz_doc
+
         response = admin_client.post(
             "/work_orders/api/bulk_pdf",
             json={"work_order_numbers": ["10001"]},
@@ -734,6 +739,11 @@ class TestWorkOrderBulkPDFRoutes:
         mock_pdf = mocker.patch("routes.work_orders.generate_work_order_pdf")
         mock_pdf.return_value = BytesIO(b"%PDF-1.4\nfake pdf content")
 
+        # Mock PyMuPDF operations
+        mock_fitz_doc = mocker.MagicMock()
+        mock_fitz_open = mocker.patch("routes.work_orders.fitz.open")
+        mock_fitz_open.return_value = mock_fitz_doc
+
         response = admin_client.post(
             "/work_orders/api/bulk_pdf",
             json={"work_order_numbers": ["10001", "10002"]},
@@ -752,6 +762,11 @@ class TestWorkOrderBulkPDFRoutes:
         # Mock PDF generation
         mock_pdf = mocker.patch("routes.work_orders.generate_work_order_pdf")
         mock_pdf.return_value = BytesIO(b"%PDF-1.4\nfake pdf content")
+
+        # Mock PyMuPDF operations
+        mock_fitz_doc = mocker.MagicMock()
+        mock_fitz_open = mocker.patch("routes.work_orders.fitz.open")
+        mock_fitz_open.return_value = mock_fitz_doc
 
         response = admin_client.post(
             "/work_orders/api/bulk_pdf",
