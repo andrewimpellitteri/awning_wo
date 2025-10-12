@@ -18,7 +18,7 @@ from sqlalchemy import or_, case, func, literal, desc, cast, Integer
 from datetime import datetime
 from extensions import db
 from decorators import role_required
-from repair_order_pdf import generate_repair_order_pdf
+from utils.repair_order_pdf import generate_repair_order_pdf
 from sqlalchemy.orm import joinedload
 from utils.pdf_helpers import prepare_order_data_for_pdf
 from utils.file_upload import (

@@ -44,7 +44,9 @@ def dashboard():
         recent_orders = get_recent_orders()
         total_recent = len(recent_orders)
         sail_orders_count = sum(1 for wo in recent_orders if wo.is_sail_order)
-        rush_orders_count = sum(1 for wo in recent_orders if wo.RushOrder)  # Now a boolean
+        rush_orders_count = sum(
+            1 for wo in recent_orders if wo.RushOrder
+        )  # Now a boolean
 
         return render_template(
             "dashboard.html",

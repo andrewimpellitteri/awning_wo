@@ -158,3 +158,5 @@ routes/analytics/test_analytics_data.py
 
 *.csv
 test_analytics_parsing.py
+
+backups/

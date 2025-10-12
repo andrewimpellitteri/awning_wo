@@ -26,7 +26,7 @@ from sqlalchemy.orm import joinedload
 from extensions import db
 from datetime import datetime, date
 import uuid
-from work_order_pdf import generate_work_order_pdf
+from utils.work_order_pdf import generate_work_order_pdf
 from decorators import role_required
 from utils.pdf_helpers import prepare_order_data_for_pdf
 from io import BytesIO

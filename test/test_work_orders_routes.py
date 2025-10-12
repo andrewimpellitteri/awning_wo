@@ -573,7 +573,7 @@ class TestWorkOrderPDFRoutes:
     def test_view_work_order_pdf(self, admin_client, sample_data, mocker):
         """GET /work_orders/<no>/pdf/view should generate and display PDF."""
         # Mock PDF generation
-        mock_pdf = mocker.patch("work_order_pdf.generate_work_order_pdf")
+        mock_pdf = mocker.patch("routes.work_orders.generate_work_order_pdf")
         mock_pdf.return_value = BytesIO(b"%PDF-1.4 fake pdf content")
 
         response = admin_client.get("/work_orders/10001/pdf/view")
@@ -583,7 +583,7 @@ class TestWorkOrderPDFRoutes:
     def test_download_work_order_pdf(self, admin_client, sample_data, mocker):
         """GET /work_orders/<no>/pdf/download should download PDF."""
         # Mock PDF generation
-        mock_pdf = mocker.patch("work_order_pdf.generate_work_order_pdf")
+        mock_pdf = mocker.patch("routes.work_orders.generate_work_order_pdf")
         mock_pdf.return_value = BytesIO(b"%PDF-1.4 fake pdf content")
 
         response = admin_client.get("/work_orders/10001/pdf/download")
@@ -599,7 +599,7 @@ class TestWorkOrderBulkPDFRoutes:
     def test_bulk_pdf_with_single_work_order(self, admin_client, sample_data, mocker):
         """POST /work_orders/api/bulk_pdf should generate PDF for single work order."""
         # Mock PDF generation
-        mock_pdf = mocker.patch("work_order_pdf.generate_work_order_pdf")
+        mock_pdf = mocker.patch("routes.work_orders.generate_work_order_pdf")
         mock_pdf.return_value = BytesIO(b"%PDF-1.4\nfake pdf content")
 
         response = admin_client.post(
@@ -615,9 +615,14 @@ class TestWorkOrderBulkPDFRoutes:
 
     def test_bulk_pdf_with_multiple_work_orders(self, admin_client, sample_data, mocker):
         """POST /work_orders/api/bulk_pdf should generate concatenated PDF for multiple work orders."""
-        # Mock PDF generation
-        mock_pdf = mocker.patch("work_order_pdf.generate_work_order_pdf")
-        mock_pdf.return_value = BytesIO(b"%PDF-1.4\nfake pdf content")
+        # Mock PDF generation - use side_effect to return fresh BytesIO each time
+        mock_pdf = mocker.patch("routes.work_orders.generate_work_order_pdf")
+        mock_pdf.side_effect = lambda *args, **kwargs: BytesIO(b"%PDF-1.4\nfake pdf content")
+
+        # Mock PyMuPDF operations
+        mock_fitz_doc = mocker.MagicMock()
+        mock_fitz_open = mocker.patch("routes.work_orders.fitz.open")
+        mock_fitz_open.return_value = mock_fitz_doc
 
         response = admin_client.post(
             "/work_orders/api/bulk_pdf",
@@ -654,9 +659,14 @@ class TestWorkOrderBulkPDFRoutes:
 
     def test_bulk_pdf_skips_nonexistent_work_orders(self, admin_client, sample_data, mocker):
         """POST /work_orders/api/bulk_pdf should skip non-existent work orders gracefully."""
-        # Mock PDF generation
-        mock_pdf = mocker.patch("work_order_pdf.generate_work_order_pdf")
-        mock_pdf.return_value = BytesIO(b"%PDF-1.4\nfake pdf content")
+        # Mock PDF generation - use side_effect to return fresh BytesIO each time
+        mock_pdf = mocker.patch("routes.work_orders.generate_work_order_pdf")
+        mock_pdf.side_effect = lambda *args, **kwargs: BytesIO(b"%PDF-1.4\nfake pdf content")
+
+        # Mock PyMuPDF operations
+        mock_fitz_doc = mocker.MagicMock()
+        mock_fitz_open = mocker.patch("routes.work_orders.fitz.open")
+        mock_fitz_open.return_value = mock_fitz_doc
 
         # Request includes one valid and one invalid work order number
         response = admin_client.post(
@@ -686,9 +696,14 @@ class TestWorkOrderBulkPDFRoutes:
                 db.session.add(wo)
             db.session.commit()
 
-            # Mock PDF generation
-            mock_pdf = mocker.patch("work_order_pdf.generate_work_order_pdf")
-            mock_pdf.return_value = BytesIO(b"%PDF-1.4\nfake pdf content")
+            # Mock PDF generation - use side_effect to return fresh BytesIO each time
+            mock_pdf = mocker.patch("routes.work_orders.generate_work_order_pdf")
+            mock_pdf.side_effect = lambda *args, **kwargs: BytesIO(b"%PDF-1.4\nfake pdf content")
+
+            # Mock PyMuPDF operations
+            mock_fitz_doc = mocker.MagicMock()
+            mock_fitz_open = mocker.patch("routes.work_orders.fitz.open")
+            mock_fitz_open.return_value = mock_fitz_doc
 
             # Request 12 work orders (10001, 10002, and 10003-10012)
             work_order_numbers = ["10001", "10002"] + [str(i) for i in range(10003, 10013)]
@@ -716,7 +731,7 @@ class TestWorkOrderBulkPDFRoutes:
         }
 
         # Mock the actual PDF generation
-        mock_pdf = mocker.patch("work_order_pdf.generate_work_order_pdf")
+        mock_pdf = mocker.patch("routes.work_orders.generate_work_order_pdf")
         mock_pdf.return_value = BytesIO(b"%PDF-1.4\nfake pdf content")
 
         response = admin_client.post(
@@ -735,7 +750,7 @@ class TestWorkOrderBulkPDFRoutes:
     def test_bulk_pdf_includes_timestamp_in_filename(self, admin_client, sample_data, mocker):
         """POST /work_orders/api/bulk_pdf should include timestamp in filename."""
         # Mock PDF generation
-        mock_pdf = mocker.patch("work_order_pdf.generate_work_order_pdf")
+        mock_pdf = mocker.patch("routes.work_orders.generate_work_order_pdf")
         mock_pdf.return_value = BytesIO(b"%PDF-1.4\nfake pdf content")
 
         response = admin_client.post(

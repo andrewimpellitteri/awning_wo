@@ -253,7 +253,7 @@ def mock_pdf_generator():
         return BytesIO(b"%PDF-1.4 fake pdf content")
 
     with patch(
-        "work_order_pdf.generate_work_order_pdf", return_value=fake_pdf_content()
+        "utils.work_order_pdf.generate_work_order_pdf", return_value=fake_pdf_content()
     ):
         yield
 
