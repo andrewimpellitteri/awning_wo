@@ -7,7 +7,10 @@ from models.work_order import WorkOrder
 from models.repair_order import RepairWorkOrder
 from extensions import db, cache
 from sqlalchemy import or_, func, cast, Integer, desc, asc
+from sqlalchemy.exc import IntegrityError
 import json
+import time
+import random
 from decorators import role_required
 from flask_login import current_user
 from utils.cache_helpers import invalidate_customer_cache
@@ -215,60 +218,98 @@ def create_customer():
                 "customers/form.html", form_data=data, sources=Source.query.all()
             )
 
-        try:
-            # Auto-generate the new customer ID
-            max_cust_id = db.session.query(
-                func.max(cast(Customer.CustID, Integer))
-            ).scalar()
-            new_cust_id = str(max_cust_id + 1) if max_cust_id else "1"
+        # Retry logic to handle race conditions in customer ID generation
+        max_retries = 5
+        retry_count = 0
+        base_delay = 0.1  # 100ms base delay
 
-            customer = Customer(
-                CustID=new_cust_id,
-                Name=data.get("Name"),
-                Contact=data.get("Contact"),
-                Address=data.get("Address"),
-                Address2=data.get("Address2"),
-                City=data.get("City"),
-                State=data.get("State"),
-                ZipCode=data.get("ZipCode"),
-                HomePhone=data.get("HomePhone"),
-                WorkPhone=data.get("WorkPhone"),
-                CellPhone=data.get("CellPhone"),
-                EmailAddress=data.get("EmailAddress"),
-                MailAddress=data.get("MailAddress"),
-                MailCity=data.get("MailCity"),
-                MailState=data.get("MailState"),
-                MailZip=data.get("MailZip"),
-                Source=data.get("Source"),
-                SourceOld=data.get("SourceOld"),
-            )
+        while retry_count < max_retries:
+            try:
+                # Auto-generate the new customer ID
+                max_cust_id = db.session.query(
+                    func.max(cast(Customer.CustID, Integer))
+                ).scalar()
+                new_cust_id = str(max_cust_id + 1) if max_cust_id else "1"
 
-            # Auto-populate source address fields if source is selected
-            if customer.Source:
-                source = Source.query.get(customer.Source)
-                if source:
-                    customer.SourceAddress = source.SourceAddress
-                    customer.SourceCity = source.SourceCity
-                    customer.SourceState = source.SourceState
-                    customer.SourceZip = source.SourceZip
+                customer = Customer(
+                    CustID=new_cust_id,
+                    Name=data.get("Name"),
+                    Contact=data.get("Contact"),
+                    Address=data.get("Address"),
+                    Address2=data.get("Address2"),
+                    City=data.get("City"),
+                    State=data.get("State"),
+                    ZipCode=data.get("ZipCode"),
+                    HomePhone=data.get("HomePhone"),
+                    WorkPhone=data.get("WorkPhone"),
+                    CellPhone=data.get("CellPhone"),
+                    EmailAddress=data.get("EmailAddress"),
+                    MailAddress=data.get("MailAddress"),
+                    MailCity=data.get("MailCity"),
+                    MailState=data.get("MailState"),
+                    MailZip=data.get("MailZip"),
+                    Source=data.get("Source"),
+                    SourceOld=data.get("SourceOld"),
+                )
 
-            db.session.add(customer)
-            db.session.commit()
+                # Auto-populate source address fields if source is selected
+                if customer.Source:
+                    source = Source.query.get(customer.Source)
+                    if source:
+                        customer.SourceAddress = source.SourceAddress
+                        customer.SourceCity = source.SourceCity
+                        customer.SourceState = source.SourceState
+                        customer.SourceZip = source.SourceZip
 
-            # Invalidate cache since customer data changed
-            invalidate_customer_cache()
+                db.session.add(customer)
+                db.session.commit()
 
-            flash("Customer created successfully", "success")
-            return redirect(
-                url_for("customers.view_customer", customer_id=customer.CustID)
-            )
+                # Invalidate cache since customer data changed
+                invalidate_customer_cache()
 
-        except Exception as e:
-            db.session.rollback()
-            flash(f"Error creating customer: {str(e)}", "error")
-            return render_template(
-                "customers/form.html", form_data=data, sources=Source.query.all()
-            )
+                flash("Customer created successfully", "success")
+                return redirect(
+                    url_for("customers.view_customer", customer_id=customer.CustID)
+                )
+
+            except IntegrityError as ie:
+                db.session.rollback()
+                retry_count += 1
+
+                # Check if it's a duplicate key error
+                error_msg = str(ie.orig).lower() if hasattr(ie, 'orig') else str(ie).lower()
+                is_duplicate = 'duplicate' in error_msg or 'unique' in error_msg
+
+                if is_duplicate and retry_count < max_retries:
+                    # Exponential backoff with jitter
+                    delay = base_delay * (2 ** retry_count) + (random.random() * 0.05)
+                    print(f"Duplicate customer ID detected. Retry {retry_count}/{max_retries} after {delay:.3f}s")
+                    time.sleep(delay)
+                    continue  # Retry the loop
+                else:
+                    # Not a duplicate error or max retries exceeded
+                    print(f"Error creating customer (IntegrityError): {str(ie)}")
+                    flash(f"Error creating customer: {str(ie)}", "error")
+                    return render_template(
+                        "customers/form.html",
+                        form_data=data,
+                        sources=Source.query.all()
+                    )
+
+            except Exception as e:
+                db.session.rollback()
+                flash(f"Error creating customer: {str(e)}", "error")
+                return render_template(
+                    "customers/form.html", form_data=data, sources=Source.query.all()
+                )
+
+        # If we exhausted all retries
+        flash("Error creating customer: Unable to generate unique customer ID after multiple attempts", "error")
+        return render_template(
+            "customers/form.html",
+            form_data=data,
+            sources=Source.query.all()
+        )
 
     sources = Source.query.order_by(Source.SSource).all()
     return render_template("customers/form.html", sources=sources)
