@@ -230,6 +230,14 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
+    table.on("tableBuilt", function() {
+        // Focus the header filter for the 'Name' column
+        const nameColumn = table.getColumn("Name");
+        if (nameColumn) {
+            nameColumn.headerFilterFocus();
+        }
+    });
+
     // Print button
     document.getElementById("print-table").addEventListener("click", function () {
         table.print(false, true); // (false = no style overrides, true = include table headers/filters)
