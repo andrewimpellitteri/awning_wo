@@ -110,8 +110,25 @@ def save_order_file_generic(
 
     if to_s3:
         s3_key = f"{folder_prefix}/{order_no}/{filename}"
-        s3_client.upload_fileobj(file, AWS_S3_BUCKET, s3_key)
-        file_path = f"s3://{AWS_S3_BUCKET}/{s3_key}"
+
+        # Upload file to S3 with proper error handling
+        try:
+            s3_client.upload_fileobj(file, AWS_S3_BUCKET, s3_key)
+            file_path = f"s3://{AWS_S3_BUCKET}/{s3_key}"
+            print(f"Successfully uploaded file to S3: {s3_key}")
+        except s3_client.exceptions.NoSuchBucket:
+            error_msg = f"S3 bucket '{AWS_S3_BUCKET}' does not exist"
+            print(f"ERROR: {error_msg}")
+            raise ValueError(error_msg)
+        except s3_client.exceptions.ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code", "Unknown")
+            error_msg = f"S3 client error ({error_code}) uploading {filename}: {e}"
+            print(f"ERROR: {error_msg}")
+            raise Exception(error_msg)
+        except Exception as e:
+            error_msg = f"Unexpected error uploading {filename} to S3: {e}"
+            print(f"ERROR: {error_msg}")
+            raise Exception(error_msg)
 
         # Generate and save thumbnail to S3
         thumbnail_path = None
@@ -124,7 +141,8 @@ def save_order_file_generic(
                 thumbnail_path = f"s3://{AWS_S3_BUCKET}/{thumbnail_key}"
                 print(f"Generated thumbnail: {thumbnail_path}")
             except Exception as e:
-                print(f"Error generating thumbnail for {filename}: {e}")
+                # Thumbnail generation is not critical - log but don't fail
+                print(f"WARNING: Error generating thumbnail for {filename}: {e}")
     else:
         order_folder = os.path.join(UPLOAD_FOLDER, folder_prefix, str(order_no))
         os.makedirs(order_folder, exist_ok=True)
@@ -204,12 +222,24 @@ def get_file_size(file_path):
             s3_key = file_path.replace(f"s3://{AWS_S3_BUCKET}/", "")
             response = s3_client.head_object(Bucket=AWS_S3_BUCKET, Key=s3_key)
             size_bytes = response["ContentLength"]
-        except:
+        except s3_client.exceptions.NoSuchKey:
+            print(f"S3 file not found: {file_path}")
+            return None
+        except s3_client.exceptions.ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code", "Unknown")
+            print(f"S3 client error ({error_code}) getting file size for {file_path}: {e}")
+            return None
+        except Exception as e:
+            print(f"Error getting S3 file size for {file_path}: {e}")
             return None
     else:
         try:
             size_bytes = os.path.getsize(file_path)
-        except:
+        except FileNotFoundError:
+            print(f"Local file not found: {file_path}")
+            return None
+        except Exception as e:
+            print(f"Error getting local file size for {file_path}: {e}")
             return None
 
     # Convert to human readable
@@ -388,4 +418,32 @@ def delete_ml_model(model_name):
 
     except Exception as e:
         print(f"Error deleting model: {e}")
+        return False
+
+
+def delete_file_from_s3(file_path):
+    """
+    Delete a file from S3 given its full s3:// path
+    Also handles thumbnail deletion if a thumbnail path is provided
+
+    Args:
+        file_path: Full S3 path (e.g., s3://bucket-name/path/to/file.jpg)
+
+    Returns:
+        bool: True on success, False on failure
+    """
+    if not file_path or not file_path.startswith("s3://"):
+        print(f"Not an S3 path, skipping deletion: {file_path}")
+        return False
+
+    try:
+        s3_key = file_path.replace(f"s3://{AWS_S3_BUCKET}/", "")
+        s3_client.delete_object(Bucket=AWS_S3_BUCKET, Key=s3_key)
+        print(f"Successfully deleted S3 file: {s3_key}")
+        return True
+    except s3_client.exceptions.NoSuchKey:
+        print(f"S3 file not found (may already be deleted): {s3_key}")
+        return True  # Consider this a success since the file is gone
+    except Exception as e:
+        print(f"Error deleting S3 file {file_path}: {e}")
         return False

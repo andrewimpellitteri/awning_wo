@@ -957,17 +957,37 @@ def api_work_orders():
 @login_required
 @role_required("admin", "manager")
 def delete_work_order(work_order_no):
-    """Delete a work order without adjusting inventory"""
+    """Delete a work order, its associated files from S3, and without adjusting inventory"""
     work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
     try:
+        # Import the delete function
+        from utils.file_upload import delete_file_from_s3
+
+        # Delete S3 files first (before deleting DB records)
+        files_deleted = 0
+        for file_obj in work_order.files:
+            # Delete main file
+            if delete_file_from_s3(file_obj.file_path):
+                files_deleted += 1
+            # Delete thumbnail if it exists
+            if file_obj.thumbnail_path and delete_file_from_s3(file_obj.thumbnail_path):
+                files_deleted += 1
+
         # Delete all associated work order items
         for item in work_order.items:
             db.session.delete(item)
 
-        # Delete the work order itself
+        # Delete the work order itself (cascade will delete file records)
         db.session.delete(work_order)
         db.session.commit()
-        flash(f"Work Order {work_order_no} deleted successfully!", "success")
+
+        if files_deleted > 0:
+            flash(
+                f"Work Order {work_order_no} deleted successfully (removed {files_deleted} files from S3)!",
+                "success",
+            )
+        else:
+            flash(f"Work Order {work_order_no} deleted successfully!", "success")
     except Exception as e:
         db.session.rollback()
         flash(f"Error deleting work order: {str(e)}", "danger")

@@ -830,31 +830,43 @@ def edit_repair_order(repair_order_no):
 @login_required
 @role_required("admin", "manager")
 def delete_repair_order(repair_order_no):
-    """Delete a repair work order and all associated items"""
+    """Delete a repair work order, its associated files from S3, and all associated items"""
 
     repair_order = RepairWorkOrder.query.filter_by(
         RepairOrderNo=repair_order_no
     ).first_or_404()
 
     try:
-        # Optional: Add business logic checks
-        # For example, prevent deletion of completed orders
-        # if repair_order.DateCompleted:
-        #     flash("Cannot delete completed repair orders", "error")
-        #     return redirect(url_for('repair_work_orders.view_repair_work_order',
-        #                           repair_order_no=repair_order_no))
+        # Import the delete function
+        from utils.file_upload import delete_file_from_s3
+
+        # Delete S3 files first (before deleting DB records)
+        files_deleted = 0
+        for file_obj in repair_order.files:
+            # Delete main file
+            if delete_file_from_s3(file_obj.file_path):
+                files_deleted += 1
+            # Delete thumbnail if it exists
+            if file_obj.thumbnail_path and delete_file_from_s3(file_obj.thumbnail_path):
+                files_deleted += 1
 
         # Delete associated items first (if cascade is not set up)
         RepairWorkOrderItem.query.filter_by(RepairOrderNo=repair_order_no).delete()
 
-        # Delete the repair order
+        # Delete the repair order (cascade will delete file records)
         db.session.delete(repair_order)
         db.session.commit()
 
-        flash(
-            f"Repair Work Order #{repair_order_no} has been deleted successfully",
-            "success",
-        )
+        if files_deleted > 0:
+            flash(
+                f"Repair Work Order #{repair_order_no} has been deleted successfully (removed {files_deleted} files from S3)",
+                "success",
+            )
+        else:
+            flash(
+                f"Repair Work Order #{repair_order_no} has been deleted successfully",
+                "success",
+            )
         return redirect(url_for("repair_work_orders.list_repair_work_orders"))
 
     except Exception as e:
