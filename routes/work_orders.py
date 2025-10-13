@@ -23,9 +23,12 @@ from utils.file_upload import (
 )
 from sqlalchemy import or_, func, cast, Integer, case, literal
 from sqlalchemy.orm import joinedload
+from sqlalchemy.exc import IntegrityError
 from extensions import db
 from datetime import datetime, date
 import uuid
+import time
+import random
 from utils.work_order_pdf import generate_work_order_pdf
 from decorators import role_required
 from utils.pdf_helpers import prepare_order_data_for_pdf
@@ -350,109 +353,149 @@ def get_customer_inventory(cust_id):
 def create_work_order(prefill_cust_id=None):
     """Create a new work order - inventory quantities never change"""
     if request.method == "POST":
-        try:
-            # Generate next WorkOrderNo
-            latest_num = db.session.query(
-                func.max(cast(WorkOrder.WorkOrderNo, Integer))
-            ).scalar()
-            next_wo_no = str(latest_num + 1) if latest_num is not None else "1"
+        # Retry logic to handle race conditions in work order number generation
+        max_retries = 5
+        retry_count = 0
+        base_delay = 0.1  # 100ms base delay
 
-            print("--- Form Data Received ---")
-            print(f"Request Form Keys: {request.form.keys()}")
-            print(f"Selected Items: {request.form.getlist('selected_items[]')}")
-            print(
-                f"New Item Descriptions: {request.form.getlist('new_item_description[]')}"
-            )
+        while retry_count < max_retries:
+            try:
+                # Generate next WorkOrderNo
+                latest_num = db.session.query(
+                    func.max(cast(WorkOrder.WorkOrderNo, Integer))
+                ).scalar()
+                next_wo_no = str(latest_num + 1) if latest_num is not None else "1"
 
-            # Extract work order fields from form
-            wo_data = extract_work_order_fields(request.form)
-            work_order = WorkOrder(WorkOrderNo=next_wo_no, **wo_data)
+                print("--- Form Data Received ---")
+                print(f"Request Form Keys: {request.form.keys()}")
+                print(f"Selected Items: {request.form.getlist('selected_items[]')}")
+                print(
+                    f"New Item Descriptions: {request.form.getlist('new_item_description[]')}"
+                )
 
-            # Set ProcessingStatus based on Clean date
-            if work_order.Clean:
-                work_order.ProcessingStatus = False
+                # Extract work order fields from form
+                wo_data = extract_work_order_fields(request.form)
+                work_order = WorkOrder(WorkOrderNo=next_wo_no, **wo_data)
 
-            db.session.add(work_order)
-            db.session.flush()  # ensures parent exists in DB for FK references
+                # Set ProcessingStatus based on Clean date
+                if work_order.Clean:
+                    work_order.ProcessingStatus = False
 
-            # Sync source_name from customer (database trigger will also handle this)
-            work_order.sync_source_name()
+                db.session.add(work_order)
+                db.session.flush()  # ensures parent exists in DB for FK references
 
-            # Process selected inventory items
-            selected_items = process_selected_inventory_items(
-                request.form, next_wo_no, request.form.get("CustID"), WorkOrderItem
-            )
-            for item in selected_items:
-                db.session.add(item)
+                # Sync source_name from customer (database trigger will also handle this)
+                work_order.sync_source_name()
 
-            # Process new items and update catalog
-            new_items, catalog_updates = process_new_items(
-                request.form,
-                next_wo_no,
-                request.form.get("CustID"),
-                WorkOrderItem,
-                update_catalog=True,
-            )
-            for item in new_items:
-                db.session.add(item)
-            for catalog_item in catalog_updates:
-                db.session.add(catalog_item)
+                # Process selected inventory items
+                selected_items = process_selected_inventory_items(
+                    request.form, next_wo_no, request.form.get("CustID"), WorkOrderItem
+                )
+                for item in selected_items:
+                    db.session.add(item)
 
-            # Handle file uploads
-            uploaded_files = []
-            if "files[]" in request.files:
-                files = request.files.getlist("files[]")
-                print(f"Processing {len(files)} files")
+                # Process new items and update catalog
+                new_items, catalog_updates = process_new_items(
+                    request.form,
+                    next_wo_no,
+                    request.form.get("CustID"),
+                    WorkOrderItem,
+                    update_catalog=True,
+                )
+                for item in new_items:
+                    db.session.add(item)
+                for catalog_item in catalog_updates:
+                    db.session.add(catalog_item)
 
-                for i, file in enumerate(files):
-                    if file and file.filename:
-                        wo_file = save_work_order_file(
-                            next_wo_no, file, to_s3=True, generate_thumbnails=True
+                # Handle file uploads
+                uploaded_files = []
+                if "files[]" in request.files:
+                    files = request.files.getlist("files[]")
+                    print(f"Processing {len(files)} files")
+
+                    for i, file in enumerate(files):
+                        if file and file.filename:
+                            wo_file = save_work_order_file(
+                                next_wo_no, file, to_s3=True, generate_thumbnails=True
+                            )
+                            if not wo_file:
+                                raise Exception(f"Failed to process file: {file.filename}")
+
+                            uploaded_files.append(wo_file)
+                            db.session.add(wo_file)
+                            print(f"Prepared file {i + 1}/{len(files)}: {wo_file.filename}")
+
+                            if wo_file.thumbnail_path:
+                                print(f"  - Thumbnail generated: {wo_file.thumbnail_path}")
+
+                # Handle SeeRepair backlink
+                see_repair = request.form.get("SeeRepair")
+                if see_repair and see_repair.strip():
+                    referenced_repair = RepairWorkOrder.query.filter_by(
+                        RepairOrderNo=see_repair.strip()
+                    ).first()
+                    if referenced_repair:
+                        referenced_repair.SEECLEAN = next_wo_no
+                        flash(
+                            f"Auto-linked Repair Order {see_repair} to this Work Order",
+                            "info",
                         )
-                        if not wo_file:
-                            raise Exception(f"Failed to process file: {file.filename}")
 
-                        uploaded_files.append(wo_file)
-                        db.session.add(wo_file)
-                        print(f"Prepared file {i + 1}/{len(files)}: {wo_file.filename}")
+                # Final commit
+                db.session.commit()
 
-                        if wo_file.thumbnail_path:
-                            print(f"  - Thumbnail generated: {wo_file.thumbnail_path}")
+                flash(
+                    f"Work Order {next_wo_no} created successfully with {len(uploaded_files)} files!",
+                    "success",
+                )
+                return redirect(
+                    url_for("work_orders.view_work_order", work_order_no=next_wo_no)
+                )
 
-            # Handle SeeRepair backlink
-            see_repair = request.form.get("SeeRepair")
-            if see_repair and see_repair.strip():
-                referenced_repair = RepairWorkOrder.query.filter_by(
-                    RepairOrderNo=see_repair.strip()
-                ).first()
-                if referenced_repair:
-                    referenced_repair.SEECLEAN = next_wo_no
-                    flash(
-                        f"Auto-linked Repair Order {see_repair} to this Work Order",
-                        "info",
+            except IntegrityError as ie:
+                db.session.rollback()
+                retry_count += 1
+
+                # Check if it's a duplicate key error
+                error_msg = str(ie.orig).lower() if hasattr(ie, 'orig') else str(ie).lower()
+                is_duplicate = 'duplicate' in error_msg or 'unique' in error_msg
+
+                if is_duplicate and retry_count < max_retries:
+                    # Exponential backoff with jitter
+                    delay = base_delay * (2 ** retry_count) + (random.random() * 0.05)
+                    print(f"Duplicate work order number detected. Retry {retry_count}/{max_retries} after {delay:.3f}s")
+                    time.sleep(delay)
+                    continue  # Retry the loop
+                else:
+                    # Not a duplicate error or max retries exceeded
+                    print(f"Error creating work order (IntegrityError): {str(ie)}")
+                    flash(f"Error creating work order: {str(ie)}", "error")
+                    return render_template(
+                        "work_orders/create.html",
+                        customers=Customer.query.all(),
+                        sources=Source.query.all(),
+                        form_data=request.form,
                     )
 
-            # Final commit
-            db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print(f"Error creating work order: {str(e)}")
+                flash(f"Error creating work order: {str(e)}", "error")
+                return render_template(
+                    "work_orders/create.html",
+                    customers=Customer.query.all(),
+                    sources=Source.query.all(),
+                    form_data=request.form,
+                )
 
-            flash(
-                f"Work Order {next_wo_no} created successfully with {len(uploaded_files)} files!",
-                "success",
-            )
-            return redirect(
-                url_for("work_orders.view_work_order", work_order_no=next_wo_no)
-            )
-
-        except Exception as e:
-            db.session.rollback()
-            print(f"Error creating work order: {str(e)}")
-            flash(f"Error creating work order: {str(e)}", "error")
-            return render_template(
-                "work_orders/create.html",
-                customers=Customer.query.all(),
-                sources=Source.query.all(),
-                form_data=request.form,
-            )
+        # If we exhausted all retries
+        flash("Error creating work order: Unable to generate unique work order number after multiple attempts", "error")
+        return render_template(
+            "work_orders/create.html",
+            customers=Customer.query.all(),
+            sources=Source.query.all(),
+            form_data=request.form,
+        )
 
     # GET Request: Render Form
     customers = Customer.query.order_by(Customer.CustID).all()

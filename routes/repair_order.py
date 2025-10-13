@@ -15,8 +15,11 @@ from models.repair_order_file import RepairOrderFile
 from models.customer import Customer
 from models.source import Source
 from sqlalchemy import or_, case, func, literal, desc, cast, Integer
+from sqlalchemy.exc import IntegrityError
 from datetime import datetime
 from extensions import db
+import time
+import random
 from decorators import role_required
 from utils.repair_order_pdf import generate_repair_order_pdf
 from sqlalchemy.orm import joinedload
@@ -361,195 +364,235 @@ def create_repair_order(prefill_cust_id=None):
                 prefill_cust_id=prefill_cust_id,
             )
 
-        try:
-            # Generate next RepairOrderNo
-            latest_order = RepairWorkOrder.query.order_by(
-                desc(RepairWorkOrder.RepairOrderNo)
-            ).first()
-            print(latest_order, type(latest_order))
-            if latest_order:
-                try:
-                    next_num = int(latest_order.RepairOrderNo) + 1
-                except ValueError:
-                    next_num = int(datetime.now().timestamp())
-            else:
-                next_num = 1
-            next_order_no = str(next_num)
+        # Retry logic to handle race conditions in repair order number generation
+        max_retries = 5
+        retry_count = 0
+        base_delay = 0.1  # 100ms base delay
 
-            # Create the repair work order
-            repair_order = RepairWorkOrder(
-                RepairOrderNo=next_order_no,
-                CustID=request.form.get("CustID"),
-                ROName=request.form.get("ROName"),
-                SOURCE=request.form.get("SOURCE"),
-                WO_DATE=datetime.strptime(
-                    request.form.get("WO_DATE"), "%Y-%m-%d"
-                ).date()
-                if request.form.get("WO_DATE")
-                else None,
-                DATE_TO_SUB=datetime.strptime(
-                    request.form.get("DATE_TO_SUB"), "%Y-%m-%d"
-                ).date()
-                if request.form.get("DATE_TO_SUB")
-                else None,
-                DateRequired=datetime.strptime(
-                    request.form.get("DateRequired"), "%Y-%m-%d"
-                ).date()
-                if request.form.get("DateRequired")
-                else None,
-                RushOrder="RushOrder" in request.form,
-                FirmRush="FirmRush" in request.form,
-                QUOTE="QUOTE" in request.form,
-                QUOTE_BY=request.form.get("QUOTE_BY"),
-                APPROVED="APPROVED" in request.form,
-                RackNo=request.form.get("RackNo"),
-                STORAGE=request.form.get("STORAGE"),
-                ITEM_TYPE=request.form.get("ITEM_TYPE"),
-                TYPE_OF_REPAIR=request.form.get("TYPE_OF_REPAIR"),
-                SPECIALINSTRUCTIONS=request.form.get("SPECIALINSTRUCTIONS"),
-                CLEAN="CLEAN" in request.form,
-                SEECLEAN=request.form.get("SEECLEAN"),
-                REPAIRSDONEBY=request.form.get("REPAIRSDONEBY"),
-                DateCompleted=datetime.strptime(
-                    request.form.get("DateCompleted"), "%Y-%m-%d"
-                ).date()
-                if request.form.get("DateCompleted")
-                else None,
-                MaterialList=request.form.get("MaterialList"),
-                CUSTOMERPRICE=request.form.get("CUSTOMERPRICE"),
-                RETURNSTATUS=request.form.get("RETURNSTATUS"),
-                RETURNDATE=datetime.strptime(
-                    request.form.get("RETURNDATE"), "%Y-%m-%d"
-                ).date()
-                if request.form.get("RETURNDATE")
-                else None,
-                LOCATION=request.form.get("LOCATION"),
-                final_location=request.form.get("final_location"),
-                DATEOUT=datetime.strptime(
-                    request.form.get("DATEOUT"), "%Y-%m-%d"
-                ).date()
-                if request.form.get("DATEOUT")
-                else None,
-                DateIn=datetime.now().date(),
-            )
+        while retry_count < max_retries:
+            try:
+                # Generate next RepairOrderNo
+                latest_order = RepairWorkOrder.query.order_by(
+                    desc(RepairWorkOrder.RepairOrderNo)
+                ).first()
+                print(latest_order, type(latest_order))
+                if latest_order:
+                    try:
+                        next_num = int(latest_order.RepairOrderNo) + 1
+                    except ValueError:
+                        next_num = int(datetime.now().timestamp())
+                else:
+                    next_num = 1
+                next_order_no = str(next_num)
 
-            db.session.add(repair_order)
-            db.session.flush()  # to get the RepairOrderNo
+                # Create the repair work order
+                repair_order = RepairWorkOrder(
+                    RepairOrderNo=next_order_no,
+                    CustID=request.form.get("CustID"),
+                    ROName=request.form.get("ROName"),
+                    SOURCE=request.form.get("SOURCE"),
+                    WO_DATE=datetime.strptime(
+                        request.form.get("WO_DATE"), "%Y-%m-%d"
+                    ).date()
+                    if request.form.get("WO_DATE")
+                    else None,
+                    DATE_TO_SUB=datetime.strptime(
+                        request.form.get("DATE_TO_SUB"), "%Y-%m-%d"
+                    ).date()
+                    if request.form.get("DATE_TO_SUB")
+                    else None,
+                    DateRequired=datetime.strptime(
+                        request.form.get("DateRequired"), "%Y-%m-%d"
+                    ).date()
+                    if request.form.get("DateRequired")
+                    else None,
+                    RushOrder="RushOrder" in request.form,
+                    FirmRush="FirmRush" in request.form,
+                    QUOTE="QUOTE" in request.form,
+                    QUOTE_BY=request.form.get("QUOTE_BY"),
+                    APPROVED="APPROVED" in request.form,
+                    RackNo=request.form.get("RackNo"),
+                    STORAGE=request.form.get("STORAGE"),
+                    ITEM_TYPE=request.form.get("ITEM_TYPE"),
+                    TYPE_OF_REPAIR=request.form.get("TYPE_OF_REPAIR"),
+                    SPECIALINSTRUCTIONS=request.form.get("SPECIALINSTRUCTIONS"),
+                    CLEAN="CLEAN" in request.form,
+                    SEECLEAN=request.form.get("SEECLEAN"),
+                    REPAIRSDONEBY=request.form.get("REPAIRSDONEBY"),
+                    DateCompleted=datetime.strptime(
+                        request.form.get("DateCompleted"), "%Y-%m-%d"
+                    ).date()
+                    if request.form.get("DateCompleted")
+                    else None,
+                    MaterialList=request.form.get("MaterialList"),
+                    CUSTOMERPRICE=request.form.get("CUSTOMERPRICE"),
+                    RETURNSTATUS=request.form.get("RETURNSTATUS"),
+                    RETURNDATE=datetime.strptime(
+                        request.form.get("RETURNDATE"), "%Y-%m-%d"
+                    ).date()
+                    if request.form.get("RETURNDATE")
+                    else None,
+                    LOCATION=request.form.get("LOCATION"),
+                    final_location=request.form.get("final_location"),
+                    DATEOUT=datetime.strptime(
+                        request.form.get("DATEOUT"), "%Y-%m-%d"
+                    ).date()
+                    if request.form.get("DATEOUT")
+                    else None,
+                    DateIn=datetime.now().date(),
+                )
 
-            # Sync source_name from customer (database trigger will also handle this)
-            repair_order.sync_source_name()
+                db.session.add(repair_order)
+                db.session.flush()  # to get the RepairOrderNo
 
-            # Handle selected items from customer inventory
-            from models.work_order import WorkOrderItem
+                # Sync source_name from customer (database trigger will also handle this)
+                repair_order.sync_source_name()
 
-            selected_item_ids = request.form.getlist("selected_items[]")
+                # Handle selected items from customer inventory
+                from models.work_order import WorkOrderItem
 
-            for item_id in selected_item_ids:
-                if item_id:
-                    # Fetch the original item from work orders
-                    original_item = WorkOrderItem.query.get(item_id)
-                    if original_item:
-                        qty_key = f"item_qty_{item_id}"
-                        qty = request.form.get(qty_key, original_item.Qty or "1")
+                selected_item_ids = request.form.getlist("selected_items[]")
 
-                        # Create a copy of this item for the repair order
+                for item_id in selected_item_ids:
+                    if item_id:
+                        # Fetch the original item from work orders
+                        original_item = WorkOrderItem.query.get(item_id)
+                        if original_item:
+                            qty_key = f"item_qty_{item_id}"
+                            qty = request.form.get(qty_key, original_item.Qty or "1")
+
+                            # Create a copy of this item for the repair order
+                            repair_item = RepairWorkOrderItem(
+                                RepairOrderNo=next_order_no,
+                                CustID=request.form.get("CustID"),
+                                Description=original_item.Description,
+                                Material=original_item.Material,
+                                Qty=qty,
+                                Condition=original_item.Condition,
+                                Color=original_item.Color,
+                                SizeWgt=original_item.SizeWgt,
+                                Price=original_item.Price,
+                            )
+                            db.session.add(repair_item)
+
+                # Handle new repair order items (manually added)
+                item_descriptions = request.form.getlist("item_description[]")
+                item_materials = request.form.getlist("item_material[]")
+                item_qtys = request.form.getlist("item_qty[]")
+                item_conditions = request.form.getlist("item_condition[]")
+                item_colors = request.form.getlist("item_color[]")
+                item_sizes = request.form.getlist("item_size_wgt[]")
+                item_prices = request.form.getlist("item_price[]")
+
+                for i, descrip in enumerate(item_descriptions):
+                    if descrip and descrip.strip():
                         repair_item = RepairWorkOrderItem(
                             RepairOrderNo=next_order_no,
                             CustID=request.form.get("CustID"),
-                            Description=original_item.Description,
-                            Material=original_item.Material,
-                            Qty=qty,
-                            Condition=original_item.Condition,
-                            Color=original_item.Color,
-                            SizeWgt=original_item.SizeWgt,
-                            Price=original_item.Price,
+                            Description=descrip,
+                            Material=item_materials[i] if i < len(item_materials) else "",
+                            Qty=item_qtys[i] if i < len(item_qtys) else "1",
+                            Condition=item_conditions[i]
+                            if i < len(item_conditions)
+                            else "",
+                            Color=item_colors[i] if i < len(item_colors) else "",
+                            SizeWgt=item_sizes[i] if i < len(item_sizes) else "",
+                            Price=item_prices[i] if i < len(item_prices) else "",
                         )
                         db.session.add(repair_item)
 
-            # Handle new repair order items (manually added)
-            item_descriptions = request.form.getlist("item_description[]")
-            item_materials = request.form.getlist("item_material[]")
-            item_qtys = request.form.getlist("item_qty[]")
-            item_conditions = request.form.getlist("item_condition[]")
-            item_colors = request.form.getlist("item_color[]")
-            item_sizes = request.form.getlist("item_size_wgt[]")
-            item_prices = request.form.getlist("item_price[]")
+                # Handle file uploads
+                uploaded_files = []
+                if "files[]" in request.files:
+                    files = request.files.getlist("files[]")
+                    print(f"Processing {len(files)} files")
 
-            for i, descrip in enumerate(item_descriptions):
-                if descrip and descrip.strip():
-                    repair_item = RepairWorkOrderItem(
-                        RepairOrderNo=next_order_no,
-                        CustID=request.form.get("CustID"),
-                        Description=descrip,
-                        Material=item_materials[i] if i < len(item_materials) else "",
-                        Qty=item_qtys[i] if i < len(item_qtys) else "1",
-                        Condition=item_conditions[i]
-                        if i < len(item_conditions)
-                        else "",
-                        Color=item_colors[i] if i < len(item_colors) else "",
-                        SizeWgt=item_sizes[i] if i < len(item_sizes) else "",
-                        Price=item_prices[i] if i < len(item_prices) else "",
-                    )
-                    db.session.add(repair_item)
+                    for i, file in enumerate(files):
+                        if file and file.filename:
+                            ro_file = save_repair_order_file(
+                                next_order_no, file, to_s3=True, generate_thumbnails=True
+                            )
+                            if not ro_file:
+                                raise Exception(f"Failed to process file: {file.filename}")
 
-            # Handle file uploads
-            uploaded_files = []
-            if "files[]" in request.files:
-                files = request.files.getlist("files[]")
-                print(f"Processing {len(files)} files")
+                            uploaded_files.append(ro_file)
+                            db.session.add(ro_file)
+                            print(f"Prepared file {i + 1}/{len(files)}: {ro_file.filename}")
 
-                for i, file in enumerate(files):
-                    if file and file.filename:
-                        ro_file = save_repair_order_file(
-                            next_order_no, file, to_s3=True, generate_thumbnails=True
+                            if ro_file.thumbnail_path:
+                                print(f"  - Thumbnail generated: {ro_file.thumbnail_path}")
+
+                # --- Handle SEECLEAN backlink ---
+                see_clean = request.form.get("SEECLEAN")
+                if see_clean and see_clean.strip():
+                    # Find the referenced work order and update its SeeRepair field
+                    from models.work_order import WorkOrder
+                    referenced_work_order = WorkOrder.query.filter_by(
+                        WorkOrderNo=see_clean.strip()
+                    ).first()
+                    if referenced_work_order:
+                        referenced_work_order.SeeRepair = next_order_no
+                        flash(
+                            f"Auto-linked Work Order {see_clean} to this Repair Order",
+                            "info",
                         )
-                        if not ro_file:
-                            raise Exception(f"Failed to process file: {file.filename}")
 
-                        uploaded_files.append(ro_file)
-                        db.session.add(ro_file)
-                        print(f"Prepared file {i + 1}/{len(files)}: {ro_file.filename}")
+                db.session.commit()
+                flash(
+                    f"Repair Work Order {next_order_no} created successfully"
+                    + (f" with {len(uploaded_files)} files!" if uploaded_files else "!"),
+                    "success",
+                )
+                return redirect(
+                    url_for(
+                        "repair_work_orders.view_repair_work_order",
+                        repair_order_no=next_order_no,
+                    )
+                )
 
-                        if ro_file.thumbnail_path:
-                            print(f"  - Thumbnail generated: {ro_file.thumbnail_path}")
+            except IntegrityError as ie:
+                db.session.rollback()
+                retry_count += 1
 
-            # --- Handle SEECLEAN backlink ---
-            see_clean = request.form.get("SEECLEAN")
-            if see_clean and see_clean.strip():
-                # Find the referenced work order and update its SeeRepair field
-                from models.work_order import WorkOrder
-                referenced_work_order = WorkOrder.query.filter_by(
-                    WorkOrderNo=see_clean.strip()
-                ).first()
-                if referenced_work_order:
-                    referenced_work_order.SeeRepair = next_order_no
-                    flash(
-                        f"Auto-linked Work Order {see_clean} to this Repair Order",
-                        "info",
+                # Check if it's a duplicate key error
+                error_msg = str(ie.orig).lower() if hasattr(ie, 'orig') else str(ie).lower()
+                is_duplicate = 'duplicate' in error_msg or 'unique' in error_msg
+
+                if is_duplicate and retry_count < max_retries:
+                    # Exponential backoff with jitter
+                    delay = base_delay * (2 ** retry_count) + (random.random() * 0.05)
+                    print(f"Duplicate repair order number detected. Retry {retry_count}/{max_retries} after {delay:.3f}s")
+                    time.sleep(delay)
+                    continue  # Retry the loop
+                else:
+                    # Not a duplicate error or max retries exceeded
+                    print(f"Error creating repair order (IntegrityError): {str(ie)}")
+                    flash(f"Error creating repair work order: {str(ie)}", "error")
+                    return render_template(
+                        "repair_orders/create.html",
+                        customers=Customer.query.all(),
+                        sources=Source.query.all(),
+                        form_data=request.form,
                     )
 
-            db.session.commit()
-            flash(
-                f"Repair Work Order {next_order_no} created successfully"
-                + (f" with {len(uploaded_files)} files!" if uploaded_files else "!"),
-                "success",
-            )
-            return redirect(
-                url_for(
-                    "repair_work_orders.view_repair_work_order",
-                    repair_order_no=next_order_no,
+            except Exception as e:
+                db.session.rollback()
+                flash(f"Error creating repair work order: {str(e)}", "error")
+                return render_template(
+                    "repair_orders/create.html",
+                    customers=Customer.query.all(),
+                    sources=Source.query.all(),
+                    form_data=request.form,
                 )
-            )
 
-        except Exception as e:
-            db.session.rollback()
-            flash(f"Error creating repair work order: {str(e)}", "error")
-            return render_template(
-                "repair_orders/create.html",
-                customers=Customer.query.all(),
-                sources=Source.query.all(),
-                form_data=request.form,
-            )
+        # If we exhausted all retries
+        flash("Error creating repair order: Unable to generate unique repair order number after multiple attempts", "error")
+        return render_template(
+            "repair_orders/create.html",
+            customers=Customer.query.all(),
+            sources=Source.query.all(),
+            form_data=request.form,
+        )
 
     # GET request - show form
     customers = Customer.query.order_by(Customer.CustID).all()
