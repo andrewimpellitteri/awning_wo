@@ -8,8 +8,18 @@ BEGIN;
 -- STEP 1: Add source_name column to Work Orders (tblcustworkorderdetail)
 -- ==============================================================================
 
-ALTER TABLE tblcustworkorderdetail
-ADD COLUMN source_name TEXT;
+-- Add column only if it doesn't exist (idempotent - safe to run multiple times)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'tblcustworkorderdetail'
+        AND column_name = 'source_name'
+    ) THEN
+        ALTER TABLE tblcustworkorderdetail
+        ADD COLUMN source_name TEXT;
+    END IF;
+END $$;
 
 COMMENT ON COLUMN tblcustworkorderdetail.source_name IS
 'Denormalized customer source name for fast filtering/sorting. Synced from tblcustomers.source -> tblsource.ssource';
@@ -18,8 +28,18 @@ COMMENT ON COLUMN tblcustworkorderdetail.source_name IS
 -- STEP 2: Add source_name column to Repair Orders (tblrepairworkorderdetail)
 -- ==============================================================================
 
-ALTER TABLE tblrepairworkorderdetail
-ADD COLUMN source_name TEXT;
+-- Add column only if it doesn't exist (idempotent - safe to run multiple times)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'tblrepairworkorderdetail'
+        AND column_name = 'source_name'
+    ) THEN
+        ALTER TABLE tblrepairworkorderdetail
+        ADD COLUMN source_name TEXT;
+    END IF;
+END $$;
 
 COMMENT ON COLUMN tblrepairworkorderdetail.source_name IS
 'Denormalized customer source name for fast filtering/sorting. Synced from tblcustomers.source -> tblsource.ssource';
@@ -62,10 +82,11 @@ FROM tblrepairworkorderdetail;
 -- STEP 5: Create indexes for fast filtering and sorting
 -- ==============================================================================
 
-CREATE INDEX idx_workorder_source_name
+-- Create indexes only if they don't exist (idempotent)
+CREATE INDEX IF NOT EXISTS idx_workorder_source_name
 ON tblcustworkorderdetail(source_name);
 
-CREATE INDEX idx_repairorder_source_name
+CREATE INDEX IF NOT EXISTS idx_repairorder_source_name
 ON tblrepairworkorderdetail(source_name);
 
 -- ==============================================================================

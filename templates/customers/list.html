@@ -14,43 +14,9 @@
         {% endif %}
     </div>
 
-    <!-- Filters -->
-    <div class="bg-white rounded-3 shadow-sm border-0 mb-4">
-        <div class="p-3 border-bottom">
-            <form id="filter-form" class="row g-3 align-items-end">
-                <div class="col-md-4">
-                    <label for="search" class="form-label text-muted small mb-1">Search</label>
-                    <input type="text" 
-                           class="form-control form-control-sm border-0 bg-light" 
-                           id="search" 
-                           name="search" 
-                           placeholder="Search customers..."
-                           value="{{ search_query }}" autofocus>
-                </div>
-                <div class="col-md-2">
-                    <label for="source" class="form-label text-muted small mb-1">Source</label>
-                    <select class="form-select form-select-sm border-0 bg-light" id="source" name="source">
-                        <option value="">All Sources</option>
-                        {% for source in unique_sources %}
-                            <option value="{{ source }}" {% if source == source_filter %}selected{% endif %}>
-                                {{ source }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-outline-primary btn-sm me-2">
-                        <i class="fas fa-search me-1"></i>Filter
-                    </button>
-                    <a href="{{ url_for('customers.list_customers') }}" class="btn btn-outline-secondary btn-sm">
-                        <i class="fas fa-times me-1"></i>Clear
-                    </a>
-                </div>
-                <div class="col-md-2 text-end">
-                    <small class="text-muted" id="total-customers">Loading...</small>
-                </div>
-            </form>
-        </div>
+    <!-- Total Count -->
+    <div class="mb-3 d-flex justify-content-end">
+        <small class="text-muted" id="total-customers">Loading...</small>
     </div>
 
     <!-- Table Container -->
@@ -103,11 +69,8 @@ document.addEventListener("DOMContentLoaded", function() {
     const table = window.customersTable = new Tabulator("#customers-table", {
         ajaxURL: "{{ url_for('customers.api_customers') | safe }}",
         ajaxParams: function() {
-            const params = {
-                search: document.getElementById("search")?.value || "",
-                source: document.getElementById("source")?.value || "",
-            };
-            
+            const params = {};
+
             // Add column filters
             const headerFilters = table.getHeaderFilters();
             headerFilters.forEach(filter => {
@@ -115,7 +78,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     params[`filter_${filter.field}`] = filter.value;
                 }
             });
-            
+
             console.log("Request params:", params);
             return params;
         },
@@ -267,24 +230,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 
-    // Handle global filter form
-    let searchTimeout;
-    document.getElementById("search").addEventListener("keyup", function(e) {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            table.setData();
-        }, 300); // 300ms debounce
-    });
-
-    document.getElementById("source").addEventListener("change", function(e) {
-        table.setData();
-    });
-
-    document.getElementById("filter-form").addEventListener("submit", function(e) {
-        e.preventDefault();
-        table.setData();
-    });
-
     // Print button
     document.getElementById("print-table").addEventListener("click", function () {
         table.print(false, true); // (false = no style overrides, true = include table headers/filters)
@@ -320,10 +265,9 @@ document.addEventListener("DOMContentLoaded", function() {
     // Handle clear button
     document.querySelector('.clear-filters')?.addEventListener("click", function(e) {
         e.preventDefault();
-        document.getElementById("filter-form")?.reset();
         table.clearHeaderFilter();
         table.clearSort();
-        
+
         // Clear Tabulator's persisted data
         const persistenceID = "customers_table";
         if (localStorage) {
@@ -332,7 +276,7 @@ document.addEventListener("DOMContentLoaded", function() {
             localStorage.removeItem(persistenceID + "-headerFilter");
             localStorage.removeItem(persistenceID + "-page");
         }
-        
+
         table.setData();
     });
 });

@@ -15,41 +15,14 @@
     </div>
 
     <!-- Status Filters -->
-    <div class="mb-3">
+    <div class="mb-3 d-flex justify-content-between align-items-center">
         <div class="btn-group btn-group-sm" role="group">
             <button id="btn-all" class="btn btn-outline-secondary active">All</button>
             <button id="btn-pending" class="btn btn-outline-warning">Pending</button>
             <button id="btn-rush" class="btn btn-outline-danger">Rush</button>
             <button id="btn-completed" class="btn btn-outline-success">Completed</button>
         </div>
-    </div>
-
-    <!-- Global Filters -->
-    <div class="bg-white rounded-3 shadow-sm border-0 mb-4">
-        <div class="p-3 border-bottom">
-            <form id="filter-form" class="row g-3 align-items-end">
-                <div class="col-md-4">
-                    <label for="search" class="form-label text-muted small mb-1">Search</label>
-                    <input type="text" 
-                           class="form-control form-control-sm border-0 bg-light" 
-                           id="search" 
-                           name="search" 
-                           placeholder="Search work orders..."
-                           value="{{ search_query }}">
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-outline-primary btn-sm me-2">
-                        <i class="fas fa-search me-1"></i>Filter
-                    </button>
-                    <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-outline-secondary btn-sm">
-                        <i class="fas fa-times me-1"></i>Clear
-                    </a>
-                </div>
-                <div class="col-md-2 text-end">
-                    <small class="text-muted" id="total-work-orders">Loading...</small>
-                </div>
-            </form>
-        </div>
+        <small class="text-muted" id="total-work-orders">Loading...</small>
     </div>
 
     <!-- Table Container -->
@@ -135,7 +108,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const table = window.workOrdersTable = new Tabulator("#work-orders-table", {
         ajaxURL: "{{ url_for('work_orders.api_work_orders') | safe }}",
         ajaxParams: function() {
-            const params = { search: document.getElementById("search")?.value || "", status: currentStatus };
+            const params = { status: currentStatus };
 
             // Add column header filters
             table.getHeaderFilters().forEach(filter => {
@@ -326,12 +299,6 @@ document.addEventListener("DOMContentLoaded", function() {
     table.on("headerFilterUpdated", (field, value) => {
         clearTimeout(filterTimeout);
         filterTimeout = setTimeout(() => table.setData(), 600);
-    });
-
-    // Global search form
-    document.getElementById("filter-form")?.addEventListener("submit", e => {
-        e.preventDefault();
-        table.setData();
     });
 
     // Status buttons

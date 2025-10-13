@@ -326,24 +326,8 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// Remove auto-refresh when user is actively dragging
-let isUserActive = false;
-let activityTimeout;
-
-document.addEventListener('mousedown', () => {
-    isUserActive = true;
-    clearTimeout(activityTimeout);
-    activityTimeout = setTimeout(() => {
-        isUserActive = false;
-    }, 60000); // Consider user inactive after 1 minute
-});
-
-// Modified auto-refresh - only refresh if user is not active
-setInterval(() => {
-    if (!document.hidden && !isUserActive) {
-        location.reload();
-    }
-}, 30000);
+// Auto-refresh removed to prevent unwanted page reloads
+// If you need to refresh data, add a manual refresh button instead
 
 // Toggle switch functionality - FIXED
 document.getElementById('showSailOrders').addEventListener('change', function() {
