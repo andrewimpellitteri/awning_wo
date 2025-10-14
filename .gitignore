@@ -155,7 +155,7 @@ claude.md
 migration_tool/intermediate.sqlite-journal
 .claude/
 routes/analytics/test_analytics_data.py
-
+migration_tool/COMPLETE_MIGRATION_GUIDE.md
 *.csv
 test_analytics_parsing.py
 

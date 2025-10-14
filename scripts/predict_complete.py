@@ -39,6 +39,7 @@ train_df = MLService.engineer_features(train_df)
 
 # Feature selection (synchronized with routes/ml.py)
 # REMOVED: needs_cleaning, needs_treatment (data leakage)
+# ADDED: seasonal/cyclical features (annual business cycle)
 feature_cols = [
     "rushorder_binary",
     "firmrush_binary",
@@ -58,6 +59,12 @@ feature_cols = [
     "cust_mean",
     "cust_std",
     "cust_count",
+    "season_sin",
+    "season_cos",
+    "is_peak_season",
+    "is_slow_season",
+    "is_shoulder_season",
+    "seasonal_baseline",
 ]
 
 # Filter available features
@@ -78,123 +85,73 @@ print("=" * 80)
 
 # Model configurations (synchronized with routes/ml.py)
 MODEL_CONFIGS = {
-    "baseline": {
-        "n_estimators": 1000,
-        "max_depth": 8,
-        "num_leaves": 31,
-        "learning_rate": 0.05,
-        "description": "Standard - 6.468 MAE (3.5s training)",
-    },
-    "deep_wide": {
-        "n_estimators": 1000,
-        "max_depth": 15,
-        "num_leaves": 127,
-        "learning_rate": 0.05,
-        "description": "Best practical - 6.096 MAE (10s training)",
+    "optuna_best": {
+        "n_estimators": 3000,
+        "max_depth": 30,
+        "num_leaves": 223,
+        "learning_rate": 0.0935,
+        "min_child_samples": 10,
+        "lambda_l1": 1.726,
+        "lambda_l2": 1.244,
+        "subsample": 0.846,
+        "bagging_freq": 9,
+        "colsample_bytree": 0.760,
+        "description": "Optuna optimized - 0.541 MAE (5-fold CV, no data leakage)",
     },
     "max_complexity": {
         "n_estimators": 2000,
         "max_depth": 25,
         "num_leaves": 255,
         "learning_rate": 0.03,
-        "description": "Best overall - 5.988 MAE (41s training)",
+        "description": "High complexity - 1.824 MAE (~46s training)",
+    },
+    "deep_wide": {
+        "n_estimators": 1000,
+        "max_depth": 15,
+        "num_leaves": 127,
+        "learning_rate": 0.05,
+        "description": "Balanced - 3.201 MAE (~12s training)",
+    },
+    "baseline": {
+        "n_estimators": 1000,
+        "max_depth": 8,
+        "num_leaves": 31,
+        "learning_rate": 0.05,
+        "description": "Fast - 5.367 MAE (~4s training)",
     },
 }
 
 # Define hyperparameter configurations to test
 configs = [
-    # Production configs (from routes/ml.py)
+    # Optuna optimized config (BEST)
     {
-        "name": "Baseline (Production)",
-        "n_estimators": 1000,
-        "max_depth": 8,
-        "num_leaves": 31,
-        "learning_rate": 0.05,
-    },
-    {
-        "name": "Deep+Wide (Production Default)",
-        "n_estimators": 1000,
-        "max_depth": 15,
-        "num_leaves": 127,
-        "learning_rate": 0.05,
-    },
-    {
-        "name": "Max Complexity (Production)",
-        "n_estimators": 2000,
-        "max_depth": 25,
-        "num_leaves": 255,
-        "learning_rate": 0.03,
-    },
-    # Experimental configs for EDA
-    {
-        "name": "More Trees",
-        "n_estimators": 2000,
-        "max_depth": 8,
-        "num_leaves": 31,
-        "learning_rate": 0.05,
-    },
-    {
-        "name": "Many Trees",
-        "n_estimators": 5000,
-        "max_depth": 8,
-        "num_leaves": 31,
-        "learning_rate": 0.03,
-    },
-    {
-        "name": "Deeper Trees",
-        "n_estimators": 1000,
-        "max_depth": 15,
-        "num_leaves": 31,
-        "learning_rate": 0.05,
-    },
-    {
-        "name": "Very Deep",
-        "n_estimators": 1000,
-        "max_depth": 25,
-        "num_leaves": 31,
-        "learning_rate": 0.05,
-    },
-    {
-        "name": "More Leaves",
-        "n_estimators": 1000,
-        "max_depth": 8,
-        "num_leaves": 63,
-        "learning_rate": 0.05,
-    },
-    {
-        "name": "Many Leaves",
-        "n_estimators": 1000,
-        "max_depth": 8,
-        "num_leaves": 127,
-        "learning_rate": 0.05,
-    },
-    {
-        "name": "Huge Leaves",
-        "n_estimators": 1000,
-        "max_depth": 8,
-        "num_leaves": 255,
-        "learning_rate": 0.05,
-    },
-    {
-        "name": "Ultra Deep+Wide",
-        "n_estimators": 2000,
-        "max_depth": 20,
-        "num_leaves": 200,
-        "learning_rate": 0.03,
-    },
-    {
-        "name": "Slow Learning",
+        "name": "Optuna Best",
         "n_estimators": 3000,
-        "max_depth": 8,
-        "num_leaves": 31,
-        "learning_rate": 0.01,
+        "max_depth": 30,
+        "num_leaves": 223,
+        "learning_rate": 0.0935,
+        "min_child_samples": 10,
+        "lambda_l1": 1.726,
+        "lambda_l2": 1.244,
+        "subsample": 0.846,
+        "bagging_freq": 9,
+        "colsample_bytree": 0.760,
     },
+    # Fast baseline for comparison
     {
-        "name": "Fast Learning",
-        "n_estimators": 500,
+        "name": "Baseline (Fast)",
+        "n_estimators": 1000,
         "max_depth": 8,
         "num_leaves": 31,
-        "learning_rate": 0.1,
+        "learning_rate": 0.05,
+    },
+    # Balanced option
+    {
+        "name": "Balanced",
+        "n_estimators": 1000,
+        "max_depth": 15,
+        "num_leaves": 127,
+        "learning_rate": 0.05,
     },
 ]
 
@@ -215,9 +172,12 @@ for config in configs:
         learning_rate=config["learning_rate"],
         max_depth=config["max_depth"],
         num_leaves=config["num_leaves"],
-        min_child_samples=20,
-        subsample=0.8,
-        colsample_bytree=0.8,
+        min_child_samples=config.get("min_child_samples", 20),
+        reg_lambda=config.get("lambda_l2", 0.0),
+        reg_alpha=config.get("lambda_l1", 0.0),
+        subsample=config.get("subsample", 0.8),
+        subsample_freq=config.get("bagging_freq", 1),
+        colsample_bytree=config.get("colsample_bytree", 0.8),
         random_state=42,
         n_jobs=-1,
         verbose=-1,
@@ -317,9 +277,12 @@ best_model = lgb.LGBMRegressor(
     learning_rate=best_config["learning_rate"],
     max_depth=best_config["max_depth"],
     num_leaves=best_config["num_leaves"],
-    min_child_samples=20,
-    subsample=0.8,
-    colsample_bytree=0.8,
+    min_child_samples=best_config.get("min_child_samples", 20),
+    reg_lambda=best_config.get("lambda_l2", 0.0),
+    reg_alpha=best_config.get("lambda_l1", 0.0),
+    subsample=best_config.get("subsample", 0.8),
+    subsample_freq=best_config.get("bagging_freq", 1),
+    colsample_bytree=best_config.get("colsample_bytree", 0.8),
     random_state=42,
     n_jobs=-1,
     verbose=-1,

@@ -46,3 +46,5 @@ openpyxl>=3.0.9        # For Excel file processing
 beautifulsoup4
 Flask-Caching>=2.0.0       # For application caching
 scipy
+mkdocs
+mkdocs-material

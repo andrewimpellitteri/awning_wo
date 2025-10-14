@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import lightgbm as lgb
 from sklearn.metrics import mean_absolute_error
 from sklearn.preprocessing import LabelEncoder
@@ -233,6 +234,75 @@ class MLService:
             df["cust_mean"] = 0
             df["cust_std"] = 0
             df["cust_count"] = 0
+
+        # --- Seasonal/Cyclical Features (Annual Business Cycle) ---
+        # The awning cleaning business follows a strong annual cycle:
+        # - Busy: Winter months (holidays) - high demand, slow throughput
+        # - Slow: Summer months - low demand, fast throughput
+        # We use sine/cosine encoding to capture this cyclical pattern
+
+        # Use datein for prediction (available at order creation time)
+        if "datein" in df.columns:
+            df["datein_dt"] = pd.to_datetime(df["datein"], errors="coerce")
+
+            # Day of year (1-365)
+            df["day_of_year"] = df["datein_dt"].dt.dayofyear
+
+            # Convert to radians for sine/cosine transformation
+            # Full cycle = 365 days = 2π radians
+            df["year_progress"] = (df["day_of_year"] / 365.0) * 2 * np.pi
+
+            # Sine and cosine encode the annual cycle
+            # These capture the periodic nature without discontinuity at year boundaries
+            df["season_sin"] = np.sin(df["year_progress"])
+            df["season_cos"] = np.cos(df["year_progress"])
+
+            # Additional seasonal indicators
+            # Peak busy season: Nov-Jan (holidays + winter)
+            # Day 305 (Nov 1) to Day 31 (Jan 31) - wraps around year boundary
+            df["is_peak_season"] = (
+                ((df["day_of_year"] >= 305) | (df["day_of_year"] <= 31))
+            ).astype(int)
+
+            # Slow season: Jun-Aug (summer)
+            # Day 152 (Jun 1) to Day 243 (Aug 31)
+            df["is_slow_season"] = (
+                ((df["day_of_year"] >= 152) & (df["day_of_year"] <= 243))
+            ).astype(int)
+
+            # Shoulder seasons (spring/fall transitions)
+            df["is_shoulder_season"] = (
+                (~df["is_peak_season"].astype(bool)) &
+                (~df["is_slow_season"].astype(bool))
+            ).astype(int)
+
+            # Historical seasonal load (if we have completion data)
+            if "days_to_complete" in df.columns and "datecompleted" in df.columns:
+                # Calculate average completion time by day-of-year across all years
+                seasonal_baseline = (
+                    df.groupby("day_of_year")["days_to_complete"]
+                    .mean()
+                    .to_dict()
+                )
+                df["seasonal_baseline"] = df["day_of_year"].map(seasonal_baseline)
+
+                # Fill missing with overall mean
+                overall_mean = df["days_to_complete"].mean()
+                df["seasonal_baseline"] = df["seasonal_baseline"].fillna(overall_mean)
+            else:
+                # For prediction without historical data
+                df["seasonal_baseline"] = 0
+
+        else:
+            # Fallback if datein not available
+            df["day_of_year"] = 0
+            df["year_progress"] = 0
+            df["season_sin"] = 0
+            df["season_cos"] = 0
+            df["is_peak_season"] = 0
+            df["is_slow_season"] = 0
+            df["is_shoulder_season"] = 0
+            df["seasonal_baseline"] = 0
 
         return df
 

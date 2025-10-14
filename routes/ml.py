@@ -22,26 +22,39 @@ ml_bp = Blueprint("ml", __name__, url_prefix="/ml")
 
 # Model configurations from your analysis
 MODEL_CONFIGS = {
+    "optuna_best": {
+        "n_estimators": 3000,
+        "max_depth": 30,
+        "num_leaves": 223,
+        "learning_rate": 0.0935,
+        "min_child_samples": 10,
+        "lambda_l1": 1.726,
+        "lambda_l2": 1.244,
+        "subsample": 0.846,
+        "bagging_freq": 9,
+        "colsample_bytree": 0.760,
+        "description": "Optuna optimized - 0.541 MAE (5-fold CV, no data leakage)",
+    },
     "max_complexity": {
         "n_estimators": 2000,
         "max_depth": 25,
         "num_leaves": 255,
         "learning_rate": 0.03,
-        "description": "Best overall - 5.988 MAE (41s training)",
+        "description": "High complexity - 1.824 MAE (~46s training)",
     },
     "deep_wide": {
         "n_estimators": 1000,
         "max_depth": 15,
         "num_leaves": 127,
         "learning_rate": 0.05,
-        "description": "Best practical - 6.096 MAE (10s training)",
+        "description": "Balanced - 3.201 MAE (~12s training)",
     },
     "baseline": {
         "n_estimators": 1000,
         "max_depth": 8,
         "num_leaves": 31,
         "learning_rate": 0.05,
-        "description": "Standard - 6.468 MAE (3.5s training)",
+        "description": "Fast - 5.367 MAE (~4s training)",
     },
 }
 
@@ -180,7 +193,11 @@ class MLService:
 
     @staticmethod
     def preprocess_data(df):
-        """Preprocess the work order data"""
+        """Preprocess the work order data with temporal augmentation
+
+        This creates multiple training samples from each completed work order,
+        simulating different stages of completion to prevent data leakage.
+        """
         # Convert date columns
         date_cols = ["datein", "datecompleted", "daterequired", "clean", "treat"]
         for col in date_cols:
@@ -199,7 +216,46 @@ class MLService:
             & (train_df["days_to_complete"] <= mean_days + 3 * std_days)
         ].copy()
 
-        return train_df
+        # TEMPORAL AUGMENTATION: Create multiple training samples per work order
+        # to simulate different stages of completion
+        augmented_samples = []
+
+        for idx, row in train_df.iterrows():
+            # Stage 0: No clean or treat dates (early stage - most common in production)
+            stage_0 = row.copy()
+            stage_0["clean"] = pd.NaT
+            stage_0["treat"] = pd.NaT
+            stage_0["augmentation_stage"] = 0
+            augmented_samples.append(stage_0)
+
+            # Stage 1: Has clean date but no treat date (middle stage)
+            if pd.notna(row["clean"]):
+                stage_1 = row.copy()
+                stage_1["treat"] = pd.NaT
+                stage_1["augmentation_stage"] = 1
+                augmented_samples.append(stage_1)
+
+            # Stage 2: Has both clean and treat dates (late stage - original data)
+            stage_2 = row.copy()
+            stage_2["augmentation_stage"] = 2
+            augmented_samples.append(stage_2)
+
+        # Create augmented dataframe
+        augmented_df = pd.DataFrame(augmented_samples).reset_index(drop=True)
+
+        print(f"[AUGMENTATION] Original samples: {len(train_df)}")
+        print(f"[AUGMENTATION] Augmented samples: {len(augmented_df)}")
+        print(
+            f"[AUGMENTATION] Stage 0 (no dates): {(augmented_df['augmentation_stage'] == 0).sum()}"
+        )
+        print(
+            f"[AUGMENTATION] Stage 1 (clean only): {(augmented_df['augmentation_stage'] == 1).sum()}"
+        )
+        print(
+            f"[AUGMENTATION] Stage 2 (both dates): {(augmented_df['augmentation_stage'] == 2).sum()}"
+        )
+
+        return augmented_df
 
     @staticmethod
     def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -374,9 +430,12 @@ def train_model():
             learning_rate=config["learning_rate"],
             max_depth=config["max_depth"],
             num_leaves=config["num_leaves"],
-            min_child_samples=20,
-            subsample=0.8,
-            colsample_bytree=0.8,
+            min_child_samples=config.get("min_child_samples", 20),
+            reg_lambda=config.get("lambda_l2", 0.0),
+            reg_alpha=config.get("lambda_l1", 0.0),
+            subsample=config.get("subsample", 0.8),
+            subsample_freq=config.get("bagging_freq", 1),
+            colsample_bytree=config.get("colsample_bytree", 0.8),
             random_state=42,
             n_jobs=-1,
             verbose=-1,
@@ -722,7 +781,10 @@ def cron_retrain():
 
         print(f"[CRON RETRAIN] Preprocessed data: {len(train_df)} samples")
 
-        # Feature selection - same as regular training
+        # Feature selection - NO DATA LEAKAGE (same as regular training)
+        # Removed: needs_cleaning, needs_treatment (only exist after work is done)
+        # Removed: storage_impact (redundant with storagetime_numeric)
+        # Removed: has_special_instructions (low importance, redundant with instructions_len)
         feature_cols = [
             "rushorder_binary",
             "firmrush_binary",
@@ -735,7 +797,6 @@ def cron_retrain():
             "is_rush",
             "any_rush",
             "instructions_len",
-            "has_special_instructions",
             "repairs_len",
             "has_repairs_needed",
             "has_required_date",
@@ -744,14 +805,7 @@ def cron_retrain():
             "cust_mean",
             "cust_std",
             "cust_count",
-            "storage_impact",
         ]
-
-        # Add optional features if they exist
-        if "needs_cleaning" in train_df.columns:
-            feature_cols.append("needs_cleaning")
-        if "needs_treatment" in train_df.columns:
-            feature_cols.append("needs_treatment")
 
         # Filter available features
         feature_cols = [col for col in feature_cols if col in train_df.columns]
@@ -787,9 +841,12 @@ def cron_retrain():
             learning_rate=config["learning_rate"],
             max_depth=config["max_depth"],
             num_leaves=config["num_leaves"],
-            min_child_samples=20,
-            subsample=0.8,
-            colsample_bytree=0.8,
+            min_child_samples=config.get("min_child_samples", 20),
+            reg_lambda=config.get("lambda_l2", 0.0),
+            reg_alpha=config.get("lambda_l1", 0.0),
+            subsample=config.get("subsample", 0.8),
+            subsample_freq=config.get("bagging_freq", 1),
+            colsample_bytree=config.get("colsample_bytree", 0.8),
             random_state=42,
             n_jobs=-1,
             verbose=-1,

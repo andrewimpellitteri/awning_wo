@@ -29,6 +29,7 @@ print("\n[3/4] Engineering features...")
 train_df = MLService.engineer_features(train_df)
 
 # --- Define feature columns (NO LEAKY FEATURES) ---
+# ADDED: seasonal/cyclical features (annual business cycle)
 feature_cols = [
     "rushorder_binary",
     "firmrush_binary",
@@ -48,6 +49,12 @@ feature_cols = [
     "cust_mean",
     "cust_std",
     "cust_count",
+    "season_sin",
+    "season_cos",
+    "is_peak_season",
+    "is_slow_season",
+    "is_shoulder_season",
+    "seasonal_baseline",
 ]
 
 # Verify no leaky features

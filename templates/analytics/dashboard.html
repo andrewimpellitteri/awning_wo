@@ -226,12 +226,12 @@
         </div>
 
         <div class="chart-container">
-            <div class="chart-title">Daily Cleaning Throughput (90 days)</div>
+            <div class="chart-title">Daily Cleaning Throughput</div>
             <div id="throughput-chart"><div class="loading">Loading chart...</div></div>
         </div>
 
         <div class="chart-container">
-            <div class="chart-title">Backlog Over Time (90 days)</div>
+            <div class="chart-title">Backlog Over Time</div>
             <div id="backlog-chart"><div class="loading">Loading chart...</div></div>
         </div>
 
@@ -273,19 +273,50 @@ document.addEventListener('DOMContentLoaded', function() {
                     y: data.monthly_trends.map(d => d.order_count),
                     name: 'Total Orders',
                     type: 'bar',
-                    marker: { color: '#3498db' }
+                    marker: { color: '#3498db' },
+                    hovertemplate: '<b>Total Orders</b><br>' +
+                                   'Month: %{x}<br>' +
+                                   'Orders: %{y:,}<br>' +
+                                   '<extra></extra>'
                 };
                 const monthlyTrace2 = {
                     x: data.monthly_trends.map(d => d.month),
                     y: data.monthly_trends.map(d => d.completed_count),
                     name: 'Completed',
                     type: 'bar',
-                    marker: { color: '#2ecc71' }
+                    marker: { color: '#2ecc71' },
+                    hovertemplate: '<b>Completed Orders</b><br>' +
+                                   'Month: %{x}<br>' +
+                                   'Orders: %{y:,}<br>' +
+                                   '<extra></extra>'
                 };
                 Plotly.newPlot('monthly-chart', [monthlyTrace1, monthlyTrace2], {
                     ...commonLayout,
                     barmode: 'group',
-                    xaxis: { ...commonLayout.xaxis, title: 'Month' },
+                    hovermode: 'x unified',
+                    xaxis: {
+                        ...commonLayout.xaxis,
+                        title: 'Month',
+                        rangeselector: {
+                            buttons: [
+                                { count: 1, label: '1M', step: 'month', stepmode: 'backward' },
+                                { count: 3, label: '3M', step: 'month', stepmode: 'backward' },
+                                { count: 6, label: '6M', step: 'month', stepmode: 'backward' },
+                                { count: 1, label: '1Y', step: 'year', stepmode: 'backward' },
+                                { step: 'all', label: 'All' }
+                            ],
+                            bgcolor: isDark ? '#4a5568' : '#e2e8f0',
+                            activecolor: isDark ? '#667eea' : '#3498db',
+                            font: { color: fontColor }
+                        },
+                        rangeslider: { visible: true, bgcolor: isDark ? '#1a202c' : '#f7fafc' },
+                        type: 'date',
+                        showspikes: true,
+                        spikemode: 'across',
+                        spikesnap: 'cursor',
+                        spikecolor: gridColor,
+                        spikethickness: 1
+                    },
                     yaxis: { ...commonLayout.yaxis, title: 'Orders' }
                 }, { responsive: true, displayModeBar: true });
             } else {
@@ -296,6 +327,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.revenue_by_product) {
                 const productLabels = Object.keys(data.revenue_by_product);
                 const productValues = Object.values(data.revenue_by_product);
+                const totalRevenue = productValues.reduce((a, b) => a + b, 0);
                 const revenueByProductTrace = {
                     labels: productLabels,
                     values: productValues,
@@ -303,12 +335,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     hole: 0.4,
                     marker: {
                         colors: ['#3498db', '#2ecc71']
-                    }
+                    },
+                    hovertemplate: '<b>%{label}</b><br>' +
+                                   'Revenue: $%{value:,.0f}<br>' +
+                                   'Percentage: %{percent}<br>' +
+                                   '<extra></extra>',
+                    textposition: 'inside',
+                    textinfo: 'label+percent'
                 };
                 Plotly.newPlot('revenue-by-product-chart', [revenueByProductTrace], {
                     ...commonLayout,
-                    showlegend: true,
-                    title: 'Revenue by Product Type'
+                    showlegend: true
                 }, { responsive: true, displayModeBar: true });
             } else {
                 document.getElementById('revenue-by-product-chart').innerHTML = '<div class="loading">No data available</div>';
@@ -324,7 +361,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     name: 'Daily',
                     type: 'scatter',
                     mode: 'markers',
-                    marker: { color: '#95a5a6', size: 4 }
+                    marker: { color: '#95a5a6', size: 4 },
+                    hovertemplate: '<b>Daily Sq Ft</b><br>' +
+                                   'Date: %{x|%b %d, %Y}<br>' +
+                                   'Sq Ft: %{y:,.0f}<br>' +
+                                   '<extra></extra>'
                 };
                 const throughputTrace2 = {
                     x: data.daily_throughput.map(d => d.date),
@@ -332,11 +373,41 @@ document.addEventListener('DOMContentLoaded', function() {
                     name: '7-Day Avg',
                     type: 'scatter',
                     mode: 'lines',
-                    line: { color: '#3498db', width: 3 }
+                    line: { color: '#3498db', width: 3 },
+                    hovertemplate: '<b>7-Day Average</b><br>' +
+                                   'Date: %{x|%b %d, %Y}<br>' +
+                                   'Avg Sq Ft: %{y:,.0f}<br>' +
+                                   '<extra></extra>'
                 };
                 Plotly.newPlot('throughput-chart', [throughputTrace1, throughputTrace2], {
                     ...commonLayout,
-                    xaxis: { ...commonLayout.xaxis, title: 'Date' },
+                    hovermode: 'x unified',
+                    xaxis: {
+                        ...commonLayout.xaxis,
+                        title: 'Date',
+                        rangeselector: {
+                            buttons: [
+                                { count: 7, label: '1W', step: 'day', stepmode: 'backward' },
+                                { count: 1, label: '1M', step: 'month', stepmode: 'backward' },
+                                { count: 3, label: '3M', step: 'month', stepmode: 'backward' },
+                                { count: 6, label: '6M', step: 'month', stepmode: 'backward' },
+                                { count: 1, label: '1Y', step: 'year', stepmode: 'backward' },
+                                { step: 'all', label: 'All' }
+                            ],
+                            bgcolor: isDark ? '#4a5568' : '#e2e8f0',
+                            activecolor: isDark ? '#667eea' : '#3498db',
+                            font: { color: fontColor },
+                            y: 1.1,
+                            yanchor: 'top'
+                        },
+                        rangeslider: { visible: true, bgcolor: isDark ? '#1a202c' : '#f7fafc' },
+                        type: 'date',
+                        showspikes: true,
+                        spikemode: 'across',
+                        spikesnap: 'cursor',
+                        spikecolor: gridColor,
+                        spikethickness: 1
+                    },
                     yaxis: { ...commonLayout.yaxis, title: 'Sq Ft' }
                 }, { responsive: true, displayModeBar: true });
             } else {
@@ -353,11 +424,41 @@ document.addEventListener('DOMContentLoaded', function() {
                     mode: 'lines',
                     fill: 'tozeroy',
                     line: { color: '#e74c3c', width: 2 },
-                    fillcolor: 'rgba(231, 76, 60, 0.2)'
+                    fillcolor: 'rgba(231, 76, 60, 0.2)',
+                    hovertemplate: '<b>Backlog</b><br>' +
+                                   'Date: %{x|%b %d, %Y}<br>' +
+                                   'Backlog: %{y:,.0f} sq ft<br>' +
+                                   '<extra></extra>'
                 };
                 Plotly.newPlot('backlog-chart', [backlogTrace], {
                     ...commonLayout,
-                    xaxis: { ...commonLayout.xaxis, title: 'Date' },
+                    hovermode: 'x unified',
+                    xaxis: {
+                        ...commonLayout.xaxis,
+                        title: 'Date',
+                        rangeselector: {
+                            buttons: [
+                                { count: 7, label: '1W', step: 'day', stepmode: 'backward' },
+                                { count: 1, label: '1M', step: 'month', stepmode: 'backward' },
+                                { count: 3, label: '3M', step: 'month', stepmode: 'backward' },
+                                { count: 6, label: '6M', step: 'month', stepmode: 'backward' },
+                                { count: 1, label: '1Y', step: 'year', stepmode: 'backward' },
+                                { step: 'all', label: 'All' }
+                            ],
+                            bgcolor: isDark ? '#4a5568' : '#e2e8f0',
+                            activecolor: isDark ? '#667eea' : '#3498db',
+                            font: { color: fontColor },
+                            y: 1.1,
+                            yanchor: 'top'
+                        },
+                        rangeslider: { visible: true, bgcolor: isDark ? '#1a202c' : '#f7fafc' },
+                        type: 'date',
+                        showspikes: true,
+                        spikemode: 'across',
+                        spikesnap: 'cursor',
+                        spikecolor: gridColor,
+                        spikethickness: 1
+                    },
                     yaxis: { ...commonLayout.yaxis, title: 'Sq Ft in Backlog' }
                 }, { responsive: true, displayModeBar: true });
             } else {
@@ -389,7 +490,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     mode: 'lines',
                     fill: 'tozeroy',
                     name: 'Distribution',
-                    line: { color: '#9b59b6' }
+                    line: { color: '#9b59b6' },
+                    hovertemplate: '<b>Distribution</b><br>' +
+                                   'Sq Ft: %{x:,.0f}<br>' +
+                                   'Density: %{y:.4f}<br>' +
+                                   '<extra></extra>'
                 };
 
                 const currentWeekMarker = {
@@ -403,8 +508,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         size: 10,
                         symbol: 'star'
                     },
-                    text: `This Week: ${thisWeekSqFt.toFixed(0)} sq ft`,
-                    hoverinfo: 'text'
+                    hovertemplate: '<b>This Week</b><br>' +
+                                   'Sq Ft: %{x:,.0f}<br>' +
+                                   `Percentile: ${data.weekly_sq_ft_cleaned_percentile.toFixed(1)}th<br>` +
+                                   '<extra></extra>'
                 };
 
                 // 🟢 NEW: Add vertical line for mean or median
@@ -413,7 +520,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     y: [0, Math.max(...yVals)],
                     mode: 'lines',
                     line: { dash: 'dash', color: '#2ecc71' },
-                    name: 'Mean'
+                    name: 'Mean',
+                    hovertemplate: '<b>Mean</b><br>' +
+                                   'Sq Ft: %{x:,.0f}<br>' +
+                                   '<extra></extra>'
                 };
 
                 // 🟢 NEW: Add annotation for percentile rank
