@@ -246,21 +246,10 @@ class MLService:
         )
         df["has_repairs_needed"] = (df["repairs_len"] > 0).astype(int)
 
-        # --- Service features (Clean and Treat are now Date fields, not booleans) ---
-        # If Clean/Treat date exists, it means cleaning/treatment was completed
-        if "clean" in df.columns:
-            df["needs_cleaning"] = (
-                pd.to_datetime(df["clean"], errors="coerce").notna().astype(int)
-            )
-        else:
-            df["needs_cleaning"] = 0
-
-        if "treat" in df.columns:
-            df["needs_treatment"] = (
-                pd.to_datetime(df["treat"], errors="coerce").notna().astype(int)
-            )
-        else:
-            df["needs_treatment"] = 0
+        # --- Service features - REMOVED DATA LEAKAGE ---
+        # Previously: used presence of clean/treat dates which leaked information
+        # These dates only exist AFTER work is done, making predictions unrealistic
+        # Now: Rely on other features that are known at work order creation time
 
         # --- Date requirement features ---
         df["has_required_date"] = df["daterequired"].notna().astype(int)
@@ -333,7 +322,10 @@ def train_model():
         train_df = MLService.preprocess_data(df)
         train_df = MLService.engineer_features(train_df)
 
-        # Feature selection
+        # Feature selection - NO DATA LEAKAGE
+        # Removed: needs_cleaning, needs_treatment (only exist after work is done)
+        # Removed: storage_impact (redundant with storagetime_numeric)
+        # Removed: has_special_instructions (low importance, redundant with instructions_len)
         feature_cols = [
             "rushorder_binary",
             "firmrush_binary",
@@ -346,7 +338,6 @@ def train_model():
             "is_rush",
             "any_rush",
             "instructions_len",
-            "has_special_instructions",
             "repairs_len",
             "has_repairs_needed",
             "has_required_date",
@@ -355,14 +346,7 @@ def train_model():
             "cust_mean",
             "cust_std",
             "cust_count",
-            "storage_impact",
         ]
-
-        # Add optional features if they exist
-        if "needs_cleaning" in train_df.columns:
-            feature_cols.append("needs_cleaning")
-        if "needs_treatment" in train_df.columns:
-            feature_cols.append("needs_treatment")
 
         # Filter available features
         feature_cols = [col for col in feature_cols if col in train_df.columns]
