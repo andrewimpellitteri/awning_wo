@@ -413,6 +413,22 @@
                         </div>
                     </div>
 
+                    <!-- ML Estimate Card (only shown if not completed) -->
+                    {% if not work_order.DateCompleted %}
+                    <div class="card mb-4 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-robot me-2"></i> ML Estimate
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="ml-estimate-card">
+                                <span class="text-muted">Loading estimate...</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <!-- Quote Information Card -->
                     <div class="card mb-4 shadow-sm">
                         <div class="card-header">
@@ -427,6 +443,7 @@
                             </div>
                         </div>
                     </div>
+
                     <!-- System Information / Timestamps -->
                     <div class="card shadow-sm">
                         <div class="card-header">
@@ -442,7 +459,7 @@
                                     <small>{{ (work_order.created_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
                                 </div>
                             </div>
-                            
+
                             <div class="detail-row">
                                 <div class="detail-label">Updated</div>
                                 <div class="detail-value">
@@ -450,18 +467,6 @@
                                     <small>{{ (work_order.updated_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
                                 </div>
                             </div>
-                            {% if not work_order.DateCompleted %}
-                            <div class="card mt-3">
-                                <div class="card-header bg-primary text-white">
-                                    <i class="fas fa-robot me-1"></i> ML Estimate
-                                </div>
-                                <div class="card-body">
-                                    <div id="ml-estimate-card">
-                                    <span class="text-muted">Loading estimate...</span>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endif %}
                         </div>
                     </div>
 

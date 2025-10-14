@@ -1,107 +1,47 @@
+"""
+EDA and Model Experimentation Script
+=====================================
+This script is synchronized with routes/ml.py and allows for offline experimentation
+with different model configurations and feature engineering approaches.
+
+Usage:
+    python scripts/predict_complete.py
+"""
+
 import pandas as pd
-from sqlalchemy import create_engine
 import lightgbm as lgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, mean_squared_error
-from sklearn.preprocessing import LabelEncoder
 import numpy as np
 import time
 import warnings
 
+from MLService import MLService
+
 warnings.filterwarnings("ignore")
 
-# Load and prepare data (same as before)
-engine = create_engine("postgresql:///Clean_Repair")
-df = pd.read_sql("SELECT * FROM tblcustworkorderdetail;", engine)
 
-# Data preprocessing (condensed from previous script)
-date_cols = ["datein", "datecompleted", "daterequired", "clean", "treat"]
-for col in date_cols:
-    if col in df.columns:
-        df[col] = pd.to_datetime(df[col], errors="coerce")
+# Load data using the WorkOrder model (synchronized with routes/ml.py)
+print("Loading work orders from database...")
+df = MLService.load_work_orders()
 
-df["days_to_complete"] = (df["datecompleted"] - df["datein"]).dt.days
-train_df = df.dropna(subset=["days_to_complete"]).copy()
+if df is None or df.empty:
+    raise ValueError("No data available for training")
 
-# Filter outliers
-mean_days = train_df["days_to_complete"].mean()
-std_days = train_df["days_to_complete"].std()
-train_df = train_df[
-    (train_df["days_to_complete"] >= 0)
-    & (train_df["days_to_complete"] <= mean_days + 3 * std_days)
-].copy()
+# Preprocess data using MLService (synchronized with routes/ml.py)
+print("Preprocessing data...")
+train_df = MLService.preprocess_data(df)
+print(f"After preprocessing: {len(train_df)} samples with target variable")
 
-# Feature engineering (condensed)
-today = pd.Timestamp.today()
+# Engineer features using MLService (synchronized with routes/ml.py)
+print("Engineering features...")
+train_df = MLService.engineer_features(train_df)
 
-
-def convert_to_binary(series):
-    if series.dtype == "object":
-        return (
-            series.fillna("")
-            .astype(str)
-            .str.lower()
-            .isin(["true", "t", "1", "yes", "y"])
-            .astype(int)
-        )
-    else:
-        return series.fillna(0).astype(bool).astype(int)
-
-
-def convert_to_numeric(series):
-    if series.dtype == "object":
-        return pd.to_numeric(series, errors="coerce").fillna(0)
-    else:
-        return series.fillna(0)
-
-
-# All feature engineering
-train_df["order_age"] = (today - train_df["datein"]).dt.days.fillna(0)
-train_df["month_in"] = train_df["datein"].dt.month.fillna(0).astype(int)
-train_df["dow_in"] = train_df["datein"].dt.dayofweek.fillna(0).astype(int)
-train_df["quarter_in"] = train_df["datein"].dt.quarter.fillna(0).astype(int)
-train_df["is_weekend"] = (train_df["dow_in"] >= 5).astype(int)
-
-train_df["rushorder_binary"] = convert_to_binary(train_df["rushorder"])
-train_df["firmrush_binary"] = convert_to_binary(train_df["firmrush"])
-train_df["is_rush"] = train_df["rushorder_binary"] + train_df["firmrush_binary"]
-train_df["any_rush"] = (train_df["is_rush"] > 0).astype(int)
-
-train_df["instructions_len"] = train_df["specialinstructions"].fillna("").apply(len)
-train_df["has_special_instructions"] = (train_df["instructions_len"] > 0).astype(int)
-train_df["repairs_len"] = train_df["repairsneeded"].fillna("").apply(len)
-train_df["has_repairs_needed"] = (train_df["repairs_len"] > 0).astype(int)
-
-if "clean" in train_df.columns:
-    train_df["needs_cleaning"] = train_df["clean"].notna().astype(int)
-if "treat" in train_df.columns:
-    train_df["needs_treatment"] = train_df["treat"].notna().astype(int)
-
-train_df["has_required_date"] = train_df["daterequired"].notna().astype(int)
-train_df["days_until_required"] = (
-    train_df["daterequired"] - train_df["datein"]
-).dt.days.fillna(999)
-
-# Customer features
-if train_df["custid"].nunique() > 1:
-    le_cust = LabelEncoder()
-    train_df["customer_encoded"] = le_cust.fit_transform(train_df["custid"].astype(str))
-    cust_stats = (
-        train_df.groupby("custid")["days_to_complete"]
-        .agg(["mean", "std", "count"])
-        .add_prefix("cust_")
-    )
-    train_df = train_df.merge(cust_stats, on="custid", how="left")
-    train_df["cust_std"] = train_df["cust_std"].fillna(0)
-
-train_df["storagetime_numeric"] = convert_to_numeric(train_df["storagetime"])
-train_df["storage_impact"] = train_df["storagetime_numeric"]
-
-# Feature selection
+# Feature selection (synchronized with routes/ml.py)
+# REMOVED: needs_cleaning, needs_treatment (data leakage)
 feature_cols = [
     "rushorder_binary",
     "firmrush_binary",
-    "storagetime_numeric",
     "order_age",
     "month_in",
     "dow_in",
@@ -110,7 +50,6 @@ feature_cols = [
     "is_rush",
     "any_rush",
     "instructions_len",
-    "has_special_instructions",
     "repairs_len",
     "has_repairs_needed",
     "has_required_date",
@@ -119,17 +58,12 @@ feature_cols = [
     "cust_mean",
     "cust_std",
     "cust_count",
-    "storage_impact",
 ]
 
-if "needs_cleaning" in train_df.columns:
-    feature_cols.append("needs_cleaning")
-if "needs_treatment" in train_df.columns:
-    feature_cols.append("needs_treatment")
-
+# Filter available features
 feature_cols = [col for col in feature_cols if col in train_df.columns]
 
-X = train_df[feature_cols].copy().fillna(0)
+X = train_df[feature_cols].fillna(0)
 y = train_df["days_to_complete"]
 
 X_train, X_test, y_train, y_test = train_test_split(
@@ -139,19 +73,59 @@ X_train, X_test, y_train, y_test = train_test_split(
 print(
     f"Dataset ready: {X_train.shape[0]} training samples, {len(feature_cols)} features"
 )
+print(f"Features: {', '.join(feature_cols)}")
 print("=" * 80)
+
+# Model configurations (synchronized with routes/ml.py)
+MODEL_CONFIGS = {
+    "baseline": {
+        "n_estimators": 1000,
+        "max_depth": 8,
+        "num_leaves": 31,
+        "learning_rate": 0.05,
+        "description": "Standard - 6.468 MAE (3.5s training)",
+    },
+    "deep_wide": {
+        "n_estimators": 1000,
+        "max_depth": 15,
+        "num_leaves": 127,
+        "learning_rate": 0.05,
+        "description": "Best practical - 6.096 MAE (10s training)",
+    },
+    "max_complexity": {
+        "n_estimators": 2000,
+        "max_depth": 25,
+        "num_leaves": 255,
+        "learning_rate": 0.03,
+        "description": "Best overall - 5.988 MAE (41s training)",
+    },
+}
 
 # Define hyperparameter configurations to test
 configs = [
-    # Current baseline
+    # Production configs (from routes/ml.py)
     {
-        "name": "Current Baseline",
+        "name": "Baseline (Production)",
         "n_estimators": 1000,
         "max_depth": 8,
         "num_leaves": 31,
         "learning_rate": 0.05,
     },
-    # More trees, same complexity
+    {
+        "name": "Deep+Wide (Production Default)",
+        "n_estimators": 1000,
+        "max_depth": 15,
+        "num_leaves": 127,
+        "learning_rate": 0.05,
+    },
+    {
+        "name": "Max Complexity (Production)",
+        "n_estimators": 2000,
+        "max_depth": 25,
+        "num_leaves": 255,
+        "learning_rate": 0.03,
+    },
+    # Experimental configs for EDA
     {
         "name": "More Trees",
         "n_estimators": 2000,
@@ -166,7 +140,6 @@ configs = [
         "num_leaves": 31,
         "learning_rate": 0.03,
     },
-    # Deeper trees
     {
         "name": "Deeper Trees",
         "n_estimators": 1000,
@@ -181,7 +154,6 @@ configs = [
         "num_leaves": 31,
         "learning_rate": 0.05,
     },
-    # More leaves (wider trees)
     {
         "name": "More Leaves",
         "n_estimators": 1000,
@@ -203,22 +175,13 @@ configs = [
         "num_leaves": 255,
         "learning_rate": 0.05,
     },
-    # Combined high complexity
     {
-        "name": "Deep + Wide",
-        "n_estimators": 1000,
-        "max_depth": 15,
-        "num_leaves": 127,
-        "learning_rate": 0.05,
-    },
-    {
-        "name": "Max Complexity",
+        "name": "Ultra Deep+Wide",
         "n_estimators": 2000,
-        "max_depth": 25,
-        "num_leaves": 255,
+        "max_depth": 20,
+        "num_leaves": 200,
         "learning_rate": 0.03,
     },
-    # Different learning rates
     {
         "name": "Slow Learning",
         "n_estimators": 3000,
@@ -298,3 +261,115 @@ for config in configs:
 
 # Convert to DataFrame and analyze results
 results_df = pd.DataFrame(results)
+
+print("\n" + "=" * 80)
+print("RESULTS SUMMARY")
+print("=" * 80)
+print(results_df.to_string(index=False))
+
+# Find best configurations
+print("\n" + "=" * 80)
+print("TOP 5 MODELS BY MAE (Lower is better)")
+print("=" * 80)
+best_mae = results_df.nsmallest(5, "mae")[
+    ["config", "mae", "rmse", "r2", "training_time"]
+]
+print(best_mae.to_string(index=False))
+
+print("\n" + "=" * 80)
+print("TOP 5 MODELS BY R² (Higher is better)")
+print("=" * 80)
+best_r2 = results_df.nlargest(5, "r2")[["config", "r2", "mae", "rmse", "training_time"]]
+print(best_r2.to_string(index=False))
+
+print("\n" + "=" * 80)
+print("FASTEST MODELS (Training time < 10s)")
+print("=" * 80)
+fast_models = results_df[results_df["training_time"] < 10].nsmallest(5, "mae")[
+    ["config", "mae", "training_time"]
+]
+print(fast_models.to_string(index=False))
+
+print("\n" + "=" * 80)
+print("PRODUCTION CONFIG COMPARISON")
+print("=" * 80)
+prod_configs = results_df[
+    results_df["config"].str.contains("Production", case=False, na=False)
+][["config", "mae", "rmse", "r2", "training_time"]]
+print(prod_configs.to_string(index=False))
+
+# Save results to CSV for further analysis
+output_file = "model_experiment_results.csv"
+results_df.to_csv(output_file, index=False)
+print(f"\n✓ Results saved to: {output_file}")
+
+# Additional analysis - feature importance from best model
+print("\n" + "=" * 80)
+print("FEATURE IMPORTANCE (from best model)")
+print("=" * 80)
+best_idx = results_df["mae"].idxmin()
+best_config = configs[best_idx]
+
+# Train the best model
+best_model = lgb.LGBMRegressor(
+    objective="regression",
+    n_estimators=best_config["n_estimators"],
+    learning_rate=best_config["learning_rate"],
+    max_depth=best_config["max_depth"],
+    num_leaves=best_config["num_leaves"],
+    min_child_samples=20,
+    subsample=0.8,
+    colsample_bytree=0.8,
+    random_state=42,
+    n_jobs=-1,
+    verbose=-1,
+)
+best_model.fit(X_train, y_train)
+
+# Get feature importance
+feature_importance = pd.DataFrame(
+    {"feature": feature_cols, "importance": best_model.feature_importances_}
+).sort_values("importance", ascending=False)
+
+print(feature_importance.to_string(index=False))
+print(f"\nBest Model: {best_config['name']}")
+print(f"MAE: {results_df.loc[best_idx, 'mae']:.3f} days")
+print(f"Training Time: {results_df.loc[best_idx, 'training_time']:.2f} seconds")
+
+print("\n" + "=" * 80)
+print("STAGE-BASED PERFORMANCE ANALYSIS")
+print("=" * 80)
+# Analyze performance by augmentation stage
+if "augmentation_stage" in train_df.columns:
+    best_model_predictions = best_model.predict(X)
+    stage_analysis = train_df[["augmentation_stage", "days_to_complete"]].copy()
+    stage_analysis["predicted"] = best_model_predictions
+    stage_analysis["error"] = abs(
+        stage_analysis["days_to_complete"] - stage_analysis["predicted"]
+    )
+
+    print("\nPerformance by Work Order Stage:")
+    for stage in [0, 1, 2]:
+        stage_data = stage_analysis[stage_analysis["augmentation_stage"] == stage]
+        if len(stage_data) > 0:
+            stage_name = [
+                "Early (no dates)",
+                "Middle (clean only)",
+                "Late (both dates)",
+            ][stage]
+            print(f"\nStage {stage} - {stage_name}:")
+            print(f"  Samples: {len(stage_data)}")
+            print(f"  MAE: {stage_data['error'].mean():.3f} days")
+            print(f"  Median Error: {stage_data['error'].median():.3f} days")
+            print(
+                f"  90th percentile error: {stage_data['error'].quantile(0.9):.3f} days"
+            )
+
+print("\n" + "=" * 80)
+print("EXPERIMENT COMPLETE")
+print("=" * 80)
+print("\nKey Improvements:")
+print("✓ Removed data leakage from clean/treat date features")
+print("✓ Implemented temporal augmentation for stage-aware training")
+print("✓ Model now trained on work orders at all stages of completion")
+print("✓ Better generalization for production inference on pending orders")
