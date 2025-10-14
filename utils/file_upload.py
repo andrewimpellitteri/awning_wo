@@ -28,6 +28,12 @@ AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 if not AWS_S3_BUCKET:
     raise ValueError("AWS_S3_BUCKET environment variable is required")
 
+# Ensure environment variables are strings, not bytes
+if isinstance(AWS_S3_BUCKET, bytes):
+    AWS_S3_BUCKET = AWS_S3_BUCKET.decode('utf-8')
+if isinstance(AWS_REGION, bytes):
+    AWS_REGION = AWS_REGION.decode('utf-8')
+
 
 def is_running_on_aws():
     """Better detection for AWS environment"""
@@ -61,6 +67,12 @@ else:
         raise ValueError(
             "Local development requires AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY"
         )
+
+    # Ensure credentials are strings, not bytes
+    if isinstance(AWS_ACCESS_KEY_ID, bytes):
+        AWS_ACCESS_KEY_ID = AWS_ACCESS_KEY_ID.decode('utf-8')
+    if isinstance(AWS_SECRET_ACCESS_KEY, bytes):
+        AWS_SECRET_ACCESS_KEY = AWS_SECRET_ACCESS_KEY.decode('utf-8')
 
     s3_client = boto3.client(
         "s3",
@@ -109,6 +121,11 @@ def save_order_file_generic(
     folder_prefix = "work_orders" if order_type == "work_order" else "repair_orders"
 
     if to_s3:
+        # Ensure all string parameters are actually strings, not bytes
+        folder_prefix = folder_prefix.decode('utf-8') if isinstance(folder_prefix, bytes) else folder_prefix
+        order_no = str(order_no)  # Ensure order_no is string
+        filename = filename.decode('utf-8') if isinstance(filename, bytes) else filename
+
         s3_key = f"{folder_prefix}/{order_no}/{filename}"
 
         # Upload file to S3 with proper error handling

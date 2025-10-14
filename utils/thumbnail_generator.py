@@ -240,11 +240,22 @@ def generate_thumbnail(file_content, filename):
 
 def save_thumbnail_to_s3(thumbnail_img, s3_client, bucket, s3_key):
     """Save thumbnail image to S3"""
+    # Ensure s3_key and bucket are strings (not bytes)
+    if isinstance(s3_key, bytes):
+        s3_key = s3_key.decode('utf-8')
+    if isinstance(bucket, bytes):
+        bucket = bucket.decode('utf-8')
+
     thumbnail_buffer = BytesIO()
     thumbnail_img.save(thumbnail_buffer, format="JPEG", quality=THUMBNAIL_QUALITY)
     thumbnail_buffer.seek(0)
 
-    thumbnail_key = s3_key.replace(".", "_thumb.") + ".jpg"
+    # Generate thumbnail key by replacing the last extension
+    if "." in s3_key:
+        base_name = s3_key.rsplit(".", 1)[0]
+        thumbnail_key = f"{base_name}_thumb.jpg"
+    else:
+        thumbnail_key = f"{s3_key}_thumb.jpg"
 
     s3_client.upload_fileobj(
         thumbnail_buffer,
