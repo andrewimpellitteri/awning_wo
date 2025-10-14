@@ -411,8 +411,9 @@ def create_repair_order(prefill_cust_id=None):
                     QUOTE="QUOTE" in request.form,
                     QUOTE_BY=request.form.get("QUOTE_BY"),
                     APPROVED="APPROVED" in request.form,
-                    RackNo=request.form.get("RackNo"),
-                    STORAGE=request.form.get("STORAGE"),
+                    # Storage/Location fields (See STORAGE_FIELDS_GUIDE.md)
+                    RackNo=request.form.get("RackNo"),  # Primary location field
+                    STORAGE=request.form.get("STORAGE"),  # Storage time type (TEMPORARY/SEASONAL)
                     ITEM_TYPE=request.form.get("ITEM_TYPE"),
                     TYPE_OF_REPAIR=request.form.get("TYPE_OF_REPAIR"),
                     SPECIALINSTRUCTIONS=request.form.get("SPECIALINSTRUCTIONS"),
@@ -432,8 +433,8 @@ def create_repair_order(prefill_cust_id=None):
                     ).date()
                     if request.form.get("RETURNDATE")
                     else None,
-                    LOCATION=request.form.get("LOCATION"),
-                    final_location=request.form.get("final_location"),
+                    LOCATION=request.form.get("LOCATION"),  # Legacy - RackNo is primary
+                    final_location=request.form.get("final_location"),  # Post-repair location
                     DATEOUT=datetime.strptime(
                         request.form.get("DATEOUT"), "%Y-%m-%d"
                     ).date()
@@ -672,8 +673,9 @@ def edit_repair_order(repair_order_no):
             repair_order.QUOTE = "QUOTE" in request.form
             repair_order.QUOTE_BY = request.form.get("QUOTE_BY")
             repair_order.APPROVED = "APPROVED" in request.form
-            repair_order.RackNo = request.form.get("RackNo")
-            repair_order.STORAGE = request.form.get("STORAGE")
+            # Storage/Location fields (See STORAGE_FIELDS_GUIDE.md)
+            repair_order.RackNo = request.form.get("RackNo")  # Primary location field
+            repair_order.STORAGE = request.form.get("STORAGE")  # Storage time type (TEMPORARY/SEASONAL)
             repair_order.ITEM_TYPE = request.form.get("ITEM_TYPE")
             repair_order.TYPE_OF_REPAIR = request.form.get("TYPE_OF_REPAIR")
             repair_order.SPECIALINSTRUCTIONS = request.form.get("SPECIALINSTRUCTIONS")
@@ -693,8 +695,9 @@ def edit_repair_order(repair_order_no):
                 if request.form.get("RETURNDATE")
                 else None
             )
+            # Legacy LOCATION field - kept for backward compatibility but RackNo is primary
             repair_order.LOCATION = request.form.get("LOCATION")
-            repair_order.final_location = request.form.get("final_location")
+            repair_order.final_location = request.form.get("final_location")  # Post-repair location
             repair_order.DATEOUT = (
                 datetime.strptime(request.form.get("DATEOUT"), "%Y-%m-%d").date()
                 if request.form.get("DATEOUT")

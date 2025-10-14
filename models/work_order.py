@@ -13,9 +13,19 @@ class WorkOrder(db.Model):
     )
 
     WOName = db.Column("woname", db.String)
+
+    # === STORAGE/LOCATION FIELDS (See issue #82) ===
+    # DEPRECATED: Do not use - column exists but is empty/unused
     Storage = db.Column("storage", db.String)
-    # FIXED: Quote the column name to match the actual database column
+
+    # Storage TIME type: "Seasonal" or "Temporary" (how long stored)
+    StorageTime = db.Column("storagetime", db.String)
+
+    # Physical LOCATION where item is stored (e.g., "5 B", "bin 4 top", "cleaning room")
+    # This is the PRIMARY location field - use this, not Storage!
     RackNo = db.Column("rack_number", db.String)
+    # === END STORAGE/LOCATION FIELDS ===
+
     SpecialInstructions = db.Column("specialinstructions", db.Text)
     RepairsNeeded = db.Column("repairsneeded", db.Boolean)  # should be bool
     ReturnStatus = db.Column("returnstatus", db.String)
@@ -35,7 +45,6 @@ class WorkOrder(db.Model):
     CleanFirstWO = db.Column(
         "cleanfirstwo", db.String
     )  # deprecated only for historical
-    StorageTime = db.Column("storagetime", db.String)  # "Seasonal" or "Temporary"
     created_at = db.Column(db.DateTime, server_default=func.now())
     updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
 

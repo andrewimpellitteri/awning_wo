@@ -225,13 +225,46 @@
                                         </div>
 
                                         <div class="detail-row">
-                                            <div class="detail-label">Storage</div>
+                                            <div class="detail-label">Storage Time</div>
                                             <div class="detail-value">
-                                                <select class="form-control" name="STORAGE">
-                                                    <option value="">Select storage type</option>
-                                                    <option value="seasonal" {{ 'selected' if form_data and form_data.get('STORAGE') == 'seasonal' else '' }}>Seasonal</option>
-                                                    <option value="temporary" {{ 'selected' if form_data and form_data.get('STORAGE') == 'temporary' else '' }}>Temporary</option>
-                                                </select>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-clock"></i>
+                                                    </span>
+                                                    <select class="form-select" name="STORAGE">
+                                                        <option value="">Select storage duration</option>
+                                                        <option value="SEASONAL" {{ 'selected' if form_data and form_data.get('STORAGE') == 'SEASONAL' else '' }}>Seasonal</option>
+                                                        <option value="TEMPORARY" {{ 'selected' if form_data and form_data.get('STORAGE') == 'TEMPORARY' else '' }}>Temporary</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <div class="detail-label">Location / Rack #</div>
+                                            <div class="detail-value">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-map-marker-alt"></i>
+                                                    </span>
+                                                    <input type="text" class="form-control" name="RackNo"
+                                                           value="{{ form_data.get('RackNo', '') if form_data else '' }}"
+                                                           placeholder="e.g., hang 4, 6D, 1 D">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <div class="detail-label">Final Location</div>
+                                            <div class="detail-value">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-flag-checkered"></i>
+                                                    </span>
+                                                    <input type="text" class="form-control" name="final_location"
+                                                           value="{{ form_data.get('final_location', '') if form_data else '' }}"
+                                                           placeholder="Final location after repair">
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

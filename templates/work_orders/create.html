@@ -214,14 +214,15 @@
                                         </div>
 
                                         <div class="detail-row">
-                                            <div class="detail-label">Storage</div>
+                                            <div class="detail-label">Location / Rack #</div>
                                             <div class="detail-value">
                                                 <div class="input-group">
                                                     <span class="input-group-text">
-                                                        <i class="fas fa-layer-group"></i>
+                                                        <i class="fas fa-map-marker-alt"></i>
                                                     </span>
                                                     <input type="text" class="form-control" id="RackNo" name="RackNo"
-                                                           value="{{ form_data.get('RackNo', '') if form_data else '' }}">
+                                                           value="{{ form_data.get('RackNo', '') if form_data else '' }}"
+                                                           placeholder="e.g., 5 B, bin 4 top, cleaning room">
                                                 </div>
                                             </div>
                                         </div>
@@ -252,11 +253,16 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Storage Time</div>
                                             <div class="detail-value">
-                                                <select class="form-control" id="StorageTime" name="StorageTime">
-                                                    <option value="">Select</option>
-                                                    <option value="Seasonal" {% if form_data and form_data.get('StorageTime') == 'Seasonal' %}selected{% endif %}>Seasonal</option>
-                                                    <option value="Temporary" {% if form_data and form_data.get('StorageTime') == 'Temporary' %}selected{% endif %}>Temporary</option>
-                                                </select>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-clock"></i>
+                                                    </span>
+                                                    <select class="form-select" id="StorageTime" name="StorageTime">
+                                                        <option value="">Select storage duration</option>
+                                                        <option value="Seasonal" {% if form_data and form_data.get('StorageTime') == 'Seasonal' %}selected{% endif %}>Seasonal</option>
+                                                        <option value="Temporary" {% if form_data and form_data.get('StorageTime') == 'Temporary' %}selected{% endif %}>Temporary</option>
+                                                    </select>
+                                                </div>
                                             </div>
                                         </div>
                                         

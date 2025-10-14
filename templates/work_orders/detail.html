@@ -106,21 +106,24 @@
                                     </div>
                                     
                                     <div class="detail-row">
-                                        <div class="detail-label">Storage</div>
-                                        <div class="detail-value">{{ work_order.Storage or '<span class="text-muted">-</span>' | safe }}</div>
-                                    </div>
-                                    
-                                    <div class="detail-row">
                                         <div class="detail-label">Storage Time</div>
-                                        <div class="detail-value">{{ work_order.StorageTime or '<span class="text-muted">-</span>' | safe }}</div>
+                                        <div class="detail-value">
+                                            {% if work_order.StorageTime %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-clock me-1"></i>{{ work_order.StorageTime }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </div>
                                     </div>
-                                    
+
                                     <div class="detail-row">
-                                        <div class="detail-label">Rack #</div>
+                                        <div class="detail-label">Location / Rack #</div>
                                         <div class="detail-value">
                                             {% if work_order.RackNo %}
                                                 <span class="badge bg-secondary">
-                                                    <i class="fas fa-layer-group me-1"></i>{{ work_order.RackNo }}
+                                                    <i class="fas fa-map-marker-alt me-1"></i>{{ work_order.RackNo }}
                                                 </span>
                                             {% else %}
                                                 <span class="text-muted">-</span>

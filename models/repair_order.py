@@ -44,8 +44,25 @@ class RepairWorkOrder(db.Model):
     QUOTE_BY = db.Column(
         "QUOTE  BY", db.String
     )  # Note: TWO spaces between QUOTE and BY
+
+    # === STORAGE/LOCATION FIELDS (See issue #82) ===
+    # Physical LOCATION where item is stored (e.g., "hang 4", "6D", "1 D")
+    # This is the PRIMARY location field for rack/position
     RackNo = db.Column("RACK#", db.String)  # Uppercase
+
+    # Storage TIME type: "TEMPORARY", "SEASONAL", or empty (how long stored)
+    # NOTE: This field is named "storage" in DB but serves same purpose as
+    # WorkOrder.StorageTime - it's the storage duration type, NOT a physical location!
     STORAGE = db.Column("storage", db.String)
+
+    # Legacy location field - now using RackNo as primary location
+    # This field is used for additional location details
+    LOCATION = db.Column("location", db.String)
+
+    # Final location after service is complete (for both WO and RO)
+    final_location = db.Column("finallocation", db.String, nullable=True)
+    # === END STORAGE/LOCATION FIELDS ===
+
     ITEM_TYPE = db.Column("ITEM TYPE", db.String)  # Uppercase with space
     TYPE_OF_REPAIR = db.Column("TYPE OF REPAIR", db.String)  # Uppercase with spaces
     SPECIALINSTRUCTIONS = db.Column("specialinstructions", db.Text)
@@ -54,8 +71,6 @@ class RepairWorkOrder(db.Model):
     MaterialList = db.Column("materiallist", db.Text)
     CUSTOMERPRICE = db.Column("customerprice", db.String)
     RETURNSTATUS = db.Column("returnstatus", db.String)
-    LOCATION = db.Column("location", db.String)
-    final_location = db.Column("finallocation", db.String, nullable=True)
 
     # Denormalized source name from customer (for performance)
     source_name = db.Column("source_name", db.Text, nullable=True)
