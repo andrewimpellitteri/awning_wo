@@ -52,7 +52,9 @@
                                 <div class="card-body">
                                     <div class="mb-3">
                                         <label class="form-label text-muted">Customer ID</label>
-                                        <p class="form-control-plaintext">{{ customer.CustID }}</p>
+                                        <p class="form-control-plaintext">
+                                            <span class="badge bg-info"><i class="fas fa-user me-1"></i>{{ customer.CustID }}</span>
+                                        </p>
                                     </div>
                                     
                                     <div class="mb-3">
@@ -348,10 +350,19 @@
                     {% for wo in work_orders %}
                     <li class="list-group-item d-flex justify-content-between align-items-center mb-2 rounded shadow-sm">
                         <div>
-                            <strong>#{{ wo.WorkOrderNo }}</strong> – {{ (wo.DateIn | date_format) or "No Date" }}
+                            <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo) }}" class="badge bg-primary me-2">
+                                <i class="fas fa-hashtag me-1"></i>{{ wo.WorkOrderNo }}
+                            </a>
+                            {% if not wo.DateCompleted %}
+                            <span class="badge bg-success me-2">OPEN</span>
+                            {% endif %}
+                            {% if wo.RushOrder or wo.FirmRush %}
+                            <span class="badge bg-danger me-2">RUSH</span>
+                            {% endif %}
+                            <span class="text-muted">{{ (wo.DateIn | date_format) or "No Date" }}</span>
                         </div>
-                        <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo) }}" class="btn btn-sm btn-primary">
-                            View
+                        <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye"></i> View
                         </a>
                     </li>
                     {% endfor %}
@@ -368,10 +379,19 @@
                     {% for ro in repair_work_orders %}
                     <li class="list-group-item d-flex justify-content-between align-items-center mb-2 rounded shadow-sm">
                         <div>
-                            <strong>#{{ ro.RepairOrderNo }}</strong> – {{ (ro.DateIn | date_format) or "No Date" }}
+                            <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=ro.RepairOrderNo) }}" class="badge bg-warning text-dark me-2">
+                                <i class="fas fa-hashtag me-1"></i>R{{ ro.RepairOrderNo }}
+                            </a>
+                            {% if not ro.DateCompleted %}
+                            <span class="badge bg-success me-2">OPEN</span>
+                            {% endif %}
+                            {% if ro.RushOrder %}
+                            <span class="badge bg-danger me-2">RUSH</span>
+                            {% endif %}
+                            <span class="text-muted">{{ (ro.DateIn | date_format) or "No Date" }}</span>
                         </div>
-                        <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=ro.RepairOrderNo) }}" class="btn btn-sm btn-primary">
-                            View
+                        <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=ro.RepairOrderNo) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye"></i> View
                         </a>
                     </li>
                     {% endfor %}

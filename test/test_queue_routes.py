@@ -138,3 +138,95 @@ class TestQueueRoutes:
         assert data["total"] == 3
         assert data["rush"] == 1
         assert data["firm_rush"] == 1
+
+    def test_queue_reorder_concurrency_handling(
+        self, app, logged_in_client, sample_customers_and_work_orders
+    ):
+        """Test that concurrent queue reordering is properly handled with SELECT FOR UPDATE."""
+        import threading
+        from sqlalchemy.exc import OperationalError
+
+        # Track results from concurrent requests
+        results = []
+        errors = []
+
+        def reorder_queue(order_list, delay=0):
+            """Helper to simulate concurrent reorder requests"""
+            import time
+
+            if delay:
+                time.sleep(delay)
+
+            try:
+                response = logged_in_client.post(
+                    "/cleaning_queue/api/cleaning-queue/reorder",
+                    json={"work_order_ids": order_list, "page": 1, "per_page": 25},
+                )
+                results.append(
+                    {"status": response.status_code, "data": response.get_json()}
+                )
+            except Exception as e:
+                errors.append(str(e))
+
+        # Different reorder sequences
+        order1 = ["1001", "1002", "1003"]
+        order2 = ["1003", "1002", "1001"]
+
+        # Create threads to simulate concurrent requests
+        thread1 = threading.Thread(target=reorder_queue, args=(order1,))
+        thread2 = threading.Thread(target=reorder_queue, args=(order2, 0.1))
+
+        # Start both threads
+        thread1.start()
+        thread2.start()
+
+        # Wait for both to complete
+        thread1.join()
+        thread2.join()
+
+        # Verify at least one succeeded
+        assert len(results) >= 1, "At least one request should complete"
+
+        # Check that we got proper responses
+        for result in results:
+            assert "status" in result
+            assert "data" in result
+            # Either success (200) or conflict (409)
+            assert result["status"] in [200, 409]
+
+            if result["status"] == 409:
+                # Verify proper error response for concurrency
+                assert result["data"]["success"] is False
+                assert "error_type" in result["data"]
+                assert result["data"]["error_type"] == "concurrency"
+                assert result["data"]["retry"] is True
+
+        # Verify queue positions are consistent (no duplicates)
+        with app.app_context():
+            wo1 = WorkOrder.query.get("1001")
+            wo2 = WorkOrder.query.get("1002")
+            wo3 = WorkOrder.query.get("1003")
+
+            positions = [wo1.QueuePosition, wo2.QueuePosition, wo3.QueuePosition]
+            # Check that all positions are unique
+            assert len(positions) == len(set(positions)), "Queue positions must be unique"
+
+    def test_queue_reorder_with_missing_work_order(
+        self, logged_in_client, sample_customers_and_work_orders
+    ):
+        """Test that reordering with non-existent work order is handled properly."""
+        # Try to reorder with a non-existent work order
+        response = logged_in_client.post(
+            "/cleaning_queue/api/cleaning-queue/reorder",
+            json={
+                "work_order_ids": ["1001", "9999", "1003"],
+                "page": 1,
+                "per_page": 25,
+            },
+        )
+
+        assert response.status_code == 404
+        data = response.get_json()
+        assert data["success"] is False
+        assert "9999" in data["message"]
+        assert data["retry"] is False

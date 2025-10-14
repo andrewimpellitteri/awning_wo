@@ -451,7 +451,9 @@ def cleaning_queue():
 @login_required
 @role_required("admin", "manager")
 def reorder_cleaning_queue():
-    """Allow manual reordering of work orders in cleaning queue"""
+    """Allow manual reordering of work orders in cleaning queue with concurrency control"""
+    from sqlalchemy.exc import OperationalError, DBAPIError
+
     try:
         data = request.get_json()
         if not data:
@@ -474,22 +476,44 @@ def reorder_cleaning_queue():
 
         print(f"Page: {page}, Per page: {per_page}, Start position: {start_position}")
 
+        # Use SELECT FOR UPDATE to lock rows and prevent concurrent modifications
+        # This will block other transactions from reading/writing these rows until we commit
+        work_orders_locked = (
+            db.session.query(WorkOrder)
+            .filter(WorkOrder.WorkOrderNo.in_(work_order_ids))
+            .with_for_update()
+            .all()
+        )
+
+        # Create a mapping of work order numbers to objects for quick lookup
+        work_orders_map = {wo.WorkOrderNo: wo for wo in work_orders_locked}
+
+        # Verify we have all the work orders we need
+        found_ids = set(work_orders_map.keys())
+        requested_ids = set(work_order_ids)
+        missing_ids = requested_ids - found_ids
+
+        if missing_ids:
+            db.session.rollback()
+            return jsonify({
+                "success": False,
+                "message": f"Could not find work orders: {', '.join(missing_ids)}",
+                "retry": False
+            }), 404
+
         # Update queue positions for the reordered items
         success_count = 0
-        failed_items = []
 
         for index, wo_id in enumerate(work_order_ids):
-            work_order = WorkOrder.query.filter_by(WorkOrderNo=wo_id).first()
+            work_order = work_orders_map.get(wo_id)
             if work_order:
                 old_position = work_order.QueuePosition
                 new_position = start_position + index
                 work_order.QueuePosition = new_position
                 success_count += 1
                 print(f"Updated WO {wo_id}: {old_position} -> {new_position}")
-            else:
-                failed_items.append(wo_id)
-                print(f"Work order {wo_id} not found")
 
+        # Commit the transaction
         db.session.commit()
 
         result = {
@@ -498,16 +522,40 @@ def reorder_cleaning_queue():
             "updated_count": success_count,
         }
 
-        if failed_items:
-            result["warning"] = f"Could not find work orders: {', '.join(failed_items)}"
-
         return jsonify(result)
+
+    except (OperationalError, DBAPIError) as e:
+        # Handle database locking/concurrency errors
+        db.session.rollback()
+        error_str = str(e)
+
+        # Check if this is a lock timeout or deadlock
+        if "lock" in error_str.lower() or "deadlock" in error_str.lower() or "timeout" in error_str.lower():
+            print(f"Concurrency conflict detected: {error_str}")
+            return jsonify({
+                "success": False,
+                "message": "Queue order was modified by another user. Please refresh the page and try again.",
+                "error_type": "concurrency",
+                "retry": True
+            }), 409  # 409 Conflict
+        else:
+            # Other database errors
+            print(f"Database error during reorder: {error_str}")
+            return jsonify({
+                "success": False,
+                "message": "A database error occurred. Please try again.",
+                "retry": True
+            }), 500
 
     except Exception as e:
         db.session.rollback()
         error_msg = f"Error updating queue: {str(e)}"
         print(f"Reorder error: {error_msg}")
-        return jsonify({"success": False, "message": error_msg}), 500
+        return jsonify({
+            "success": False,
+            "message": "An unexpected error occurred. Please try again.",
+            "retry": True
+        }), 500
 
 
 @queue_bp.route("/api/cleaning-queue/summary")

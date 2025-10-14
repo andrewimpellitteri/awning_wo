@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 formatter: function(cell) {
                     const value = cell.getValue();
                     const url = cell.getRow().getData().detail_url;
-                    return `<a href="${url}" class="text-decoration-none fw-bold text-primary">${value}</a>`;
+                    return `<a href="${url}" class="badge bg-info"><i class="fas fa-user me-1"></i>${value}</a>`;
                 }
             },
             {

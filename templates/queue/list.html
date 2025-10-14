@@ -236,39 +236,190 @@ if (sortableQueue) {
         onEnd: function(evt) {
             // Immediately update position numbers
             updatePositionNumbers();
-            
+
             // Get the work order IDs in new order
             const workOrderIds = Array.from(sortableQueue.children).map(item => item.dataset.woId);
-            
+
             // Save to server with page information
-            fetch('{{ url_for("cleaning_queue.reorder_cleaning_queue") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({ 
-                    work_order_ids: workOrderIds,
-                    page: {{ pagination.page }},
-                    per_page: {{ pagination.per_page }}
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (!data.success) {
-                    console.error('Error reordering queue:', data.message);
-                    // Optionally show user notification
-                    showNotification('Error saving queue order: ' + data.message, 'error');
-                } else {
-                    showNotification('Queue order saved successfully', 'success');
-                }
-            })
-            .catch(err => {
-                console.error('Error:', err);
-                showNotification('Failed to save queue order', 'error');
-            });
+            saveQueueOrder(workOrderIds);
         }
     });
+}
+
+// Save queue order with concurrency handling
+function saveQueueOrder(workOrderIds, isRetry = false) {
+    if (isRetry) {
+        showNotification('Retrying...', 'info');
+    }
+
+    fetch('{{ url_for("cleaning_queue.reorder_cleaning_queue") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            work_order_ids: workOrderIds,
+            page: {{ pagination.page }},
+            per_page: {{ pagination.per_page }}
+        })
+    })
+    .then(async res => {
+        const data = await res.json();
+
+        // Check for concurrency conflicts (409 Conflict status)
+        if (res.status === 409 && data.error_type === 'concurrency') {
+            showConcurrencyModal(workOrderIds);
+            return;
+        }
+
+        if (!res.ok) {
+            throw new Error(data.message || 'Failed to save queue order');
+        }
+
+        return data;
+    })
+    .then(data => {
+        if (data && data.success) {
+            showNotification('Queue order saved successfully', 'success');
+        }
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        showNotification('Failed to save queue order: ' + err.message, 'error');
+    });
+}
+
+// Show concurrency conflict modal with retry option
+function showConcurrencyModal(workOrderIds) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('concurrency-modal');
+    if (existingModal) existingModal.remove();
+
+    const modalHtml = `
+        <div id="concurrency-modal" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s ease;
+        ">
+            <div style="
+                background: white;
+                border-radius: 12px;
+                max-width: 500px;
+                width: 90%;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+                animation: slideUp 0.3s ease;
+                overflow: hidden;
+            ">
+                <div style="
+                    background: #ff9800;
+                    color: white;
+                    padding: 24px;
+                    text-align: center;
+                    animation: pulseOrange 1.5s infinite;
+                ">
+                    <div style="font-size: 48px; margin-bottom: 8px;">⚠️</div>
+                    <h3 style="margin: 0; font-size: 24px; font-weight: bold;">
+                        CONCURRENCY CONFLICT
+                    </h3>
+                </div>
+
+                <div style="padding: 24px;">
+                    <div style="
+                        background: #fff3cd;
+                        border: 2px solid #ff9800;
+                        border-radius: 8px;
+                        padding: 16px;
+                        margin-bottom: 20px;
+                    ">
+                        <p style="margin: 0; color: #856404; font-size: 15px; line-height: 1.6;">
+                            <strong>Another user modified the queue while you were making changes.</strong>
+                        </p>
+                    </div>
+
+                    <p style="
+                        color: #666;
+                        font-size: 15px;
+                        line-height: 1.5;
+                        margin: 0 0 24px 0;
+                        text-align: center;
+                    ">
+                        To prevent data loss and ensure queue integrity, your changes could not be saved.
+                        Please refresh the page to see the latest queue order, then try your changes again.
+                    </p>
+
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <button id="concurrency-cancel" style="
+                            padding: 12px 24px;
+                            background: #6c757d;
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: background 0.2s;
+                        ">Cancel</button>
+                        <button id="concurrency-refresh" style="
+                            padding: 12px 24px;
+                            background: #007bff;
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            font-size: 16px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: background 0.2s;
+                        ">Refresh Page</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            @keyframes pulseOrange {
+                0%, 100% { background: #ff9800; }
+                50% { background: #fb8c00; }
+            }
+        </style>
+    `;
+
+    // Insert modal into page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Add event listeners
+    document.getElementById('concurrency-cancel').addEventListener('click', () => {
+        document.getElementById('concurrency-modal').remove();
+    });
+
+    document.getElementById('concurrency-refresh').addEventListener('click', () => {
+        window.location.reload();
+    });
+
+    // Close on background click
+    document.getElementById('concurrency-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'concurrency-modal') {
+            e.target.remove();
+        }
+    });
+
+    // Close on ESC key
+    const escHandler = (e) => {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('concurrency-modal');
+            if (modal) modal.remove();
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
 }
 
 function updatePositionNumbers() {
