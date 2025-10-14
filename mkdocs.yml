@@ -1,0 +1,20 @@
+site_name: Awning App Docs
+site_url: https://andrewimpellitteri.github.com/awning_wo
+theme:
+  name: material
+nav:
+  - Alembic Guide: ALEMBIC_GUIDE.md
+  - Caching Guide: CACHING_GUIDE.md
+  - Concurrency Audit: CONCURRENCY_AUDIT.md
+  - Denormalization Analysis: DENORMALIZATION_ANALYSIS.md
+  - Deployment Checklist: DEPLOYMENT_CHECKLIST.md
+  - Improvements: IMPROVEMENTS.md
+  - Performance Analysis: PERFORMANCE_ANALYSIS.md
+  - Refactoring Plan: REFACTORING_PLAN.md
+  - Storage Fields Guide: STORAGE_FIELDS_GUIDE.md
+  - WASM Thumbnail Optimization: WASM_THUMBNAIL_OPTIMIZATION.md
+
+# 👇 Add this section
+exclude_docs: |
+  CLAUDE.md
+  COMPLETE_MIGRATION_GUIDE.md
