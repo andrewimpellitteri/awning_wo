@@ -1,0 +1,842 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://andrewimpellitteri.github.com/awning_wo/IMPROVEMENTS/">
+      
+      
+        <link rel="prev" href="../DEPLOYMENT_CHECKLIST/">
+      
+      
+        <link rel="next" href="../PERFORMANCE_ANALYSIS/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
+    
+    
+      
+        <title>Improvements - Awning App Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.2a3383ac.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#analytics-dashboard-improvement-plan" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Awning App Docs" class="md-header__button md-logo" aria-label="Awning App Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Awning App Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Improvements
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Awning App Docs" class="md-nav__button md-logo" aria-label="Awning App Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Awning App Docs
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ALEMBIC_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Alembic Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CACHING_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Caching Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../COMPLETE_MIGRATION_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Complete Migration Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONCURRENCY_AUDIT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Concurrency Audit
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DENORMALIZATION_ANALYSIS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Denormalization Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DEPLOYMENT_CHECKLIST/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Deployment Checklist
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Improvements
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Improvements
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#eda-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      EDA Findings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#review-of-square-footage-parsing-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Review of Square Footage Parsing Code
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#review-of-cleaning-throughput-calculation-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Review of Cleaning Throughput Calculation Code
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#outlier-analysis-in-daily-throughput" class="md-nav__link">
+    <span class="md-ellipsis">
+      Outlier Analysis in Daily Throughput
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-customer-centric-kpis" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Customer-Centric KPIs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-productservice-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Product/Service Analysis
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-rush-order-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Rush Order Analysis
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-lead-time-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Lead Time Analysis
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-interactive-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Interactive Filtering
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PERFORMANCE_ANALYSIS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Performance Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../REFACTORING_PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Refactoring Plan
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../STORAGE_FIELDS_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Storage Fields Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../WASM_THUMBNAIL_OPTIMIZATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    WASM Thumbnail Optimization
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#eda-findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      EDA Findings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#review-of-square-footage-parsing-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Review of Square Footage Parsing Code
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#review-of-cleaning-throughput-calculation-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Review of Cleaning Throughput Calculation Code
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#outlier-analysis-in-daily-throughput" class="md-nav__link">
+    <span class="md-ellipsis">
+      Outlier Analysis in Daily Throughput
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-customer-centric-kpis" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Customer-Centric KPIs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-productservice-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Product/Service Analysis
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-rush-order-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Rush Order Analysis
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-lead-time-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Lead Time Analysis
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-interactive-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Interactive Filtering
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="analytics-dashboard-improvement-plan">Analytics Dashboard Improvement Plan</h1>
+<p>This document outlines a roadmap for enhancing the analytics dashboard. The goal is to provide deeper insights into the business performance, moving beyond the current order-centric view.</p>
+<h2 id="eda-findings">EDA Findings</h2>
+<p>Based on an analysis of the database, here are some key findings that should inform the analytics improvements:</p>
+<ul>
+<li><strong>Revenue Calculation</strong>: The <code>quote</code> column in the <code>tblcustworkorderdetail</code> table is not a reliable source for revenue figures, as it often contains non-numeric values like "Approved". The <code>price</code> column in the <code>tblorddetcustawngs</code> table, which represents the price of individual order items, is a much more accurate source for revenue calculation. The existing "Total Revenue" KPI should be updated to sum the <code>price</code> of all items in completed work orders.</li>
+<li><strong>Product Types</strong>: The <code>sizewgt</code> column in <code>tblorddetcustawngs</code> contains complex strings that describe the size and weight of order items. The existing logic to differentiate between "awnings" and "sails" (based on the presence of a "#" symbol) appears to be correct. This provides a good foundation for product-level analysis.</li>
+<li><strong>Rush Orders</strong>: The <code>rushorder</code> and <code>firmrush</code> boolean columns in <code>tblcustworkorderdetail</code> are well-populated and can be used to analyze the frequency and impact of rush orders.</li>
+</ul>
+<h2 id="review-of-square-footage-parsing-code">Review of Square Footage Parsing Code</h2>
+<p>The <code>clean_square_footage</code> and <code>clean_sail_weight</code> functions, along with their usage in <code>load_work_orders</code>, have been reviewed for accuracy and robustness.</p>
+<p><strong>Findings:</strong></p>
+<ul>
+<li><strong><code>clean_square_footage</code></strong>: This function is highly robust and accurate. It effectively handles a wide variety of complex input formats for awning sizes, including dimensions with feet and inches (e.g., <code>8'9"x10'2"</code>), simple <code>XxY</code> dimensions, and values with an <code>=</code> sign indicating a pre-calculated area. It also correctly strips currency and unit markers. Error handling for malformed strings is graceful, returning <code>0.0</code>.</li>
+<li><strong><code>clean_sail_weight</code></strong>: This function accurately parses sail weights in the format <code>95#</code>. It correctly extracts the numeric value and handles potential conversion errors.</li>
+<li><strong><code>load_work_orders</code> Integration</strong>: The logic within <code>load_work_orders</code> to determine <code>product_type</code> (Awning vs. Sail based on <code>#</code> in <code>sizewgt</code>) and then apply the appropriate cleaning function (<code>clean_square_footage</code> or <code>clean_sail_weight</code>) is correct and efficient.</li>
+</ul>
+<p><strong>Conclusion:</strong></p>
+<p>The existing square footage parsing code is <strong>accurate, robust, and well-implemented</strong> for the identified data patterns. No major improvements are immediately necessary for its core functionality. The current implementation is well-suited for the task of calculating square footage from diverse input strings.</p>
+<h2 id="review-of-cleaning-throughput-calculation-code">Review of Cleaning Throughput Calculation Code</h2>
+<p>The code responsible for calculating cleaning throughput, primarily within <code>load_work_orders</code> and <code>get_daily_throughput</code>, has been reviewed for correctness.</p>
+<p><strong>Findings:</strong></p>
+<ul>
+<li><strong><code>load_work_orders</code></strong>: This function accurately calculates the <code>sqft</code> for individual items by multiplying <code>qty_numeric</code> with the results from <code>clean_sail_weight</code> or <code>clean_square_footage</code> (which were previously reviewed and found to be robust). It then correctly aggregates these <code>sqft</code> values to derive <code>totalsize</code> for each work order.</li>
+<li><strong><code>get_daily_throughput</code></strong>: This function correctly filters for completed work orders using <code>datecompleted</code>. It then accurately groups these completed orders by their completion date and sums their <code>totalsize</code> to determine the <code>daily_sqft</code>. The rolling average calculation is also correctly implemented, providing a smoothed trend of throughput.</li>
+</ul>
+<p><strong>Conclusion:</strong></p>
+<p>The cleaning throughput calculation code is <strong>correct and accurate</strong>. It effectively processes raw data into meaningful daily and rolling average metrics. The recent change to remove the <code>.tail(90)</code> limit will ensure that the dashboard now displays the full historical data for daily cleaning throughput, providing a comprehensive view over time.</p>
+<h2 id="outlier-analysis-in-daily-throughput">Outlier Analysis in Daily Throughput</h2>
+<p>An initial outlier detection using the IQR method on daily throughput data revealed several dates with extremely high square footage values. These outliers are highly suggestive of data entry errors rather than legitimate production spikes. For example, some single work orders are recorded with millions of square feet, which is physically improbable.</p>
+<p><strong>Examples of extreme outliers:</strong>
+*   <code>2011-04-27</code>: 1.679114e+07 sq ft
+*   <code>2010-08-12</code>: 7.204018e+06 sq ft
+*   <code>2011-02-18</code>: 6.003085e+06 sq ft</p>
+<p><strong>Recommendations for Outlier Handling:</strong>
+1.  <strong>Data Validation</strong>: Investigate the raw <code>sizewgt</code> entries for the work orders contributing to these extreme outliers. This will help confirm if they are indeed data entry errors.
+2.  <strong>Data Cleaning Strategy</strong>: Implement a strategy to handle such outliers. This could involve:
+    *   <strong>Correction</strong>: If possible, correct the erroneous entries in the source data.
+    *   <strong>Exclusion</strong>: Exclude extreme outliers from calculations, perhaps by setting a reasonable upper bound for <code>totalsize</code> per work order or per day.
+    *   <strong>Transformation</strong>: Apply data transformation techniques (e.g., winsorization) to cap extreme values.
+3.  <strong>Robustness of Parsing</strong>: While <code>clean_square_footage</code> is robust, review if specific malformed patterns in <code>sizewgt</code> are consistently leading to these extreme values, and if so, enhance the parsing logic to better handle or flag them.</p>
+<h2 id="1-customer-centric-kpis">1. Customer-Centric KPIs</h2>
+<p>The current dashboard focuses heavily on work orders. To better understand customer behavior and value, we should add the following KPIs:</p>
+<ul>
+<li><strong>New vs. Returning Customers</strong>: Track the number of new customers acquired over time versus the number of returning customers. This will help measure customer loyalty and business growth.</li>
+<li><strong>Customer Lifetime Value (CLV)</strong>: Calculate the total revenue generated per customer. This will help identify high-value customers.</li>
+<li><strong>Top Customers</strong>: A list of top customers by revenue or number of orders.</li>
+</ul>
+<p><strong>Implementation Steps:</strong></p>
+<ol>
+<li>Modify the <code>load_work_orders</code> function to also return customer data.</li>
+<li>Create a new function <code>calculate_customer_kpis</code> to compute the new metrics.</li>
+<li>Add new KPI cards to the <code>dashboard.html</code> template.</li>
+<li>Add a new chart to visualize new vs. returning customers over time.</li>
+</ol>
+<h2 id="2-productservice-analysis">2. Product/Service Analysis</h2>
+<p>The current <code>sizewgt</code> column processing differentiates between "awnings" and "sails". We can leverage this to provide a more granular analysis of the business.</p>
+<ul>
+<li><strong>Revenue by Product Type</strong>: Break down total revenue by "awning" and "sail".</li>
+<li><strong>Throughput by Product Type</strong>: Analyze the square footage cleaned for each product type.</li>
+<li><strong>Order Volume by Product Type</strong>: Show the number of orders for each product type.</li>
+</ul>
+<p><strong>Implementation Steps:</strong></p>
+<ol>
+<li>Modify the <code>load_work_orders</code> function to categorize each order item as "awning" or "sail".</li>
+<li>Update the KPI calculation functions to aggregate by product type.</li>
+<li>Add new charts or update existing ones to show the product type breakdown. A stacked bar chart for monthly trends could work well.</li>
+</ol>
+<h2 id="3-rush-order-analysis">3. Rush Order Analysis</h2>
+<p>The <code>rushorder</code> and <code>firmrush</code> columns indicate the urgency of an order. We should analyze the impact of these orders.</p>
+<ul>
+<li><strong>Rush Order Frequency</strong>: What percentage of orders are rush orders?</li>
+<li><strong>Rush Order Revenue</strong>: Do rush orders generate more revenue on average?</li>
+<li><strong>Impact on Lead Time</strong>: Do rush orders get completed faster?</li>
+</ul>
+<p><strong>Implementation Steps:</strong></p>
+<ol>
+<li>Incorporate the <code>rushorder</code> and <code>firmrush</code> columns into the <code>load_work_orders</code> function.</li>
+<li>Calculate KPIs related to rush orders.</li>
+<li>Add a section to the dashboard to display these insights.</li>
+</ol>
+<h2 id="4-lead-time-analysis">4. Lead Time Analysis</h2>
+<p>Understanding how long it takes to complete an order is a crucial operational metric.</p>
+<ul>
+<li><strong>Average Lead Time</strong>: Calculate the average time between <code>datein</code> and <code>datecompleted</code>.</li>
+<li><strong>Lead Time Distribution</strong>: Show a histogram of lead times to identify outliers.</li>
+<li><strong>Lead Time by Product Type</strong>: Analyze if certain products take longer to complete.</li>
+</ul>
+<p><strong>Implementation Steps:</strong></p>
+<ol>
+<li>Calculate the lead time for each completed order in the <code>load_work_orders</code> function.</li>
+<li>Create a new function to calculate lead time metrics.</li>
+<li>Add a new chart to the dashboard to visualize the lead time distribution.</li>
+</ol>
+<h2 id="5-interactive-filtering">5. Interactive Filtering</h2>
+<p>To make the dashboard more useful, we should add interactive filtering capabilities.</p>
+<ul>
+<li><strong>Date Range Filter</strong>: Allow users to select a date range to view analytics for a specific period.</li>
+<li><strong>Product Type Filter</strong>: Allow users to filter the data for "awnings" or "sails".</li>
+<li><strong>Customer Filter</strong>: Allow users to search for a specific customer and see their history.</li>
+</ul>
+<p><strong>Implementation Steps:</strong></p>
+<ol>
+<li>Add filter controls to the <code>dashboard.html</code> template.</li>
+<li>Modify the <code>/api/data</code> endpoint to accept filter parameters.</li>
+<li>Update the backend functions to apply the filters to the data.</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>

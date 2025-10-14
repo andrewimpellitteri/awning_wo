@@ -1,0 +1,1544 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://andrewimpellitteri.github.com/awning_wo/DEPLOYMENT_CHECKLIST/">
+      
+      
+        <link rel="prev" href="../DENORMALIZATION_ANALYSIS/">
+      
+      
+        <link rel="next" href="../IMPROVEMENTS/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
+    
+    
+      
+        <title>Deployment Checklist - Awning App Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.2a3383ac.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#source-name-denormalization-deployment-checklist" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Awning App Docs" class="md-header__button md-logo" aria-label="Awning App Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Awning App Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Deployment Checklist
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Awning App Docs" class="md-nav__button md-logo" aria-label="Awning App Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Awning App Docs
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ALEMBIC_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Alembic Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CACHING_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Caching Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../COMPLETE_MIGRATION_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Complete Migration Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONCURRENCY_AUDIT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Concurrency Audit
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DENORMALIZATION_ANALYSIS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Denormalization Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Deployment Checklist
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Deployment Checklist
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pre-deployment-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pre-Deployment Checklist
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pre-Deployment Checklist">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-code-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Code Review
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-staging-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Staging Environment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-performance-verification-staging" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Performance Verification (Staging)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-data-consistency-check-staging" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Data Consistency Check (Staging)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-deployment-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      Production Deployment Checklist
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Production Deployment Checklist">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-pre-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Pre-Deployment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-database-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Database Migration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Verification
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-application-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Application Deployment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-smoke-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Smoke Testing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-performance-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Performance Monitoring
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-post-deployment-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      7. Post-Deployment Verification
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-deployment-monitoring-first-24-hours" class="md-nav__link">
+    <span class="md-ellipsis">
+      Post-Deployment Monitoring (First 24 Hours)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Post-Deployment Monitoring (First 24 Hours)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#immediate-first-hour" class="md-nav__link">
+    <span class="md-ellipsis">
+      Immediate (First Hour)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#first-4-hours" class="md-nav__link">
+    <span class="md-ellipsis">
+      First 4 Hours
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#first-24-hours" class="md-nav__link">
+    <span class="md-ellipsis">
+      First 24 Hours
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rollback-plan-if-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rollback Plan (If Needed)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rollback Plan (If Needed)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-to-rollback" class="md-nav__link">
+    <span class="md-ellipsis">
+      When to Rollback
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rollback-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rollback Steps
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#success-criteria" class="md-nav__link">
+    <span class="md-ellipsis">
+      Success Criteria
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Success Criteria">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#migration-success" class="md-nav__link">
+    <span class="md-ellipsis">
+      Migration Success
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#application-success" class="md-nav__link">
+    <span class="md-ellipsis">
+      Application Success
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-success" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Success
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-integrity-success" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Integrity Success
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contact-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      Contact Information
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Contact Information">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#in-case-of-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      In Case of Issues
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useful-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Useful Commands
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Notes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#duration-estimates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Duration Estimates
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#risks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Risks
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#known-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Known Issues
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../IMPROVEMENTS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Improvements
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PERFORMANCE_ANALYSIS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Performance Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../REFACTORING_PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Refactoring Plan
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../STORAGE_FIELDS_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Storage Fields Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../WASM_THUMBNAIL_OPTIMIZATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    WASM Thumbnail Optimization
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#pre-deployment-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pre-Deployment Checklist
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pre-Deployment Checklist">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-code-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Code Review
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-staging-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Staging Environment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-performance-verification-staging" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Performance Verification (Staging)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-data-consistency-check-staging" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Data Consistency Check (Staging)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-deployment-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      Production Deployment Checklist
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Production Deployment Checklist">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-pre-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Pre-Deployment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-database-migration" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Database Migration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Verification
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-application-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Application Deployment
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-smoke-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Smoke Testing
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6-performance-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Performance Monitoring
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-post-deployment-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      7. Post-Deployment Verification
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#post-deployment-monitoring-first-24-hours" class="md-nav__link">
+    <span class="md-ellipsis">
+      Post-Deployment Monitoring (First 24 Hours)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Post-Deployment Monitoring (First 24 Hours)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#immediate-first-hour" class="md-nav__link">
+    <span class="md-ellipsis">
+      Immediate (First Hour)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#first-4-hours" class="md-nav__link">
+    <span class="md-ellipsis">
+      First 4 Hours
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#first-24-hours" class="md-nav__link">
+    <span class="md-ellipsis">
+      First 24 Hours
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rollback-plan-if-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rollback Plan (If Needed)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rollback Plan (If Needed)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-to-rollback" class="md-nav__link">
+    <span class="md-ellipsis">
+      When to Rollback
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rollback-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rollback Steps
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#success-criteria" class="md-nav__link">
+    <span class="md-ellipsis">
+      Success Criteria
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Success Criteria">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#migration-success" class="md-nav__link">
+    <span class="md-ellipsis">
+      Migration Success
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#application-success" class="md-nav__link">
+    <span class="md-ellipsis">
+      Application Success
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-success" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Success
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-integrity-success" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Integrity Success
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contact-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      Contact Information
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Contact Information">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#in-case-of-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      In Case of Issues
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#useful-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Useful Commands
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Notes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#duration-estimates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Duration Estimates
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#risks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Risks
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#known-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      Known Issues
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="source-name-denormalization-deployment-checklist">Source Name Denormalization - Deployment Checklist</h1>
+<h2 id="pre-deployment-checklist">Pre-Deployment Checklist</h2>
+<h3 id="1-code-review">1. Code Review</h3>
+<ul>
+<li>[ ] Review all code changes in Git</li>
+<li>[ ] Verify all tests pass locally</li>
+<li>[ ] Review migration script for syntax errors</li>
+<li>[ ] Confirm backup/rollback plan is understood</li>
+</ul>
+<h3 id="2-staging-environment">2. Staging Environment</h3>
+<ul>
+<li>[ ] Backup staging database</li>
+<li>[ ] Apply migration to staging:
+  <code>bash
+  psql "$STAGING_DATABASE_URL" -f query_optimization/add_source_name_denormalization.sql</code></li>
+<li>[ ] Verify migration success:
+  <code>sql
+  SELECT COUNT(*) as total, COUNT(source_name) as with_source
+  FROM tblcustworkorderdetail;</code></li>
+<li>[ ] Deploy code to staging</li>
+<li>[ ] Test all work order operations:</li>
+<li>[ ] Create work order</li>
+<li>[ ] Edit work order (change customer)</li>
+<li>[ ] List work orders</li>
+<li>[ ] Filter by source</li>
+<li>[ ] Sort by source</li>
+<li>[ ] Create repair order</li>
+<li>[ ] Edit repair order</li>
+<li>[ ] Filter repair orders by source</li>
+</ul>
+<h3 id="3-performance-verification-staging">3. Performance Verification (Staging)</h3>
+<ul>
+<li>[ ] Run EXPLAIN ANALYZE on source filter query (before/after comparison)</li>
+<li>[ ] Check query execution times in logs</li>
+<li>[ ] Verify indexes are being used:
+  <code>sql
+  SELECT schemaname, tablename, indexname, idx_scan
+  FROM pg_stat_user_indexes
+  WHERE indexname LIKE '%source_name%';</code></li>
+</ul>
+<h3 id="4-data-consistency-check-staging">4. Data Consistency Check (Staging)</h3>
+<ul>
+<li>[ ] Run verification query:
+  <code>sql
+  SELECT
+      COUNT(*) as total,
+      COUNT(wo.source_name) as has_source_name,
+      SUM(CASE WHEN wo.source_name = s.ssource THEN 1 ELSE 0 END) as correct,
+      SUM(CASE WHEN wo.source_name != s.ssource THEN 1 ELSE 0 END) as incorrect
+  FROM tblcustworkorderdetail wo
+  LEFT JOIN tblcustomers c ON wo.custid = c.custid
+  LEFT JOIN tblsource s ON c.source = s.ssource;</code></li>
+<li>[ ] Verify incorrect count is 0</li>
+</ul>
+<h2 id="production-deployment-checklist">Production Deployment Checklist</h2>
+<h3 id="1-pre-deployment">1. Pre-Deployment</h3>
+<ul>
+<li>[ ] Schedule maintenance window (recommend off-peak hours)</li>
+<li>[ ] Notify team of deployment</li>
+<li>[ ] Ensure backup retention is enabled</li>
+<li>[ ] Take manual snapshot of RDS (if using AWS)</li>
+<li>[ ] Document current performance baseline</li>
+</ul>
+<h3 id="2-database-migration">2. Database Migration</h3>
+<ul>
+<li>[ ] Backup production database:
+  ```bash
+  # AWS RDS
+  aws rds create-db-snapshot --db-instance-identifier your-instance --db-snapshot-identifier pre-denorm-$(date +%Y%m%d)</li>
+</ul>
+<p># Or manual
+  pg_dump "$DATABASE_URL" &gt; backup_$(date +%Y%m%d_%H%M%S).sql
+  <code>- [ ] Apply migration to production:</code>bash
+  psql "$DATABASE_URL" -f query_optimization/add_source_name_denormalization.sql
+  ```
+- [ ] Verify migration completed successfully
+- [ ] Check for errors in migration output</p>
+<h3 id="3-verification">3. Verification</h3>
+<ul>
+<li>[ ] Run data consistency check:
+  ```sql
+  -- Work Orders
+  SELECT 'Work Orders' as table_name,
+         COUNT(*) as total,
+         COUNT(source_name) as with_source_name,
+         SUM(CASE WHEN source_name = s.ssource THEN 1 ELSE 0 END) as correct,
+         SUM(CASE WHEN source_name != s.ssource THEN 1 ELSE 0 END) as incorrect
+  FROM tblcustworkorderdetail wo
+  LEFT JOIN tblcustomers c ON wo.custid = c.custid
+  LEFT JOIN tblsource s ON c.source = s.ssource</li>
+</ul>
+<p>UNION ALL</p>
+<p>-- Repair Orders
+  SELECT 'Repair Orders' as table_name,
+         COUNT(*) as total,
+         COUNT(source_name) as with_source_name,
+         SUM(CASE WHEN source_name = s.ssource THEN 1 ELSE 0 END) as correct,
+         SUM(CASE WHEN source_name != s.ssource THEN 1 ELSE 0 END) as incorrect
+  FROM tblrepairworkorderdetail ro
+  LEFT JOIN tblcustomers c ON ro.custid = c.custid
+  LEFT JOIN tblsource s ON c.source = s.ssource;
+  <code>- [ ] Verify indexes were created:</code>sql
+  SELECT schemaname, tablename, indexname, indexdef
+  FROM pg_indexes
+  WHERE indexname IN ('idx_workorder_source_name', 'idx_repairorder_source_name');
+  <code>- [ ] Verify triggers were created:</code>sql
+  SELECT trigger_name, event_manipulation, event_object_table
+  FROM information_schema.triggers
+  WHERE trigger_name LIKE '%source_name%';
+  ```</p>
+<h3 id="4-application-deployment">4. Application Deployment</h3>
+<ul>
+<li>[ ] Commit all code changes:
+  <code>bash
+  git add .
+  git commit -m "Add source_name denormalization for 100x query performance"
+  git push origin main</code></li>
+<li>[ ] Deploy application (AWS EB example):
+  <code>bash
+  eb deploy</code></li>
+<li>[ ] Wait for deployment to complete</li>
+<li>[ ] Check deployment status:
+  <code>bash
+  eb status</code></li>
+</ul>
+<h3 id="5-smoke-testing">5. Smoke Testing</h3>
+<ul>
+<li>[ ] Open application in browser</li>
+<li>[ ] Test work order list page loads</li>
+<li>[ ] Test source filter works</li>
+<li>[ ] Test source sorting works</li>
+<li>[ ] Test creating new work order</li>
+<li>[ ] Test editing existing work order</li>
+<li>[ ] Test repair order list page</li>
+<li>[ ] Test creating new repair order</li>
+</ul>
+<h3 id="6-performance-monitoring">6. Performance Monitoring</h3>
+<ul>
+<li>[ ] Monitor application logs for errors:
+  <code>bash
+  eb logs --stream
+  # or
+  tail -f /var/log/application.log</code></li>
+<li>[ ] Check query execution times in database logs</li>
+<li>[ ] Monitor application response times</li>
+<li>[ ] Check error rates in monitoring tools</li>
+</ul>
+<h3 id="7-post-deployment-verification">7. Post-Deployment Verification</h3>
+<ul>
+<li>[ ] Test source filter API:
+  <code>bash
+  curl "https://your-app.com/api/work_orders?filter_Source=Boat"</code></li>
+<li>[ ] Test source sorting API:
+  <code>bash
+  curl "https://your-app.com/api/work_orders?sort[0][field]=Source&amp;sort[0][dir]=asc"</code></li>
+<li>[ ] Verify API returns correct data</li>
+<li>[ ] Check response times are faster</li>
+</ul>
+<h2 id="post-deployment-monitoring-first-24-hours">Post-Deployment Monitoring (First 24 Hours)</h2>
+<h3 id="immediate-first-hour">Immediate (First Hour)</h3>
+<ul>
+<li>[ ] Monitor error logs continuously</li>
+<li>[ ] Check application metrics dashboard</li>
+<li>[ ] Watch for any null pointer exceptions</li>
+<li>[ ] Monitor database CPU and memory usage</li>
+<li>[ ] Check query execution times</li>
+</ul>
+<h3 id="first-4-hours">First 4 Hours</h3>
+<ul>
+<li>[ ] Review error logs every hour</li>
+<li>[ ] Check data consistency</li>
+<li>[ ] Monitor user-reported issues</li>
+<li>[ ] Verify backup completed successfully</li>
+</ul>
+<h3 id="first-24-hours">First 24 Hours</h3>
+<ul>
+<li>[ ] Review error logs 3-4 times</li>
+<li>[ ] Check data consistency once</li>
+<li>[ ] Monitor query performance trends</li>
+<li>[ ] Document any issues encountered</li>
+</ul>
+<h2 id="rollback-plan-if-needed">Rollback Plan (If Needed)</h2>
+<h3 id="when-to-rollback">When to Rollback</h3>
+<ul>
+<li>[ ] Critical errors in application</li>
+<li>[ ] Data inconsistency detected</li>
+<li>[ ] Performance degradation</li>
+<li>[ ] User-facing bugs</li>
+</ul>
+<h3 id="rollback-steps">Rollback Steps</h3>
+<ol>
+<li>
+<p>[ ] Revert application code:
+   <code>bash
+   git revert HEAD
+   git push origin main
+   eb deploy</code></p>
+</li>
+<li>
+<p>[ ] Revert database changes:
+   <code>bash
+   psql "$DATABASE_URL" -f query_optimization/rollback_source_name_denormalization.sql</code></p>
+</li>
+</ol>
+<p>Or manually:
+   ```sql
+   BEGIN;</p>
+<p>-- Drop triggers
+   DROP TRIGGER IF EXISTS trg_sync_work_order_source_name ON tblcustworkorderdetail;
+   DROP TRIGGER IF EXISTS trg_sync_repair_order_source_name ON tblrepairworkorderdetail;
+   DROP TRIGGER IF EXISTS trg_sync_orders_on_customer_source_change ON tblcustomers;</p>
+<p>-- Drop functions
+   DROP FUNCTION IF EXISTS sync_work_order_source_name();
+   DROP FUNCTION IF EXISTS sync_repair_order_source_name();
+   DROP FUNCTION IF EXISTS sync_orders_on_customer_source_change();</p>
+<p>-- Drop indexes
+   DROP INDEX IF EXISTS idx_workorder_source_name;
+   DROP INDEX IF EXISTS idx_repairorder_source_name;</p>
+<p>-- Drop columns (optional - can leave for future retry)
+   -- ALTER TABLE tblcustworkorderdetail DROP COLUMN IF EXISTS source_name;
+   -- ALTER TABLE tblrepairworkorderdetail DROP COLUMN IF EXISTS source_name;</p>
+<p>COMMIT;
+   ```</p>
+<ol>
+<li>[ ] Verify rollback successful</li>
+<li>[ ] Monitor for stability</li>
+<li>[ ] Document rollback reason</li>
+</ol>
+<h2 id="success-criteria">Success Criteria</h2>
+<h3 id="migration-success">Migration Success</h3>
+<ul>
+<li>[x] All SQL statements executed without errors</li>
+<li>[x] All existing records have <code>source_name</code> populated</li>
+<li>[x] Indexes created successfully</li>
+<li>[x] Triggers created successfully</li>
+<li>[x] Data consistency checks pass</li>
+</ul>
+<h3 id="application-success">Application Success</h3>
+<ul>
+<li>[x] All tests pass (40/40)</li>
+<li>[x] No errors in application logs</li>
+<li>[x] Work order operations work correctly</li>
+<li>[x] Repair order operations work correctly</li>
+<li>[x] Source filtering works</li>
+<li>[x] Source sorting works</li>
+</ul>
+<h3 id="performance-success">Performance Success</h3>
+<ul>
+<li>[ ] Source sorting &lt; 5ms (target: ~1ms)</li>
+<li>[ ] Source filtering &lt; 1ms (target: ~0.1ms)</li>
+<li>[ ] Default list load &lt; 1ms (target: ~0.04ms)</li>
+<li>[ ] Index usage confirmed in query plans</li>
+<li>[ ] No sequential scans on source_name queries</li>
+</ul>
+<h3 id="data-integrity-success">Data Integrity Success</h3>
+<ul>
+<li>[ ] No data inconsistencies detected</li>
+<li>[ ] All triggers firing correctly</li>
+<li>[ ] Application sync methods working</li>
+<li>[ ] Customer source changes propagate correctly</li>
+</ul>
+<h2 id="contact-information">Contact Information</h2>
+<h3 id="in-case-of-issues">In Case of Issues</h3>
+<ul>
+<li><strong>Database Admin:</strong> [Your DBA Contact]</li>
+<li><strong>DevOps Lead:</strong> [Your DevOps Contact]</li>
+<li><strong>On-Call Engineer:</strong> [Your On-Call Contact]</li>
+</ul>
+<h3 id="useful-commands">Useful Commands</h3>
+<pre><code class="language-bash"># Check current git commit
+git log -1
+
+# Check deployed version
+eb printenv | grep GIT_COMMIT
+
+# View real-time logs
+eb logs --stream
+
+# Check database connections
+psql &quot;$DATABASE_URL&quot; -c &quot;SELECT count(*) FROM pg_stat_activity;&quot;
+
+# Check table size
+psql &quot;$DATABASE_URL&quot; -c &quot;
+  SELECT
+    pg_size_pretty(pg_total_relation_size('tblcustworkorderdetail')) as work_orders_size,
+    pg_size_pretty(pg_total_relation_size('tblrepairworkorderdetail')) as repair_orders_size;
+&quot;
+</code></pre>
+<h2 id="notes">Notes</h2>
+<h3 id="duration-estimates">Duration Estimates</h3>
+<ul>
+<li>Migration execution: 1-5 minutes (depends on table size)</li>
+<li>Application deployment: 5-10 minutes</li>
+<li>Smoke testing: 10-15 minutes</li>
+<li>Total: 20-30 minutes</li>
+</ul>
+<h3 id="risks">Risks</h3>
+<ul>
+<li>Low risk: Migration is backward compatible</li>
+<li>Low risk: All relationships maintained</li>
+<li>Low risk: Comprehensive testing completed</li>
+<li>Low risk: Rollback plan available</li>
+</ul>
+<h3 id="known-issues">Known Issues</h3>
+<ul>
+<li>None at this time</li>
+</ul>
+<hr />
+<p><strong>Last Updated:</strong> October 12, 2025
+<strong>Version:</strong> 1.0
+<strong>Status:</strong> Ready for Production Deployment</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>

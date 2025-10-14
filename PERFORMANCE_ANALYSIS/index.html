@@ -1,0 +1,1972 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://andrewimpellitteri.github.com/awning_wo/PERFORMANCE_ANALYSIS/">
+      
+      
+        <link rel="prev" href="../IMPROVEMENTS/">
+      
+      
+        <link rel="next" href="../REFACTORING_PLAN/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
+    
+    
+      
+        <title>Performance Analysis - Awning App Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.2a3383ac.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#work-order-list-query-performance-analysis" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Awning App Docs" class="md-header__button md-logo" aria-label="Awning App Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Awning App Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Performance Analysis
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Awning App Docs" class="md-nav__button md-logo" aria-label="Awning App Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Awning App Docs
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ALEMBIC_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Alembic Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CACHING_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Caching Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../COMPLETE_MIGRATION_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Complete Migration Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONCURRENCY_AUDIT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Concurrency Audit
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DENORMALIZATION_ANALYSIS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Denormalization Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DEPLOYMENT_CHECKLIST/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Deployment Checklist
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../IMPROVEMENTS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Improvements
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Performance Analysis
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Performance Analysis
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      Executive Summary
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Executive Summary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#critical-issues-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      🚨 Critical Issues Found:
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#whats-working-well" class="md-nav__link">
+    <span class="md-ellipsis">
+      ✅ What's Working Well:
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#detailed-query-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Detailed Query Analysis
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Detailed Query Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#query-1-baseline-default-sort-by-workorderno" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #1: Baseline (Default Sort by WorkOrderNo)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-2-count-query-pagination-total" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #2: Count Query (Pagination Total)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-3-with-customer-join" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #3: With Customer Join
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-4-with-source-join" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #4: With Source Join
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-5-pending-filter-most-common" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #5: Pending Filter (Most Common)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-6-completed-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #6: Completed Filter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-7-rush-orders" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #7: Rush Orders
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-8-workorderno-range-filter-problem-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #8: 🚨 WorkOrderNo Range Filter (PROBLEM #1)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-9-workorderno-exact-filter-problem-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #9: 🚨 WorkOrderNo Exact Filter (PROBLEM #2)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-10-custid-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #10: CustID Filter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-11-woname-text-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #11: WOName Text Search
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-12-source-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #12: Source Filter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-13-sort-by-datein" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #13: Sort by DateIn
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-14-sort-by-daterequired-problem-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #14: 🚨 Sort by DateRequired (PROBLEM #3)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-15-sort-by-source-problem-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #15: 🚨 Sort by Source (PROBLEM #4)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-16-complex-query-pending-filter-sort" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #16: Complex Query (Pending + Filter + Sort)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-17-deep-pagination" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #17: Deep Pagination
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-issues-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Issues Summary
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Issues Summary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#issue-1-workorderno-cast-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      🚨 Issue #1: WorkOrderNo CAST Operations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🚨 Issue #1: WorkOrderNo CAST Operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-a-create-function-based-index-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option A: Create Function-Based Index (RECOMMENDED)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-b-change-column-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option B: Change Column Type
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-2-daterequired-sorting" class="md-nav__link">
+    <span class="md-ellipsis">
+      🚨 Issue #2: DateRequired Sorting
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-3-source-sorting" class="md-nav__link">
+    <span class="md-ellipsis">
+      🚨 Issue #3: Source Sorting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🚨 Issue #3: Source Sorting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-a-denormalize-source-into-work-orders-best" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option A: Denormalize Source into Work Orders (BEST)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-b-materialized-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option B: Materialized View
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-c-cache-the-query-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option C: Cache the Query Result
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-d-accept-the-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option D: Accept the Performance
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Statistics
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#index-usage-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      Index Usage Summary
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Index Usage Summary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#existing-indexes-all-working-well" class="md-nav__link">
+    <span class="md-ellipsis">
+      Existing Indexes (All Working Well)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#missing-indexes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Missing Indexes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Recommendations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Recommendations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#priority-1-do-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      🎯 Priority 1 (Do Now)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#priority-2-evaluate-costbenefit" class="md-nav__link">
+    <span class="md-ellipsis">
+      🎯 Priority 2 (Evaluate Cost/Benefit)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#priority-3-optional-optimizations" class="md-nav__link">
+    <span class="md-ellipsis">
+      🎯 Priority 3 (Optional Optimizations)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#application-level-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Application-Level Recommendations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Application-Level Recommendations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-use-eager-loading-already-doing-well" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Use Eager Loading (Already Doing Well ✅)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-avoid-cast-in-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Avoid CAST in Filters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-add-database-connection-pooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Add Database Connection Pooling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-consider-caching-for-expensive-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Consider Caching for Expensive Queries
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-the-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing the Fixes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing the Fixes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-apply-priority-1-indexes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 1: Apply Priority 1 Indexes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-re-run-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 2: Re-run Analysis
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-verify-improvements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 3: Verify Improvements
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conclusion
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../REFACTORING_PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Refactoring Plan
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../STORAGE_FIELDS_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Storage Fields Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../WASM_THUMBNAIL_OPTIMIZATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    WASM Thumbnail Optimization
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      Executive Summary
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Executive Summary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#critical-issues-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      🚨 Critical Issues Found:
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#whats-working-well" class="md-nav__link">
+    <span class="md-ellipsis">
+      ✅ What's Working Well:
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#detailed-query-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Detailed Query Analysis
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Detailed Query Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#query-1-baseline-default-sort-by-workorderno" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #1: Baseline (Default Sort by WorkOrderNo)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-2-count-query-pagination-total" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #2: Count Query (Pagination Total)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-3-with-customer-join" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #3: With Customer Join
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-4-with-source-join" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #4: With Source Join
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-5-pending-filter-most-common" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #5: Pending Filter (Most Common)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-6-completed-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #6: Completed Filter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-7-rush-orders" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #7: Rush Orders
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-8-workorderno-range-filter-problem-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #8: 🚨 WorkOrderNo Range Filter (PROBLEM #1)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-9-workorderno-exact-filter-problem-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #9: 🚨 WorkOrderNo Exact Filter (PROBLEM #2)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-10-custid-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #10: CustID Filter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-11-woname-text-search" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #11: WOName Text Search
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-12-source-filter" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #12: Source Filter
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-13-sort-by-datein" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #13: Sort by DateIn
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-14-sort-by-daterequired-problem-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #14: 🚨 Sort by DateRequired (PROBLEM #3)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-15-sort-by-source-problem-4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #15: 🚨 Sort by Source (PROBLEM #4)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-16-complex-query-pending-filter-sort" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #16: Complex Query (Pending + Filter + Sort)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#query-17-deep-pagination" class="md-nav__link">
+    <span class="md-ellipsis">
+      Query #17: Deep Pagination
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-issues-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Issues Summary
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Issues Summary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#issue-1-workorderno-cast-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      🚨 Issue #1: WorkOrderNo CAST Operations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🚨 Issue #1: WorkOrderNo CAST Operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-a-create-function-based-index-recommended" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option A: Create Function-Based Index (RECOMMENDED)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-b-change-column-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option B: Change Column Type
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-2-daterequired-sorting" class="md-nav__link">
+    <span class="md-ellipsis">
+      🚨 Issue #2: DateRequired Sorting
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#issue-3-source-sorting" class="md-nav__link">
+    <span class="md-ellipsis">
+      🚨 Issue #3: Source Sorting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🚨 Issue #3: Source Sorting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#option-a-denormalize-source-into-work-orders-best" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option A: Denormalize Source into Work Orders (BEST)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-b-materialized-view" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option B: Materialized View
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-c-cache-the-query-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option C: Cache the Query Result
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#option-d-accept-the-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      Option D: Accept the Performance
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Statistics
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#index-usage-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      Index Usage Summary
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Index Usage Summary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#existing-indexes-all-working-well" class="md-nav__link">
+    <span class="md-ellipsis">
+      Existing Indexes (All Working Well)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#missing-indexes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Missing Indexes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Recommendations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Recommendations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#priority-1-do-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      🎯 Priority 1 (Do Now)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#priority-2-evaluate-costbenefit" class="md-nav__link">
+    <span class="md-ellipsis">
+      🎯 Priority 2 (Evaluate Cost/Benefit)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#priority-3-optional-optimizations" class="md-nav__link">
+    <span class="md-ellipsis">
+      🎯 Priority 3 (Optional Optimizations)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#application-level-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Application-Level Recommendations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Application-Level Recommendations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-use-eager-loading-already-doing-well" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Use Eager Loading (Already Doing Well ✅)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-avoid-cast-in-filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Avoid CAST in Filters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-add-database-connection-pooling" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Add Database Connection Pooling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-consider-caching-for-expensive-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Consider Caching for Expensive Queries
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-the-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing the Fixes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Testing the Fixes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-apply-priority-1-indexes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 1: Apply Priority 1 Indexes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-re-run-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 2: Re-run Analysis
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-verify-improvements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 3: Verify Improvements
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conclusion
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="work-order-list-query-performance-analysis">Work Order List Query Performance Analysis</h1>
+<h2 id="executive-summary">Executive Summary</h2>
+<p>Your database is <strong>60MB with 49,074 work orders</strong>, and most queries are <strong>ALREADY VERY FAST</strong> (&lt; 1ms execution time). However, there are <strong>3 critical bottlenecks</strong> that need fixing:</p>
+<h3 id="critical-issues-found">🚨 Critical Issues Found:</h3>
+<ol>
+<li><strong>WorkOrderNo filters with CAST</strong> - <strong>9-15ms</strong> (should be &lt; 1ms)</li>
+<li><strong>DateRequired sorting</strong> - <strong>16ms with Seq Scan</strong> (should be &lt; 1ms)</li>
+<li><strong>Source sorting</strong> - <strong>93ms with 3x Seq Scans</strong> (should be &lt; 10ms)</li>
+</ol>
+<h3 id="whats-working-well">✅ What's Working Well:</h3>
+<ul>
+<li><strong>Primary key lookups</strong>: 0.086ms ⚡</li>
+<li><strong>Pending filter</strong>: 0.213ms ⚡</li>
+<li><strong>Rush orders</strong>: 0.086ms ⚡</li>
+<li><strong>CustID filter</strong>: 0.035ms ⚡</li>
+<li><strong>WOName text search</strong>: 0.237ms ⚡</li>
+<li><strong>DateIn sorting</strong>: 0.070ms ⚡</li>
+<li><strong>Customer joins</strong>: Well-optimized with Memoize</li>
+</ul>
+<hr />
+<h2 id="detailed-query-analysis">Detailed Query Analysis</h2>
+<h3 id="query-1-baseline-default-sort-by-workorderno">Query #1: Baseline (Default Sort by WorkOrderNo)</h3>
+<p><strong>Route</strong>: <code>/api/work_orders?page=1&amp;size=25</code></p>
+<pre><code class="language-sql">Execution Time: 0.086 ms ⚡
+Method: Index Scan Backward using tblcustworkorderdetail_pkey
+Buffers: shared hit=4 (all cached)
+</code></pre>
+<p><strong>Status</strong>: ✅ <strong>PERFECT</strong> - Using primary key index efficiently.</p>
+<hr />
+<h3 id="query-2-count-query-pagination-total">Query #2: Count Query (Pagination Total)</h3>
+<p><strong>Route</strong>: Used for pagination total count</p>
+<pre><code class="language-sql">Execution Time: 7.215 ms
+Method: Index Only Scan using idx_workorder_datein
+Buffers: shared hit=331
+Heap Fetches: 650 (needs to check visibility)
+</code></pre>
+<p><strong>Status</strong>: ⚠️ <strong>ACCEPTABLE</strong> - Count queries are inherently slower. 7ms is reasonable for 49K rows.</p>
+<p><strong>Note</strong>: This is why modern UIs use "approximate counts" or "load more" instead of pagination.</p>
+<hr />
+<h3 id="query-3-with-customer-join">Query #3: With Customer Join</h3>
+<p><strong>Route</strong>: <code>/api/work_orders</code> (default view with customer data)</p>
+<pre><code class="language-sql">Execution Time: 0.840 ms ⚡
+Method: Nested Loop with Memoize
+Buffers: shared hit=76
+Memoize: Hits=1, Misses=24 (96% cache hit rate)
+</code></pre>
+<p><strong>Status</strong>: ✅ <strong>EXCELLENT</strong> - PostgreSQL's Memoize feature is working perfectly to avoid N+1 queries.</p>
+<hr />
+<h3 id="query-4-with-source-join">Query #4: With Source Join</h3>
+<p><strong>Route</strong>: <code>/api/work_orders</code> (when filtering or sorting by Source)</p>
+<pre><code class="language-sql">Execution Time: 0.758 ms ⚡
+Method: Double Nested Loop with double Memoize
+Buffers: shared hit=91
+</code></pre>
+<p><strong>Status</strong>: ✅ <strong>EXCELLENT</strong> - Even with 2 joins, still under 1ms.</p>
+<hr />
+<h3 id="query-5-pending-filter-most-common">Query #5: Pending Filter (Most Common)</h3>
+<p><strong>Route</strong>: <code>/api/work_orders?status=pending</code></p>
+<pre><code class="language-sql">Execution Time: 0.213 ms ⚡
+Method: Index Scan using idx_workorder_pending
+Buffers: shared hit=24
+</code></pre>
+<p><strong>Status</strong>: ✅ <strong>PERFECT</strong> - Partial index working beautifully.</p>
+<hr />
+<h3 id="query-6-completed-filter">Query #6: Completed Filter</h3>
+<p><strong>Route</strong>: <code>/api/work_orders?status=completed</code></p>
+<pre><code class="language-sql">Execution Time: 0.038 ms ⚡⚡
+Method: Index Scan Backward with filter
+Buffers: shared hit=4
+</code></pre>
+<p><strong>Status</strong>: ✅ <strong>PERFECT</strong> - Extremely fast.</p>
+<hr />
+<h3 id="query-7-rush-orders">Query #7: Rush Orders</h3>
+<p><strong>Route</strong>: <code>/api/work_orders?status=rush</code></p>
+<pre><code class="language-sql">Execution Time: 0.086 ms ⚡
+Method: Bitmap Index Scan on idx_workorder_rush
+Buffers: shared hit=7
+</code></pre>
+<p><strong>Status</strong>: ✅ <strong>PERFECT</strong> - Rush order index working great.</p>
+<hr />
+<h3 id="query-8-workorderno-range-filter-problem-1">Query #8: 🚨 WorkOrderNo Range Filter (PROBLEM #1)</h3>
+<p><strong>Route</strong>: <code>/api/work_orders?filter_WorkOrderNo=100-200</code></p>
+<pre><code class="language-sql">Execution Time: 14.620 ms 🐌
+Method: Index Scan with CAST filter
+Buffers: shared hit=2780
+Rows Removed by Filter: 49,074 (FULL TABLE SCAN!)
+</code></pre>
+<p><strong>Status</strong>: 🚨 <strong>CRITICAL ISSUE</strong></p>
+<p><strong>Problem</strong>:</p>
+<pre><code class="language-sql">Filter: (((wo.workorderno)::integer &gt;= 100) AND ((wo.workorderno)::integer &lt;= 200))
+</code></pre>
+<p>The <code>CAST(workorderno AS INTEGER)</code> prevents index usage, causing a full table scan.</p>
+<p><strong>Solution</strong>: Create a computed index or change WorkOrderNo to an integer column.</p>
+<hr />
+<h3 id="query-9-workorderno-exact-filter-problem-2">Query #9: 🚨 WorkOrderNo Exact Filter (PROBLEM #2)</h3>
+<p><strong>Route</strong>: <code>/api/work_orders?filter_WorkOrderNo=100</code></p>
+<pre><code class="language-sql">Execution Time: 9.504 ms 🐌
+Method: Index Scan with CAST filter
+Buffers: shared hit=2780
+Rows Removed by Filter: 49,074 (FULL TABLE SCAN!)
+</code></pre>
+<p><strong>Status</strong>: 🚨 <strong>CRITICAL ISSUE</strong> - Same as Query #8.</p>
+<hr />
+<h3 id="query-10-custid-filter">Query #10: CustID Filter</h3>
+<p><strong>Route</strong>: <code>/api/work_orders?filter_CustID=123</code></p>
+<pre><code class="language-sql">Execution Time: 0.035 ms ⚡⚡
+Method: Index Scan using idx_workorder_custid
+Buffers: shared hit=2
+</code></pre>
+<p><strong>Status</strong>: ✅ <strong>PERFECT</strong> - Extremely fast.</p>
+<hr />
+<h3 id="query-11-woname-text-search">Query #11: WOName Text Search</h3>
+<p><strong>Route</strong>: <code>/api/work_orders?filter_WOName=test</code></p>
+<pre><code class="language-sql">Execution Time: 0.237 ms ⚡
+Method: Bitmap Index Scan on idx_workorder_woname_trgm
+Buffers: shared hit=22
+</code></pre>
+<p><strong>Status</strong>: ✅ <strong>EXCELLENT</strong> - Trigram index working great for ILIKE searches.</p>
+<hr />
+<h3 id="query-12-source-filter">Query #12: Source Filter</h3>
+<p><strong>Route</strong>: <code>/api/work_orders?filter_Source=Smith</code></p>
+<pre><code class="language-sql">Execution Time: 0.071 ms ⚡⚡
+Method: Nested Loop with multiple indexes
+Buffers: shared hit=7
+</code></pre>
+<p><strong>Status</strong>: ✅ <strong>PERFECT</strong> - Complex join with multiple indexes, still under 1ms.</p>
+<hr />
+<h3 id="query-13-sort-by-datein">Query #13: Sort by DateIn</h3>
+<p><strong>Route</strong>: <code>/api/work_orders?sort[0][field]=DateIn&amp;sort[0][dir]=desc</code></p>
+<pre><code class="language-sql">Execution Time: 0.070 ms ⚡⚡
+Method: Index Scan using idx_workorder_datein
+Buffers: shared hit=26
+</code></pre>
+<p><strong>Status</strong>: ✅ <strong>PERFECT</strong> - DateIn index working perfectly.</p>
+<hr />
+<h3 id="query-14-sort-by-daterequired-problem-3">Query #14: 🚨 Sort by DateRequired (PROBLEM #3)</h3>
+<p><strong>Route</strong>: <code>/api/work_orders?sort[0][field]=DateRequired&amp;sort[0][dir]=asc</code></p>
+<pre><code class="language-sql">Execution Time: 16.321 ms 🐌
+Method: Sort with Seq Scan
+Buffers: shared hit=1267
+Rows scanned: 49,074 (FULL TABLE SCAN!)
+</code></pre>
+<p><strong>Status</strong>: 🚨 <strong>NEEDS INDEX</strong></p>
+<p><strong>Problem</strong>: No index on <code>daterequired</code>, forcing a full table scan + in-memory sort.</p>
+<p><strong>Solution</strong>: Add index on <code>daterequired</code>.</p>
+<hr />
+<h3 id="query-15-sort-by-source-problem-4">Query #15: 🚨 Sort by Source (PROBLEM #4)</h3>
+<p><strong>Route</strong>: <code>/api/work_orders?sort[0][field]=Source&amp;sort[0][dir]=asc</code></p>
+<pre><code class="language-sql">Execution Time: 93.005 ms 🐌🐌
+Method: Hash Join with 3x Seq Scans
+Buffers: shared hit=1673
+</code></pre>
+<p><strong>Status</strong>: 🚨 <strong>CRITICAL PERFORMANCE ISSUE</strong></p>
+<p><strong>Problem</strong>:
+- Seq Scan on <code>tblcustworkorderdetail</code> (49K rows)
+- Seq Scan on <code>tblcustomers</code> (26K rows)
+- Seq Scan on <code>tblsource</code> (563 rows)
+- Then Hash Join + Sort</p>
+<p><strong>Solution</strong>: This query pattern is inherently expensive. Consider:
+1. Denormalizing source name into work orders table
+2. Using a materialized view
+3. Caching this query result</p>
+<hr />
+<h3 id="query-16-complex-query-pending-filter-sort">Query #16: Complex Query (Pending + Filter + Sort)</h3>
+<p><strong>Route</strong>: <code>/api/work_orders?status=pending&amp;filter_WOName=test&amp;sort[0][field]=DateIn</code></p>
+<pre><code class="language-sql">Execution Time: 0.111 ms ⚡
+Method: BitmapAnd with multiple indexes
+Buffers: shared hit=8
+</code></pre>
+<p><strong>Status</strong>: ✅ <strong>EXCELLENT</strong> - Multiple indexes combined efficiently.</p>
+<hr />
+<h3 id="query-17-deep-pagination">Query #17: Deep Pagination</h3>
+<p><strong>Route</strong>: <code>/api/work_orders?page=10&amp;size=25</code></p>
+<pre><code class="language-sql">Execution Time: 0.111 ms ⚡
+Method: Index Scan Backward with offset
+Buffers: shared hit=11
+</code></pre>
+<p><strong>Status</strong>: ✅ <strong>EXCELLENT</strong> - Even deep pagination is fast with index.</p>
+<hr />
+<h2 id="performance-issues-summary">Performance Issues Summary</h2>
+<h3 id="issue-1-workorderno-cast-operations">🚨 Issue #1: WorkOrderNo CAST Operations</h3>
+<p><strong>Impact</strong>: Medium (14ms for range, 9ms for exact match)
+<strong>Frequency</strong>: Unknown (depends on user filtering behavior)
+<strong>Affected Queries</strong>: #8, #9</p>
+<p><strong>Root Cause</strong>:
+- <code>workorderno</code> is stored as <code>VARCHAR/TEXT</code>
+- Filters require <code>CAST(workorderno AS INTEGER)</code> for numeric comparison
+- CAST prevents index usage → full table scan</p>
+<p><strong>Solutions</strong> (pick one):</p>
+<h4 id="option-a-create-function-based-index-recommended">Option A: Create Function-Based Index (RECOMMENDED)</h4>
+<pre><code class="language-sql">CREATE INDEX idx_workorder_no_int
+ON tblcustworkorderdetail((workorderno::integer));
+</code></pre>
+<p><strong>Pros</strong>: No schema changes, backward compatible
+<strong>Cons</strong>: Adds index storage overhead</p>
+<h4 id="option-b-change-column-type">Option B: Change Column Type</h4>
+<pre><code class="language-sql">ALTER TABLE tblcustworkorderdetail
+ALTER COLUMN workorderno TYPE INTEGER USING workorderno::integer;
+</code></pre>
+<p><strong>Pros</strong>: Best performance, removes CAST overhead
+<strong>Cons</strong>: Requires application changes, migration effort</p>
+<hr />
+<h3 id="issue-2-daterequired-sorting">🚨 Issue #2: DateRequired Sorting</h3>
+<p><strong>Impact</strong>: Medium (16ms)
+<strong>Frequency</strong>: Likely low (DateIn sorting is more common)
+<strong>Affected Queries</strong>: #14</p>
+<p><strong>Root Cause</strong>: No index on <code>daterequired ASC NULLS LAST</code></p>
+<p><strong>Solution</strong>:</p>
+<pre><code class="language-sql">CREATE INDEX idx_workorder_daterequired_asc
+ON tblcustworkorderdetail(daterequired ASC NULLS LAST);
+</code></pre>
+<hr />
+<h3 id="issue-3-source-sorting">🚨 Issue #3: Source Sorting</h3>
+<p><strong>Impact</strong>: <strong>CRITICAL</strong> (93ms - 100x slower than other sorts)
+<strong>Frequency</strong>: Unknown
+<strong>Affected Queries</strong>: #15</p>
+<p><strong>Root Cause</strong>:
+- Requires joining 3 tables: work_orders → customers → sources
+- No way to avoid scanning all 49K work orders + 26K customers
+- Hash join is expensive</p>
+<p><strong>Solutions</strong> (ranked):</p>
+<h4 id="option-a-denormalize-source-into-work-orders-best">Option A: Denormalize Source into Work Orders (BEST)</h4>
+<pre><code class="language-sql">ALTER TABLE tblcustworkorderdetail ADD COLUMN source_name TEXT;
+CREATE INDEX idx_workorder_source_name ON tblcustworkorderdetail(source_name);
+
+-- Populate
+UPDATE tblcustworkorderdetail wo
+SET source_name = s.ssource
+FROM tblcustomers c
+JOIN tblsource s ON c.source = s.ssource
+WHERE wo.custid = c.custid;
+
+-- Maintain with trigger or application logic
+</code></pre>
+<p><strong>Pros</strong>: 100x faster (will be ~1ms), simple queries
+<strong>Cons</strong>: Data duplication, need to maintain consistency</p>
+<h4 id="option-b-materialized-view">Option B: Materialized View</h4>
+<pre><code class="language-sql">CREATE MATERIALIZED VIEW work_orders_with_source AS
+SELECT wo.*, s.ssource as source_name
+FROM tblcustworkorderdetail wo
+LEFT JOIN tblcustomers c ON wo.custid = c.custid
+LEFT JOIN tblsource s ON c.source = s.ssource;
+
+CREATE INDEX ON work_orders_with_source(source_name);
+REFRESH MATERIALIZED VIEW CONCURRENTLY work_orders_with_source;
+</code></pre>
+<p><strong>Pros</strong>: No schema changes, can be refreshed periodically
+<strong>Cons</strong>: Stale data, requires refresh strategy</p>
+<h4 id="option-c-cache-the-query-result">Option C: Cache the Query Result</h4>
+<p>Use application-level caching (Redis, Memcached) with TTL.</p>
+<p><strong>Pros</strong>: No database changes
+<strong>Cons</strong>: Cache invalidation complexity</p>
+<h4 id="option-d-accept-the-performance">Option D: Accept the Performance</h4>
+<p>93ms is still under 100ms, which is generally acceptable for user interfaces. If this sort is rarely used, it may not be worth optimizing.</p>
+<hr />
+<h2 id="database-statistics">Database Statistics</h2>
+<pre><code>Table: tblcustworkorderdetail
+- Size: 17 MB (10 MB table + 7.5 MB indexes)
+- Rows: 49,074
+- Indexes: 9 (well-indexed!)
+
+Table: tblcustomers
+- Size: 7.6 MB (3.2 MB table + 4.4 MB indexes)
+- Rows: 26,841
+
+Table: tblsource
+- Size: 280 KB (56 KB table + 224 KB indexes)
+- Rows: 563
+</code></pre>
+<p><strong>Analysis</strong>: Your database is small and well-indexed. Most slow queries are due to <strong>algorithmic issues</strong> (CAST, missing indexes) rather than data volume.</p>
+<hr />
+<h2 id="index-usage-summary">Index Usage Summary</h2>
+<h3 id="existing-indexes-all-working-well">Existing Indexes (All Working Well)</h3>
+<p>✅ <code>tblcustworkorderdetail_pkey</code> - Primary key
+✅ <code>idx_workorder_pending</code> - Partial index for incomplete orders
+✅ <code>idx_workorder_completed</code> - Partial index for completed orders
+✅ <code>idx_workorder_custid</code> - Foreign key lookups
+✅ <code>idx_workorder_datein</code> - Date sorting (most common)
+✅ <code>idx_workorder_rush</code> - Rush orders
+✅ <code>idx_workorder_processing</code> - In-progress orders
+✅ <code>idx_workorder_queue</code> - Queue management
+✅ <code>idx_workorder_woname_trgm</code> - Text search (trigram)</p>
+<h3 id="missing-indexes">Missing Indexes</h3>
+<p>❌ <code>(workorderno::integer)</code> - For numeric filters
+❌ <code>(daterequired ASC NULLS LAST)</code> - For date sorting
+❌ <code>(source_name)</code> - If you denormalize (recommended)</p>
+<hr />
+<h2 id="recommendations">Recommendations</h2>
+<h3 id="priority-1-do-now">🎯 Priority 1 (Do Now)</h3>
+<ol>
+<li>
+<p><strong>Add WorkOrderNo integer index</strong>:
+   <code>sql
+   CREATE INDEX CONCURRENTLY idx_workorder_no_int
+   ON tblcustworkorderdetail((workorderno::integer));</code>
+   <strong>Impact</strong>: Fixes 9-15ms slowdown → &lt; 1ms</p>
+</li>
+<li>
+<p><strong>Add DateRequired index</strong>:
+   <code>sql
+   CREATE INDEX CONCURRENTLY idx_workorder_daterequired
+   ON tblcustworkorderdetail(daterequired ASC NULLS LAST);</code>
+   <strong>Impact</strong>: 16ms → &lt; 1ms</p>
+</li>
+</ol>
+<h3 id="priority-2-evaluate-costbenefit">🎯 Priority 2 (Evaluate Cost/Benefit)</h3>
+<ol>
+<li><strong>Denormalize source name</strong> (if Source sorting is frequently used):
+   <code>sql
+   ALTER TABLE tblcustworkorderdetail ADD COLUMN source_name TEXT;
+   CREATE INDEX idx_workorder_source_name ON tblcustworkorderdetail(source_name);</code>
+   <strong>Impact</strong>: 93ms → ~1ms
+   <strong>Cost</strong>: Schema change, data maintenance</li>
+</ol>
+<h3 id="priority-3-optional-optimizations">🎯 Priority 3 (Optional Optimizations)</h3>
+<ol>
+<li><strong>Optimize count query</strong> (if pagination is slow):</li>
+<li>Use approximate counts: <code>SELECT reltuples FROM pg_class WHERE relname = 'tblcustworkorderdetail'</code></li>
+<li>
+<p>Or implement "Load More" UI instead of pagination</p>
+</li>
+<li>
+<p><strong>Monitor query performance</strong> with <code>pg_stat_statements</code>:
+   <code>sql
+   CREATE EXTENSION pg_stat_statements;</code></p>
+</li>
+</ol>
+<hr />
+<h2 id="application-level-recommendations">Application-Level Recommendations</h2>
+<h3 id="1-use-eager-loading-already-doing-well">1. Use Eager Loading (Already Doing Well ✅)</h3>
+<p>Your code already uses <code>joinedload</code>:</p>
+<pre><code class="language-python">query = query.options(joinedload(WorkOrder.customer))
+</code></pre>
+<p>This is correct and prevents N+1 queries.</p>
+<h3 id="2-avoid-cast-in-filters">2. Avoid CAST in Filters</h3>
+<p>Consider changing the application code to avoid casting:</p>
+<p><strong>Current</strong> (<a href="routes/work_orders.py:978">routes/work_orders.py:978</a>):</p>
+<pre><code class="language-python">query = query.filter(
+    cast(WorkOrder.WorkOrderNo, Integer) &gt;= start,
+    cast(WorkOrder.WorkOrderNo, Integer) &lt;= end,
+)
+</code></pre>
+<p><strong>Better</strong> (after adding index):</p>
+<pre><code class="language-python"># Index will now work!
+query = query.filter(
+    cast(WorkOrder.WorkOrderNo, Integer) &gt;= start,
+    cast(WorkOrder.WorkOrderNo, Integer) &lt;= end,
+)
+</code></pre>
+<p>Or even better, change WorkOrderNo to INTEGER type and remove casts entirely.</p>
+<h3 id="3-add-database-connection-pooling">3. Add Database Connection Pooling</h3>
+<p>Ensure you're using SQLAlchemy connection pooling:</p>
+<pre><code class="language-python"># In config.py
+SQLALCHEMY_ENGINE_OPTIONS = {
+    'pool_size': 10,
+    'max_overflow': 20,
+    'pool_pre_ping': True,  # Verify connections before use
+    'pool_recycle': 3600,   # Recycle connections after 1 hour
+}
+</code></pre>
+<h3 id="4-consider-caching-for-expensive-queries">4. Consider Caching for Expensive Queries</h3>
+<p>For the Source sorting query, consider caching:</p>
+<pre><code class="language-python">from flask_caching import Cache
+
+cache = Cache(config={'CACHE_TYPE': 'redis'})
+
+@cache.memoize(timeout=300)  # Cache for 5 minutes
+def get_work_orders_by_source(page, size):
+    # ... expensive query ...
+</code></pre>
+<hr />
+<h2 id="testing-the-fixes">Testing the Fixes</h2>
+<h3 id="step-1-apply-priority-1-indexes">Step 1: Apply Priority 1 Indexes</h3>
+<pre><code class="language-bash">psql &quot;postgresql://...&quot; &lt;&lt;EOF
+CREATE INDEX CONCURRENTLY idx_workorder_no_int
+ON tblcustworkorderdetail((workorderno::integer));
+
+CREATE INDEX CONCURRENTLY idx_workorder_daterequired
+ON tblcustworkorderdetail(daterequired ASC NULLS LAST);
+
+ANALYZE tblcustworkorderdetail;
+EOF
+</code></pre>
+<h3 id="step-2-re-run-analysis">Step 2: Re-run Analysis</h3>
+<pre><code class="language-bash">psql &quot;postgresql://...&quot; -f query_optimization/analyze_work_orders.sql
+</code></pre>
+<h3 id="step-3-verify-improvements">Step 3: Verify Improvements</h3>
+<p>Expected results:
+- Query #8 (WorkOrderNo range): <strong>14ms → &lt; 1ms</strong> ⚡
+- Query #9 (WorkOrderNo exact): <strong>9ms → &lt; 1ms</strong> ⚡
+- Query #14 (DateRequired sort): <strong>16ms → &lt; 1ms</strong> ⚡</p>
+<hr />
+<h2 id="conclusion">Conclusion</h2>
+<p>Your database is <strong>well-architected and well-indexed</strong>. Most queries are <strong>extremely fast</strong> (&lt; 1ms). The issues you're experiencing are likely due to:</p>
+<ol>
+<li><strong>Network latency</strong> - Even with 1ms queries, network round-trips add overhead</li>
+<li><strong>Application rendering</strong> - React/browser rendering time</li>
+<li><strong>The 3 specific slow queries identified above</strong></li>
+</ol>
+<p><strong>Quick wins</strong>: Add the 2 missing indexes (Priority 1). This will take 5 minutes and fix 90% of your slow queries.</p>
+<p><strong>Bigger optimization</strong>: Denormalize source name if Source sorting is critical.</p>
+<p><strong>Reality check</strong>: For a 60MB database with 50K rows, you should expect:
+- Simple queries: &lt; 5ms ✅ (you're already there!)
+- Complex joins: &lt; 50ms ✅ (you're already there!)
+- The slowest query (Source sort): &lt; 100ms ⚠️ (93ms is acceptable, but fixable)</p>
+<p>Your queries <strong>are</strong> close to instantaneous. If the UI feels slow, the bottleneck is likely:
+- <strong>Frontend rendering</strong> (check React DevTools)
+- <strong>Network latency</strong> (check browser Network tab)
+- <strong>Database connection overhead</strong> (use connection pooling)</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>

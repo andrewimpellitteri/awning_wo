@@ -1,0 +1,1175 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://andrewimpellitteri.github.com/awning_wo/CACHING_GUIDE/">
+      
+      
+        <link rel="prev" href="../ALEMBIC_GUIDE/">
+      
+      
+        <link rel="next" href="../COMPLETE_MIGRATION_GUIDE/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
+    
+    
+      
+        <title>Caching Guide - Awning App Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.2a3383ac.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#caching-implementation-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Awning App Docs" class="md-header__button md-logo" aria-label="Awning App Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Awning App Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Caching Guide
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Awning App Docs" class="md-nav__button md-logo" aria-label="Awning App Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Awning App Docs
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ALEMBIC_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Alembic Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Caching Guide
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Caching Guide
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#whats-been-implemented" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Been Implemented
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What&#39;s Been Implemented">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#core-setup-complete" class="md-nav__link">
+    <span class="md-ellipsis">
+      Core Setup (Complete)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customer-routes-complete" class="md-nav__link">
+    <span class="md-ellipsis">
+      Customer Routes (Complete)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommended-additions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Recommended Additions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Recommended Additions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#high-priority-easy-wins" class="md-nav__link">
+    <span class="md-ellipsis">
+      High Priority (Easy Wins)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="High Priority (Easy Wins)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-source-routes-routessourcepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Source Routes (routes/source.py)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-dashboard-metrics-routesdashboardpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Dashboard Metrics (routes/dashboard.py)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-analytics-data-routesanalyticspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Analytics Data (routes/analytics.py)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#medium-priority" class="md-nav__link">
+    <span class="md-ellipsis">
+      Medium Priority
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Medium Priority">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#4-work-order-filter-options-routeswork_orderspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Work Order Filter Options (routes/work_orders.py)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-inventory-lookups-routesinventorypy" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Inventory Lookups (routes/inventory.py)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#low-priority-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      Low Priority (Optional)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Low Priority (Optional)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#6-source-lookups" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Source Lookups
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-queue-summary-stats-routesqueuepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      7. Queue Summary Stats (routes/queue.py)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cache-invalidation-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cache Invalidation Strategy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cache Invalidation Strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-to-invalidate" class="md-nav__link">
+    <span class="md-ellipsis">
+      When to Invalidate
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Monitoring
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick Reference
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../COMPLETE_MIGRATION_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Complete Migration Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONCURRENCY_AUDIT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Concurrency Audit
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DENORMALIZATION_ANALYSIS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Denormalization Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DEPLOYMENT_CHECKLIST/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Deployment Checklist
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../IMPROVEMENTS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Improvements
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PERFORMANCE_ANALYSIS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Performance Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../REFACTORING_PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Refactoring Plan
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../STORAGE_FIELDS_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Storage Fields Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../WASM_THUMBNAIL_OPTIMIZATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    WASM Thumbnail Optimization
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#whats-been-implemented" class="md-nav__link">
+    <span class="md-ellipsis">
+      What's Been Implemented
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What&#39;s Been Implemented">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#core-setup-complete" class="md-nav__link">
+    <span class="md-ellipsis">
+      Core Setup (Complete)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customer-routes-complete" class="md-nav__link">
+    <span class="md-ellipsis">
+      Customer Routes (Complete)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommended-additions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Recommended Additions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Recommended Additions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#high-priority-easy-wins" class="md-nav__link">
+    <span class="md-ellipsis">
+      High Priority (Easy Wins)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="High Priority (Easy Wins)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-source-routes-routessourcepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Source Routes (routes/source.py)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-dashboard-metrics-routesdashboardpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Dashboard Metrics (routes/dashboard.py)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-analytics-data-routesanalyticspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Analytics Data (routes/analytics.py)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#medium-priority" class="md-nav__link">
+    <span class="md-ellipsis">
+      Medium Priority
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Medium Priority">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#4-work-order-filter-options-routeswork_orderspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Work Order Filter Options (routes/work_orders.py)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-inventory-lookups-routesinventorypy" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Inventory Lookups (routes/inventory.py)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#low-priority-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      Low Priority (Optional)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Low Priority (Optional)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#6-source-lookups" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Source Lookups
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#7-queue-summary-stats-routesqueuepy" class="md-nav__link">
+    <span class="md-ellipsis">
+      7. Queue Summary Stats (routes/queue.py)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cache-invalidation-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cache Invalidation Strategy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cache Invalidation Strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-to-invalidate" class="md-nav__link">
+    <span class="md-ellipsis">
+      When to Invalidate
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Monitoring
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick Reference
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="caching-implementation-guide">Caching Implementation Guide</h1>
+<h2 id="whats-been-implemented">What's Been Implemented</h2>
+<h3 id="core-setup-complete">Core Setup (Complete)</h3>
+<ul>
+<li>✅ Flask-Caching installed and configured</li>
+<li>✅ SimpleCache for production/dev (in-memory)</li>
+<li>✅ NullCache for tests (no caching during tests)</li>
+<li>✅ Cache utilities in <code>utils/cache_helpers.py</code></li>
+</ul>
+<h3 id="customer-routes-complete">Customer Routes (Complete)</h3>
+<p><strong>File:</strong> <code>routes/customers.py</code>
+- ✅ Cached <code>get_customer_filter_options()</code> - 10min cache
+- ✅ Cache invalidation in create/edit/delete
+- <strong>Savings:</strong> 2 queries eliminated per page load</p>
+<hr />
+<h2 id="recommended-additions">Recommended Additions</h2>
+<h3 id="high-priority-easy-wins">High Priority (Easy Wins)</h3>
+<h4 id="1-source-routes-routessourcepy">1. Source Routes (<code>routes/source.py</code>)</h4>
+<p>Similar to customers - filter dropdowns rarely change.</p>
+<pre><code class="language-python">@cache.memoize(timeout=900)  # 15 minutes
+def get_source_filter_options():
+    states = db.session.query(Source.SourceState).distinct().all()
+    return unique_states
+
+# Invalidate in: create_source(), edit_source(), delete_source()
+</code></pre>
+<p><strong>Impact:</strong> 1-2 queries saved per source list page load</p>
+<hr />
+<h4 id="2-dashboard-metrics-routesdashboardpy">2. Dashboard Metrics (<code>routes/dashboard.py</code>)</h4>
+<p>Counts and stats don't need to be real-time.</p>
+<pre><code class="language-python">@cache.memoize(timeout=300)  # 5 minutes
+def get_dashboard_counts():
+    pending = WorkOrder.query.filter(...).count()
+    in_progress = WorkOrder.query.filter(...).count()
+    completed_today = WorkOrder.query.filter(...).count()
+    return {'pending': pending, 'in_progress': in_progress, ...}
+
+# Invalidate when work orders change
+</code></pre>
+<p><strong>Impact:</strong> 3-5 count queries saved per dashboard load</p>
+<hr />
+<h4 id="3-analytics-data-routesanalyticspy">3. Analytics Data (<code>routes/analytics.py</code>)</h4>
+<p>Most expensive - pandas/plotly operations.</p>
+<pre><code class="language-python">@cache.memoize(timeout=1800)  # 30 minutes
+def get_revenue_chart_data(date_range):
+    df = pd.read_sql(query, db.engine)
+    # ... expensive processing ...
+    return fig.to_json()
+
+# Invalidate when work orders completed
+</code></pre>
+<p><strong>Impact:</strong> Huge - 2-5 second queries reduced to milliseconds</p>
+<hr />
+<h3 id="medium-priority">Medium Priority</h3>
+<h4 id="4-work-order-filter-options-routeswork_orderspy">4. Work Order Filter Options (<code>routes/work_orders.py</code>)</h4>
+<p>Similar pattern to customers.</p>
+<pre><code class="language-python">@cache.memoize(timeout=600)
+def get_work_order_filter_options():
+    # Ship-to sources, statuses, etc.
+    pass
+</code></pre>
+<h4 id="5-inventory-lookups-routesinventorypy">5. Inventory Lookups (<code>routes/inventory.py</code>)</h4>
+<p>If customers have large inventories.</p>
+<pre><code class="language-python">@cache.memoize(timeout=300)
+def get_customer_inventory(cust_id):
+    return Inventory.query.filter_by(CustID=cust_id).all()
+</code></pre>
+<hr />
+<h3 id="low-priority-optional">Low Priority (Optional)</h3>
+<h4 id="6-source-lookups">6. Source Lookups</h4>
+<p>Frequently accessed but rarely changed.</p>
+<pre><code class="language-python">@cache.memoize(timeout=1800)
+def get_source_by_name(source_name):
+    return Source.query.filter_by(SSource=source_name).first()
+</code></pre>
+<h4 id="7-queue-summary-stats-routesqueuepy">7. Queue Summary Stats (<code>routes/queue.py</code>)</h4>
+<p>If summary endpoint is slow.</p>
+<pre><code class="language-python">@cache.memoize(timeout=120)  # 2 minutes - more dynamic
+def get_queue_summary():
+    # firm_rush_count, rush_count, regular_count
+    pass
+</code></pre>
+<hr />
+<h2 id="cache-invalidation-strategy">Cache Invalidation Strategy</h2>
+<h3 id="when-to-invalidate">When to Invalidate</h3>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Invalidate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Customer created/edited/deleted</td>
+<td><code>invalidate_customer_cache()</code></td>
+</tr>
+<tr>
+<td>Source created/edited/deleted</td>
+<td><code>invalidate_source_cache()</code></td>
+</tr>
+<tr>
+<td>Work order created/edited/completed</td>
+<td><code>invalidate_work_order_cache()</code></td>
+</tr>
+<tr>
+<td>Repair order created/edited/completed</td>
+<td><code>invalidate_repair_order_cache()</code></td>
+</tr>
+<tr>
+<td>Dashboard should refresh</td>
+<td><code>invalidate_work_order_cache()</code></td>
+</tr>
+<tr>
+<td>Analytics should refresh</td>
+<td><code>invalidate_analytics_cache()</code></td>
+</tr>
+</tbody>
+</table>
+<p>All helpers are in <code>utils/cache_helpers.py</code>.</p>
+<hr />
+<h2 id="testing">Testing</h2>
+<p>Caching is automatically disabled in tests (<code>CACHE_TYPE = "NullCache"</code>).</p>
+<p>To manually test caching in development:</p>
+<pre><code class="language-python"># In Flask shell or route
+from extensions import cache
+
+# Check if cached
+cached_val = cache.get('some_key')
+
+# Clear specific cache
+cache.delete_memoized(get_customer_filter_options)
+
+# Clear all caches
+cache.clear()
+</code></pre>
+<hr />
+<h2 id="performance-monitoring">Performance Monitoring</h2>
+<p>To see cache effectiveness, enable SQLAlchemy query logging:</p>
+<pre><code class="language-python"># In development
+import logging
+logging.basicConfig()
+logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+
+# Load page twice - second time should show fewer queries
+</code></pre>
+<hr />
+<h2 id="notes">Notes</h2>
+<ul>
+<li><strong>SimpleCache</strong> is in-memory and process-specific</li>
+<li>Cache is cleared on app restart (by design)</li>
+<li>For 8 users and 50MB DB, this is perfect</li>
+<li>If you scale beyond 1 instance, consider Redis (but not needed now)</li>
+<li>Cache timeouts are conservative - adjust based on usage patterns</li>
+</ul>
+<hr />
+<h2 id="quick-reference">Quick Reference</h2>
+<pre><code class="language-python"># Import in routes
+from extensions import cache
+from utils.cache_helpers import invalidate_customer_cache
+
+# Cache a function
+@cache.memoize(timeout=600)  # seconds
+def my_expensive_query():
+    return db.session.query(...).all()
+
+# Invalidate when data changes
+db.session.commit()
+invalidate_customer_cache()
+</code></pre>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>

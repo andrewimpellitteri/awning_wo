@@ -1,0 +1,1029 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://andrewimpellitteri.github.com/awning_wo/WASM_THUMBNAIL_OPTIMIZATION/">
+      
+      
+        <link rel="prev" href="../STORAGE_FIELDS_GUIDE/">
+      
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
+    
+    
+      
+        <title>WASM Thumbnail Optimization - Awning App Docs</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.2a3383ac.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#optimizing-thumbnail-generation-with-webassembly-wasm" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Awning App Docs" class="md-header__button md-logo" aria-label="Awning App Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Awning App Docs
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              WASM Thumbnail Optimization
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Awning App Docs" class="md-nav__button md-logo" aria-label="Awning App Docs" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Awning App Docs
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ALEMBIC_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Alembic Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CACHING_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Caching Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../COMPLETE_MIGRATION_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Complete Migration Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../CONCURRENCY_AUDIT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Concurrency Audit
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DENORMALIZATION_ANALYSIS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Denormalization Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DEPLOYMENT_CHECKLIST/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Deployment Checklist
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../IMPROVEMENTS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Improvements
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../PERFORMANCE_ANALYSIS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Performance Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../REFACTORING_PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Refactoring Plan
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../STORAGE_FIELDS_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Storage Fields Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    WASM Thumbnail Optimization
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    WASM Thumbnail Optimization
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-update-backend-to-receive-pre-processed-thumbnails" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 1: Update Backend to Receive Pre-Processed Thumbnails
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 1: Update Backend to Receive Pre-Processed Thumbnails">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-simplify-utilsfile_uploadpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.1. Simplify utils/file_upload.py
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-update-routeswork_orderspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.2. Update routes/work_orders.py
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-implement-client-side-thumbnail-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 2: Implement Client-Side Thumbnail Generation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 2: Implement Client-Side Thumbnail Generation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-update-your-html-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      2.1. Update Your HTML Template
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-add-the-client-side-processing-javascript" class="md-nav__link">
+    <span class="md-ellipsis">
+      2.2. Add the Client-Side Processing JavaScript
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-clean-up-old-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 3: Clean Up Old Code
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-update-backend-to-receive-pre-processed-thumbnails" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 1: Update Backend to Receive Pre-Processed Thumbnails
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 1: Update Backend to Receive Pre-Processed Thumbnails">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11-simplify-utilsfile_uploadpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.1. Simplify utils/file_upload.py
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-update-routeswork_orderspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      1.2. Update routes/work_orders.py
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-implement-client-side-thumbnail-generation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 2: Implement Client-Side Thumbnail Generation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 2: Implement Client-Side Thumbnail Generation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-update-your-html-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      2.1. Update Your HTML Template
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-add-the-client-side-processing-javascript" class="md-nav__link">
+    <span class="md-ellipsis">
+      2.2. Add the Client-Side Processing JavaScript
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-clean-up-old-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step 3: Clean Up Old Code
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="optimizing-thumbnail-generation-with-webassembly-wasm">Optimizing Thumbnail Generation with WebAssembly (WASM)</h1>
+<p>This guide details how to refactor the file upload process to generate thumbnails on the client-side using WebAssembly, significantly reducing server load and improving user experience.</p>
+<p><strong>The current workflow executes all thumbnail generation (a CPU-intensive task) on the server. The new workflow offloads this to the user's browser.</strong></p>
+<hr />
+<h2 id="step-1-update-backend-to-receive-pre-processed-thumbnails">Step 1: Update Backend to Receive Pre-Processed Thumbnails</h2>
+<p>First, we'll simplify the backend. It will no longer generate thumbnails; it will only receive and save the original file and the thumbnail file created by the client.</p>
+<h3 id="11-simplify-utilsfile_uploadpy">1.1. Simplify <code>utils/file_upload.py</code></h3>
+<p>The <code>save_work_order_file</code> function will be simplified to just save two files. The complex <code>generate_thumbnail</code> logic is no longer needed here.</p>
+<p>Replace the contents of <code>utils/file_upload.py</code> with the following. We are keeping the S3 logic but removing all thumbnail generation calls.</p>
+<pre><code class="language-python">import os
+from werkzeug.utils import secure_filename
+from models.work_order_file import WorkOrderFile
+from extensions import db
+import boto3
+from io import BytesIO
+from datetime import datetime
+
+# --- S3 Configuration ---
+UPLOAD_FOLDER = &quot;uploads/work_orders&quot;  # local fallback
+ALLOWED_EXTENSIONS = {&quot;pdf&quot;, &quot;jpg&quot;, &quot;jpeg&quot;, &quot;png&quot;, &quot;docx&quot;, &quot;xlsx&quot;, &quot;txt&quot;, &quot;csv&quot;}
+
+AWS_S3_BUCKET = os.getenv(&quot;AWS_S3_BUCKET&quot;)
+AWS_REGION = os.getenv(&quot;AWS_REGION&quot;, &quot;us-east-1&quot;)
+
+if not AWS_S3_BUCKET:
+    raise ValueError(&quot;AWS_S3_BUCKET environment variable is required&quot;)
+
+def is_running_on_aws():
+    return any([
+        os.getenv(&quot;AWS_EXECUTION_ENV&quot;),
+        os.getenv(&quot;AWS_LAMBDA_FUNCTION_NAME&quot;),
+        os.getenv(&quot;AWS_REGION&quot;),
+    ])
+
+is_aws_environment = is_running_on_aws()
+
+if is_aws_environment:
+    print(&quot;Detected AWS environment - using IAM role for S3 access&quot;)
+    s3_client = boto3.client(&quot;s3&quot;, region_name=AWS_REGION)
+else:
+    print(&quot;Detected local environment - using explicit AWS credentials&quot;)
+    AWS_ACCESS_KEY_ID = os.getenv(&quot;AWS_ACCESS_KEY_ID&quot;)
+    AWS_SECRET_ACCESS_KEY = os.getenv(&quot;AWS_SECRET_ACCESS_KEY&quot;)
+    if not AWS_ACCESS_KEY_ID or not AWS_SECRET_ACCESS_KEY:
+        raise ValueError(&quot;Local dev requires AWS credentials&quot;)
+    s3_client = boto3.client(
+        &quot;s3&quot;,
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        region_name=AWS_REGION,
+    )
+
+def save_uploaded_files(work_order_no, original_file, thumbnail_file, to_s3=True):
+    &quot;&quot;&quot;
+    Saves an original file and its pre-generated thumbnail.
+    This function no longer generates thumbnails.
+    &quot;&quot;&quot;
+    original_filename = secure_filename(original_file.filename)
+    thumbnail_filename = secure_filename(thumbnail_file.filename)
+
+    if to_s3:
+        # Save Original File
+        original_s3_key = f&quot;work_orders/{work_order_no}/{original_filename}&quot;
+        s3_client.upload_fileobj(original_file, AWS_S3_BUCKET, original_s3_key)
+        file_path = f&quot;s3://{AWS_S3_BUCKET}/{original_s3_key}&quot;
+
+        # Save Thumbnail File
+        thumbnail_s3_key = f&quot;work_orders/{work_order_no}/{thumbnail_filename}&quot;
+        s3_client.upload_fileobj(thumbnail_file, AWS_S3_BUCKET, thumbnail_s3_key)
+        thumbnail_path = f&quot;s3://{AWS_S3_BUCKET}/{thumbnail_s3_key}&quot;
+    else:
+        # Save locally (fallback)
+        wo_folder = os.path.join(UPLOAD_FOLDER, str(work_order_no))
+        os.makedirs(wo_folder, exist_ok=True)
+
+        file_path = os.path.join(wo_folder, original_filename)
+        original_file.save(file_path)
+
+        thumbnail_path = os.path.join(wo_folder, thumbnail_filename)
+        thumbnail_file.save(thumbnail_path)
+
+    # Create WorkOrderFile object to be committed later
+    wo_file = WorkOrderFile(
+        WorkOrderNo=work_order_no,
+        filename=original_filename,
+        file_path=file_path,
+        thumbnail_path=thumbnail_path,
+    )
+    return wo_file
+
+# Other utility functions like generate_presigned_url can remain unchanged.
+</code></pre>
+<h3 id="12-update-routeswork_orderspy">1.2. Update <code>routes/work_orders.py</code></h3>
+<p>Modify the <code>create_work_order</code> route (and any other upload routes) to handle the two incoming files (<code>original</code> and <code>thumbnail</code>).</p>
+<pre><code class="language-python"># Inside routes/work_orders.py
+
+# IMPORTANT: Change the import from `save_work_order_file` to `save_uploaded_files`
+from utils.file_upload import save_uploaded_files
+
+# ... inside the create_work_order function, find the file handling block ...
+
+# --- This block replaces the old file handling logic ---
+if 'original_files[]' in request.files:
+    original_files = request.files.getlist('original_files[]')
+    thumbnail_files = request.files.getlist('thumbnail_files[]')
+
+    if len(original_files) != len(thumbnail_files):
+        raise Exception(&quot;Mismatch between original files and thumbnails.&quot;)
+
+    for i, original_file in enumerate(original_files):
+        if original_file and original_file.filename:
+            thumbnail_file = thumbnail_files[i]
+
+            wo_file = save_uploaded_files(
+                work_order_no=next_wo_no,
+                original_file=original_file,
+                thumbnail_file=thumbnail_file,
+                to_s3=True 
+            )
+
+            if not wo_file:
+                raise Exception(f&quot;Failed to save file: {original_file.filename}&quot;)
+
+            db.session.add(wo_file)
+            print(f&quot;Saved {wo_file.filename} and its thumbnail {thumbnail_file.filename}&quot;)
+# --- End of replacement block ---
+</code></pre>
+<h2 id="step-2-implement-client-side-thumbnail-generation">Step 2: Implement Client-Side Thumbnail Generation</h2>
+<p>This involves adding JavaScript to your frontend templates. We will use <code>pdf.js</code> for PDFs and <code>libsquoosh</code> for images, as they are robust, well-supported libraries that use WebAssembly.</p>
+<h3 id="21-update-your-html-template">2.1. Update Your HTML Template</h3>
+<p>In your <code>work_orders/create.html</code> and <code>work_orders/edit.html</code> (or any template with a file upload), add a file input and a preview area.</p>
+<pre><code class="language-html">&lt;!-- Add a unique ID to your file input --&gt;
+&lt;input type=&quot;file&quot; id=&quot;file-uploader&quot; name=&quot;files[]&quot; multiple&gt;
+
+&lt;!-- Add a container to display thumbnail previews --&gt;
+&lt;div id=&quot;thumbnail-preview-area&quot; style=&quot;display:flex; flex-wrap:wrap; gap:10px; margin-top:15px;&quot;&gt;&lt;/div&gt;
+
+&lt;!-- Include pdf.js and libsquosh from a CDN --&gt;
+&lt;!-- Place these in your base.html or at the bottom of the page --&gt;
+&lt;script src=&quot;https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.min.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+    // Required for pdf.js
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js`;
+&lt;/script&gt;
+&lt;script type=&quot;module&quot; src=&quot;https://unpkg.com/@jsquash/jpeg@1.3.0/meta.js&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;module&quot; src=&quot;https://unpkg.com/@jsquash/resize@1.2.1/meta.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<h3 id="22-add-the-client-side-processing-javascript">2.2. Add the Client-Side Processing JavaScript</h3>
+<p>Add this script to your page. It will listen for file selections, process them, and prepare them for upload.</p>
+<pre><code class="language-javascript">document.addEventListener('DOMContentLoaded', () =&gt; {
+    const fileUploader = document.getElementById('file-uploader');
+    const previewArea = document.getElementById('thumbnail-preview-area');
+
+    // This will store our processed files, ready for upload
+    const processedFiles = {
+        originals: [],
+        thumbnails: []
+    };
+
+    fileUploader.addEventListener('change', async (event) =&gt; {
+        const files = event.target.files;
+        if (!files.length) return;
+
+        // Clear previous previews and stored files
+        previewArea.innerHTML = '';
+        processedFiles.originals = [];
+        processedFiles.thumbnails = [];
+
+        for (const file of files) {
+            let thumbnailBlob;
+            const originalFileName = file.name;
+
+            // Show a placeholder
+            const placeholder = document.createElement('div');
+            placeholder.textContent = `Processing ${originalFileName}...`;
+            previewArea.appendChild(placeholder);
+
+            try {
+                if (file.type.startsWith('image/')) {
+                    thumbnailBlob = await processImage(file);
+                } else if (file.type === 'application/pdf') {
+                    thumbnailBlob = await processPdf(file);
+                } else {
+                    // For other files, you might create a default icon or skip a thumbnail
+                    console.log(`Skipping thumbnail for ${originalFileName}`);
+                    placeholder.textContent = `No preview for ${originalFileName}`;
+                    continue; // Or create a default thumbnail
+                }
+
+                const thumbnailFile = new File([thumbnailBlob], `thumb_${originalFileName.split('.')[0]}.jpeg`, { type: 'image/jpeg' });
+
+                // Store the files
+                processedFiles.originals.push(file);
+                processedFiles.thumbnails.push(thumbnailFile);
+
+                // Create and display the thumbnail preview
+                const reader = new FileReader();
+                reader.onload = (e) =&gt; {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.width = '150px';
+                    img.style.height = '150px';
+                    img.style.objectFit = 'cover';
+                    img.title = `Thumbnail for ${originalFileName}`;
+                    placeholder.replaceWith(img); // Replace placeholder with the actual thumbnail
+                };
+                reader.readAsDataURL(thumbnailBlob);
+
+            } catch (error) {
+                console.error(`Failed to process ${originalFileName}:`, error);
+                placeholder.textContent = `Error processing ${originalFileName}`;
+            }
+        }
+    });
+
+    // --- Image Processing Function (uses libsquosh) ---
+    async function processImage(file) {
+        const imageBuffer = await file.arrayBuffer();
+
+        // Resize the image
+        const resizeOptions = {
+            width: 200,
+            height: 200,
+            method: 'lanczos3',
+        };
+        const resizedImage = await resize(imageBuffer, resizeOptions);
+
+        // Encode the resized image to JPEG
+        const jpegBlob = await encode(resizedImage, { quality: 85 });
+        return jpegBlob;
+    }
+
+    // --- PDF Processing Function (uses pdf.js) ---
+    async function processPdf(file) {
+        const fileBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: fileBuffer }).promise;
+        const page = await pdf.getPage(1); // Get the first page
+
+        const viewport = page.getViewport({ scale: 1 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+
+        // Set canvas dimensions to match PDF page aspect ratio
+        const scale = 200 / viewport.height;
+        const scaledViewport = page.getViewport({ scale });
+        canvas.height = scaledViewport.height;
+        canvas.width = scaledViewport.width;
+
+        // Render PDF page to canvas
+        await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
+
+        // Convert canvas to JPEG blob
+        return new Promise(resolve =&gt; {
+            canvas.toBlob(resolve, 'image/jpeg', 0.85);
+        });
+    }
+
+    // --- Modify Form Submission ---
+    // You need to intercept the form submission to append the processed files.
+    const form = fileUploader.closest('form');
+    form.addEventListener('submit', function(event) {
+        event.preventDefault(); // Stop the default submission
+
+        const formData = new FormData(form);
+
+        // Remove the original placeholder file list
+        formData.delete('files[]');
+
+        // Append the processed files
+        processedFiles.originals.forEach(file =&gt; {
+            formData.append('original_files[]', file);
+        });
+        processedFiles.thumbnails.forEach(file =&gt; {
+            formData.append('thumbnail_files[]', file);
+        });
+
+        // Submit the form with the new FormData
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            // headers: { 'X-CSRF-TOKEN': 'your_csrf_token' } // If you use CSRF tokens
+        })
+        .then(response =&gt; {
+            if (response.ok) {
+                // Redirect on success, e.g., to the work order detail page
+                window.location.href = response.url; 
+            } else {
+                // Handle errors
+                console.error('Upload failed');
+                alert('Upload failed!');
+            }
+        })
+        .catch(error =&gt; {
+            console.error('Error submitting form:', error);
+            alert('An error occurred.');
+        });
+    });
+});
+</code></pre>
+<h2 id="step-3-clean-up-old-code">Step 3: Clean Up Old Code</h2>
+<p>Once the new implementation is verified and working, you can safely remove the old server-side generation code.</p>
+<ol>
+<li><strong>Delete <code>utils/thumbnail_generator.py</code>:</strong> This file is no longer needed.</li>
+<li><strong>Clean up <code>utils/file_upload.py</code>:</strong> Ensure the old <code>save_work_order_file</code> and any related helper functions for generation are removed, as shown in Step 1.1.</li>
+<li><strong>Remove old libraries:</strong> If <code>Pillow</code>, <code>PyMuPDF</code>, <code>python-docx</code>, etc., were only used for thumbnailing, you can remove them from your <code>requirements.txt</code> to slim down your application dependencies.</li>
+</ol>
+<hr />
+<p>This refactoring moves the performance-critical task of thumbnail generation to the client, resulting in a faster, more scalable, and more responsive application.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>
