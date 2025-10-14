@@ -137,12 +137,14 @@ document.addEventListener("DOMContentLoaded", function() {
         persistenceID: "repair_table",
 
         columns: [
-            { 
-                title: "Order #", field: "RepairOrderNo", width: 120, headerFilter: "input",
+            {
+                title: "Order #", field: "RepairOrderNo", width: 167, headerFilter: "input",
                 formatter: (cell) => {
                     const rowData = cell.getRow().getData();
                     let rushBadge = rowData.is_rush ? ' <span class="badge bg-danger ms-1">RUSH</span>' : '';
-                    return `<a href="${rowData.detail_url}">R${cell.getValue()}</a>${rushBadge}`;
+                    return `<span class="badge bg-warning text-dark">
+                        <i class="fas fa-hashtag me-1"></i>
+                        <a href="${rowData.detail_url}">R${cell.getValue()}</a></span>${rushBadge}`;
                 }
             },
             {

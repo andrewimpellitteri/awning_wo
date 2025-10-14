@@ -1,0 +1,847 @@
+/**
+ * ENHANCEMENTS.CSS
+ * Professional UI polish layer for Awning Management System
+ * Works alongside style.css - does not override existing styles
+ * Adds: smooth animations, better shadows, gradients, micro-interactions
+ */
+
+/* ===== Enhanced CSS Variables ===== */
+:root {
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.12);
+    --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
+    --border-radius-lg: 12px;
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] {
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* ===== Enhanced Card Interactions ===== */
+.card {
+    transition: var(--transition-smooth);
+    border: none;
+    box-shadow: var(--shadow-md);
+    border-radius: var(--border-radius-lg);
+    backdrop-filter: blur(10px);
+}
+
+/* Only interactive/clickable cards lift - dashboard navigation cards */
+.col-md-4 .card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Static/informational cards - shadow change only, no movement */
+.recent-orders-table .card:hover,
+form .card:hover,
+.card-body:has(form):hover {
+    transform: none;
+    box-shadow: var(--shadow-md);
+}
+
+/* Dashboard cards get extra love */
+.dashboard-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s;
+}
+
+.dashboard-card:hover::after {
+    left: 100%;
+}
+
+/* ===== Glassmorphism Effects ===== */
+.card {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="dark"] .card {
+    background-color: rgba(45, 45, 45, 0.95) !important;
+}
+
+.modal-content {
+    backdrop-filter: blur(12px);
+    background-color: rgba(255, 255, 255, 0.98) !important;
+}
+
+[data-theme="dark"] .modal-content {
+    background-color: rgba(45, 45, 45, 0.98) !important;
+}
+
+/* ===== Enhanced Navbar ===== */
+/* Navbar follows theme - enhanced with gradient and shadow */
+.navbar {
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Light mode navbar - subtle gradient */
+[data-theme="light"] .navbar {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+}
+
+/* Dark mode navbar - darker gradient */
+[data-theme="dark"] .navbar {
+    background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%) !important;
+}
+
+.navbar-brand {
+    transition: var(--transition-smooth);
+}
+
+/* Ensure navbar toggler icon is visible in both themes */
+.navbar-toggler {
+    border-color: var(--border-color);
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(108, 117, 125, 0.75)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+[data-theme="dark"] .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.75)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+.navbar-brand:hover {
+    transform: scale(1.05);
+}
+
+.nav-link {
+    position: relative;
+    transition: var(--transition-smooth);
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    transition: width 0.3s ease, left 0.3s ease;
+}
+
+/* Light mode underline */
+[data-theme="light"] .nav-link::after {
+    background: linear-gradient(90deg, transparent, rgba(13, 110, 253, 0.8), transparent);
+}
+
+/* Dark mode underline */
+[data-theme="dark"] .nav-link::after {
+    background: linear-gradient(90deg, transparent, rgba(102, 179, 255, 0.8), transparent);
+}
+
+.nav-link:hover::after {
+    width: 80%;
+    left: 10%;
+}
+
+/* ===== Enhanced Buttons ===== */
+.btn {
+    transition: var(--transition-smooth);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    border: none;
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+}
+
+.btn-primary:hover::before {
+    left: 100%;
+}
+
+[data-theme="dark"] .btn-primary {
+    background: linear-gradient(135deg, #66b3ff 0%, #3399ff 100%);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+    border: none;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%);
+    border: none;
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    border: none;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%);
+    border: none;
+}
+
+/* ===== Enhanced Typography ===== */
+h1, .h1 {
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+h2, .h2 {
+    font-weight: 700;
+    letter-spacing: -0.4px;
+}
+
+h3, .h3 {
+    font-weight: 600;
+    letter-spacing: -0.3px;
+}
+
+h5, .h5, .card-title {
+    font-weight: 600;
+    letter-spacing: -0.2px;
+}
+
+.card-text {
+    line-height: 1.6;
+}
+
+/* ===== Dashboard Icon Animations ===== */
+.card-body .fas,
+.card-body .fa-solid,
+.card-body .fa-building,
+.card-body .fa-users,
+.card-body .fa-broom,
+.card-body .fa-stream,
+.card-body .fa-wrench,
+.card-body .fa-spinner {
+    transition: var(--transition-smooth);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.card:hover .fas,
+.card:hover .fa-solid,
+.card:hover .fa-building,
+.card:hover .fa-users,
+.card:hover .fa-broom,
+.card:hover .fa-stream,
+.card:hover .fa-wrench,
+.card:hover .fa-spinner {
+    transform: scale(1.1) translateY(-2px);
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+}
+
+/* Color-specific icon glows on hover */
+.text-primary:hover {
+    filter: drop-shadow(0 0 8px rgba(13, 110, 253, 0.5));
+}
+
+.text-success:hover {
+    filter: drop-shadow(0 0 8px rgba(25, 135, 84, 0.5));
+}
+
+.text-info:hover {
+    filter: drop-shadow(0 0 8px rgba(13, 202, 240, 0.5));
+}
+
+.text-secondary:hover {
+    filter: drop-shadow(0 0 8px rgba(108, 117, 125, 0.5));
+}
+
+/* ===== Enhanced Table Styling ===== */
+.table thead th {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 1rem 0.75rem;
+    position: relative;
+}
+
+.table thead th::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+}
+
+.table tbody tr {
+    transition: var(--transition-smooth);
+}
+
+/* Tables - subtle background change only, no movement */
+.table tbody tr:hover {
+    transform: none;
+    box-shadow: none;
+    position: relative;
+    z-index: 1;
+}
+
+/* ===== Enhanced Status Badges ===== */
+.badge {
+    font-weight: 600;
+    padding: 0.5em 0.85em;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-smooth);
+}
+
+.badge:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+}
+
+.badge i {
+    font-size: 0.9em;
+}
+
+.badge.bg-success {
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%) !important;
+}
+
+.badge.bg-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%) !important;
+}
+
+.badge.bg-info {
+    background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%) !important;
+}
+
+.badge.bg-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%) !important;
+}
+
+.badge.bg-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #bb2d3b 100%) !important;
+}
+
+.badge.bg-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+}
+
+/* ===== Badge Text Color Fixes ===== */
+/* Override style.css badge colors to ensure proper contrast */
+
+/* Primary, success, info, danger, secondary badges - white text */
+.badge.bg-primary,
+.badge.bg-success,
+.badge.bg-info,
+.badge.bg-danger,
+.badge.bg-secondary {
+    color: #ffffff !important;
+}
+
+/* Warning badges need dark text for contrast with yellow */
+.badge.bg-warning {
+    color: #000000 !important;
+}
+
+/* Links inside badges - ensure they're always visible */
+.badge.bg-primary a,
+.badge.bg-success a,
+.badge.bg-info a,
+.badge.bg-danger a,
+.badge.bg-secondary a,
+.badge.bg-primary a:hover,
+.badge.bg-success a:hover,
+.badge.bg-info a:hover,
+.badge.bg-danger a:hover,
+.badge.bg-secondary a:hover {
+    color: #ffffff !important;
+    text-decoration: none;
+}
+
+/* Warning badge links - dark text */
+.badge.bg-warning a,
+.badge.bg-warning a:hover {
+    color: #000000 !important;
+    text-decoration: none;
+}
+
+/* ===== Enhanced Form Controls ===== */
+.form-control {
+    transition: var(--transition-smooth);
+    border-radius: 8px;
+}
+
+.form-control:focus {
+    transform: scale(1.01);
+    box-shadow: 0 0 0 0.25rem var(--focus-shadow), var(--shadow-md);
+}
+
+.form-select {
+    transition: var(--transition-smooth);
+    border-radius: 8px;
+}
+
+.form-select:focus {
+    transform: scale(1.01);
+    box-shadow: 0 0 0 0.25rem var(--focus-shadow), var(--shadow-md);
+}
+
+/* ===== Enhanced Input Groups ===== */
+.input-group {
+    box-shadow: var(--shadow-sm);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.input-group:focus-within {
+    box-shadow: var(--shadow-md);
+}
+
+/* ===== Loading States ===== */
+.btn:disabled,
+.btn.loading {
+    position: relative;
+    color: transparent !important;
+}
+
+.btn:disabled::after,
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== Enhanced Focus States (Accessibility) ===== */
+*:focus-visible {
+    outline: 3px solid rgba(13, 110, 253, 0.5);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+[data-theme="dark"] *:focus-visible {
+    outline-color: rgba(102, 179, 255, 0.5);
+}
+
+/* Remove default focus for mouse users */
+*:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* ===== Enhanced Alerts ===== */
+.alert {
+    border: none;
+    box-shadow: var(--shadow-md);
+    border-left: 4px solid;
+}
+
+.alert-success {
+    border-left-color: #198754;
+    background: linear-gradient(90deg, rgba(25, 135, 84, 0.1) 0%, transparent 100%);
+}
+
+.alert-danger {
+    border-left-color: #dc3545;
+    background: linear-gradient(90deg, rgba(220, 53, 69, 0.1) 0%, transparent 100%);
+}
+
+.alert-warning {
+    border-left-color: #ffc107;
+    background: linear-gradient(90deg, rgba(255, 193, 7, 0.1) 0%, transparent 100%);
+}
+
+.alert-info {
+    border-left-color: #0dcaf0;
+    background: linear-gradient(90deg, rgba(13, 202, 240, 0.1) 0%, transparent 100%);
+}
+
+/* ===== Enhanced Dropdown Menus ===== */
+.dropdown-menu {
+    border: none;
+    box-shadow: var(--shadow-lg);
+    border-radius: 8px;
+    padding: 0.5rem;
+    animation: dropdownSlide 0.2s ease-out;
+}
+
+@keyframes dropdownSlide {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-item {
+    border-radius: 6px;
+    transition: var(--transition-smooth);
+    margin-bottom: 2px;
+}
+
+.dropdown-item:hover {
+    transform: translateX(4px);
+}
+
+/* ===== Enhanced Modals ===== */
+.modal.fade .modal-dialog {
+    transition: transform 0.3s ease-out;
+}
+
+.modal.show .modal-dialog {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: scale(0.9) translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+}
+
+/* ===== Enhanced Tooltips Effect ===== */
+[data-bs-toggle="tooltip"],
+[title] {
+    position: relative;
+}
+
+/* ===== Recent Activity Table Enhancements ===== */
+.recent-orders-table tbody tr {
+    transition: var(--transition-smooth);
+}
+
+.recent-orders-table tbody tr:hover {
+    background-color: var(--bg-primary) !important;
+    box-shadow: inset 0 0 0 2px var(--border-color);
+}
+
+/* Work order number links */
+.wo-number {
+    font-weight: 600;
+    transition: var(--transition-smooth);
+}
+
+.wo-number:hover {
+    transform: scale(1.05);
+    text-decoration: none !important;
+}
+
+/* Rush order indicator enhancement */
+.rush-indicator {
+    display: inline-block;
+    animation: rushPulse 1.5s infinite;
+    filter: drop-shadow(0 0 4px rgba(255, 193, 7, 0.8));
+}
+
+@keyframes rushPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+}
+
+/* ===== Enhanced Pagination ===== */
+.page-link {
+    border-radius: 6px;
+    margin: 0 2px;
+    transition: var(--transition-smooth);
+}
+
+.page-link:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.page-item.active .page-link {
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    border: none;
+    box-shadow: var(--shadow-md);
+}
+
+/* ===== Enhanced List Group Items ===== */
+.list-group-item {
+    transition: var(--transition-smooth);
+    border-radius: 8px !important;
+    margin-bottom: 4px;
+}
+
+/* List items that are clickable - slide effect */
+a.list-group-item:hover,
+.list-group-item-action:hover {
+    transform: translateX(4px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Non-clickable list items - shadow only */
+.list-group-item:not(a):not(.list-group-item-action):hover {
+    transform: none;
+    box-shadow: var(--shadow-sm);
+}
+
+/* ===== Enhanced Breadcrumbs ===== */
+.breadcrumb {
+    background: transparent;
+    padding: 1rem 0;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "→";
+    color: var(--text-muted);
+}
+
+.breadcrumb-item a {
+    transition: var(--transition-smooth);
+}
+
+.breadcrumb-item a:hover {
+    transform: translateX(2px);
+    display: inline-block;
+}
+
+/* ===== Enhanced Progress Bars ===== */
+.progress {
+    border-radius: 8px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    overflow: visible;
+}
+
+.progress-bar {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* ===== Enhanced Spinners ===== */
+.spinner-border {
+    filter: drop-shadow(0 0 4px currentColor);
+}
+
+/* ===== Smooth Page Transitions ===== */
+.container-fluid,
+.container {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== Enhanced Theme Toggle Button ===== */
+#theme-toggle-btn {
+    transition: var(--transition-smooth);
+    box-shadow: var(--shadow-sm);
+}
+
+#theme-toggle-btn:hover {
+    transform: scale(1.1) rotate(15deg);
+    box-shadow: var(--shadow-md);
+}
+
+#theme-toggle-btn:active {
+    transform: scale(0.95) rotate(0deg);
+}
+
+/* ===== Enhanced Inventory Items ===== */
+.inventory-item {
+    transition: var(--transition-smooth);
+}
+
+/* Inventory items - clickable/selectable, so they lift */
+.inventory-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.inventory-item.selected {
+    animation: selectedPulse 0.3s ease-out;
+}
+
+@keyframes selectedPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* ===== Enhanced File Items ===== */
+.file-item {
+    transition: var(--transition-smooth);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.file-item:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* ===== Enhanced Toggle Switch ===== */
+.toggle-switch {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.toggle-slider {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toggle-switch:hover .toggle-slider {
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== Responsive Enhancements ===== */
+@media (max-width: 768px) {
+    /* Reduce all hover effects on mobile */
+    .col-md-4 .card:hover {
+        transform: translateY(-2px);
+    }
+
+    .btn:hover {
+        transform: none;
+    }
+
+    .table tbody tr:hover {
+        transform: none;
+    }
+
+    .list-group-item:hover {
+        transform: none;
+    }
+
+    .file-item:hover {
+        transform: translateY(-2px);
+    }
+}
+
+/* ===== Smooth Scrolling ===== */
+html {
+    scroll-behavior: smooth;
+}
+
+/* ===== Custom Scrollbar (Webkit only) ===== */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--text-muted) 0%, var(--text-secondary) 100%);
+    border-radius: 10px;
+    transition: var(--transition-smooth);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, var(--text-secondary) 0%, var(--text-primary) 100%);
+}
+
+/* ===== Print Optimizations ===== */
+@media print {
+    .card {
+        box-shadow: none !important;
+        break-inside: avoid;
+    }
+
+    .btn {
+        display: none;
+    }
+
+    .navbar {
+        display: none;
+    }
+}
+
+/* ===== Performance Optimization - Reduce animations on low-end devices ===== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

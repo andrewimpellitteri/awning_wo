@@ -136,23 +136,28 @@ document.addEventListener("DOMContentLoaded", function() {
         persistenceID: "wo_table",
 
         columns: [
-            { 
-                title: "WO #", 
-                field: "WorkOrderNo", 
-                width: 120, 
+            {
+                title: "WO #",
+                field: "WorkOrderNo",
+                width: 167,
                 headerFilter: function(cell, onRendered, success, cancel, editorParams){
                     const input = document.createElement("input");
                     input.type = "text";
                     input.classList.add("form-control", "form-control-sm", "border-0", "bg-light");
                     input.placeholder = "WO # or range (e.g. 100-200)";
-                    
+
                     onRendered(() => input.focus());
-                    
+
                     input.addEventListener("input", () => success(input.value));
                     return input;
                 },
                 // Remove headerFilterFunc since we're using remote filtering
-                formatter: cell => `<a href="${cell.getRow().getData().detail_url}">${cell.getValue()}</a>`
+
+                formatter: cell => {
+                    const rowData = cell.getRow().getData();
+                    let rushBadge = rowData.is_rush ? ' <span class="badge bg-danger ms-1">RUSH</span>' : '';
+                    return `<span class="badge bg-primary"><i class="fas fa-hashtag me-1"></i><a href="${rowData.detail_url}">${cell.getValue()}</a></span>${rushBadge}`;
+                }
             },
 
             { title: "Customer", field: "CustID", width: 120, headerFilter: "input",
