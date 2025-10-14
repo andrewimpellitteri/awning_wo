@@ -105,7 +105,11 @@ def list_treated():
 
     query = WorkOrder.query.options(
         joinedload(WorkOrder.customer).joinedload(Customer.source_info)
-    ).filter(WorkOrder.Treat.isnot(None), WorkOrder.DateCompleted.is_(None))
+    ).filter(
+        WorkOrder.Treat.isnot(None),
+        WorkOrder.DateCompleted.is_(None),
+        or_(WorkOrder.final_location.is_(None), WorkOrder.final_location == ""),
+    )
 
     pagination = query.order_by(WorkOrder.updated_at.desc()).paginate(
         page=page, per_page=per_page
@@ -130,7 +134,9 @@ def list_packaged():
     query = WorkOrder.query.options(
         joinedload(WorkOrder.customer).joinedload(Customer.source_info)
     ).filter(
-        WorkOrder.final_location.isnot(None), WorkOrder.DateCompleted.is_(None)
+        WorkOrder.final_location.isnot(None),
+        WorkOrder.final_location != "",
+        WorkOrder.DateCompleted.is_(None),
     )
 
     pagination = query.order_by(WorkOrder.updated_at.desc()).paginate(

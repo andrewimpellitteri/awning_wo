@@ -151,3 +151,121 @@ class TestInProgressRoutes:
         assert response.get_json()["success"] is True
         work_order = WorkOrder.query.get("1004")
         assert work_order.DateCompleted.date() == date(2024, 1, 16)
+
+    def test_treated_excludes_empty_final_location(self, logged_in_client, app):
+        """Treated tab should show WO with treat date but empty final_location."""
+        from models.customer import Customer
+        with app.app_context():
+            c1 = Customer(CustID="C002", Name="Test Customer 2")
+            db.session.add(c1)
+            db.session.commit()
+
+            # Create WO with clean, treat, and empty final_location (like 56365)
+            wo_treated = WorkOrder(
+                WorkOrderNo="2001",
+                WOName="Treated with Empty Location",
+                Clean=date(2024, 1, 12),
+                Treat=date(2024, 1, 13),
+                final_location="",  # Empty string, not NULL
+                DateIn=date(2024, 1, 11),
+                CustID=c1.CustID,
+            )
+            db.session.add(wo_treated)
+            db.session.commit()
+
+            # Check treated tab - should include this WO
+            response = logged_in_client.get("/in_progress/list_treated")
+            assert response.status_code == 200
+            assert b"Treated with Empty Location" in response.data
+
+            # Check packaged tab - should NOT include this WO
+            response = logged_in_client.get("/in_progress/list_packaged")
+            assert response.status_code == 200
+            assert b"Treated with Empty Location" not in response.data
+
+            db.session.query(WorkOrder).filter_by(WorkOrderNo="2001").delete()
+            db.session.query(Customer).filter_by(CustID="C002").delete()
+            db.session.commit()
+
+    def test_cleaned_excludes_empty_final_location(self, logged_in_client, app):
+        """Cleaned tab should show WO with clean date but no treat and empty final_location."""
+        from models.customer import Customer
+        with app.app_context():
+            c1 = Customer(CustID="C003", Name="Test Customer 3")
+            db.session.add(c1)
+            db.session.commit()
+
+            # Create WO with clean only and empty final_location (like 56376)
+            wo_cleaned = WorkOrder(
+                WorkOrderNo="3001",
+                WOName="Cleaned with Empty Location",
+                Clean=date(2024, 1, 12),
+                Treat=None,
+                final_location="",  # Empty string, not NULL
+                DateIn=date(2024, 1, 11),
+                CustID=c1.CustID,
+            )
+            db.session.add(wo_cleaned)
+            db.session.commit()
+
+            # Check cleaned tab - should include this WO
+            response = logged_in_client.get("/in_progress/list_cleaned")
+            assert response.status_code == 200
+            assert b"Cleaned with Empty Location" in response.data
+
+            # Check packaged tab - should NOT include this WO
+            response = logged_in_client.get("/in_progress/list_packaged")
+            assert response.status_code == 200
+            assert b"Cleaned with Empty Location" not in response.data
+
+            # Check treated tab - should NOT include this WO
+            response = logged_in_client.get("/in_progress/list_treated")
+            assert response.status_code == 200
+            assert b"Cleaned with Empty Location" not in response.data
+
+            db.session.query(WorkOrder).filter_by(WorkOrderNo="3001").delete()
+            db.session.query(Customer).filter_by(CustID="C003").delete()
+            db.session.commit()
+
+    def test_packaged_requires_non_empty_final_location(self, logged_in_client, app):
+        """Packaged tab should only show WOs with actual (non-empty) final_location."""
+        from models.customer import Customer
+        with app.app_context():
+            c1 = Customer(CustID="C004", Name="Test Customer 4")
+            db.session.add(c1)
+            db.session.commit()
+
+            # Create WO with actual final_location
+            wo_packaged = WorkOrder(
+                WorkOrderNo="4001",
+                WOName="Actually Packaged",
+                Clean=date(2024, 1, 12),
+                Treat=date(2024, 1, 13),
+                final_location="Shelf C",  # Non-empty location
+                DateIn=date(2024, 1, 11),
+                CustID=c1.CustID,
+            )
+            # Create WO with empty final_location
+            wo_not_packaged = WorkOrder(
+                WorkOrderNo="4002",
+                WOName="Not Actually Packaged",
+                Clean=date(2024, 1, 12),
+                Treat=date(2024, 1, 13),
+                final_location="",  # Empty string
+                DateIn=date(2024, 1, 11),
+                CustID=c1.CustID,
+            )
+            db.session.add_all([wo_packaged, wo_not_packaged])
+            db.session.commit()
+
+            # Check packaged tab
+            response = logged_in_client.get("/in_progress/list_packaged")
+            assert response.status_code == 200
+            assert b"Actually Packaged" in response.data
+            assert b"Not Actually Packaged" not in response.data
+
+            db.session.query(WorkOrder).filter(
+                WorkOrder.WorkOrderNo.in_(["4001", "4002"])
+            ).delete()
+            db.session.query(Customer).filter_by(CustID="C004").delete()
+            db.session.commit()

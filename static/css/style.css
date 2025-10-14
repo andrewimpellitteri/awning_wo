@@ -336,6 +336,7 @@ body {
 .dropdown-menu {
     background-color: var(--bg-secondary);
     border-color: var(--border-color);
+    z-index: 9999 !important;
 }
 
 .dropdown-item {
