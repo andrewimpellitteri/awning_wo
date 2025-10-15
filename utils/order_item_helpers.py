@@ -99,7 +99,7 @@ def process_selected_inventory_items(form, order_no, cust_id, item_class):
             CustID=cust_id,
             Description=inventory_item.Description,
             Material=inventory_item.Material,
-            Qty=str(requested_qty),
+            Qty=requested_qty,
             Condition=inventory_item.Condition,
             Color=inventory_item.Color,
             SizeWgt=inventory_item.SizeWgt,
@@ -173,7 +173,7 @@ def process_new_items(form, order_no, cust_id, item_class, update_catalog=True):
             CustID=cust_id,
             Description=description.strip(),
             Material=material,
-            Qty=str(qty),
+            Qty=qty,
             Condition=condition,
             Color=color,
             SizeWgt=size,
@@ -244,7 +244,7 @@ def add_or_update_catalog(cust_id, description, material, condition, color, size
         # Update quantity
         current_qty = safe_int_conversion(existing_inventory.Qty)
         new_qty = current_qty + qty
-        existing_inventory.Qty = str(new_qty)
+        existing_inventory.Qty = new_qty
         flash(
             f"Updated catalog: Customer now has {new_qty} total of '{description}'",
             "info",
@@ -262,7 +262,7 @@ def add_or_update_catalog(cust_id, description, material, condition, color, size
             Color=color,
             SizeWgt=size,
             Price=price,
-            Qty=str(qty),
+            Qty=qty,
         )
         flash(
             f"New item '{description}' added to catalog with quantity {qty}",

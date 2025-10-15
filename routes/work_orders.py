@@ -419,14 +419,20 @@ def create_work_order(prefill_cust_id=None):
                                 next_wo_no, file, to_s3=True, generate_thumbnails=True
                             )
                             if not wo_file:
-                                raise Exception(f"Failed to process file: {file.filename}")
+                                raise Exception(
+                                    f"Failed to process file: {file.filename}"
+                                )
 
                             uploaded_files.append(wo_file)
                             db.session.add(wo_file)
-                            print(f"Prepared file {i + 1}/{len(files)}: {wo_file.filename}")
+                            print(
+                                f"Prepared file {i + 1}/{len(files)}: {wo_file.filename}"
+                            )
 
                             if wo_file.thumbnail_path:
-                                print(f"  - Thumbnail generated: {wo_file.thumbnail_path}")
+                                print(
+                                    f"  - Thumbnail generated: {wo_file.thumbnail_path}"
+                                )
 
                 # Handle SeeRepair backlink
                 see_repair = request.form.get("SeeRepair")
@@ -457,13 +463,17 @@ def create_work_order(prefill_cust_id=None):
                 retry_count += 1
 
                 # Check if it's a duplicate key error
-                error_msg = str(ie.orig).lower() if hasattr(ie, 'orig') else str(ie).lower()
-                is_duplicate = 'duplicate' in error_msg or 'unique' in error_msg
+                error_msg = (
+                    str(ie.orig).lower() if hasattr(ie, "orig") else str(ie).lower()
+                )
+                is_duplicate = "duplicate" in error_msg or "unique" in error_msg
 
                 if is_duplicate and retry_count < max_retries:
                     # Exponential backoff with jitter
-                    delay = base_delay * (2 ** retry_count) + (random.random() * 0.05)
-                    print(f"Duplicate work order number detected. Retry {retry_count}/{max_retries} after {delay:.3f}s")
+                    delay = base_delay * (2**retry_count) + (random.random() * 0.05)
+                    print(
+                        f"Duplicate work order number detected. Retry {retry_count}/{max_retries} after {delay:.3f}s"
+                    )
                     time.sleep(delay)
                     continue  # Retry the loop
                 else:
@@ -489,7 +499,10 @@ def create_work_order(prefill_cust_id=None):
                 )
 
         # If we exhausted all retries
-        flash("Error creating work order: Unable to generate unique work order number after multiple attempts", "error")
+        flash(
+            "Error creating work order: Unable to generate unique work order number after multiple attempts",
+            "error",
+        )
         return render_template(
             "work_orders/create.html",
             customers=Customer.query.all(),
@@ -526,8 +539,7 @@ def edit_work_order(work_order_no):
     work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
 
     if request.method == "POST":
-        try:
-            # Track if customer changed (for source_name sync)
+        try:  # Track if customer changed (for source_name sync)
             old_cust_id = work_order.CustID
 
             # Update work order fields
@@ -606,7 +618,7 @@ def edit_work_order(work_order_no):
                 if item_id_str in updated_item_ids:
                     # Update quantity if provided
                     if item_id_str in updated_quantities:
-                        item.Qty = str(updated_quantities[item_id_str])
+                        item.Qty = updated_quantities[item_id_str]
 
                     # Update price if provided
                     if item_id_str in updated_prices:
@@ -616,6 +628,14 @@ def edit_work_order(work_order_no):
                     # Therefore, delete it from the work order.
                     db.session.delete(item)
                     flash(f"Removed item '{item.Description}' from work order.", "info")
+
+            # --- Handle items selected from customer inventory ---
+            selected_inventory_items = process_selected_inventory_items(
+                request.form, work_order_no, work_order.CustID, WorkOrderItem
+            )
+            for item in selected_inventory_items:
+                db.session.add(item)
+                flash(f"Added item '{item.Description}' from customer history.", "info")
 
             # Handle new items being added to this work order
             new_item_descriptions = request.form.getlist("new_item_description[]")
@@ -936,7 +956,10 @@ def api_work_orders():
             "filter_WOName": {"column": WorkOrder.WOName, "type": "like"},
             "filter_DateIn": {"column": WorkOrder.DateIn, "type": "like"},
             "filter_DateRequired": {"column": WorkOrder.DateRequired, "type": "like"},
-            "filter_Source": {"column": WorkOrder.source_name, "type": "like"},  # Use denormalized column
+            "filter_Source": {
+                "column": WorkOrder.source_name,
+                "type": "like",
+            },  # Use denormalized column
         },
     )
 

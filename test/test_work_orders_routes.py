@@ -335,6 +335,46 @@ class TestWorkOrderEditRoutes:
             assert updated_wo.DateCompleted is not None
 
 
+    def test_update_work_order_adds_item_from_history(self, admin_client, sample_data, app):
+        """
+        Tests that editing a work order and selecting an item from customer history
+        correctly adds the item to the work order.
+        """
+        with app.app_context():
+            # Work order 10001 starts with one item
+            wo = WorkOrder.query.get("10001")
+            assert len(wo.items) == 1
+            original_item_id = wo.items[0].id
+
+            # We will add INV002 from the customer's inventory
+            inventory_item_to_add = Inventory.query.get("INV002")
+            assert inventory_item_to_add is not None
+
+            response = admin_client.post("/work_orders/edit/10001", data={
+                "CustID": "100",
+                "WOName": "Adding from history",
+                "DateIn": "2025-01-15",
+                # Keep the original item
+                "existing_item_id[]": [str(original_item_id)],
+                f"existing_item_qty_{original_item_id}": "1",
+                # Add the new item from inventory history
+                "selected_items[]": ["INV002"],
+                "item_qty_INV002": "3", # Specify a quantity for the new item
+            }, follow_redirects=True)
+
+            assert response.status_code == 200
+
+            # Verify the work order now has two items
+            updated_wo = WorkOrder.query.get("10001")
+            assert len(updated_wo.items) == 2
+
+            # Check that the newly added item is correct
+            newly_added_item = next((item for item in updated_wo.items if item.Description == "Test Cover"), None)
+            assert newly_added_item is not None
+            assert newly_added_item.Qty == 3
+            assert newly_added_item.Material == "Vinyl"
+
+
     def test_update_work_order_preserves_and_updates_items(self, admin_client, sample_data, app):
         """
         CRITICAL TEST: Ensures editing a work order does not drop its items.

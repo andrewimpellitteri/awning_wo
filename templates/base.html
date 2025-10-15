@@ -12,9 +12,7 @@
             const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const theme = savedTheme ? savedTheme : (systemPrefersDark ? 'dark' : 'light');
 
-            if (theme === 'dark') {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
+            document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
 
@@ -176,16 +174,26 @@
 
             // Add click event listener to toggle theme
             themeToggleButton.addEventListener('click', () => {
+                console.log('Toggle button clicked');
                 const currentTheme = htmlElement.getAttribute('data-theme');
+                console.log('Current theme:', currentTheme);
                 const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                console.log('New theme:', newTheme);
 
-                if (newTheme === 'dark') {
-                    htmlElement.setAttribute('data-theme', 'dark');
-                } else {
-                    htmlElement.removeAttribute('data-theme');
-                }
+                htmlElement.setAttribute('data-theme', newTheme);
+                console.log('Set data-theme to:', newTheme);
 
                 localStorage.setItem('theme', newTheme);
+                console.log('Set localStorage theme to:', newTheme);
+
+                // Check the theme again after a short delay
+                setTimeout(() => {
+                    const themeAfterTimeout = htmlElement.getAttribute('data-theme');
+                    console.log('Theme after 100ms:', themeAfterTimeout);
+                    if (themeAfterTimeout !== newTheme) {
+                        console.error('Theme was changed back!');
+                    }
+                }, 100);
             });
         });
     </script>

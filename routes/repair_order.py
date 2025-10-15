@@ -320,7 +320,7 @@ def api_repair_work_orders():
 def get_next_ro_number():
     """API endpoint to get the next repair order number"""
     latest_order = RepairWorkOrder.query.order_by(
-        desc(RepairWorkOrder.RepairOrderNo)
+        desc(cast(RepairWorkOrder.RepairOrderNo, Integer))
     ).first()
 
     if latest_order:
@@ -373,7 +373,7 @@ def create_repair_order(prefill_cust_id=None):
             try:
                 # Generate next RepairOrderNo
                 latest_order = RepairWorkOrder.query.order_by(
-                    desc(RepairWorkOrder.RepairOrderNo)
+                    desc(cast(RepairWorkOrder.RepairOrderNo, Integer))
                 ).first()
                 print(latest_order, type(latest_order))
                 if latest_order:

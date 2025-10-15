@@ -22,6 +22,9 @@
     --light: #ecf0f1;
     --gray: #95a5a6;
     --danger: #e74c3c;
+    --bs-body-bg: var(--bg-secondary);
+    --bs-border-color: var(--border-color);
+    --bs-card-cap-bg: var(--bg-primary);
 }
 
 /* Dark theme colors */
@@ -1478,10 +1481,4 @@ table.table tbody tr:hover,
   color: var(--text-primary) !important;
 }
 
-/* Optional: map common --bs variables to your theme variables so any leftover templates
-   using --bs-* still follow your theme */
-:root {
-  --bs-body-bg: var(--bg-secondary);
-  --bs-border-color: var(--border-color);
-  --bs-card-cap-bg: var(--bg-primary);
-}
+
