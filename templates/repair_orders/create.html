@@ -636,6 +636,16 @@ function createDatalists() {
         colorDatalist.appendChild(option);
     });
     document.body.appendChild(colorDatalist);
+
+    // Condition datalist
+    const conditionDatalist = document.createElement('datalist');
+    conditionDatalist.id = 'condition-list';
+    conditionValues.forEach(val => {
+        const option = document.createElement('option');
+        option.value = val;
+        conditionDatalist.appendChild(option);
+    });
+    document.body.appendChild(conditionDatalist);
 }
 
 function addItemRow() {
@@ -646,7 +656,7 @@ function addItemRow() {
         <td><input type="number" name="item_qty[]" class="form-control" placeholder="1" min="1"></td>
         <td><input type="text" name="item_description[]" class="form-control" placeholder="Item description" list="description-list"></td>
         <td><input type="text" name="item_material[]" class="form-control" placeholder="Material" list="material-list"></td>
-        <td><input type="text" name="item_condition[]" class="form-control" placeholder="Condition"></td>
+        <td><input type="text" name="item_condition[]" class="form-control" placeholder="Condition" list="condition-list"></td>
         <td><input type="text" name="item_color[]" class="form-control" placeholder="Color" list="color-list"></td>
         <td><input type="text" name="item_size_wgt[]" class="form-control" placeholder="Size/Weight"></td>
         <td><input type="number" name="item_price[]" class="form-control" placeholder="0.00" step="0.01"></td>

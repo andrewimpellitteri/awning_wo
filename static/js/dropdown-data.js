@@ -27,3 +27,8 @@ const colorValues = [
   "Oyster", "Parchment", "Brown", "UK Yellow", "North Blue",
   "Doyle Grey", "Npryde Grey", "Patchwork", "Orange", "Purple"
 ];
+
+// Conditions
+const conditionValues = [
+    "Excellent", "Good", "Fair", "Poor", "Damaged", "New", "Used"
+];

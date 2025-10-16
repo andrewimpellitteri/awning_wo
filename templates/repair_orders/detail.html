@@ -228,12 +228,10 @@
                   <div class="detail-row">
                     <div class="detail-label">Clean</div>
                     <div class="detail-value">
-                      {% if repair_work_order.CLEAN == "YES" %}
-                        <span class="badge bg-success">
-                          <i class="fas fa-check me-1"></i>Yes
-                        </span>
+                      {% if repair_work_order.CLEAN %}
+                        <i class="fas fa-check-circle text-success"></i>
                       {% else %}
-                        <span class="text-muted">No</span>
+                        <i class="fas fa-times-circle text-danger"></i>
                       {% endif %}
                     </div>
                   </div>

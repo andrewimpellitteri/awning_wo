@@ -13,6 +13,7 @@ from reportlab.platypus import (
 )
 from io import BytesIO
 from datetime import datetime
+from reportlab.lib.colors import green, red
 
 
 def safe_paragraph(text, style, field_name=None):
@@ -24,9 +25,9 @@ def safe_paragraph(text, style, field_name=None):
     try:
         para = Paragraph(str(text), style)
         # Debug log
-        print(
-            f"[DEBUG] Paragraph created for '{field_name}': '{text}'", file=sys.stderr
-        )
+        # print(
+        #    f"[DEBUG] Paragraph created for '{field_name}': '{text}'", file=sys.stderr
+        # )
         return para
     except Exception as e:
         print(
@@ -35,6 +36,38 @@ def safe_paragraph(text, style, field_name=None):
         )
         # Return an empty paragraph so PDF still builds
         return Paragraph("", style)
+
+
+def get_safe_bool(value, default=False):
+    """Safely convert to boolean"""
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        return value.lower() in ("true", "yes", "1", "y")
+    return default
+
+
+def create_bool_paragraph(value, style):
+    """Create a paragraph with colored check/X mark"""
+
+    value = get_safe_bool(value)
+
+    if value:
+        text = "✓"
+        # Create a copy of the style with green color
+        green_style = style.clone("GreenStyle")
+        green_style.textColor = green
+        return safe_paragraph(text, green_style)
+    else:
+        text = "✗"
+        # Create a copy of the style with red color
+        red_style = style.clone("RedStyle")
+        red_style.textColor = red
+        return safe_paragraph(text, red_style)
 
 
 class WorkOrderPDF:
@@ -410,18 +443,24 @@ class WorkOrderPDF:
                 cust["SourceZip"] = cust["SourceZip"].strip("-")
         if cust.get("SourceState"):
             cust["SourceState"] = cust["SourceState"].upper()
-        safe_values = [
+
+        # Extract values
+        source_name = str(cust.get("Source") or "").strip()
+        address_parts = [
             str(cust.get(field) or "").strip()
-            for field in [
-                "Source",
-                "SourceAddress",
-                "SourceCity",
-                "SourceState",
-                "SourceZip",
-            ]
+            for field in ["SourceAddress", "SourceCity", "SourceState", "SourceZip"]
             if cust.get(field)
         ]
-        source_str = " ".join(safe_values) if safe_values else "N/A"
+
+        # Combine with newline
+        if source_name and address_parts:
+            source_str = source_name + "<br/>" + " ".join(address_parts)
+        elif source_name:
+            source_str = source_name
+        elif address_parts:
+            source_str = " ".join(address_parts)
+        else:
+            source_str = "N/A"
 
         right_data = [
             [
@@ -601,11 +640,15 @@ class WorkOrderPDF:
         repair_footer = [
             [
                 safe_paragraph("Repairs", self.styles["SmallLabel"]),
-                safe_paragraph(wo.get("RepairsNeeded", ""), self.styles["SmallValue"]),
+                create_bool_paragraph(
+                    wo.get("RepairsNeeded"), self.styles["SmallValue"]
+                ),
                 safe_paragraph("See Repair", self.styles["SmallLabel"]),
                 safe_paragraph(wo.get("SeeRepair", ""), self.styles["SmallValue"]),
-                safe_paragraph("Repair First", self.styles["SmallLabel"]),
-                safe_paragraph(wo.get("CleanFirstWO", ""), self.styles["SmallValue"]),
+                # safe_paragraph(
+                #     "Repair First", self.styles["SmallLabel"]
+                # ),  # should be removed?? maybe not for historical
+                # safe_paragraph(wo.get("CleanFirstWO", ""), self.styles["SmallValue"]),
             ]
         ]
 

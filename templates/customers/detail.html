@@ -559,14 +559,7 @@
                                 <label for="ConditionAdd" class="form-label">
                                     <i class="fas fa-clipboard-check"></i> Condition
                                 </label>
-                                <select name="Condition" id="ConditionAdd" class="form-select">
-                                    <option value="">Select condition...</option>
-                                    <option value="Excellent">Excellent</option>
-                                    <option value="Good">Good</option>
-                                    <option value="Fair">Fair</option>
-                                    <option value="Poor">Poor</option>
-                                    <option value="Damaged">Damaged</option>
-                                </select>
+                                <input class="form-control" list="conditionOptions" id="ConditionAdd" name="Condition" placeholder="Type or select...">
                             </div>
                         </div>
                     </div>
@@ -579,6 +572,7 @@
                                 </label>
                                 <input class="form-control" list="colorOptions" id="Color" name="Color" placeholder="Type or select...">
                                 <datalist id="colorOptions"></datalist>
+<datalist id="conditionOptions"></datalist>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -664,14 +658,7 @@
                                 <label for="ConditionEdit" class="form-label">
                                     <i class="fas fa-clipboard-check"></i> Condition
                                 </label>
-                                <select name="Condition" id="ConditionEdit" class="form-select">
-                                    <option value="">Select condition...</option>
-                                    <option value="Excellent">Excellent</option>
-                                    <option value="Good">Good</option>
-                                    <option value="Fair">Fair</option>
-                                    <option value="Poor">Poor</option>
-                                    <option value="Damaged">Damaged</option>
-                                </select>
+                                <input class="form-control" list="conditionOptions" id="ConditionEdit" name="Condition" placeholder="Type or select...">
                             </div>
                         </div>
                     </div>
@@ -801,7 +788,51 @@ document.addEventListener("DOMContentLoaded", () => {
     populateDatalist("descriptionOptions", descriptionValues);
     populateDatalist("colorOptions", colorValues);
     populateDatalist("materialOptions", materialValues);
+    populateDatalist("conditionOptions", conditionValues);
+    populateDatalist("conditionOptions", conditionValues);
 });
+
+function createDatalists() {
+        // Description datalist
+        const descriptionDatalist = document.createElement('datalist');
+        descriptionDatalist.id = 'description-list';
+        descriptionValues.forEach(val => {
+            const option = document.createElement('option');
+            option.value = val;
+            descriptionDatalist.appendChild(option);
+        });
+        document.body.appendChild(descriptionDatalist);
+
+        // Material datalist
+        const materialDatalist = document.createElement('datalist');
+        materialDatalist.id = 'material-list';
+        materialValues.forEach(val => {
+            const option = document.createElement('option');
+            option.value = val;
+            materialDatalist.appendChild(option);
+        });
+        document.body.appendChild(materialDatalist);
+
+        // Color datalist
+        const colorDatalist = document.createElement('datalist');
+        colorDatalist.id = 'color-list';
+        colorValues.forEach(val => {
+            const option = document.createElement('option');
+            option.value = val;
+            colorDatalist.appendChild(option);
+        });
+        document.body.appendChild(colorDatalist);
+
+        // Condition datalist
+        const conditionDatalist = document.createElement('datalist');
+        conditionDatalist.id = 'condition-list';
+        conditionValues.forEach(val => {
+            const option = document.createElement('option');
+            option.value = val;
+            conditionDatalist.appendChild(option);
+        });
+        document.body.appendChild(conditionDatalist);
+    }
 
 
 document.addEventListener('DOMContentLoaded', function() {

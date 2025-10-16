@@ -71,7 +71,7 @@
                                             <div class="detail-label">Quote</div>
                                             <div class="detail-value">
                                                 <select class="form-select" id="Quote" name="Quote">
-                                                    <option value="No" {% if work_order.Quote == 'No' %}selected{% endif %}>No</option>
+                                                    <option value="Yes" {% if work_order.Quote == 'Yes' %}selected{% endif %}>Yes</option>
                                                     <option value="Approved" {% if work_order.Quote == 'Approved' %}selected{% endif %}>Approved</option>
                                                     <option value="Done" {% if work_order.Quote == 'Done' %}selected{% endif %}>Done</option>
                                                 </select>
@@ -736,6 +736,16 @@ function createDatalists() {
         colorDatalist.appendChild(option);
     });
     document.body.appendChild(colorDatalist);
+
+    // Condition datalist
+    const conditionDatalist = document.createElement('datalist');
+    conditionDatalist.id = 'condition-list';
+    conditionValues.forEach(val => {
+        const option = document.createElement('option');
+        option.value = val;
+        conditionDatalist.appendChild(option);
+    });
+    document.body.appendChild(conditionDatalist);
 }
 
 function addNewItem() {
@@ -769,14 +779,7 @@ function addNewItem() {
                 </div>
                 <div class="col-md-6 mb-3">
                     <label class="form-label detail-label">Condition</label>
-                    <select class="form-select" name="new_item_condition[]">
-                        <option value="">Select</option>
-                        <option value="Excellent">Excellent</option>
-                        <option value="Good">Good</option>
-                        <option value="Fair">Fair</option>
-                        <option value="Poor">Poor</option>
-                        <option value="Damaged">Damaged</option>
-                    </select>
+                    <input type="text" class="form-control" name="new_item_condition[]" list="condition-list">
                 </div>
             </div>
 
