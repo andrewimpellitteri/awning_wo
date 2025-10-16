@@ -145,6 +145,8 @@ def format_date_from_str(value):
 
 
 @repair_work_orders_bp.route("/")
+@login_required
+@role_required("admin", "manager")
 def list_repair_work_orders():
     """
     Renders the main page for repair work orders.
@@ -457,7 +459,12 @@ def create_repair_order(prefill_cust_id=None):
                 for item_id in selected_item_ids:
                     if item_id:
                         # Fetch the original item from work orders
-                        original_item = WorkOrderItem.query.get(item_id)
+                        # Use filter_by since id might be a string representation
+                        try:
+                            original_item = WorkOrderItem.query.filter_by(id=int(item_id)).first()
+                        except (ValueError, TypeError):
+                            # If conversion fails, skip this item
+                            continue
                         if original_item:
                             qty_key = f"item_qty_{item_id}"
                             qty = request.form.get(qty_key, original_item.Qty or "1")
@@ -745,7 +752,12 @@ def edit_repair_order(repair_order_no):
             for item_id in selected_item_ids:
                 if item_id:
                     # Fetch the original item from work orders
-                    original_item = WorkOrderItem.query.get(item_id)
+                    # Use filter_by since id might be a string representation
+                    try:
+                        original_item = WorkOrderItem.query.filter_by(id=int(item_id)).first()
+                    except (ValueError, TypeError):
+                        # If conversion fails, skip this item
+                        continue
                     if original_item:
                         qty_key = f"item_qty_{item_id}"
                         qty = request.form.get(qty_key, original_item.Qty or "1")

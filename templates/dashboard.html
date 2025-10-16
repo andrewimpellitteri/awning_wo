@@ -11,7 +11,8 @@
         <div class="col-12">
             <h1 class="mb-4">Dashboard</h1>
             
-            <div class="row mb-4">
+            <div class="row mb-4 {% if current_user.role == 'user' %}justify-content-center{% endif %}">
+                {% if current_user.role != 'user' %}
                 <div class="col-md-4 mb-3">
                     <div class="card">
                         <div class="card-body text-center">
@@ -24,7 +25,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-md-4 mb-3">
                     <div class="card">
                         <div class="card-body text-center">
@@ -37,7 +38,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-md-4 mb-3">
                     <div class="card shadow-sm">
                         <div class="card-body text-center">
@@ -46,6 +47,19 @@
                             <p class="card-text">Manage all cleaning work orders</p>
                             <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-primary">
                                 View Work Orders
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-wrench fa-3x text-info mb-3"></i>
+                            <h5 class="card-title">Repairs</h5>
+                            <p class="card-text">Manage repair orders</p>
+                            <a href="{{ url_for('repair_work_orders.list_repair_work_orders') }}" class="btn btn-primary">
+                                View Repair Orders
                             </a>
                         </div>
                     </div>
@@ -63,20 +77,6 @@
                         </div>
                     </div>
                 </div>
-                
-                
-                <div class="col-md-4 mb-3">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <i class="fas fa-wrench fa-3x text-info mb-3"></i>
-                            <h5 class="card-title">Repairs</h5>
-                            <p class="card-text">Manage repair orders</p>
-                            <a href="{{ url_for('repair_work_orders.list_repair_work_orders') }}" class="btn btn-primary">
-                                View Repair Orders
-                            </a>
-                        </div>
-                    </div>
-                </div>
 
                 <div class="col-md-4 mb-3">
                     <div class="card">
@@ -85,13 +85,41 @@
                             <h5 class="card-title">In Progress</h5>
                             <p class="card-text">View work orders currently being cleaned</p>
                             <a href="{{ url_for('in_progress.in_progress_home') }}" class="btn btn-primary">
-                                View In Progress 
+                                View In Progress
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                {# User role - show only 2 cards, centered and wider #}
+                <div class="col-md-5 col-lg-4 mb-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center d-flex flex-column">
+                            <i class="fas fa-stream fa-4x text-secondary mb-3"></i>
+                            <h4 class="card-title">Queue</h4>
+                            <p class="card-text flex-grow-1">Manage order of cleaning</p>
+                            <a href="{{ url_for('cleaning_queue.cleaning_queue') }}" class="btn btn-primary btn-lg">
+                                View Queue
                             </a>
                         </div>
                     </div>
                 </div>
 
-                
+                <div class="col-md-5 col-lg-4 mb-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body text-center d-flex flex-column">
+                            <i class="fas fa-spinner fa-4x text-info mb-3"></i>
+                            <h4 class="card-title">In Progress</h4>
+                            <p class="card-text flex-grow-1">View work orders currently being cleaned</p>
+                            <a href="{{ url_for('in_progress.in_progress_home') }}" class="btn btn-primary btn-lg">
+                                View In Progress
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+
             </div>
 
             {% if True %}

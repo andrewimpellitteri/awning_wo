@@ -53,8 +53,20 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Order Name</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" name="ROName" 
+                                                <input type="text" class="form-control" name="ROName"
                                                        value="{{ form_data.get('ROName', '') if form_data else '' }}">
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Source</div>
+                                            <div class="detail-value">
+                                                <select class="form-select" id="SOURCE" name="SOURCE">
+                                                    <option value="">Auto-selected from customer</option>
+                                                    {% for source in sources %}
+                                                    <option value="{{ source.SSource }}" {% if form_data and form_data.get('SOURCE') == source.SSource %}selected{% endif %}>{{ source.SSource }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <small class="form-text text-muted">Will auto-populate from customer's source</small>
                                             </div>
                                         </div>
                                         <div class="detail-row">
@@ -675,19 +687,50 @@ function removeItemRow(button) {
 document.getElementById('RushOrder').addEventListener('change', updateCounts);
 document.getElementById('FirmRush').addEventListener('change', updateCounts);
 
-// Load customer inventory when customer changes
+// Load customer data (inventory and source) when customer changes
 document.getElementById('CustID').addEventListener('change', function() {
-    loadCustomerInventory(this.value);
+    const custId = this.value;
+    loadCustomerInventory(custId);
+
+    // Auto-populate source from customer
+    if (custId) {
+        fetch(`/customers/api/customer/${custId}`)
+            .then(response => response.json())
+            .then(customer => {
+                const sourceSelect = document.getElementById('SOURCE');
+                if (customer.ShipTo && sourceSelect) {
+                    // Set the source dropdown to customer's ShipTo
+                    sourceSelect.value = customer.ShipTo;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading customer data:', error);
+            });
+    }
 });
 
 // Initialize datalists on load
 document.addEventListener('DOMContentLoaded', function() {
     createDatalists();
 
-    // Load customer inventory if CustID is already set
+    // Load customer inventory and source if CustID is already set
     const custInput = document.getElementById('CustID');
     if (custInput.value) {
-        loadCustomerInventory(custInput.value);
+        const custId = custInput.value;
+        loadCustomerInventory(custId);
+
+        // Auto-populate source from customer
+        fetch(`/customers/api/customer/${custId}`)
+            .then(response => response.json())
+            .then(customer => {
+                const sourceSelect = document.getElementById('SOURCE');
+                if (customer.ShipTo && sourceSelect) {
+                    sourceSelect.value = customer.ShipTo;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading customer data:', error);
+            });
     }
 
     // Load next repair order number

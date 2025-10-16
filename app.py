@@ -23,11 +23,15 @@ def create_app(config_class=Config):
     def format_price(price):
         """
         Formats a number to a price string with a dollar sign and two decimal places.
+        Returns None if the price is None, empty string, or zero.
+        Returns formatted string for valid numbers.
         """
+        if price is None or price == "" or price == 0:
+            return None
         try:
             return f"${float(price):.2f}"
-        except (ValueError, TypeError) as e:
-            print(f"Error: Invalid input '{price}'. Please provide a number.")
+        except (ValueError, TypeError):
+            # Return None for invalid values instead of printing error
             return None
 
     import re

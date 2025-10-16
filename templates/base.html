@@ -48,6 +48,7 @@
             <!-- Modified navigation section with role-based restrictions -->
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
+                    {% if current_user.role != 'user' %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('source.source_list') }}">
                             <i class="fas fa-building"></i> Sources
@@ -59,21 +60,22 @@
                         </a>
                     </li>
 
-                    
-                    <!-- Work Orders - visible to all authenticated users -->
+
+                    <!-- Work Orders - visible to non-user roles -->
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('work_orders.list_work_orders') }}">
                             <i class="fas fa-broom"></i> Work Orders
                         </a>
                     </li>
-                    
+
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('repair_work_orders.list_repair_work_orders') }}">
                             <i class="fas fa-scissors"></i> Repair Orders
                         </a>
                     </li>
+                    {% endif %}
 
-                    
+
                     <!-- Queue - visible to all authenticated users -->
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('cleaning_queue.cleaning_queue') }}">
@@ -81,7 +83,7 @@
                         </a>
                     </li>
 
-                    
+
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('in_progress.in_progress_home') }}">
                             <i class="fas fa-spinner"></i> In Progress
@@ -95,7 +97,7 @@
                         </a>
                     </li>
                     {% endif %}
-                    
+
                     {% if current_user.role == "admin" %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('admin.manage_users') }}">

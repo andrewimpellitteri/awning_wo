@@ -297,6 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     xaxis: {
                         ...commonLayout.xaxis,
                         title: 'Month',
+                        range: [data.monthly_trends[0].month, new Date().toISOString().split('T')[0]],
                         rangeselector: {
                             buttons: [
                                 { count: 1, label: '1M', step: 'month', stepmode: 'backward' },
@@ -385,6 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     xaxis: {
                         ...commonLayout.xaxis,
                         title: 'Date',
+                        range: [data.daily_throughput[0].date, new Date().toISOString().split('T')[0]],
                         rangeselector: {
                             buttons: [
                                 { count: 7, label: '1W', step: 'day', stepmode: 'backward' },
@@ -436,6 +438,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     xaxis: {
                         ...commonLayout.xaxis,
                         title: 'Date',
+                        range: [data.backlog[0].date, new Date().toISOString().split('T')[0]],
                         rangeselector: {
                             buttons: [
                                 { count: 7, label: '1W', step: 'day', stepmode: 'backward' },

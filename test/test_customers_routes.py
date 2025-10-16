@@ -137,15 +137,15 @@ def sample_customers(app):
 
 
 class TestCustomerRoutes:
-    def test_customers_list_page_renders(self, logged_in_client):
-        """GET /customers/ should render the list page."""
-        response = logged_in_client.get("/customers/")
+    def test_customers_list_page_renders(self, admin_client):
+        """GET /customers/ should render the list page (admin/manager only)."""
+        response = admin_client.get("/customers/")
         assert response.status_code == 200
         assert b"Customers" in response.data
 
-    def test_customers_api_endpoint_works(self, logged_in_client):
+    def test_customers_api_endpoint_works(self, admin_client):
         """GET /customers/api/customers should return JSON."""
-        response = logged_in_client.get("/customers/api/customers")
+        response = admin_client.get("/customers/api/customers")
         assert response.status_code == 200
         assert response.is_json
 
@@ -272,6 +272,13 @@ class TestCustomerRoutes:
 
 
 class TestCustomerRoutesAuth:
+    def test_regular_user_cannot_access_customer_list(
+        self, logged_in_client, sample_customers
+    ):
+        """Test that a regular user cannot access the customer list page."""
+        response = logged_in_client.get("/customers/")
+        assert response.status_code == 403
+
     def test_regular_user_cannot_create_customer(
         self, logged_in_client, sample_customers
     ):
@@ -297,3 +304,80 @@ class TestCustomerRoutesAuth:
         """Test that a regular user cannot delete a customer."""
         response = logged_in_client.post("/customers/delete/123")
         assert response.status_code == 403
+
+import re
+from models.work_order import WorkOrder
+from models.repair_order import RepairWorkOrder
+from datetime import datetime
+
+def test_rush_badge_on_customer_detail_page(admin_client, sample_customers):
+    """Test that the 'RUSH' badge appears only for open orders."""
+    with admin_client.application.app_context():
+        # Create a customer
+        customer = Customer.query.get("123")
+
+        # Create an open work order with RushOrder
+        open_work_order = WorkOrder(
+            WorkOrderNo="1002",
+            CustID=customer.CustID,
+            RushOrder=True,
+            DateIn=datetime.utcnow().date()
+        )
+        db.session.add(open_work_order)
+
+        # Create a closed work order with RushOrder
+        closed_work_order = WorkOrder(
+            WorkOrderNo="1001",
+            CustID=customer.CustID,
+            RushOrder=True,
+            DateIn=datetime.utcnow().date(),
+            DateCompleted=datetime.utcnow()
+        )
+        db.session.add(closed_work_order)
+
+        # Create an open repair order with RushOrder
+        open_repair_order = RepairWorkOrder(
+            RepairOrderNo="2002",
+            CustID=customer.CustID,
+            RushOrder=True,
+            DateIn=datetime.utcnow().date()
+        )
+        db.session.add(open_repair_order)
+
+        # Create a closed repair order with RushOrder
+        closed_repair_order = RepairWorkOrder(
+            RepairOrderNo="2001",
+            CustID=customer.CustID,
+            RushOrder=True,
+            DateIn=datetime.utcnow().date(),
+            DateCompleted=datetime.utcnow()
+        )
+        db.session.add(closed_repair_order)
+
+        db.session.commit()
+
+        response = admin_client.get(f"/customers/view/{customer.CustID}")
+        assert response.status_code == 200
+        response_data = response.get_data(as_text=True)
+
+        # Work Orders
+        wo_items = re.findall(r'<li class="list-group-item.*?">.*?</li>', response_data, re.DOTALL)
+        
+        open_wo_item = next((item for item in wo_items if "1002" in item), None)
+        assert open_wo_item is not None
+        assert '<span class="badge bg-danger me-2">RUSH</span>' in open_wo_item
+
+        closed_wo_item = next((item for item in wo_items if "1001" in item), None)
+        assert closed_wo_item is not None
+        assert '<span class="badge bg-danger me-2">RUSH</span>' not in closed_wo_item
+
+        # Repair Orders
+        ro_items = re.findall(r'<li class="list-group-item.*?">.*?</li>', response_data, re.DOTALL)
+
+        open_ro_item = next((item for item in ro_items if "2002" in item), None)
+        assert open_ro_item is not None
+        assert '<span class="badge bg-danger me-2">RUSH</span>' in open_ro_item
+
+        closed_ro_item = next((item for item in ro_items if "2001" in item), None)
+        assert closed_ro_item is not None
+        assert '<span class="badge bg-danger me-2">RUSH</span>' not in closed_ro_item

@@ -10,6 +10,7 @@ source_bp = Blueprint("source", __name__)
 
 @source_bp.route("/")
 @login_required
+@role_required("admin", "manager")
 def source_list():
     """Display all sources with search functionality"""
     search_query = request.args.get("search", "").strip()

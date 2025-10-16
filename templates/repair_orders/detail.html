@@ -411,7 +411,7 @@
                       <td>{{ item.Condition or '-' }}</td>
                       <td>{{ item.Color or '-' }}</td>
                       <td>{{ item.SizeWgt or '-' }}</td>
-                      <td>{{ item.Price or '-' }}</td>
+                      <td>{{ (item.Price | price_format) or '-' }}</td>
                     </tr>
                     {% endfor %}
                   </tbody>
@@ -517,33 +517,57 @@
               <div class="detail-row">
                 <div class="detail-label">Customer Price</div>
                 <div class="detail-value">
-                  <strong>{{ repair_work_order.CUSTOMERPRICE or 'TBD' }}</strong>
+                  <strong>{{ (repair_work_order.CUSTOMERPRICE | price_format) or '<span class="text-muted">TBD</span>' | safe }}</strong>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Timestamps -->
-          <div class="card shadow-sm">
-            <div class="card-header">
-              <h5 class="card-title mb-0">
-                <i class="fas fa-clock me-2"></i> System Information
+        </div>
+      </div>
+
+      <!-- Additional Information Collapsible Section -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card shadow-sm mb-4">
+            <div class="card-header" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#additionalInfoCollapse" aria-expanded="false" aria-controls="additionalInfoCollapse">
+              <h5 class="card-title mb-0 d-flex justify-content-between align-items-center">
+                <span>
+                  <i class="fas fa-info-circle me-2"></i> Additional Information
+                </span>
+                <i class="fas fa-chevron-down" id="additionalInfoIcon"></i>
               </h5>
             </div>
-            <div class="card-body">
-              <div class="detail-row">
-                <div class="detail-label">Created</div>
-                <div class="detail-value">
-                  <i class="fas fa-plus-circle text-success me-2"></i>
-                  <small>{{ (repair_work_order.created_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
-                </div>
-              </div>
-              
-              <div class="detail-row">
-                <div class="detail-label">Updated</div>
-                <div class="detail-value">
-                  <i class="fas fa-edit text-info me-2"></i>
-                  <small>{{ (repair_work_order.updated_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
+            <div class="collapse" id="additionalInfoCollapse">
+              <div class="card-body">
+                <div class="row">
+                  <!-- System Information Card -->
+                  <div class="col-12">
+                    <div class="card shadow-sm h-100">
+                      <div class="card-header">
+                        <h5 class="card-title mb-0">
+                          <i class="fas fa-clock me-2"></i> System Information
+                        </h5>
+                      </div>
+                      <div class="card-body">
+                        <div class="detail-row">
+                          <div class="detail-label">Created</div>
+                          <div class="detail-value">
+                            <i class="fas fa-plus-circle text-success me-2"></i>
+                            <small>{{ (repair_work_order.created_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
+                          </div>
+                        </div>
+
+                        <div class="detail-row">
+                          <div class="detail-label">Updated</div>
+                          <div class="detail-value">
+                            <i class="fas fa-edit text-info me-2"></i>
+                            <small>{{ (repair_work_order.updated_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -563,7 +587,7 @@ function confirmDelete(orderNo) {
       `• All related data\n\n` +
       `Click OK to confirm deletion.`
   );
-  
+
   if (confirmed) {
       const form = document.getElementById('deleteForm');
       form.action = `/repair_work_orders/${orderNo}/delete`;
@@ -571,5 +595,22 @@ function confirmDelete(orderNo) {
   }
 }
 
+document.addEventListener('DOMContentLoaded', function() {
+  // Handle additional information collapse toggle
+  const additionalInfoCollapse = document.getElementById('additionalInfoCollapse');
+  const additionalInfoIcon = document.getElementById('additionalInfoIcon');
+
+  if (additionalInfoCollapse && additionalInfoIcon) {
+    additionalInfoCollapse.addEventListener('show.bs.collapse', function() {
+      additionalInfoIcon.classList.remove('fa-chevron-down');
+      additionalInfoIcon.classList.add('fa-chevron-up');
+    });
+
+    additionalInfoCollapse.addEventListener('hide.bs.collapse', function() {
+      additionalInfoIcon.classList.remove('fa-chevron-up');
+      additionalInfoIcon.classList.add('fa-chevron-down');
+    });
+  }
+});
 </script>
 {% endblock %}

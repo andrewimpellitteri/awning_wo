@@ -413,22 +413,6 @@
                         </div>
                     </div>
 
-                    <!-- ML Estimate Card (only shown if not completed) -->
-                    {% if not work_order.DateCompleted %}
-                    <div class="card mb-4 shadow-sm">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-robot me-2"></i> ML Estimate
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div id="ml-estimate-card">
-                                <span class="text-muted">Loading estimate...</span>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-
                     <!-- Quote Information Card -->
                     <div class="card mb-4 shadow-sm">
                         <div class="card-header">
@@ -440,32 +424,6 @@
                             <div class="detail-row">
                                 <div class="detail-label">Quote</div>
                                 <div class="detail-value">{{ work_order.Quote or '<span class="text-muted">Not provided</span>' | safe }}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- System Information / Timestamps -->
-                    <div class="card shadow-sm">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-clock me-2"></i> System Information
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="detail-row">
-                                <div class="detail-label">Created</div>
-                                <div class="detail-value">
-                                    <i class="fas fa-plus-circle text-success me-2"></i>
-                                    <small>{{ (work_order.created_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
-                                </div>
-                            </div>
-
-                            <div class="detail-row">
-                                <div class="detail-label">Updated</div>
-                                <div class="detail-value">
-                                    <i class="fas fa-edit text-info me-2"></i>
-                                    <small>{{ (work_order.updated_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -515,6 +473,71 @@
                         {% endif %}
                     </div>
                 </div>
+
+                <!-- Additional Information Collapsible Section -->
+                <div class="col-12">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#additionalInfoCollapse" aria-expanded="false" aria-controls="additionalInfoCollapse">
+                            <h5 class="card-title mb-0 d-flex justify-content-between align-items-center">
+                                <span>
+                                    <i class="fas fa-info-circle me-2"></i> Additional Information
+                                </span>
+                                <i class="fas fa-chevron-down" id="additionalInfoIcon"></i>
+                            </h5>
+                        </div>
+                        <div class="collapse" id="additionalInfoCollapse">
+                            <div class="card-body">
+                                <div class="row">
+                                    <!-- ML Estimate Card -->
+                                    {% if not work_order.DateCompleted %}
+                                    <div class="col-lg-6">
+                                        <div class="card shadow-sm h-100">
+                                            <div class="card-header bg-primary text-white">
+                                                <h5 class="card-title mb-0">
+                                                    <i class="fas fa-robot me-2"></i> ML Estimate
+                                                </h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="ml-estimate-card">
+                                                    <span class="text-muted">Loading estimate...</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- System Information Card -->
+                                    <div class="col-lg-{% if not work_order.DateCompleted %}6{% else %}12{% endif %}">
+                                        <div class="card shadow-sm h-100">
+                                            <div class="card-header">
+                                                <h5 class="card-title mb-0">
+                                                    <i class="fas fa-clock me-2"></i> System Information
+                                                </h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="detail-row">
+                                                    <div class="detail-label">Created</div>
+                                                    <div class="detail-value">
+                                                        <i class="fas fa-plus-circle text-success me-2"></i>
+                                                        <small>{{ (work_order.created_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
+                                                    </div>
+                                                </div>
+
+                                                <div class="detail-row">
+                                                    <div class="detail-label">Updated</div>
+                                                    <div class="detail-value">
+                                                        <i class="fas fa-edit text-info me-2"></i>
+                                                        <small>{{ (work_order.updated_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -562,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.file-item').forEach(item => {
         const filename = item.querySelector('.file-name').textContent.trim();
         const ext = filename.split('.').pop().toLowerCase();
-        
+
         let type = 'unknown';
         if (['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(ext)) {
             type = 'image';
@@ -575,9 +598,25 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (ext === 'txt') {
             type = 'text';
         }
-        
+
         item.setAttribute('data-type', type);
     });
+
+    // Handle additional information collapse toggle
+    const additionalInfoCollapse = document.getElementById('additionalInfoCollapse');
+    const additionalInfoIcon = document.getElementById('additionalInfoIcon');
+
+    if (additionalInfoCollapse && additionalInfoIcon) {
+        additionalInfoCollapse.addEventListener('show.bs.collapse', function() {
+            additionalInfoIcon.classList.remove('fa-chevron-down');
+            additionalInfoIcon.classList.add('fa-chevron-up');
+        });
+
+        additionalInfoCollapse.addEventListener('hide.bs.collapse', function() {
+            additionalInfoIcon.classList.remove('fa-chevron-up');
+            additionalInfoIcon.classList.add('fa-chevron-down');
+        });
+    }
 });
 </script>    
 {% endblock %}

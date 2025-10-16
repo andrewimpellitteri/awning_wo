@@ -183,6 +183,8 @@ def assign_queue_position_to_new_work_order(work_order):
 
 
 @work_orders_bp.route("/")
+@login_required
+@role_required("admin", "manager")
 def list_work_orders():
     search = request.args.get("search", "")
     page = request.args.get("page", 1, type=int)

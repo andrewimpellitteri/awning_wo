@@ -43,6 +43,7 @@ def get_customer_filter_options():
 
 @customers_bp.route("/")
 @login_required
+@role_required("admin", "manager")
 def list_customers():
     """Render the customer list page with filters"""
     search_query = request.args.get("search", "").strip()

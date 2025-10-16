@@ -359,12 +359,12 @@
                                 {% if not wo.DateCompleted %}
                                 <span class="badge bg-success me-2">OPEN</span>
                                 {% endif %}
-                                {% if wo.RushOrder or wo.FirmRush %}
+                                {% if (wo.RushOrder or wo.FirmRush) and not wo.DateCompleted %}
                                 <span class="badge bg-danger me-2">RUSH</span>
                                 {% endif %}
                             </div>
                             <div class="text-center flex-grow-1">
-                                <span class="text-muted">{{ (wo.DateIn | date_format) or "No Date" }}</span>
+                                <span class="text-muted">In: {{ (wo.DateIn | date_format) or "No Date" }}</span>
                             </div>
                         </div>
                         <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo) }}" class="btn btn-sm btn-outline-primary">
@@ -394,12 +394,12 @@
                                 {% if not ro.DateCompleted %}
                                 <span class="badge bg-success me-2">OPEN</span>
                                 {% endif %}
-                                {% if ro.RushOrder %}
+                                {% if ro.RushOrder and not ro.DateCompleted %}
                                 <span class="badge bg-danger me-2">RUSH</span>
                                 {% endif %}
                             </div>
                             <div class="text-center flex-grow-1">
-                                <span class="text-muted">{{ (ro.DateIn | date_format) or "No Date" }}</span>
+                                <span class="text-muted">In: {{ (ro.DateIn | date_format) or "No Date" }}</span>
                             </div>
                         </div>
                         <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=ro.RepairOrderNo) }}" class="btn btn-sm btn-outline-primary">
@@ -461,7 +461,7 @@
                         <td class="sizewgt">{{ item.SizeWgt or '-' }}</td>
                         <td class="price">
                             {% if item.Price %}
-                                <span class="text-success fw-medium">${{ "%.2f" | format(item.Price | float) }}</span>
+                                <span class="text-success fw-medium">{{ item.Price | price_format }}</span>
                             {% else %}
                                 <span class="text-muted">-</span>
                             {% endif %}

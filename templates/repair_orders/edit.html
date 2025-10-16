@@ -669,6 +669,27 @@ document.addEventListener('DOMContentLoaded', function() {
 document.getElementById('RushOrder').addEventListener('change', updateCounts);
 document.getElementById('FirmRush').addEventListener('change', updateCounts);
 
+// Auto-populate source when customer changes
+const custIdInput = document.querySelector('input[name="CustID"]');
+if (custIdInput) {
+    custIdInput.addEventListener('change', function() {
+        const custId = this.value;
+        if (custId) {
+            fetch(`/customers/api/customer/${custId}`)
+                .then(response => response.json())
+                .then(customer => {
+                    const sourceSelect = document.querySelector('select[name="SOURCE"]');
+                    if (customer.ShipTo && sourceSelect) {
+                        sourceSelect.value = customer.ShipTo;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading customer data:', error);
+                });
+        }
+    });
+}
+
 // Form validation
 document.getElementById('editOrderForm').addEventListener('submit', function(e) {
     const custId = document.querySelector('input[name="CustID"]').value;
