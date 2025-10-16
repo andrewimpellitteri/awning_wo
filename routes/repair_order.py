@@ -212,8 +212,6 @@ def api_repair_work_orders():
             "RepairOrderNo",
             "CustID",
             "ROName",
-            "ITEM_TYPE",
-            "TYPE_OF_REPAIR",
             "LOCATION",
         ],
     )
@@ -416,8 +414,6 @@ def create_repair_order(prefill_cust_id=None):
                     # Storage/Location fields (See STORAGE_FIELDS_GUIDE.md)
                     RackNo=request.form.get("RackNo"),  # Primary location field
                     STORAGE=request.form.get("STORAGE"),  # Storage time type (TEMPORARY/SEASONAL)
-                    ITEM_TYPE=request.form.get("ITEM_TYPE"),
-                    TYPE_OF_REPAIR=request.form.get("TYPE_OF_REPAIR"),
                     SPECIALINSTRUCTIONS=request.form.get("SPECIALINSTRUCTIONS"),
                     CLEAN="CLEAN" in request.form,
                     SEECLEAN=request.form.get("SEECLEAN"),
@@ -683,8 +679,6 @@ def edit_repair_order(repair_order_no):
             # Storage/Location fields (See STORAGE_FIELDS_GUIDE.md)
             repair_order.RackNo = request.form.get("RackNo")  # Primary location field
             repair_order.STORAGE = request.form.get("STORAGE")  # Storage time type (TEMPORARY/SEASONAL)
-            repair_order.ITEM_TYPE = request.form.get("ITEM_TYPE")
-            repair_order.TYPE_OF_REPAIR = request.form.get("TYPE_OF_REPAIR")
             repair_order.SPECIALINSTRUCTIONS = request.form.get("SPECIALINSTRUCTIONS")
             repair_order.CLEAN = "CLEAN" in request.form
             repair_order.SEECLEAN = request.form.get("SEECLEAN")

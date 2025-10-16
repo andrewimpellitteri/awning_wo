@@ -124,18 +124,6 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="detail-row">
-                                            <div class="detail-label">Item Type</div>
-                                            <div class="detail-value">
-                                                <input type="text" class="form-control" name="ITEM_TYPE" value="{{ repair_work_order.ITEM_TYPE or '' }}">
-                                            </div>
-                                        </div>
-                                        <div class="detail-row">
-                                            <div class="detail-label">Type of Repair</div>
-                                            <div class="detail-value">
-                                                <input type="text" class="form-control" name="TYPE_OF_REPAIR" value="{{ repair_work_order.TYPE_OF_REPAIR or '' }}">
-                                            </div>
-                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="detail-row">
@@ -182,6 +170,18 @@
                                             <div class="detail-label">Customer Price</div>
                                             <div class="detail-value">
                                                 <input type="number" step="0.01" class="form-control" name="CUSTOMERPRICE" value="{{ repair_work_order.CUSTOMERPRICE or '' }}">
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Return Method</div>
+                                            <div class="detail-value">
+                                                <select class="form-select" name="RETURNSTATUS">
+                                                    <option value="">Select return method</option>
+                                                    <option value="SHIP" {% if repair_work_order.RETURNSTATUS == 'SHIP' %}selected{% endif %}>Ship</option>
+                                                    <option value="PICKUP" {% if repair_work_order.RETURNSTATUS == 'PICKUP' %}selected{% endif %}>Pickup</option>
+                                                    <option value="DELIVERY" {% if repair_work_order.RETURNSTATUS == 'DELIVERY' %}selected{% endif %}>Delivery</option>
+                                                </select>
+                                                <small class="form-text text-muted">How the item will be returned to customer</small>
                                             </div>
                                         </div>
                                     </div>
@@ -663,18 +663,28 @@ function removeNewItem(button) {
 // Initialize datalists on load
 document.addEventListener('DOMContentLoaded', function() {
     createDatalists();
+
+    // Load customer inventory on page load
+    const custIdInput = document.querySelector('input[name="CustID"]');
+    if (custIdInput && custIdInput.value) {
+        loadCustomerInventory(custIdInput.value);
+    }
 });
 
 // Update counts if priority checkboxes change
 document.getElementById('RushOrder').addEventListener('change', updateCounts);
 document.getElementById('FirmRush').addEventListener('change', updateCounts);
 
-// Auto-populate source when customer changes
-const custIdInput = document.querySelector('input[name="CustID"]');
-if (custIdInput) {
-    custIdInput.addEventListener('change', function() {
+// Auto-populate source and reload inventory when customer changes
+const custIdInput2 = document.querySelector('input[name="CustID"]');
+if (custIdInput2) {
+    custIdInput2.addEventListener('change', function() {
         const custId = this.value;
         if (custId) {
+            // Load customer inventory
+            loadCustomerInventory(custId);
+
+            // Auto-populate source
             fetch(`/customers/api/customer/${custId}`)
                 .then(response => response.json())
                 .then(customer => {

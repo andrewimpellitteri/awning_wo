@@ -122,16 +122,6 @@
                       {% endif %}
                     </div>
                   </div>
-                  
-                  <div class="detail-row">
-                    <div class="detail-label">Item Type</div>
-                    <div class="detail-value">{{ repair_work_order.ITEM_TYPE or '<span class="text-muted">-</span>' | safe }}</div>
-                  </div>
-                  
-                  <div class="detail-row">
-                    <div class="detail-label">Repair Type</div>
-                    <div class="detail-value">{{ repair_work_order.TYPE_OF_REPAIR or '<span class="text-muted">-</span>' | safe }}</div>
-                  </div>
                 </div>
                 
                 <div class="col-md-6">
@@ -577,6 +567,11 @@
     </div>
   </div>
 </div>
+
+<!-- Hidden form for delete action -->
+<form id="deleteForm" method="POST" style="display: none;">
+</form>
+
 <script>
 function confirmDelete(orderNo) {
   const confirmed = confirm(

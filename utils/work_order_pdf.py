@@ -315,12 +315,14 @@ class WorkOrderPDF:
 
         def rush_value(label, flag):
             """Return a Paragraph with optional red highlighting for 'Yes'"""
+            # Convert to boolean using the safe helper
+            is_rush = get_safe_bool(flag)
             style = (
                 self.styles["RushHighlight"]
-                if flag == "1"
+                if is_rush
                 else self.styles["SmallValue"]
             )
-            return safe_paragraph("Yes" if flag == "1" else "No", style)
+            return safe_paragraph("Yes" if is_rush else "No", style)
 
         # Each column: [label, value] stacked vertically
         col1 = [
