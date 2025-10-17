@@ -119,6 +119,7 @@ def create_app(config_class=Config):
     from routes.ml import ml_bp
     from routes.dashboard import dashboard_bp
     from routes.in_progress import in_progress_bp
+    from routes.quote import quote_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(source_bp, url_prefix="/sources")
@@ -132,6 +133,7 @@ def create_app(config_class=Config):
     app.register_blueprint(ml_bp)
     app.register_blueprint(dashboard_bp, url_prefix="/")
     app.register_blueprint(in_progress_bp, url_prefix="/in_progress")
+    app.register_blueprint(quote_bp, url_prefix="/quotes")
 
     # Register routes
     @app.route("/")

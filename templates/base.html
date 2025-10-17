@@ -50,21 +50,8 @@
                 <ul class="navbar-nav me-auto">
                     {% if current_user.role != 'user' %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('source.source_list') }}">
-                            <i class="fas fa-building"></i> Sources
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('customers.list_customers') }}">
                             <i class="fas fa-person"></i> Customers
-                        </a>
-                    </li>
-
-
-                    <!-- Work Orders - visible to non-user roles -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('work_orders.list_work_orders') }}">
-                            <i class="fas fa-broom"></i> Work Orders
                         </a>
                     </li>
 

@@ -16,12 +16,20 @@
                 <div class="col-md-4 mb-3">
                     <div class="card">
                         <div class="card-body text-center">
-                            <i class="fas fa-building fa-3x text-primary mb-3"></i>
-                            <h5 class="card-title">Sources</h5>
-                            <p class="card-text">Manage your business sources and contacts</p>
-                            <a href="{{ url_for('source.source_list') }}" class="btn btn-primary">
-                                View Sources
-                            </a>
+                            <div class="d-flex justify-content-center align-items-center mb-3">
+                                <i class="fas fa-building fa-2x text-primary me-3"></i>
+                                <i class="fas fa-broom fa-2x text-secondary"></i>
+                            </div>
+                            <h5 class="card-title">Sources & Work Orders</h5>
+                            <p class="card-text">Manage business sources and work orders</p>
+                            <div class="d-flex gap-2 justify-content-center">
+                                <a href="{{ url_for('source.source_list') }}" class="btn btn-primary btn-sm">
+                                    Sources
+                                </a>
+                                <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-secondary btn-sm">
+                                    Work Orders
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -40,13 +48,13 @@
                 </div>
 
                 <div class="col-md-4 mb-3">
-                    <div class="card shadow-sm">
+                    <div class="card">
                         <div class="card-body text-center">
-                            <i class="fas fa-broom fa-3x text-secondary mb-3"></i>
-                            <h5 class="card-title">Work Orders</h5>
-                            <p class="card-text">Manage all cleaning work orders</p>
-                            <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-primary">
-                                View Work Orders
+                            <i class="fas fa-file-invoice-dollar fa-3x text-warning mb-3"></i>
+                            <h5 class="card-title">Quotes</h5>
+                            <p class="card-text">Create and manage customer quotes</p>
+                            <a href="{{ url_for('quote.list_quotes') }}" class="btn btn-warning">
+                                View Quotes
                             </a>
                         </div>
                     </div>
