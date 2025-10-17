@@ -207,11 +207,11 @@ Repair work orders.
 | `datein` | Date | Date received |
 | `rushorder` | Boolean | Rush order flag |
 | `firmrush` | Boolean | Firm rush flag |
-| `quote` | Boolean | Quote flag |
-| `approved` | Boolean | Approved flag |
+| `quote` | String | Quote status: 'YES', 'DONE', 'APPROVED', or NULL |
+| `approved` | Boolean | **DEPRECATED** - No longer used |
 | `clean` | Boolean | Clean before repair |
 | `cleanfirst` | Boolean | **DEPRECATED** - Historical only |
-| `QUOTE  BY` | String | Quoted by ⚠️ **Two spaces** |
+| `QUOTE  BY` | String | **DEPRECATED** - No longer used ⚠️ **Two spaces** |
 | `RACK#` | String | **Physical location** (e.g., "hang 4", "6D") |
 | `storage` | String | Storage duration: "TEMPORARY" or "SEASONAL" |
 | `location` | String | Additional location details |

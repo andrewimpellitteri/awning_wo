@@ -127,9 +127,21 @@
                                     </div>
                                     <div class="col-md-6">
                                         <div class="detail-row">
+                                            <div class="detail-label">Date In</div>
+                                            <div class="detail-value">
+                                                <input type="date" class="form-control" name="DateIn" value="{{ repair_work_order.DateIn or '' }}">
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
                                             <div class="detail-label">Date Required</div>
                                             <div class="detail-value">
                                                 <input type="date" class="form-control" name="DateRequired" value="{{ repair_work_order.DateRequired or '' }}">
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Date to Sub</div>
+                                            <div class="detail-value">
+                                                <input type="date" class="form-control" name="DATE_TO_SUB" value="{{ repair_work_order.DATE_TO_SUB or '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">
@@ -167,6 +179,17 @@
                                             </div>
                                         </div>
                                         <div class="detail-row">
+                                            <div class="detail-label">Quote Status</div>
+                                            <div class="detail-value">
+                                                <select class="form-select" name="QUOTE">
+                                                    <option value="">No Quote</option>
+                                                    <option value="YES" {% if repair_work_order.QUOTE == 'YES' %}selected{% endif %}>Yes</option>
+                                                    <option value="DONE" {% if repair_work_order.QUOTE == 'DONE' %}selected{% endif %}>Done</option>
+                                                    <option value="APPROVED" {% if repair_work_order.QUOTE == 'APPROVED' %}selected{% endif %}>Approved</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
                                             <div class="detail-label">Customer Price</div>
                                             <div class="detail-value">
                                                 <input type="number" step="0.01" class="form-control" name="CUSTOMERPRICE" value="{{ repair_work_order.CUSTOMERPRICE or '' }}">
@@ -190,13 +213,82 @@
                                     <div class="col-12">
                                         <div class="detail-row">
                                             <div class="detail-label">
-                                                <i class="fas fa-clipboard-list me-1"></i>Special Instructions
+                                                <i class="fas fa-exclamation-circle text-warning me-1"></i>Special Instructions
                                             </div>
                                             <div class="detail-value">
-                                                <textarea class="form-control" name="SPECIALINSTRUCTIONS" rows="3" 
+                                                <textarea class="form-control" name="SPECIALINSTRUCTIONS" rows="3"
                                                           placeholder="Enter any special instructions or notes for this repair work order..."
                                                           >{{ repair_work_order.SPECIALINSTRUCTIONS or '' }}</textarea>
                                                 <small class="form-text text-muted">Provide detailed instructions for the repair team</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Material List -->
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <div class="detail-row">
+                                            <div class="detail-label">
+                                                <i class="fas fa-list text-primary me-1"></i>Material List
+                                            </div>
+                                            <div class="detail-value">
+                                                <textarea class="form-control" name="MaterialList" rows="3"
+                                                          placeholder="List materials needed for this repair..."
+                                                          >{{ repair_work_order.MaterialList or '' }}</textarea>
+                                                <small class="form-text text-muted">Materials and supplies required for the repair</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Repair and Cleaning Information -->
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-scissors text-secondary me-1"></i>Repair & Cleaning Information:</h6>
+
+                                        <div class="detail-row">
+                                            <div class="detail-label">Repairs Done By</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="REPAIRSDONEBY"
+                                                       value="{{ repair_work_order.REPAIRSDONEBY or '' }}"
+                                                       placeholder="Enter technician name">
+                                            </div>
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <div class="detail-label">Clean</div>
+                                            <div class="detail-value">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="CLEAN" name="CLEAN" value="YES"
+                                                           {% if repair_work_order.CLEAN == 'YES' %}checked{% endif %}>
+                                                    <label class="form-check-label" for="CLEAN">
+                                                        Item requires cleaning
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <div class="detail-label">See Clean (WO #)</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="SEECLEAN"
+                                                       value="{{ repair_work_order.SEECLEAN or '' }}"
+                                                       placeholder="Enter work order number">
+                                                <small class="form-text text-muted">Reference to cleaning work order</small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-map-marker-alt text-secondary me-1"></i>Additional Location Info:</h6>
+
+                                        <div class="detail-row">
+                                            <div class="detail-label">Location</div>
+                                            <div class="detail-value">
+                                                <input type="text" class="form-control" name="LOCATION"
+                                                       value="{{ repair_work_order.LOCATION or '' }}"
+                                                       placeholder="Current location">
                                             </div>
                                         </div>
                                     </div>

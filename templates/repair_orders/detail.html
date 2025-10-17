@@ -476,34 +476,26 @@
             </div>
             <div class="card-body">
               <div class="detail-row">
-                <div class="detail-label">Quote</div>
-                <div class="detail-value">{{ repair_work_order.QUOTE or '<span class="text-muted">Not provided</span>' | safe }}</div>
-              </div>
-              
-              <div class="detail-row">
-                <div class="detail-label">Quote By</div>
-                <div class="detail-value">{{ repair_work_order.QUOTE_BY or '<span class="text-muted">-</span>' | safe }}</div>
-              </div>
-              
-              <div class="detail-row">
-                <div class="detail-label">Approved</div>
+                <div class="detail-label">Quote Status</div>
                 <div class="detail-value">
-                  {% if repair_work_order.APPROVED == "YES" %}
-                  <span class="badge bg-success">
-                    <i class="fas fa-check me-1"></i> Yes
+                  {% if repair_work_order.QUOTE == 'YES' %}
+                  <span class="badge bg-info">
+                    <i class="fas fa-file-invoice me-1"></i> Yes
                   </span>
-                  {% elif repair_work_order.APPROVED == "NO" %}
-                  <span class="badge bg-danger">
-                    <i class="fas fa-times me-1"></i> No
+                  {% elif repair_work_order.QUOTE == 'DONE' %}
+                  <span class="badge bg-primary">
+                    <i class="fas fa-check-circle me-1"></i> Done
+                  </span>
+                  {% elif repair_work_order.QUOTE == 'APPROVED' %}
+                  <span class="badge bg-success">
+                    <i class="fas fa-check-double me-1"></i> Approved
                   </span>
                   {% else %}
-                  <span class="badge bg-warning">
-                    {{ repair_work_order.APPROVED or 'Pending' }}
-                  </span>
+                  <span class="text-muted">No Quote</span>
                   {% endif %}
                 </div>
               </div>
-              
+
               <div class="detail-row">
                 <div class="detail-label">Customer Price</div>
                 <div class="detail-value">

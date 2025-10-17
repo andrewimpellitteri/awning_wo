@@ -31,19 +31,21 @@ class RepairWorkOrder(db.Model):
     # Boolean fields with proper types
     RushOrder = db.Column("rushorder", db.Boolean, default=False)
     FirmRush = db.Column("firmrush", db.Boolean, default=False)
-    QUOTE = db.Column(
-        "quote", db.Boolean, default=False
-    )  # need to change to str?? might be same a wo dropdown or could be a bool?
-    APPROVED = db.Column("approved", db.Boolean, default=False)
     CLEAN = db.Column("clean", db.Boolean, default=False)  # Uses "YES"/"NO" values
     CLEANFIRST = db.Column(
         "cleanfirst", db.Boolean, default=False
     )  # deprecated only for historical
 
     # String fields (keep as string)
+    QUOTE = db.Column(
+        "quote", db.String, nullable=True
+    )  # Valid values: 'YES', 'DONE', 'APPROVED', or NULL
+
+    # Deprecated fields - kept for backward compatibility, no longer used in UI
+    APPROVED = db.Column("approved", db.Boolean, default=False)  # DEPRECATED
     QUOTE_BY = db.Column(
         "QUOTE  BY", db.String
-    )  # Note: TWO spaces between QUOTE and BY
+    )  # DEPRECATED - Note: TWO spaces between QUOTE and BY
 
     # === STORAGE/LOCATION FIELDS (See issue #82) ===
     # Physical LOCATION where item is stored (e.g., "hang 4", "6D", "1 D")

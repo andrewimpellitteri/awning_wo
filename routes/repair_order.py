@@ -416,9 +416,7 @@ def create_repair_order(prefill_cust_id=None):
                     else None,
                     RushOrder="RushOrder" in request.form,
                     FirmRush="FirmRush" in request.form,
-                    QUOTE="QUOTE" in request.form,
-                    QUOTE_BY=request.form.get("QUOTE_BY"),
-                    APPROVED="APPROVED" in request.form,
+                    QUOTE=request.form.get("QUOTE") or None,  # String: 'YES', 'DONE', 'APPROVED', or NULL
                     # Storage/Location fields (See STORAGE_FIELDS_GUIDE.md)
                     RackNo=request.form.get("RackNo"),  # Primary location field
                     STORAGE=request.form.get(
@@ -727,9 +725,7 @@ def edit_repair_order(repair_order_no):
             )
             repair_order.RushOrder = "RushOrder" in request.form
             repair_order.FirmRush = "FirmRush" in request.form
-            repair_order.QUOTE = "QUOTE" in request.form
-            repair_order.QUOTE_BY = request.form.get("QUOTE_BY")
-            repair_order.APPROVED = "APPROVED" in request.form
+            repair_order.QUOTE = request.form.get("QUOTE") or None  # String: 'YES', 'DONE', 'APPROVED', or NULL
             # Storage/Location fields (See STORAGE_FIELDS_GUIDE.md)
             repair_order.RackNo = request.form.get("RackNo")  # Primary location field
             repair_order.STORAGE = request.form.get(
