@@ -1,20 +1,124 @@
-site_name: Awning App Docs
+site_name: Awning Management System Documentation
 site_url: https://andrewimpellitteri.github.com/awning_wo
+repo_url: https://github.com/andrewimpellitteri/awning_wo
+repo_name: andrewimpellitteri/awning_wo
+
 theme:
   name: material
-nav:
-  - Alembic Guide: ALEMBIC_GUIDE.md
-  - Caching Guide: CACHING_GUIDE.md
-  - Concurrency Audit: CONCURRENCY_AUDIT.md
-  - Denormalization Analysis: DENORMALIZATION_ANALYSIS.md
-  - Deployment Checklist: DEPLOYMENT_CHECKLIST.md
-  - Improvements: IMPROVEMENTS.md
-  - Performance Analysis: PERFORMANCE_ANALYSIS.md
-  - Refactoring Plan: REFACTORING_PLAN.md
-  - Storage Fields Guide: STORAGE_FIELDS_GUIDE.md
-  - WASM Thumbnail Optimization: WASM_THUMBNAIL_OPTIMIZATION.md
+  palette:
+    # Light mode
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
 
-# 👇 Add this section
+nav:
+  - Home: index.md
+
+  # User Guide
+  - User Guide:
+    - user-guide/index.md
+    - Getting Started: user-guide/getting-started.md
+    - Work Orders: user-guide/work-orders.md
+    - Repair Orders: user-guide/repair-orders.md
+    - Customers: user-guide/customers.md
+    - Sources & Vendors: user-guide/sources.md
+    - Inventory: user-guide/inventory.md
+    - Queue Management: user-guide/queue.md
+    - Analytics Dashboard: user-guide/analytics.md
+    - PDF Reports: user-guide/pdf-reports.md
+    - Keyboard Shortcuts: user-guide/keyboard-shortcuts.md
+
+  # Developer Guide
+  - Developer Guide:
+    - developer-guide/index.md
+    - Setup & Installation: developer-guide/setup.md
+    - Project Structure: developer-guide/project-structure.md
+    - Database Schema: developer-guide/database-schema.md
+    - API Reference: developer-guide/api-reference.md
+    - Testing: developer-guide/testing.md
+    - Contributing: developer-guide/contributing.md
+
+  # Database & Migrations
+  - Database:
+    - Database Migration Guide: database/ALEMBIC_GUIDE.md
+    - Storage Fields Guide: database/STORAGE_FIELDS_GUIDE.md
+    - Schema Changes: database/schema-changes.md
+
+  # Deployment
+  - Deployment:
+    - AWS Elastic Beanstalk: deployment/aws-eb.md
+    - Deployment Checklist: deployment/DEPLOYMENT_CHECKLIST.md
+    - Environment Variables: deployment/environment-variables.md
+    - Monitoring & Logging: deployment/monitoring.md
+    - Rollback Procedures: deployment/rollback.md
+
+  # Architecture & Performance
+  - Architecture:
+    - System Overview: architecture/overview.md
+    - ML Prediction System: architecture/ml-system.md
+    - Caching Strategy: architecture/CACHING_GUIDE.md
+    - Performance Analysis: architecture/PERFORMANCE_ANALYSIS.md
+    - Concurrency & Locking: architecture/CONCURRENCY_AUDIT.md
+
+  # Planning & Improvements
+  - Planning:
+    - Improvement Roadmap: planning/IMPROVEMENTS.md
+    - Refactoring Plan: planning/REFACTORING_PLAN.md
+    - Denormalization Analysis: planning/DENORMALIZATION_ANALYSIS.md
+    - WASM Optimization: planning/WASM_THUMBNAIL_OPTIMIZATION.md
+
+  # Reference
+  - Reference:
+    - FAQ: reference/faq.md
+    - Troubleshooting: reference/troubleshooting.md
+    - Glossary: reference/glossary.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/andrewimpellitteri/awning_wo
+
+# Exclude files from being processed
 exclude_docs: |
   CLAUDE.md
   COMPLETE_MIGRATION_GUIDE.md
