@@ -431,21 +431,9 @@ class RepairOrderPDF:
                 safe_paragraph(source_str, self.styles["SmallValueSource"]),
             ],
             [
-                safe_paragraph("WO Date", self.styles["SmallLabel"]),
-                safe_paragraph(
-                    self._format_date(ro.get("WO_DATE")), self.styles["SmallValue"]
-                ),
-            ],
-            [
                 safe_paragraph("Date In", self.styles["SmallLabel"]),
                 safe_paragraph(
                     self._format_date(ro.get("DateIn")), self.styles["SmallValue"]
-                ),
-            ],
-            [
-                safe_paragraph("Date to Sub", self.styles["SmallLabel"]),
-                safe_paragraph(
-                    self._format_date(ro.get("DATE_TO_SUB")), self.styles["SmallValue"]
                 ),
             ],
             [
@@ -457,12 +445,24 @@ class RepairOrderPDF:
                 safe_paragraph(ro.get("RackNo", ""), self.styles["SmallValue"]),
             ],
             [
-                safe_paragraph("Item Type", self.styles["SmallLabel"]),
-                safe_paragraph(ro.get("ITEM_TYPE", ""), self.styles["SmallValue"]),
+                safe_paragraph("Quote", self.styles["SmallLabel"]),
+                safe_paragraph(ro.get("QUOTE", ""), self.styles["SmallValue"]),
             ],
             [
-                safe_paragraph("Type of Repair", self.styles["SmallLabel"]),
-                safe_paragraph(ro.get("TYPE_OF_REPAIR", ""), self.styles["SmallValue"]),
+                safe_paragraph("Repair Price", self.styles["SmallLabel"]),
+                safe_paragraph(ro.get("CUSTOMERPRICE", ""), self.styles["SmallValue"]),
+            ],
+            [
+                safe_paragraph("Date to Sub", self.styles["SmallLabel"]),
+                safe_paragraph(
+                    self._format_date(ro.get("DATE_TO_SUB")), self.styles["SmallValue"]
+                ),
+            ],
+            [
+                safe_paragraph("Date Ret. from Sub.", self.styles["SmallLabel"]),
+                safe_paragraph(
+                    self._format_date(ro.get("RETURNDATE")), self.styles["SmallValue"]
+                ),
             ],
         ]
 
@@ -496,7 +496,7 @@ class RepairOrderPDF:
             safe_paragraph("Condition", self.styles["TableHeader"]),
             safe_paragraph("Color", self.styles["TableHeader"]),
             safe_paragraph("Size/Wgt", self.styles["TableHeader"]),
-            safe_paragraph("Price", self.styles["TableHeader"]),
+            safe_paragraph("Clean Price", self.styles["TableHeader"]),
         ]
 
         # --- Build rows ---
@@ -619,41 +619,6 @@ class RepairOrderPDF:
             )
         )
 
-        # --- Repair-specific section ---
-        repair_footer = [
-            [
-                safe_paragraph("Quote", self.styles["SmallLabel"]),
-                safe_paragraph(ro.get("QUOTE", ""), self.styles["SmallValue"]),
-                safe_paragraph("Quote By", self.styles["SmallLabel"]),
-                safe_paragraph(ro.get("QUOTE_BY", ""), self.styles["SmallValue"]),
-                safe_paragraph("Approved", self.styles["SmallLabel"]),
-                safe_paragraph(ro.get("APPROVED", ""), self.styles["SmallValue"]),
-            ]
-        ]
-
-        repair_table = Table(
-            repair_footer,
-            colWidths=[
-                0.8 * inch,
-                1.2 * inch,
-                0.8 * inch,
-                1.0 * inch,
-                0.8 * inch,
-                1.0 * inch,
-            ],
-        )
-        repair_table.setStyle(
-            TableStyle(
-                [
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ("FONTSIZE", (0, 0), (-1, -1), 8),
-                    ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-                    ("LEFTPADDING", (0, 0), (-1, -1), 2),
-                    ("RIGHTPADDING", (0, 0), (-1, -1), 2),
-                ]
-            )
-        )
-
         # --- Clean section (repair-specific fields) ---
         clean_footer = [
             [
@@ -699,8 +664,6 @@ class RepairOrderPDF:
             [
                 safe_paragraph("Repairs Done By", self.styles["SmallLabel"]),
                 safe_paragraph(ro.get("REPAIRSDONEBY", ""), self.styles["SmallValue"]),
-                safe_paragraph("Customer Price", self.styles["SmallLabel"]),
-                safe_paragraph(ro.get("CUSTOMERPRICE", ""), self.styles["SmallValue"]),
                 safe_paragraph("Return Status", self.styles["SmallLabel"]),
                 safe_paragraph(ro.get("RETURNSTATUS", ""), self.styles["SmallValue"]),
             ]
@@ -710,11 +673,9 @@ class RepairOrderPDF:
             status_footer,
             colWidths=[
                 1.0 * inch,
+                1.5 * inch,
                 1.0 * inch,
-                1.0 * inch,
-                1.0 * inch,
-                1.0 * inch,
-                1.2 * inch,
+                1.5 * inch,
             ],
         )
         status_table.setStyle(
@@ -837,8 +798,6 @@ class RepairOrderPDF:
             Spacer(1, 0.2 * inch),
             special_instructions_table,
             Spacer(1, 0.1 * inch),
-            repair_table,
-            Spacer(1, 0.05 * inch),
             clean_table,
             Spacer(1, 0.05 * inch),
             status_table,

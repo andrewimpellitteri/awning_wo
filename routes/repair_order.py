@@ -448,7 +448,11 @@ def create_repair_order(prefill_cust_id=None):
                     ).date()
                     if request.form.get("DATEOUT")
                     else None,
-                    DateIn=datetime.now().date(),
+                    DateIn=datetime.strptime(
+                        request.form.get("DateIn"), "%Y-%m-%d"
+                    ).date()
+                    if request.form.get("DateIn")
+                    else datetime.now().date(),
                 )
 
                 db.session.add(repair_order)
@@ -756,6 +760,11 @@ def edit_repair_order(repair_order_no):
             repair_order.DATEOUT = (
                 datetime.strptime(request.form.get("DATEOUT"), "%Y-%m-%d").date()
                 if request.form.get("DATEOUT")
+                else None
+            )
+            repair_order.DateIn = (
+                datetime.strptime(request.form.get("DateIn"), "%Y-%m-%d").date()
+                if request.form.get("DateIn")
                 else None
             )
 
