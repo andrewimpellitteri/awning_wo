@@ -42,12 +42,13 @@ def sample_customers_and_work_orders(app):
         db.session.add_all([c1, c2, c3])
         db.session.commit()
 
-        # Create sample work orders linked to customers
+        # Create sample work orders linked to customers (with Approved quotes)
         wo1 = WorkOrder(
             WorkOrderNo="1001",
             WOName="Regular Order",
             DateIn=date(2024, 1, 10),
             CustID=c1.CustID,
+            Quote="Approved",
         )
         wo2 = WorkOrder(
             WorkOrderNo="1002",
@@ -55,6 +56,7 @@ def sample_customers_and_work_orders(app):
             RushOrder=True,
             DateIn=date(2024, 1, 12),
             CustID=c2.CustID,
+            Quote="Approved",
         )
         wo3 = WorkOrder(
             WorkOrderNo="1003",
@@ -62,6 +64,7 @@ def sample_customers_and_work_orders(app):
             FirmRush=True,
             DateIn=date(2024, 1, 11),
             CustID=c3.CustID,
+            Quote="Approved",
         )
 
         db.session.add_all([wo1, wo2, wo3])

@@ -6,7 +6,7 @@ from models.customer import Customer
 from models.source import Source
 from sqlalchemy.orm import joinedload
 from .work_orders import format_date_from_str
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, and_
 from extensions import db
 from decorators import role_required
 from flask import current_app
@@ -58,7 +58,10 @@ def safe_date_sort_key(date_value):
 def initialize_queue_positions_for_unassigned():
     """Initialize queue positions for work orders that don't have them (preserves existing manual ordering)"""
     try:
-        base_filter = WorkOrder.DateCompleted.is_(None)
+        base_filter = and_(
+            WorkOrder.DateCompleted.is_(None),
+            WorkOrder.Quote == 'Approved'
+        )
 
         # Only get work orders without queue positions
         unassigned_orders = WorkOrder.query.filter(
@@ -321,8 +324,11 @@ def cleaning_queue():
             )
         )
 
-    # Base filters: incomplete work orders
-    base_filter = WorkOrder.DateCompleted.is_(None)
+    # Base filters: incomplete work orders with approved quotes
+    base_filter = and_(
+        WorkOrder.DateCompleted.is_(None),
+        WorkOrder.Quote == 'Approved'
+    )
 
     # Initialize queue positions for any work orders that don't have them
     initialized_count = initialize_queue_positions_for_unassigned()
@@ -562,8 +568,11 @@ def reorder_cleaning_queue():
 @login_required
 def cleaning_queue_summary():
     """API endpoint for dashboard summary of cleaning queue"""
-    # Count work orders in cleaning queue by priority
-    base_filter = WorkOrder.DateCompleted.is_(None)
+    # Count work orders in cleaning queue by priority (only approved quotes)
+    base_filter = and_(
+        WorkOrder.DateCompleted.is_(None),
+        WorkOrder.Quote == 'Approved'
+    )
 
     firm_rush_count = WorkOrder.query.filter(
         base_filter,
