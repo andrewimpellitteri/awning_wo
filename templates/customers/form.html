@@ -67,11 +67,11 @@
                                             <label for="Name" class="form-label">
                                                 Customer Name <span class="text-danger">*</span>
                                             </label>
-                                            <input type="text" 
-                                                   class="form-control" 
-                                                   id="Name" 
+                                            <input type="text"
+                                                   class="form-control"
+                                                   id="Name"
                                                    name="Name"
-                                                   value="{{ customer.Name if edit_mode else (form_data.Name if form_data else '') }}"
+                                                   value="{{ (customer.Name or '') if edit_mode else (form_data.Name if form_data else '') }}"
                                                    required>
                                         </div>
                                     </div>
@@ -83,7 +83,7 @@
                                                    class="form-control" 
                                                    id="Contact" 
                                                    name="Contact"
-                                                   value="{{ customer.Contact if edit_mode else (form_data.Contact if form_data else '') }}">
+                                                   value="{{ (customer.Contact or '') if edit_mode else (form_data.Contact if form_data else '') }}">
                                         </div>
                                         
                                         <div class="mb-3">
@@ -117,7 +117,7 @@
                                                    class="form-control" 
                                                    id="HomePhone" 
                                                    name="HomePhone"
-                                                   value="{{ customer.HomePhone if edit_mode else (form_data.HomePhone if form_data else '') }}"
+                                                   value="{{ (customer.HomePhone or '') if edit_mode else (form_data.HomePhone if form_data else '') }}"
                                                    placeholder="(555) 123-4567">
                                         </div>
                                     </div>
@@ -129,7 +129,7 @@
                                                    class="form-control" 
                                                    id="WorkPhone" 
                                                    name="WorkPhone"
-                                                   value="{{ customer.WorkPhone if edit_mode else (form_data.WorkPhone if form_data else '') }}"
+                                                   value="{{ (customer.WorkPhone or '') if edit_mode else (form_data.WorkPhone if form_data else '') }}"
                                                    placeholder="(555) 123-4567">
                                         </div>
                                     </div>
@@ -141,7 +141,7 @@
                                                    class="form-control" 
                                                    id="CellPhone" 
                                                    name="CellPhone"
-                                                   value="{{ customer.CellPhone if edit_mode else (form_data.CellPhone if form_data else '') }}"
+                                                   value="{{ (customer.CellPhone or '') if edit_mode else (form_data.CellPhone if form_data else '') }}"
                                                    placeholder="(555) 123-4567">
                                         </div>
                                     </div>
@@ -149,11 +149,11 @@
                                 
                                 <div class="mb-3">
                                     <label for="EmailAddress" class="form-label">Email Address</label>
-                                    <input type="email" 
-                                           class="form-control" 
-                                           id="EmailAddress" 
+                                    <input type="email"
+                                           class="form-control"
+                                           id="EmailAddress"
                                            name="EmailAddress"
-                                           value="{{ customer.clean_email() if edit_mode else (form_data.EmailAddress if form_data else '') }}"
+                                           value="{{ (customer.clean_email() or '') if edit_mode else (form_data.EmailAddress if form_data else '') }}"
                                            placeholder="customer@example.com">
                                 </div>
                             </div>
@@ -171,7 +171,7 @@
                                            class="form-control" 
                                            id="Address" 
                                            name="Address"
-                                           value="{{ customer.Address if edit_mode else (form_data.Address if form_data else '') }}">
+                                           value="{{ (customer.Address or '') if edit_mode else (form_data.Address if form_data else '') }}">
                                 </div>
                                 
                                 <div class="mb-3">
@@ -180,7 +180,7 @@
                                            class="form-control" 
                                            id="Address2" 
                                            name="Address2"
-                                           value="{{ customer.Address2 if edit_mode else (form_data.Address2 if form_data else '') }}">
+                                           value="{{ (customer.Address2 or '') if edit_mode else (form_data.Address2 if form_data else '') }}">
                                 </div>
                                 
                                 <div class="row">
@@ -191,7 +191,7 @@
                                                    class="form-control" 
                                                    id="City" 
                                                    name="City"
-                                                   value="{{ customer.City if edit_mode else (form_data.City if form_data else '') }}">
+                                                   value="{{ (customer.City or '') if edit_mode else (form_data.City if form_data else '') }}">
                                         </div>
                                     </div>
                                     
@@ -202,7 +202,7 @@
                                                    class="form-control" 
                                                    id="State" 
                                                    name="State"
-                                                   value="{{ customer.State if edit_mode else (form_data.State if form_data else '') }}"
+                                                   value="{{ (customer.State or '') if edit_mode else (form_data.State if form_data else '') }}"
                                                    maxlength="2"
                                                    placeholder="CT">
                                         </div>
@@ -215,7 +215,7 @@
                                                    class="form-control" 
                                                    id="ZipCode" 
                                                    name="ZipCode"
-                                                   value="{{ customer.ZipCode if edit_mode else (form_data.ZipCode if form_data else '') }}"
+                                                   value="{{ (customer.ZipCode or '') if edit_mode else (form_data.ZipCode if form_data else '') }}"
                                                    maxlength="10">
                                         </div>
                                     </div>
@@ -238,41 +238,41 @@
                                            class="form-control" 
                                            id="MailAddress" 
                                            name="MailAddress"
-                                           value="{{ customer.MailAddress if edit_mode else (form_data.MailAddress if form_data else '') }}">
+                                           value="{{ (customer.MailAddress or '') if edit_mode else (form_data.MailAddress if form_data else '') }}">
                                 </div>
-                                
+
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label for="MailCity" class="form-label">City</label>
-                                            <input type="text" 
-                                                   class="form-control" 
-                                                   id="MailCity" 
+                                            <input type="text"
+                                                   class="form-control"
+                                                   id="MailCity"
                                                    name="MailCity"
-                                                   value="{{ customer.MailCity if edit_mode else (form_data.MailCity if form_data else '') }}">
+                                                   value="{{ (customer.MailCity or '') if edit_mode else (form_data.MailCity if form_data else '') }}">
                                         </div>
                                     </div>
-                                    
+
                                     <div class="col-md-3">
                                         <div class="mb-3">
                                             <label for="MailState" class="form-label">State</label>
-                                            <input type="text" 
-                                                   class="form-control" 
-                                                   id="MailState" 
+                                            <input type="text"
+                                                   class="form-control"
+                                                   id="MailState"
                                                    name="MailState"
-                                                   value="{{ customer.MailState if edit_mode else (form_data.MailState if form_data else '') }}"
+                                                   value="{{ (customer.MailState or '') if edit_mode else (form_data.MailState if form_data else '') }}"
                                                    maxlength="2">
                                         </div>
                                     </div>
-                                    
+
                                     <div class="col-md-3">
                                         <div class="mb-3">
                                             <label for="MailZip" class="form-label">ZIP Code</label>
-                                            <input type="text" 
-                                                   class="form-control" 
-                                                   id="MailZip" 
+                                            <input type="text"
+                                                   class="form-control"
+                                                   id="MailZip"
                                                    name="MailZip"
-                                                   value="{{ customer.MailZip if edit_mode else (form_data.MailZip if form_data else '') }}"
+                                                   value="{{ (customer.MailZip or '') if edit_mode else (form_data.MailZip if form_data else '') }}"
                                                    maxlength="10">
                                         </div>
                                     </div>
@@ -398,26 +398,22 @@ document.getElementById('Source').addEventListener('change', function() {
 
 // Form validation
 document.querySelector('form').addEventListener('submit', function(e) {
-    const custId = document.getElementById('CustID').value.trim();
     const custName = document.getElementById('Name').value.trim();
-    const sourceElement = document.getElementById('Source');
 
-        // 👇 ADD THIS DEBUG STATEMENT
-    console.log('--- Form Submission Debug ---');
-    console.log('Customer ID:', custId);
-    console.log('Customer Name:', custName);
-    console.log('Source Value:', sourceElement.value.trim());
-    console.log('---------------------------');
+    // Only validate CustID in create mode (not edit mode)
+    const custIdElement = document.getElementById('CustID');
+    const isEditMode = custIdElement && custIdElement.hasAttribute('readonly');
 
-    
-    if (!custId) {
-        e.preventDefault();
-        alert('Customer ID is required.');
-        console.log('fail');
-        document.getElementById('CustID').focus();
-        return false;
+    if (!isEditMode && custIdElement) {
+        const custId = custIdElement.value.trim();
+        if (!custId) {
+            e.preventDefault();
+            alert('Customer ID is required.');
+            custIdElement.focus();
+            return false;
+        }
     }
-    
+
     if (!custName) {
         e.preventDefault();
         alert('Customer name is required.');
@@ -425,23 +421,18 @@ document.querySelector('form').addEventListener('submit', function(e) {
         return false;
     }
 
-
-    // Validate Source
-    if (!sourceElement.value.trim()) {
-        e.preventDefault();
-        alert('Source is required.');
-        sourceElement.focus();
-        return false;
-    }
-    
     // Validate email if provided
-    const email = document.getElementById('EmailAddress').value.trim();
+    const emailInput = document.getElementById('EmailAddress');
+    const email = emailInput.value.trim();
     if (email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             e.preventDefault();
+            console.error('Email validation failed for:', email);
+            console.error('Email length:', email.length);
+            console.error('Email char codes:', Array.from(email).map(c => c.charCodeAt(0)));
             alert('Please enter a valid email address.');
-            document.getElementById('EmailAddress').focus();
+            emailInput.focus();
             return false;
         }
     }

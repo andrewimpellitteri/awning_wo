@@ -6,23 +6,159 @@
 <div class="container-fluid px-4 py-3">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Quotes</h1>
-        {% if current_user.role != 'user' %}
-        <a href="{{ url_for('quote.create_quote') }}" class="btn btn-primary btn-sm">
-            <i class="fas fa-plus me-1"></i> Create Quote
-        </a>
-        {% endif %}
+        <h1 class="h3 mb-0 text-gray-800">Work Orders - Quote Status</h1>
+        <small class="text-muted">Showing work orders where Quote ≠ 'Approved'</small>
     </div>
 
-    <!-- Placeholder Content -->
-    <div class="card">
-        <div class="card-body text-center py-5">
-            <i class="fas fa-file-invoice-dollar fa-5x text-muted mb-4"></i>
-            <h3 class="text-muted mb-3">Quote Management Coming Soon</h3>
-            <p class="text-muted">
-                This feature is currently under development. You'll be able to create and manage quotes here.
-            </p>
+    <!-- Table Container -->
+    <div class="bg-white rounded-3 shadow-sm border-0">
+        <div class="d-flex justify-content-end p-2">
+            <button id="clear-filters-btn" class="btn btn-outline-warning btn-sm me-2">
+                <i class="fas fa-filter-circle-xmark me-1"></i> Clear Filters
+            </button>
+            <button id="print-table" class="btn btn-outline-secondary btn-sm me-2">
+                <i class="fas fa-print me-1"></i> Print
+            </button>
+            <button id="download-csv" class="btn btn-outline-success btn-sm">
+                <i class="fas fa-file-csv me-1"></i> Export CSV
+            </button>
         </div>
+        <div id="quotes-table"></div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<link href="https://unpkg.com/tabulator-tables@6.2.5/dist/css/tabulator_bootstrap5.min.css" rel="stylesheet">
+<script src="https://unpkg.com/tabulator-tables@6.2.5/dist/js/tabulator.min.js"></script>
+
+<script>
+function formatDate(dateValue) {
+    if (!dateValue) {
+        return '';
+    }
+    try {
+        const date = new Date(dateValue);
+        if (isNaN(date.getTime())) {
+            return '';
+        }
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${month}/${day}/${year}`;
+    } catch (e) {
+        console.error("Failed to format date:", e);
+        return '';
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    const table = new Tabulator("#quotes-table", {
+        ajaxURL: "{{ url_for('quote.quotes_data') }}",
+        layout: "fitColumns",
+        pagination: true,
+        paginationSize: 25,
+        paginationSizeSelector: [10, 25, 50, 100],
+
+        columns: [
+            {
+                title: "WO #",
+                field: "WorkOrderNo",
+                width: 150,
+                headerFilter: "input",
+                formatter: cell => {
+                    const rowData = cell.getRow().getData();
+                    let rushBadge = rowData.RushOrder ? ' <span class="badge bg-danger ms-1">RUSH</span>' : '';
+                    return `<span class="badge bg-primary"><i class="fas fa-hashtag me-1"></i><a href="/work_orders/${cell.getValue()}">${cell.getValue()}</a></span>${rushBadge}`;
+                }
+            },
+            {
+                title: "Customer ID",
+                field: "CustID",
+                width: 120,
+                headerFilter: "input",
+                formatter: cell => {
+                    const val = cell.getValue();
+                    return val ? `<span class="badge bg-info">${val}</span>` : `<span class="text-muted">—</span>`;
+                }
+            },
+            {
+                title: "Customer Name",
+                field: "customer_name",
+                headerFilter: "input"
+            },
+            {
+                title: "WO Name",
+                field: "WOName",
+                headerFilter: "input"
+            },
+            {
+                title: "Quote Status",
+                field: "Quote",
+                width: 150,
+                headerFilter: "input",
+                formatter: cell => {
+                    const val = cell.getValue();
+                    if (!val) return `<span class="badge bg-secondary">Not Set</span>`;
+                    if (val === 'YES') return `<span class="badge bg-warning">YES</span>`;
+                    if (val === 'DONE') return `<span class="badge bg-info">DONE</span>`;
+                    return `<span class="badge bg-light text-dark">${val}</span>`;
+                }
+            },
+            {
+                title: "Date In",
+                field: "DateIn",
+                width: 120,
+                headerFilter: "input",
+                formatter: (cell) => formatDate(cell.getValue())
+            },
+            {
+                title: "Date Required",
+                field: "DateRequired",
+                width: 130,
+                headerFilter: "input",
+                formatter: (cell) => formatDate(cell.getValue())
+            },
+            {
+                title: "Source",
+                field: "source",
+                width: 140,
+                headerFilter: "input",
+                formatter: cell => cell.getValue() ? `<span class="badge bg-info">${cell.getValue()}</span>` : `<span class="text-muted">—</span>`
+            },
+            {
+                title: "Actions",
+                field: "actions",
+                width: 100,
+                hozAlign: "center",
+                headerFilter: false,
+                headerSort: false,
+                formatter: cell => {
+                    const data = cell.getRow().getData();
+                    return `
+                        <div class="btn-group btn-group-sm">
+                            <a href="/work_orders/${data.WorkOrderNo}" class="btn btn-outline-primary" title="View">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="/work_orders/${data.WorkOrderNo}/edit" class="btn btn-outline-warning" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                        </div>
+                    `;
+                },
+                print: false,
+            }
+        ],
+    });
+
+    // Print & CSV
+    document.getElementById("print-table").addEventListener("click", () => table.print(false, true));
+    document.getElementById("download-csv").addEventListener("click", () => table.download("csv", "quotes.csv"));
+
+    // Clear filters
+    document.getElementById("clear-filters-btn").addEventListener("click", () => {
+        table.clearHeaderFilter();
+    });
+});
+</script>
 {% endblock %}

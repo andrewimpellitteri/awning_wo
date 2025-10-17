@@ -85,8 +85,15 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Date to Sub</div>
                                             <div class="detail-value">
-                                                <input type="date" class="form-control" name="DATE_TO_SUB" 
+                                                <input type="date" class="form-control" name="DATE_TO_SUB"
                                                        value="{{ form_data.get('DATE_TO_SUB', '') if form_data else '' }}">
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
+                                            <div class="detail-label">Date Ret. from Sub.</div>
+                                            <div class="detail-value">
+                                                <input type="date" class="form-control" name="RETURNDATE"
+                                                       value="{{ form_data.get('RETURNDATE', '') if form_data else '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">

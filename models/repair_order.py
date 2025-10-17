@@ -18,14 +18,16 @@ class RepairWorkOrder(db.Model):
     SOURCE = db.Column("source", db.String)
 
     # Date fields with proper types
-    WO_DATE = db.Column("WO DATE", db.Date, nullable=True)  # Uppercase with space
+    WO_DATE = db.Column(
+        "WO DATE", db.Date, nullable=True
+    )  # DEPRECATED - Use DateIn instead. Uppercase with space
     DATE_TO_SUB = db.Column(
         "DATE TO SUB", db.Date, nullable=True
     )  # Uppercase with spaces
     DateRequired = db.Column("daterequired", db.Date, nullable=True)
     DateCompleted = db.Column("datecompleted", db.DateTime, nullable=True)
-    RETURNDATE = db.Column("returndate", db.Date, nullable=True)
-    DATEOUT = db.Column("dateout", db.Date, nullable=True)
+    RETURNDATE = db.Column("returndate", db.Date, nullable=True)  # Date returned from sub
+    DATEOUT = db.Column("dateout", db.Date, nullable=True)  # DEPRECATED
     DateIn = db.Column("datein", db.Date, nullable=True)
 
     # Boolean fields with proper types

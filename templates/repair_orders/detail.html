@@ -458,7 +458,7 @@
 
               {% if repair_work_order.RETURNDATE %}
               <div class="detail-row">
-                <div class="detail-label">Return Date</div>
+                <div class="detail-label">Date Ret. from Sub.</div>
                 <div class="detail-value">
                   <i class="fas fa-calendar text-primary me-2"></i>
                   {{ (repair_work_order.RETURNDATE | date_format) or '<span class="text-muted">-</span>' | safe }}
