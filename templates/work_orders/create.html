@@ -237,16 +237,11 @@
                                                     <span class="input-group-text">
                                                         <i class="fas fa-shipping-fast"></i>
                                                     </span>
-                                                    <select class="form-select" id="ShipTo" name="ShipTo">
-                                                        <option value="">Select Source</option>
-                                                        {% for source in sources %}
-                                                        <option value="{{ source.SSource }}"
-                                                                {% if form_data and form_data.get('ShipTo') == source.SSource %}selected{% endif %}>
-                                                            {{ source.SSource }}
-                                                        </option>
-                                                        {% endfor %}
-                                                    </select>
+                                                    <input type="text" class="form-control" id="ShipTo" name="ShipTo" readonly
+                                                           value="{% if form_data and form_data.get('ShipTo') %}{{ form_data.get('ShipTo') }}{% endif %}"
+                                                           placeholder="Auto-selected from customer">
                                                 </div>
+                                                <small class="form-text text-muted">Automatically populated from customer record (cannot be changed)</small>
                                             </div>
                                         </div>
                                         
@@ -730,8 +725,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     document.getElementById('CustID').addEventListener('change', function() {
-        loadCustomerInventory(this.value);
-        loadOpenRepairOrders(this.value);
+        const custId = this.value;
+        loadCustomerInventory(custId);
+        loadOpenRepairOrders(custId);
+
+        // Auto-populate source from customer
+        if (custId) {
+            fetch(`/customers/api/customer/${custId}`)
+                .then(response => response.json())
+                .then(customer => {
+                    const shipToInput = document.getElementById('ShipTo');
+                    if (customer.Source && shipToInput) {
+                        shipToInput.value = customer.Source;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading customer data:', error);
+                });
+        }
     });
 
     window.addEventListener('DOMContentLoaded', function() {

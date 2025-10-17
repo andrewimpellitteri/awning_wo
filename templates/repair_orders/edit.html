@@ -153,12 +153,10 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Source</div>
                                             <div class="detail-value">
-                                                <select class="form-select" name="SOURCE">
-                                                    <option value="">Select Source</option>
-                                                    {% for source in sources %}
-                                                    <option value="{{ source.SSource }}" {% if repair_work_order.SOURCE == source.SSource %}selected{% endif %}>{{ source.SSource }}</option>
-                                                    {% endfor %}
-                                                </select>
+                                                <input type="text" class="form-control" id="SOURCE" name="SOURCE" readonly
+                                                       value="{{ repair_work_order.SOURCE or '' }}"
+                                                       placeholder="Auto-selected from customer">
+                                                <small class="form-text text-muted">Automatically populated from customer record (cannot be changed)</small>
                                             </div>
                                         </div>
                                         <div class="detail-row">
@@ -780,9 +778,9 @@ if (custIdInput2) {
             fetch(`/customers/api/customer/${custId}`)
                 .then(response => response.json())
                 .then(customer => {
-                    const sourceSelect = document.querySelector('select[name="SOURCE"]');
-                    if (customer.ShipTo && sourceSelect) {
-                        sourceSelect.value = customer.ShipTo;
+                    const sourceInput = document.getElementById('SOURCE');
+                    if (customer.Source && sourceInput) {
+                        sourceInput.value = customer.Source;
                     }
                 })
                 .catch(error => {
