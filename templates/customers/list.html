@@ -126,9 +126,21 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             },
             {
+                title: "Source",
+                field: "Source",
+                width: 120,
+                headerFilter: "input",
+                headerFilterPlaceholder: "Source...",
+                sorter: "string",
+                formatter: function(cell) {
+                    const source = cell.getValue();
+                    return source ? `<span class="badge bg-info text-white">${source}</span>` : `<span class="text-muted">—</span>`;
+                }
+            },
+            {
                 title: "Contact",
                 field: "Contact",
-                headerFilter: "input", 
+                headerFilter: "input",
                 headerFilterPlaceholder: "Contact...",
                 sorter: "string",
                 formatter: function(cell) {
@@ -174,18 +186,6 @@ document.addEventListener("DOMContentLoaded", function() {
                         return `<a href="mailto:${email}" class="text-decoration-none text-truncate d-inline-block" style="max-width: 180px;" title="${email}">${email}</a>`;
                     }
                     return `<span class="text-muted">—</span>`;
-                }
-            },
-            {
-                title: "Source",
-                field: "Source",
-                width: 120,
-                headerFilter: "input",
-                headerFilterPlaceholder: "Source...",
-                sorter: "string",
-                formatter: function(cell) {
-                    const source = cell.getValue();
-                    return source ? `<span class="badge bg-info text-white">${source}</span>` : `<span class="text-muted">—</span>`;
                 }
             },
             {
