@@ -13,6 +13,7 @@ from flask_login import login_required
 from models.repair_order import RepairWorkOrder, RepairWorkOrderItem
 from models.repair_order_file import RepairOrderFile
 from models.customer import Customer
+from models.inventory import Inventory
 from models.source import Source
 from sqlalchemy import or_, case, func, literal, desc, cast, Integer
 from sqlalchemy.exc import IntegrityError
@@ -233,7 +234,10 @@ def api_repair_work_orders():
                 "column": RepairWorkOrder.DateCompleted,
                 "type": "like",
             },
-            "filter_Source": {"column": RepairWorkOrder.source_name, "type": "like"},  # Use denormalized column
+            "filter_Source": {
+                "column": RepairWorkOrder.source_name,
+                "type": "like",
+            },  # Use denormalized column
         },
     )
 
@@ -246,7 +250,9 @@ def api_repair_work_orders():
         if column:
             if simple_sort in ["RepairOrderNo", "CustID"]:
                 column = cast(column, Integer)
-            query = query.order_by(column.desc() if simple_dir == "desc" else column.asc())
+            query = query.order_by(
+                column.desc() if simple_dir == "desc" else column.asc()
+            )
     else:
         # Tabulator multi-sort mode
         query = apply_tabulator_sorting(
@@ -385,6 +391,8 @@ def create_repair_order(prefill_cust_id=None):
                     next_num = 1
                 next_order_no = str(next_num)
 
+                print(f"[DEBUG] Next RepairOrderNo: {next_order_no}")
+
                 # Create the repair work order
                 repair_order = RepairWorkOrder(
                     RepairOrderNo=next_order_no,
@@ -413,7 +421,9 @@ def create_repair_order(prefill_cust_id=None):
                     APPROVED="APPROVED" in request.form,
                     # Storage/Location fields (See STORAGE_FIELDS_GUIDE.md)
                     RackNo=request.form.get("RackNo"),  # Primary location field
-                    STORAGE=request.form.get("STORAGE"),  # Storage time type (TEMPORARY/SEASONAL)
+                    STORAGE=request.form.get(
+                        "STORAGE"
+                    ),  # Storage time type (TEMPORARY/SEASONAL)
                     SPECIALINSTRUCTIONS=request.form.get("SPECIALINSTRUCTIONS"),
                     CLEAN="CLEAN" in request.form,
                     SEECLEAN=request.form.get("SEECLEAN"),
@@ -432,7 +442,9 @@ def create_repair_order(prefill_cust_id=None):
                     if request.form.get("RETURNDATE")
                     else None,
                     LOCATION=request.form.get("LOCATION"),  # Legacy - RackNo is primary
-                    final_location=request.form.get("final_location"),  # Post-repair location
+                    final_location=request.form.get(
+                        "final_location"
+                    ),  # Post-repair location
                     DATEOUT=datetime.strptime(
                         request.form.get("DATEOUT"), "%Y-%m-%d"
                     ).date()
@@ -444,40 +456,58 @@ def create_repair_order(prefill_cust_id=None):
                 db.session.add(repair_order)
                 db.session.flush()  # to get the RepairOrderNo
 
+                print(
+                    f"[DEBUG] Repair order added to session: {repair_order.RepairOrderNo}"
+                )
+
                 # Sync source_name from customer (database trigger will also handle this)
                 repair_order.sync_source_name()
 
                 # Handle selected items from customer inventory
-                from models.work_order import WorkOrderItem
+                from models.repair_order import RepairWorkOrderItem
 
                 selected_item_ids = request.form.getlist("selected_items[]")
-
+                print(f"[DEBUG] Selected item IDs from form: {selected_item_ids}")
                 for item_id in selected_item_ids:
-                    if item_id:
-                        # Fetch the original item from work orders
-                        # Use filter_by since id might be a string representation
-                        try:
-                            original_item = WorkOrderItem.query.filter_by(id=int(item_id)).first()
-                        except (ValueError, TypeError):
-                            # If conversion fails, skip this item
-                            continue
-                        if original_item:
-                            qty_key = f"item_qty_{item_id}"
-                            qty = request.form.get(qty_key, original_item.Qty or "1")
+                    if not item_id:
+                        continue
 
-                            # Create a copy of this item for the repair order
-                            repair_item = RepairWorkOrderItem(
-                                RepairOrderNo=next_order_no,
-                                CustID=request.form.get("CustID"),
-                                Description=original_item.Description,
-                                Material=original_item.Material,
-                                Qty=qty,
-                                Condition=original_item.Condition,
-                                Color=original_item.Color,
-                                SizeWgt=original_item.SizeWgt,
-                                Price=original_item.Price,
-                            )
-                            db.session.add(repair_item)
+                    original_item = Inventory.query.filter_by(
+                        InventoryKey=item_id
+                    ).first()
+
+                    if not original_item:
+                        print(
+                            f"[DEBUG] No inventory item found for InventoryKey: {item_id}"
+                        )
+                        continue
+
+                    # Get the quantity from the form (default to inventory Qty or 1)
+                    qty_raw = request.form.get(
+                        f"item_qty_{item_id}", original_item.Qty or 1
+                    )
+                    try:
+                        qty = int(qty_raw)
+                    except ValueError:
+                        qty = 1
+
+                    print(
+                        f"[DEBUG] Adding item: {original_item.Description}, Qty: {qty}"
+                    )
+
+                    # Create a new RepairWorkOrderItem
+                    repair_item = RepairWorkOrderItem(
+                        RepairOrderNo=next_order_no,
+                        CustID=request.form.get("CustID"),
+                        Description=original_item.Description,
+                        Material=original_item.Material,
+                        Qty=qty,
+                        Condition=original_item.Condition,
+                        Color=original_item.Color,
+                        SizeWgt=original_item.SizeWgt,
+                        Price=original_item.Price,
+                    )
+                    db.session.add(repair_item)
 
                 # Handle new repair order items (manually added)
                 item_descriptions = request.form.getlist("item_description[]")
@@ -488,13 +518,17 @@ def create_repair_order(prefill_cust_id=None):
                 item_sizes = request.form.getlist("item_size_wgt[]")
                 item_prices = request.form.getlist("item_price[]")
 
+                print(f"[DEBUG] New item descriptions from form: {item_descriptions}")
                 for i, descrip in enumerate(item_descriptions):
+                    print(f"[DEBUG] Processing new item {i}: {descrip}")
                     if descrip and descrip.strip():
                         repair_item = RepairWorkOrderItem(
                             RepairOrderNo=next_order_no,
                             CustID=request.form.get("CustID"),
                             Description=descrip,
-                            Material=item_materials[i] if i < len(item_materials) else "",
+                            Material=item_materials[i]
+                            if i < len(item_materials)
+                            else "",
                             Qty=item_qtys[i] if i < len(item_qtys) else "1",
                             Condition=item_conditions[i]
                             if i < len(item_conditions)
@@ -503,6 +537,7 @@ def create_repair_order(prefill_cust_id=None):
                             SizeWgt=item_sizes[i] if i < len(item_sizes) else "",
                             Price=item_prices[i] if i < len(item_prices) else "",
                         )
+                        print(f"[DEBUG] Qty raw from form: {qty}")
                         db.session.add(repair_item)
 
                 # Handle file uploads
@@ -514,23 +549,33 @@ def create_repair_order(prefill_cust_id=None):
                     for i, file in enumerate(files):
                         if file and file.filename:
                             ro_file = save_repair_order_file(
-                                next_order_no, file, to_s3=True, generate_thumbnails=True
+                                next_order_no,
+                                file,
+                                to_s3=True,
+                                generate_thumbnails=True,
                             )
                             if not ro_file:
-                                raise Exception(f"Failed to process file: {file.filename}")
+                                raise Exception(
+                                    f"Failed to process file: {file.filename}"
+                                )
 
                             uploaded_files.append(ro_file)
                             db.session.add(ro_file)
-                            print(f"Prepared file {i + 1}/{len(files)}: {ro_file.filename}")
+                            print(
+                                f"Prepared file {i + 1}/{len(files)}: {ro_file.filename}"
+                            )
 
                             if ro_file.thumbnail_path:
-                                print(f"  - Thumbnail generated: {ro_file.thumbnail_path}")
+                                print(
+                                    f"  - Thumbnail generated: {ro_file.thumbnail_path}"
+                                )
 
                 # --- Handle SEECLEAN backlink ---
                 see_clean = request.form.get("SEECLEAN")
                 if see_clean and see_clean.strip():
                     # Find the referenced work order and update its SeeRepair field
                     from models.work_order import WorkOrder
+
                     referenced_work_order = WorkOrder.query.filter_by(
                         WorkOrderNo=see_clean.strip()
                     ).first()
@@ -544,7 +589,9 @@ def create_repair_order(prefill_cust_id=None):
                 db.session.commit()
                 flash(
                     f"Repair Work Order {next_order_no} created successfully"
-                    + (f" with {len(uploaded_files)} files!" if uploaded_files else "!"),
+                    + (
+                        f" with {len(uploaded_files)} files!" if uploaded_files else "!"
+                    ),
                     "success",
                 )
                 return redirect(
@@ -559,13 +606,17 @@ def create_repair_order(prefill_cust_id=None):
                 retry_count += 1
 
                 # Check if it's a duplicate key error
-                error_msg = str(ie.orig).lower() if hasattr(ie, 'orig') else str(ie).lower()
-                is_duplicate = 'duplicate' in error_msg or 'unique' in error_msg
+                error_msg = (
+                    str(ie.orig).lower() if hasattr(ie, "orig") else str(ie).lower()
+                )
+                is_duplicate = "duplicate" in error_msg or "unique" in error_msg
 
                 if is_duplicate and retry_count < max_retries:
                     # Exponential backoff with jitter
-                    delay = base_delay * (2 ** retry_count) + (random.random() * 0.05)
-                    print(f"Duplicate repair order number detected. Retry {retry_count}/{max_retries} after {delay:.3f}s")
+                    delay = base_delay * (2**retry_count) + (random.random() * 0.05)
+                    print(
+                        f"Duplicate repair order number detected. Retry {retry_count}/{max_retries} after {delay:.3f}s"
+                    )
                     time.sleep(delay)
                     continue  # Retry the loop
                 else:
@@ -590,7 +641,10 @@ def create_repair_order(prefill_cust_id=None):
                 )
 
         # If we exhausted all retries
-        flash("Error creating repair order: Unable to generate unique repair order number after multiple attempts", "error")
+        flash(
+            "Error creating repair order: Unable to generate unique repair order number after multiple attempts",
+            "error",
+        )
         return render_template(
             "repair_orders/create.html",
             customers=Customer.query.all(),
@@ -678,7 +732,9 @@ def edit_repair_order(repair_order_no):
             repair_order.APPROVED = "APPROVED" in request.form
             # Storage/Location fields (See STORAGE_FIELDS_GUIDE.md)
             repair_order.RackNo = request.form.get("RackNo")  # Primary location field
-            repair_order.STORAGE = request.form.get("STORAGE")  # Storage time type (TEMPORARY/SEASONAL)
+            repair_order.STORAGE = request.form.get(
+                "STORAGE"
+            )  # Storage time type (TEMPORARY/SEASONAL)
             repair_order.SPECIALINSTRUCTIONS = request.form.get("SPECIALINSTRUCTIONS")
             repair_order.CLEAN = "CLEAN" in request.form
             repair_order.SEECLEAN = request.form.get("SEECLEAN")
@@ -698,7 +754,9 @@ def edit_repair_order(repair_order_no):
             )
             # Legacy LOCATION field - kept for backward compatibility but RackNo is primary
             repair_order.LOCATION = request.form.get("LOCATION")
-            repair_order.final_location = request.form.get("final_location")  # Post-repair location
+            repair_order.final_location = request.form.get(
+                "final_location"
+            )  # Post-repair location
             repair_order.DATEOUT = (
                 datetime.strptime(request.form.get("DATEOUT"), "%Y-%m-%d").date()
                 if request.form.get("DATEOUT")
@@ -706,7 +764,6 @@ def edit_repair_order(repair_order_no):
             )
 
             # Handle items: delete all existing and recreate from form data
-            # This is simpler than trying to update items with composite keys
             RepairWorkOrderItem.query.filter_by(RepairOrderNo=repair_order_no).delete()
 
             # Get existing item data from form
@@ -739,36 +796,49 @@ def edit_repair_order(repair_order_no):
                     db.session.add(repair_item)
 
             # Handle selected items from customer inventory
-            from models.work_order import WorkOrderItem
-
             selected_item_ids = request.form.getlist("selected_items[]")
-
+            print(f"[DEBUG] Selected item IDs from form: {selected_item_ids}")
             for item_id in selected_item_ids:
-                if item_id:
-                    # Fetch the original item from work orders
-                    # Use filter_by since id might be a string representation
-                    try:
-                        original_item = WorkOrderItem.query.filter_by(id=int(item_id)).first()
-                    except (ValueError, TypeError):
-                        # If conversion fails, skip this item
-                        continue
-                    if original_item:
-                        qty_key = f"item_qty_{item_id}"
-                        qty = request.form.get(qty_key, original_item.Qty or "1")
+                if not item_id:
+                    continue
 
-                        # Create a copy of this item for the repair order
-                        repair_item = RepairWorkOrderItem(
-                            RepairOrderNo=repair_order_no,
-                            CustID=request.form.get("CustID"),
-                            Description=original_item.Description,
-                            Material=original_item.Material,
-                            Qty=qty,
-                            Condition=original_item.Condition,
-                            Color=original_item.Color,
-                            SizeWgt=original_item.SizeWgt,
-                            Price=original_item.Price,
-                        )
-                        db.session.add(repair_item)
+                original_item = Inventory.query.filter_by(
+                    InventoryKey=item_id
+                ).first()
+
+                if not original_item:
+                    print(
+                        f"[DEBUG] No inventory item found for InventoryKey: {item_id}"
+                    )
+                    continue
+
+                # Get the quantity from the form (default to inventory Qty or 1)
+                qty_raw = request.form.get(
+                    f"item_qty_{item_id}", original_item.Qty or 1
+                )
+                try:
+                    qty = int(qty_raw)
+                except ValueError:
+                    qty = 1
+
+                print(
+                    f"[DEBUG] Adding item: {original_item.Description}, Qty: {qty}"
+                )
+
+                # Create a new RepairWorkOrderItem
+                repair_item = RepairWorkOrderItem(
+                    RepairOrderNo=repair_order_no,
+                    CustID=request.form.get("CustID"),
+                    Description=original_item.Description,
+                    Material=original_item.Material,
+                    Qty=qty,
+                    Condition=original_item.Condition,
+                    Color=original_item.Color,
+                    SizeWgt=original_item.SizeWgt,
+                    Price=original_item.Price,
+                )
+                db.session.add(repair_item)
+
 
             # Handle new items
             new_descriptions = request.form.getlist("new_description[]")
@@ -826,6 +896,7 @@ def edit_repair_order(repair_order_no):
                 # Remove old backlink if it existed
                 if see_clean_old:
                     from models.work_order import WorkOrder
+
                     old_work_order = WorkOrder.query.filter_by(
                         WorkOrderNo=see_clean_old
                     ).first()
@@ -835,6 +906,7 @@ def edit_repair_order(repair_order_no):
                 # Add new backlink if provided
                 if see_clean_new and see_clean_new.strip():
                     from models.work_order import WorkOrder
+
                     new_work_order = WorkOrder.query.filter_by(
                         WorkOrderNo=see_clean_new.strip()
                     ).first()
