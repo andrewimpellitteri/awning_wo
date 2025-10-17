@@ -48,6 +48,208 @@ import fitz  # PyMuPDF
 work_orders_bp = Blueprint("work_orders", __name__, url_prefix="/work_orders")
 
 
+# ============================================================================
+# PRIVATE HELPER FUNCTIONS FOR WORK ORDER CREATE/EDIT
+# ============================================================================
+
+
+def _parse_date_field(date_str):
+    """
+    Parse a date string to a date object.
+    Returns None if empty or invalid.
+    """
+    if not date_str:
+        return None
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return None
+
+
+def _update_work_order_fields(work_order, form_data):
+    """
+    Update work order fields from form data.
+    Handles all basic fields, dates, and boolean checkboxes.
+    """
+    work_order.CustID = form_data.get("CustID")
+    work_order.WOName = form_data.get("WOName")
+    work_order.StorageTime = form_data.get("StorageTime")
+    work_order.RackNo = form_data.get("RackNo")
+    work_order.final_location = form_data.get("final_location")
+    work_order.SpecialInstructions = form_data.get("SpecialInstructions")
+    work_order.RepairsNeeded = "RepairsNeeded" in form_data
+    work_order.ReturnStatus = form_data.get("ReturnStatus")
+    work_order.ShipTo = form_data.get("ShipTo")
+    work_order.SeeRepair = form_data.get("SeeRepair")
+    work_order.Quote = form_data.get("Quote")
+    work_order.RushOrder = "RushOrder" in form_data
+    work_order.FirmRush = "FirmRush" in form_data
+
+    # Parse date fields
+    work_order.DateRequired = _parse_date_field(form_data.get("DateRequired"))
+    work_order.Clean = _parse_date_field(form_data.get("Clean"))
+    work_order.Treat = _parse_date_field(form_data.get("Treat"))
+
+    # Parse DateCompleted as datetime
+    date_completed_str = form_data.get("DateCompleted")
+    if date_completed_str:
+        try:
+            work_order.DateCompleted = datetime.strptime(date_completed_str, "%Y-%m-%d")
+        except (ValueError, TypeError):
+            work_order.DateCompleted = None
+    else:
+        work_order.DateCompleted = None
+
+    # Set ProcessingStatus based on Clean date
+    if work_order.Clean:
+        work_order.ProcessingStatus = False
+
+
+def _handle_file_uploads(files_list, work_order_no):
+    """
+    Process file uploads for a work order.
+    Returns list of WorkOrderFile objects to add to session.
+    """
+    uploaded_files = []
+    if not files_list:
+        return uploaded_files
+
+    for i, file in enumerate(files_list):
+        if not file or not file.filename:
+            continue
+
+        wo_file = save_work_order_file(
+            work_order_no, file, to_s3=True, generate_thumbnails=True
+        )
+        if not wo_file:
+            raise Exception(f"Failed to process file: {file.filename}")
+
+        uploaded_files.append(wo_file)
+        print(f"Prepared file {i + 1}/{len(files_list)}: {wo_file.filename}")
+
+        if wo_file.thumbnail_path:
+            print(f"  - Thumbnail generated: {wo_file.thumbnail_path}")
+
+    return uploaded_files
+
+
+def _handle_see_repair_backlink(work_order_no, new_repair_no, old_repair_no=None):
+    """
+    Manage SeeRepair backlink between work orders and repair orders.
+    Removes old backlink if changed, adds new backlink if provided.
+    Returns a flash message if a new link was created.
+    """
+    flash_message = None
+
+    # If SeeRepair changed, update backlinks
+    if new_repair_no != old_repair_no:
+        # Remove old backlink if it existed
+        if old_repair_no:
+            old_repair = RepairWorkOrder.query.filter_by(
+                RepairOrderNo=old_repair_no
+            ).first()
+            if old_repair and old_repair.SEECLEAN == work_order_no:
+                old_repair.SEECLEAN = None
+
+        # Add new backlink if provided
+        if new_repair_no and new_repair_no.strip():
+            new_repair = RepairWorkOrder.query.filter_by(
+                RepairOrderNo=new_repair_no.strip()
+            ).first()
+            if new_repair:
+                new_repair.SEECLEAN = work_order_no
+                flash_message = f"Auto-linked Repair Order {new_repair_no} to this Work Order"
+
+    return flash_message
+
+
+def _update_existing_work_order_items(work_order_no, form_data):
+    """
+    Update existing work order items based on form data.
+    Handles quantity/price updates and item deletions.
+    Returns list of flash messages for removed items.
+    """
+    flash_messages = []
+    existing_items = WorkOrderItem.query.filter_by(WorkOrderNo=work_order_no).all()
+
+    # Get the IDs of items that should remain in the work order from the form
+    updated_item_ids = set(form_data.getlist("existing_item_id[]"))
+
+    # Parse updated quantities and prices, keyed by item ID
+    updated_quantities = {}
+    updated_prices = {}
+    for key, value in form_data.items():
+        if key.startswith("existing_item_qty_"):
+            item_id = key.replace("existing_item_qty_", "")
+            if value:
+                updated_quantities[item_id] = safe_int_conversion(value)
+        elif key.startswith("existing_item_price_"):
+            item_id = key.replace("existing_item_price_", "")
+            if value:
+                try:
+                    updated_prices[item_id] = float(value)
+                except (ValueError, TypeError):
+                    updated_prices[item_id] = 0.0
+
+    # Loop through items currently in the database for this work order
+    for item in existing_items:
+        item_id_str = str(item.id)
+
+        # If the item's ID is in the list from the form, update it
+        if item_id_str in updated_item_ids:
+            if item_id_str in updated_quantities:
+                item.Qty = updated_quantities[item_id_str]
+            if item_id_str in updated_prices:
+                item.Price = updated_prices[item_id_str]
+        else:
+            # Item was unchecked, delete it
+            db.session.delete(item)
+            flash_messages.append(f"Removed item '{item.Description}' from work order.")
+
+    return flash_messages
+
+
+def _handle_work_order_items(form_data, work_order_no, cust_id):
+    """
+    Process all work order items: selected from inventory and new items.
+    Returns tuple of (items_to_add, catalog_items_to_add, flash_messages).
+    """
+    items_to_add = []
+    catalog_items_to_add = []
+    flash_messages = []
+
+    # Process selected inventory items
+    selected_items = process_selected_inventory_items(
+        form_data, work_order_no, cust_id, WorkOrderItem
+    )
+    items_to_add.extend(selected_items)
+
+    # Process new items and update catalog
+    new_items, catalog_updates = process_new_items(
+        form_data, work_order_no, cust_id, WorkOrderItem, update_catalog=True
+    )
+    items_to_add.extend(new_items)
+    catalog_items_to_add.extend(catalog_updates)
+
+    return items_to_add, catalog_items_to_add, flash_messages
+
+
+def _generate_next_work_order_number():
+    """
+    Generate the next work order number.
+    Returns the next work order number as a string.
+    """
+    latest_num = db.session.query(
+        func.max(cast(WorkOrder.WorkOrderNo, Integer))
+    ).scalar()
+    return str(latest_num + 1) if latest_num is not None else "1"
+
+
+# ============================================================================
+# PUBLIC ROUTE HANDLERS
+# ============================================================================
+
+
 @work_orders_bp.route("/api/open_repair_orders/<cust_id>")
 @login_required
 def get_open_repair_orders(cust_id):
@@ -355,131 +557,75 @@ def get_customer_inventory(cust_id):
 def create_work_order(prefill_cust_id=None):
     """Create a new work order - inventory quantities never change"""
     if request.method == "POST":
-        # Retry logic to handle race conditions in work order number generation
         max_retries = 5
         retry_count = 0
-        base_delay = 0.1  # 100ms base delay
+        base_delay = 0.1
 
         while retry_count < max_retries:
             try:
-                # Generate next WorkOrderNo
-                latest_num = db.session.query(
-                    func.max(cast(WorkOrder.WorkOrderNo, Integer))
-                ).scalar()
-                next_wo_no = str(latest_num + 1) if latest_num is not None else "1"
+                next_wo_no = _generate_next_work_order_number()
 
                 print("--- Form Data Received ---")
                 print(f"Request Form Keys: {request.form.keys()}")
                 print(f"Selected Items: {request.form.getlist('selected_items[]')}")
-                print(
-                    f"New Item Descriptions: {request.form.getlist('new_item_description[]')}"
-                )
+                print(f"New Item Descriptions: {request.form.getlist('new_item_description[]')}")
 
-                # Extract work order fields from form
+                # Extract work order fields and create work order
                 wo_data = extract_work_order_fields(request.form)
                 work_order = WorkOrder(WorkOrderNo=next_wo_no, **wo_data)
 
-                # Set ProcessingStatus based on Clean date
                 if work_order.Clean:
                     work_order.ProcessingStatus = False
 
                 db.session.add(work_order)
-                db.session.flush()  # ensures parent exists in DB for FK references
+                db.session.flush()
 
-                # Sync source_name from customer (database trigger will also handle this)
                 work_order.sync_source_name()
 
-                # Process selected inventory items
-                selected_items = process_selected_inventory_items(
-                    request.form, next_wo_no, request.form.get("CustID"), WorkOrderItem
+                # Process work order items
+                items_to_add, catalog_to_add, _ = _handle_work_order_items(
+                    request.form, next_wo_no, request.form.get("CustID")
                 )
-                for item in selected_items:
+                for item in items_to_add:
                     db.session.add(item)
-
-                # Process new items and update catalog
-                new_items, catalog_updates = process_new_items(
-                    request.form,
-                    next_wo_no,
-                    request.form.get("CustID"),
-                    WorkOrderItem,
-                    update_catalog=True,
-                )
-                for item in new_items:
-                    db.session.add(item)
-                for catalog_item in catalog_updates:
+                for catalog_item in catalog_to_add:
                     db.session.add(catalog_item)
 
-                # Handle file uploads
-                uploaded_files = []
-                if "files[]" in request.files:
-                    files = request.files.getlist("files[]")
-                    print(f"Processing {len(files)} files")
-
-                    for i, file in enumerate(files):
-                        if file and file.filename:
-                            wo_file = save_work_order_file(
-                                next_wo_no, file, to_s3=True, generate_thumbnails=True
-                            )
-                            if not wo_file:
-                                raise Exception(
-                                    f"Failed to process file: {file.filename}"
-                                )
-
-                            uploaded_files.append(wo_file)
-                            db.session.add(wo_file)
-                            print(
-                                f"Prepared file {i + 1}/{len(files)}: {wo_file.filename}"
-                            )
-
-                            if wo_file.thumbnail_path:
-                                print(
-                                    f"  - Thumbnail generated: {wo_file.thumbnail_path}"
-                                )
+                # Process file uploads
+                uploaded_files = _handle_file_uploads(
+                    request.files.getlist("files[]"), next_wo_no
+                )
+                for wo_file in uploaded_files:
+                    db.session.add(wo_file)
 
                 # Handle SeeRepair backlink
-                see_repair = request.form.get("SeeRepair")
-                if see_repair and see_repair.strip():
-                    referenced_repair = RepairWorkOrder.query.filter_by(
-                        RepairOrderNo=see_repair.strip()
-                    ).first()
-                    if referenced_repair:
-                        referenced_repair.SEECLEAN = next_wo_no
-                        flash(
-                            f"Auto-linked Repair Order {see_repair} to this Work Order",
-                            "info",
-                        )
+                backlink_msg = _handle_see_repair_backlink(
+                    next_wo_no, request.form.get("SeeRepair")
+                )
+                if backlink_msg:
+                    flash(backlink_msg, "info")
 
-                # Final commit
                 db.session.commit()
 
                 flash(
                     f"Work Order {next_wo_no} created successfully with {len(uploaded_files)} files!",
                     "success",
                 )
-                return redirect(
-                    url_for("work_orders.view_work_order", work_order_no=next_wo_no)
-                )
+                return redirect(url_for("work_orders.view_work_order", work_order_no=next_wo_no))
 
             except IntegrityError as ie:
                 db.session.rollback()
                 retry_count += 1
 
-                # Check if it's a duplicate key error
-                error_msg = (
-                    str(ie.orig).lower() if hasattr(ie, "orig") else str(ie).lower()
-                )
+                error_msg = str(ie.orig).lower() if hasattr(ie, "orig") else str(ie).lower()
                 is_duplicate = "duplicate" in error_msg or "unique" in error_msg
 
                 if is_duplicate and retry_count < max_retries:
-                    # Exponential backoff with jitter
                     delay = base_delay * (2**retry_count) + (random.random() * 0.05)
-                    print(
-                        f"Duplicate work order number detected. Retry {retry_count}/{max_retries} after {delay:.3f}s"
-                    )
+                    print(f"Duplicate work order number detected. Retry {retry_count}/{max_retries} after {delay:.3f}s")
                     time.sleep(delay)
-                    continue  # Retry the loop
+                    continue
                 else:
-                    # Not a duplicate error or max retries exceeded
                     print(f"Error creating work order (IntegrityError): {str(ie)}")
                     flash(f"Error creating work order: {str(ie)}", "error")
                     return render_template(
@@ -500,7 +646,6 @@ def create_work_order(prefill_cust_id=None):
                     form_data=request.form,
                 )
 
-        # If we exhausted all retries
         flash(
             "Error creating work order: Unable to generate unique work order number after multiple attempts",
             "error",
@@ -541,232 +686,50 @@ def edit_work_order(work_order_no):
     work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
 
     if request.method == "POST":
-        try:  # Track if customer changed (for source_name sync)
+        try:
             old_cust_id = work_order.CustID
+            old_see_repair = work_order.SeeRepair.strip() if work_order.SeeRepair else None
 
             # Update work order fields
-            work_order.CustID = request.form.get("CustID")
-            work_order.WOName = request.form.get("WOName")
-            work_order.StorageTime = request.form.get("StorageTime")
-            work_order.RackNo = request.form.get("RackNo")
-            work_order.final_location = request.form.get("final_location")
-            work_order.SpecialInstructions = request.form.get("SpecialInstructions")
-            work_order.RepairsNeeded = "RepairsNeeded" in request.form
-            work_order.ReturnStatus = request.form.get("ReturnStatus")
-            work_order.ShipTo = request.form.get("ShipTo")
+            _update_work_order_fields(work_order, request.form)
 
-            # Boolean fields - checkbox present = True
-            work_order.SeeRepair = request.form.get("SeeRepair")
-            work_order.Quote = request.form.get("Quote")
-            work_order.RushOrder = "RushOrder" in request.form
-            work_order.FirmRush = "FirmRush" in request.form
-
-            # Date fields - convert from string
-            date_required_str = request.form.get("DateRequired")
-            work_order.DateRequired = (
-                datetime.strptime(date_required_str, "%Y-%m-%d").date()
-                if date_required_str
-                else None
+            # Handle existing work order items (update/delete)
+            item_flash_messages = _update_existing_work_order_items(
+                work_order_no, request.form
             )
+            for msg in item_flash_messages:
+                flash(msg, "info")
 
-            clean_str = request.form.get("Clean")
-            work_order.Clean = (
-                datetime.strptime(clean_str, "%Y-%m-%d").date() if clean_str else None
-            )
-            if work_order.Clean:
-                work_order.ProcessingStatus = False
-
-            treat_str = request.form.get("Treat")
-            work_order.Treat = (
-                datetime.strptime(treat_str, "%Y-%m-%d").date() if treat_str else None
-            )
-
-            date_completed_str = request.form.get("DateCompleted")
-            work_order.DateCompleted = (
-                datetime.strptime(date_completed_str, "%Y-%m-%d")
-                if date_completed_str
-                else None
-            )
-
-            # --- Handle Existing Work Order Items (Robust ID-based logic) ---
-            existing_items = WorkOrderItem.query.filter_by(
-                WorkOrderNo=work_order_no
-            ).all()
-
-            # Get the IDs of items that should remain in the work order from the form
-            updated_item_ids = set(request.form.getlist("existing_item_id[]"))
-
-            # Parse updated quantities and prices, keyed by item ID
-            updated_quantities = {}
-            updated_prices = {}
-            for key, value in request.form.items():
-                if key.startswith("existing_item_qty_"):
-                    item_id = key.replace("existing_item_qty_", "")
-                    if value:
-                        updated_quantities[item_id] = safe_int_conversion(value)
-                elif key.startswith("existing_item_price_"):
-                    item_id = key.replace("existing_item_price_", "")
-                    if value:
-                        try:
-                            updated_prices[item_id] = float(value)
-                        except (ValueError, TypeError):
-                            updated_prices[item_id] = 0.0
-
-            # Loop through items currently in the database for this work order
-            for item in existing_items:
-                item_id_str = str(item.id)
-
-                # If the item's ID is in the list from the form, it's an existing item to be updated
-                if item_id_str in updated_item_ids:
-                    # Update quantity if provided
-                    if item_id_str in updated_quantities:
-                        item.Qty = updated_quantities[item_id_str]
-
-                    # Update price if provided
-                    if item_id_str in updated_prices:
-                        item.Price = updated_prices[item_id_str]
-                else:
-                    # If the item's ID is not in the form's list, it means the user unchecked it.
-                    # Therefore, delete it from the work order.
-                    db.session.delete(item)
-                    flash(f"Removed item '{item.Description}' from work order.", "info")
-
-            # --- Handle items selected from customer inventory ---
-            selected_inventory_items = process_selected_inventory_items(
+            # Handle items selected from customer inventory
+            selected_items = process_selected_inventory_items(
                 request.form, work_order_no, work_order.CustID, WorkOrderItem
             )
-            for item in selected_inventory_items:
+            for item in selected_items:
                 db.session.add(item)
                 flash(f"Added item '{item.Description}' from customer history.", "info")
 
             # Handle new items being added to this work order
-            new_item_descriptions = request.form.getlist("new_item_description[]")
-            new_item_materials = request.form.getlist("new_item_material[]")
-            new_item_quantities = request.form.getlist("new_item_qty[]")
-            new_item_conditions = request.form.getlist("new_item_condition[]")
-            new_item_colors = request.form.getlist("new_item_color[]")
-            new_item_sizes = request.form.getlist("new_item_size[]")
-            new_item_prices = request.form.getlist("new_item_price[]")
-
-            for i, description in enumerate(new_item_descriptions):
-                if description and i < len(new_item_materials):
-                    work_order_qty = safe_int_conversion(
-                        new_item_quantities[i] if i < len(new_item_quantities) else "1"
-                    )
-
-                    # Add to work order
-                    work_order_item = WorkOrderItem(
-                        WorkOrderNo=work_order_no,
-                        CustID=work_order.CustID,
-                        Description=description,
-                        Material=new_item_materials[i]
-                        if i < len(new_item_materials)
-                        else "",
-                        Qty=str(work_order_qty),
-                        Condition=new_item_conditions[i]
-                        if i < len(new_item_conditions)
-                        else "",
-                        Color=new_item_colors[i] if i < len(new_item_colors) else "",
-                        SizeWgt=new_item_sizes[i] if i < len(new_item_sizes) else "",
-                        Price=new_item_prices[i] if i < len(new_item_prices) else "",
-                    )
-                    db.session.add(work_order_item)
-
-                    # Add to catalog if new item type (same logic as create)
-                    existing_inventory = Inventory.query.filter_by(
-                        CustID=work_order.CustID,
-                        Description=description,
-                        Material=new_item_materials[i]
-                        if i < len(new_item_materials)
-                        else "",
-                        Condition=new_item_conditions[i]
-                        if i < len(new_item_conditions)
-                        else "",
-                        Color=new_item_colors[i] if i < len(new_item_colors) else "",
-                        SizeWgt=new_item_sizes[i] if i < len(new_item_sizes) else "",
-                    ).first()
-
-                    if existing_inventory:
-                        # Update catalog total
-                        current_catalog_qty = safe_int_conversion(
-                            existing_inventory.Qty
-                        )
-                        new_catalog_qty = current_catalog_qty + work_order_qty
-                        existing_inventory.Qty = str(new_catalog_qty)
-                    else:
-                        # Add new to catalog
-                        inventory_key = f"INV_{uuid.uuid4().hex[:8].upper()}"
-                        new_inventory_item = Inventory(
-                            InventoryKey=inventory_key,
-                            CustID=work_order.CustID,
-                            Description=description,
-                            Material=new_item_materials[i]
-                            if i < len(new_item_materials)
-                            else "",
-                            Condition=new_item_conditions[i]
-                            if i < len(new_item_conditions)
-                            else "",
-                            Color=new_item_colors[i]
-                            if i < len(new_item_colors)
-                            else "",
-                            SizeWgt=new_item_sizes[i]
-                            if i < len(new_item_sizes)
-                            else "",
-                            Price=new_item_prices[i]
-                            if i < len(new_item_prices)
-                            else "",
-                            Qty=str(work_order_qty),
-                        )
-                        db.session.add(new_inventory_item)
-
-            # Handle file uploads
-            uploaded_files = []
-            if "files[]" in request.files:
-                files = request.files.getlist("files[]")
-                print(f"Processing {len(files)} files")
-
-                for i, file in enumerate(files):
-                    if file and file.filename:
-                        wo_file = save_work_order_file(
-                            work_order_no, file, to_s3=True, generate_thumbnails=True
-                        )
-                        if not wo_file:
-                            raise Exception(f"Failed to process file: {file.filename}")
-
-                        uploaded_files.append(wo_file)
-                        db.session.add(wo_file)
-                        print(f"Prepared file {i + 1}/{len(files)}: {wo_file.filename}")
-
-                        if wo_file.thumbnail_path:
-                            print(f"  - Thumbnail generated: {wo_file.thumbnail_path}")
-
-            # --- Handle SeeRepair backlink ---
-            see_repair_new = request.form.get("SeeRepair")
-            see_repair_old = (
-                work_order.SeeRepair.strip() if work_order.SeeRepair else None
+            new_items, catalog_updates = process_new_items(
+                request.form, work_order_no, work_order.CustID, WorkOrderItem, update_catalog=True
             )
+            for item in new_items:
+                db.session.add(item)
+            for catalog_item in catalog_updates:
+                db.session.add(catalog_item)
 
-            # If SeeRepair changed, update backlinks
-            if see_repair_new != see_repair_old:
-                # Remove old backlink if it existed
-                if see_repair_old:
-                    old_repair = RepairWorkOrder.query.filter_by(
-                        RepairOrderNo=see_repair_old
-                    ).first()
-                    if old_repair and old_repair.SEECLEAN == work_order_no:
-                        old_repair.SEECLEAN = None
+            # Process file uploads
+            uploaded_files = _handle_file_uploads(
+                request.files.getlist("files[]"), work_order_no
+            )
+            for wo_file in uploaded_files:
+                db.session.add(wo_file)
 
-                # Add new backlink if provided
-                if see_repair_new and see_repair_new.strip():
-                    new_repair = RepairWorkOrder.query.filter_by(
-                        RepairOrderNo=see_repair_new.strip()
-                    ).first()
-                    if new_repair:
-                        new_repair.SEECLEAN = work_order_no
-                        flash(
-                            f"Auto-linked Repair Order {see_repair_new} to this Work Order",
-                            "info",
-                        )
+            # Handle SeeRepair backlink
+            backlink_msg = _handle_see_repair_backlink(
+                work_order_no, request.form.get("SeeRepair"), old_see_repair
+            )
+            if backlink_msg:
+                flash(backlink_msg, "info")
 
             # Sync source_name if customer changed
             if work_order.CustID != old_cust_id:
@@ -778,9 +741,7 @@ def edit_work_order(work_order_no):
                 + (f" with {len(uploaded_files)} files!" if uploaded_files else "!"),
                 "success",
             )
-            return redirect(
-                url_for("work_orders.view_work_order", work_order_no=work_order_no)
-            )
+            return redirect(url_for("work_orders.view_work_order", work_order_no=work_order_no))
 
         except Exception as e:
             db.session.rollback()

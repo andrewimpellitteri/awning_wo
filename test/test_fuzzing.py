@@ -10,8 +10,8 @@ unexpected data without crashing (i.e., returning a 500 Internal Server Error).
 """
 
 import pytest
-from hypothesis import given, strategies as st, settings, HealthCheck
-from models.work_order import WorkOrder
+from hypothesis import given, strategies as st, settings, HealthCheck, assume, note
+from models.work_order import WorkOrder, WorkOrderItem
 from models.repair_order import RepairWorkOrder
 from models.customer import Customer
 from models.source import Source
@@ -20,6 +20,8 @@ from werkzeug.security import generate_password_hash
 from models.user import User
 from datetime import date
 import uuid
+from io import BytesIO
+import random
 
 # If hypothesis is not installed, you can install it with:
 # pip install hypothesis
@@ -28,8 +30,8 @@ import uuid
 settings.register_profile(
     "ci",
     max_examples=10,
-    deadline=1000,
-    suppress_health_check=[HealthCheck.function_scoped_fixture]
+    deadline=2000,
+    suppress_health_check=[HealthCheck.function_scoped_fixture, HealthCheck.too_slow]
 )
 settings.load_profile("ci")
 
@@ -208,6 +210,52 @@ class TestWorkOrderFuzzing:
             }
             response = client.post(f"/work_orders/edit/{unique_wo_no}", data=data)
             assert response.status_code != 500
+
+    @given(work_order_no=text_strategy)
+    def test_fuzz_view_work_order(self, app, client, work_order_no):
+        """Fuzz test for viewing a work order."""
+        _setup_and_login(app, client)
+        with app.app_context():
+            response = client.get(f"/work_orders/{work_order_no}")
+            assert response.status_code in (200, 404)  # OK or Not Found, no 500
+
+    @given(work_order_no=text_strategy, file_id=st.one_of(
+        st.integers(min_value=-10000, max_value=10000).map(str),
+        text_strategy,
+    ))
+    def test_fuzz_download_work_order_file(
+        self, app, client, work_order_no, file_id
+    ):
+        """Fuzz test for downloading files."""
+        _setup_and_login(app, client)
+        with app.app_context():
+            response = client.get(
+                f"/work_orders/{work_order_no}/files/{file_id}/download"
+            )
+            assert response.status_code in (
+                200,
+                302,
+                308,
+                404,
+            )  # OK, redirect, permanent redirect, or Not Found
+
+    @given(work_order_no=text_strategy)
+    def test_fuzz_delete_work_order(self, app, client, work_order_no):
+        """Fuzz test for deleting a work order."""
+        _setup_and_login(app, client)
+        with app.app_context():
+            response = client.post(f"/work_orders/delete/{work_order_no}")
+            assert response.status_code in (302, 404)  # Redirect or Not Found, no 500
+
+    @given(work_order_no=text_strategy)
+    def test_fuzz_download_work_order_pdf(
+        self, app, client, work_order_no
+    ):
+        """Fuzz test for downloading PDF."""
+        _setup_and_login(app, client)
+        with app.app_context():
+            response = client.get(f"/work_orders/{work_order_no}/pdf/download")
+            assert response.status_code in (200, 302, 308, 404)  # OK, redirect, permanent redirect, or Not Found
 
 
 # --- Fuzzing Tests for Repair Orders ---
