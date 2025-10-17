@@ -1,0 +1,4205 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://andrewimpellitteri.github.com/awning_wo/developer-guide/database-schema/">
+      
+      
+        <link rel="prev" href="../project-structure/">
+      
+      
+        <link rel="next" href="../api-reference/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
+    
+    
+      
+        <title>Database Schema - Awning Management System Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.84d31ad4.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#database-schema" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Awning Management System Documentation" class="md-header__button md-logo" aria-label="Awning Management System Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Awning Management System Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Database Schema
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/andrewimpellitteri/awning_wo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    andrewimpellitteri/awning_wo
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user-guide/" class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+  
+  Developer Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../database/ALEMBIC_GUIDE/" class="md-tabs__link">
+          
+  
+  
+  Database
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../deployment/aws-eb.md" class="md-tabs__link">
+          
+  
+  
+  Deployment
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/overview.md" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../planning/IMPROVEMENTS/" class="md-tabs__link">
+          
+  
+  
+  Planning
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../reference/faq/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Awning Management System Documentation" class="md-nav__button md-logo" aria-label="Awning Management System Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Awning Management System Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/andrewimpellitteri/awning_wo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    andrewimpellitteri/awning_wo
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/work-orders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Work Orders
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/repair-orders.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Repair Orders
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/customers.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Customers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/sources.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Sources & Vendors
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/inventory.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Inventory
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/queue.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Queue Management
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/analytics.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Analytics Dashboard
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/pdf-reports.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    PDF Reports
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/keyboard-shortcuts.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Keyboard Shortcuts
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Developer Guide
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Developer Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Developer Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Setup & Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../project-structure/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Project Structure
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Database Schema
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Database Schema
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#entity-relationship-diagram" class="md-nav__link">
+    <span class="md-ellipsis">
+      Entity Relationship Diagram
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Core Tables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Tables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#customer-tblcustomers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Customer (tblcustomers)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Customer (tblcustomers)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relationships
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Methods
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workorder-tblcustworkorderdetail" class="md-nav__link">
+    <span class="md-ellipsis">
+      WorkOrder (tblcustworkorderdetail)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkOrder (tblcustworkorderdetail)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationships_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relationships
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      Properties
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workorderitem-tblorddetcustawngs" class="md-nav__link">
+    <span class="md-ellipsis">
+      WorkOrderItem (tblorddetcustawngs)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkOrderItem (tblorddetcustawngs)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#item-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Item Types
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repairworkorder-tblrepairworkorderdetail" class="md-nav__link">
+    <span class="md-ellipsis">
+      RepairWorkOrder (tblrepairworkorderdetail)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RepairWorkOrder (tblrepairworkorderdetail)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationships_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relationships
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#source-tblsource" class="md-nav__link">
+    <span class="md-ellipsis">
+      Source (tblsource)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Source (tblsource)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationships_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relationships
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inventory-tblinventory" class="md-nav__link">
+    <span class="md-ellipsis">
+      Inventory (tblinventory)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Inventory (tblinventory)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-attachments" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Attachments
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="File Attachments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workorderfile-work_order_files" class="md-nav__link">
+    <span class="md-ellipsis">
+      WorkOrderFile (work_order_files)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkOrderFile (work_order_files)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationships_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relationships
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repairorderfile-repair_order_files" class="md-nav__link">
+    <span class="md-ellipsis">
+      RepairOrderFile (repair_order_files)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RepairOrderFile (repair_order_files)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationships_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relationships
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authentication-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      Authentication &amp; Users
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Authentication &amp; Users">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#user-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      User (users)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="User (users)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Methods
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#invitetoken-invite_tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      InviteToken (invite_tokens)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="InviteToken (invite_tokens)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#indexes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Indexes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Indexes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#work-orders" class="md-nav__link">
+    <span class="md-ellipsis">
+      Work Orders
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repair-orders" class="md-nav__link">
+    <span class="md-ellipsis">
+      Repair Orders
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Customers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Files
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-optimizations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Optimizations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Optimizations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#denormalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Denormalization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lazy-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lazy Loading
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Types
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#datedatetime-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Date/DateTime Handling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#boolean-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      Boolean Fields
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#numeric-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      Numeric Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Queries
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Queries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-all-pending-work-orders-for-a-customer" class="md-nav__link">
+    <span class="md-ellipsis">
+      Get all pending work orders for a customer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-work-orders-with-source-name-denormalized" class="md-nav__link">
+    <span class="md-ellipsis">
+      Get work orders with source name (denormalized)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-customer-with-all-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      Get customer with all relationships
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Schema Changes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Schema Changes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-column" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adding a Column
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#renaming-a-column" class="md-nav__link">
+    <span class="md-ellipsis">
+      Renaming a Column
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#legacy-database-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Legacy Database Notes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#er-diagram-detailed" class="md-nav__link">
+    <span class="md-ellipsis">
+      ER Diagram - Detailed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See Also
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../testing.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Testing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Database
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Database
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/ALEMBIC_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Database Migration Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/STORAGE_FIELDS_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Storage Fields Guide
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../database/schema-changes.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Schema Changes
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Deployment
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Deployment
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/aws-eb.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    AWS Elastic Beanstalk
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/DEPLOYMENT_CHECKLIST/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Deployment Checklist
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/environment-variables.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Environment Variables
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/monitoring.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Monitoring & Logging
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/rollback.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Rollback Procedures
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/overview.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    System Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/ml-system.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ML Prediction System
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/CACHING_GUIDE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Caching Strategy
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/PERFORMANCE_ANALYSIS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Performance Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/CONCURRENCY_AUDIT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Concurrency & Locking
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Planning
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            Planning
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../planning/IMPROVEMENTS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Improvement Roadmap
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../planning/REFACTORING_PLAN/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Refactoring Plan
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../planning/DENORMALIZATION_ANALYSIS/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Denormalization Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../planning/WASM_THUMBNAIL_OPTIMIZATION/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    WASM Optimization
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Reference
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    FAQ
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Troubleshooting
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/glossary/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Glossary
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#entity-relationship-diagram" class="md-nav__link">
+    <span class="md-ellipsis">
+      Entity Relationship Diagram
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Core Tables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Tables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#customer-tblcustomers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Customer (tblcustomers)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Customer (tblcustomers)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relationships
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Methods
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workorder-tblcustworkorderdetail" class="md-nav__link">
+    <span class="md-ellipsis">
+      WorkOrder (tblcustworkorderdetail)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkOrder (tblcustworkorderdetail)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationships_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relationships
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#properties" class="md-nav__link">
+    <span class="md-ellipsis">
+      Properties
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workorderitem-tblorddetcustawngs" class="md-nav__link">
+    <span class="md-ellipsis">
+      WorkOrderItem (tblorddetcustawngs)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkOrderItem (tblorddetcustawngs)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#item-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Item Types
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repairworkorder-tblrepairworkorderdetail" class="md-nav__link">
+    <span class="md-ellipsis">
+      RepairWorkOrder (tblrepairworkorderdetail)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RepairWorkOrder (tblrepairworkorderdetail)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationships_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relationships
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#source-tblsource" class="md-nav__link">
+    <span class="md-ellipsis">
+      Source (tblsource)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Source (tblsource)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationships_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relationships
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inventory-tblinventory" class="md-nav__link">
+    <span class="md-ellipsis">
+      Inventory (tblinventory)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Inventory (tblinventory)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#file-attachments" class="md-nav__link">
+    <span class="md-ellipsis">
+      File Attachments
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="File Attachments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workorderfile-work_order_files" class="md-nav__link">
+    <span class="md-ellipsis">
+      WorkOrderFile (work_order_files)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="WorkOrderFile (work_order_files)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationships_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relationships
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repairorderfile-repair_order_files" class="md-nav__link">
+    <span class="md-ellipsis">
+      RepairOrderFile (repair_order_files)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RepairOrderFile (repair_order_files)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#relationships_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      Relationships
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#authentication-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      Authentication &amp; Users
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Authentication &amp; Users">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#user-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      User (users)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="User (users)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#methods_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Methods
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#invitetoken-invite_tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      InviteToken (invite_tokens)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="InviteToken (invite_tokens)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#columns_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      Columns
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#indexes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Indexes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Indexes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#work-orders" class="md-nav__link">
+    <span class="md-ellipsis">
+      Work Orders
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repair-orders" class="md-nav__link">
+    <span class="md-ellipsis">
+      Repair Orders
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#customers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Customers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Files
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-optimizations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Optimizations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Optimizations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#denormalization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Denormalization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lazy-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      Lazy Loading
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Types
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#datedatetime-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Date/DateTime Handling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#boolean-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      Boolean Fields
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#numeric-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      Numeric Fields
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Queries
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Queries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-all-pending-work-orders-for-a-customer" class="md-nav__link">
+    <span class="md-ellipsis">
+      Get all pending work orders for a customer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-work-orders-with-source-name-denormalized" class="md-nav__link">
+    <span class="md-ellipsis">
+      Get work orders with source name (denormalized)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-customer-with-all-relationships" class="md-nav__link">
+    <span class="md-ellipsis">
+      Get customer with all relationships
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#schema-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Schema Changes
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Schema Changes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-column" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adding a Column
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#renaming-a-column" class="md-nav__link">
+    <span class="md-ellipsis">
+      Renaming a Column
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#legacy-database-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Legacy Database Notes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#er-diagram-detailed" class="md-nav__link">
+    <span class="md-ellipsis">
+      ER Diagram - Detailed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See Also
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="database-schema">Database Schema<a class="headerlink" href="#database-schema" title="Permanent link">&para;</a></h1>
+<p>Complete reference for the Awning Management System database schema.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>The application uses PostgreSQL with SQLAlchemy ORM. The schema is managed through Alembic migrations. See the <a href="../../database/ALEMBIC_GUIDE/">Alembic Guide</a> for migration workflows.</p>
+<p><strong>Key Characteristics:</strong>
+- <strong>Database:</strong> PostgreSQL 12+
+- <strong>ORM:</strong> SQLAlchemy
+- <strong>Migrations:</strong> Alembic
+- <strong>Naming:</strong> Legacy Access DB naming (mixed case, some inconsistencies)</p>
+<hr />
+<h2 id="entity-relationship-diagram">Entity Relationship Diagram<a class="headerlink" href="#entity-relationship-diagram" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌─────────────┐         ┌──────────────┐         ┌────────────┐
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│   Source    │────┬────│   Customer   │────┬────│ WorkOrder  │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│  (Vendor)   │    │    │              │    │    │            │
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>└─────────────┘    │    └──────────────┘    │    └────────────┘
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>                   │            │            │           │
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>                   │            │            │           ├── WorkOrderItem
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>                   │            │            │           └── WorkOrderFile
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>                   │            │            │
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>                   │            │            └────┬────────────────┐
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>                   │            │                 │  RepairOrder   │
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                   │            └─────────────────┤                │
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>                   │                              └────────────────┘
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>                   │                                       │
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>                   └───────────────────────────────────────┤
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>                                                          └── RepairOrderItem
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>                                                          └── RepairOrderFile
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>┌─────────────┐
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>│    User     │  (Flask-Login auth)
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>└─────────────┘
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>┌─────────────┐
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>│ InviteToken │  (User registration)
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>└─────────────┘
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>┌─────────────┐
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>│  Inventory  │  (Available items)
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>└─────────────┘
+</code></pre></div>
+<hr />
+<h2 id="core-tables">Core Tables<a class="headerlink" href="#core-tables" title="Permanent link">&para;</a></h2>
+<h3 id="customer-tblcustomers">Customer (<code>tblcustomers</code>)<a class="headerlink" href="#customer-tblcustomers" title="Permanent link">&para;</a></h3>
+<p>Customer information and contact details.</p>
+<p><strong>Primary Key:</strong> <code>custid</code> (Text)</p>
+<h4 id="columns">Columns<a class="headerlink" href="#columns" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>custid</code></td>
+<td>Text</td>
+<td>Customer ID (Primary Key)</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>Text</td>
+<td>Customer name</td>
+</tr>
+<tr>
+<td><code>contact</code></td>
+<td>Text</td>
+<td>Contact person</td>
+</tr>
+<tr>
+<td><code>address</code></td>
+<td>Text</td>
+<td>Physical address line 1</td>
+</tr>
+<tr>
+<td><code>address2</code></td>
+<td>Text</td>
+<td>Physical address line 2</td>
+</tr>
+<tr>
+<td><code>city</code></td>
+<td>Text</td>
+<td>City</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>Text</td>
+<td>State</td>
+</tr>
+<tr>
+<td><code>zipcode</code></td>
+<td>Text</td>
+<td>ZIP code</td>
+</tr>
+<tr>
+<td><code>homephone</code></td>
+<td>Text</td>
+<td>Home phone number</td>
+</tr>
+<tr>
+<td><code>workphone</code></td>
+<td>Text</td>
+<td>Work phone number</td>
+</tr>
+<tr>
+<td><code>cellphone</code></td>
+<td>Text</td>
+<td>Cell phone number</td>
+</tr>
+<tr>
+<td><code>emailaddress</code></td>
+<td>Text</td>
+<td>Email address</td>
+</tr>
+<tr>
+<td><code>mailaddress</code></td>
+<td>Text</td>
+<td>Mailing address (if different)</td>
+</tr>
+<tr>
+<td><code>mailcity</code></td>
+<td>Text</td>
+<td>Mailing city</td>
+</tr>
+<tr>
+<td><code>mailstate</code></td>
+<td>Text</td>
+<td>Mailing state</td>
+</tr>
+<tr>
+<td><code>mailzip</code></td>
+<td>Text</td>
+<td>Mailing ZIP</td>
+</tr>
+<tr>
+<td><code>sourceold</code></td>
+<td>Text</td>
+<td>Legacy source field</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>Text</td>
+<td>Source/vendor (FK → <code>tblsource.ssource</code>)</td>
+</tr>
+<tr>
+<td><code>sourceaddress</code></td>
+<td>Text</td>
+<td>Source address</td>
+</tr>
+<tr>
+<td><code>sourcestate</code></td>
+<td>Text</td>
+<td>Source state</td>
+</tr>
+<tr>
+<td><code>sourcecity</code></td>
+<td>Text</td>
+<td>Source city</td>
+</tr>
+<tr>
+<td><code>sourcezip</code></td>
+<td>Text</td>
+<td>Source ZIP</td>
+</tr>
+</tbody>
+</table>
+<h4 id="relationships">Relationships<a class="headerlink" href="#relationships" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Has many:</strong> WorkOrder (via <code>custid</code>)</li>
+<li><strong>Has many:</strong> RepairWorkOrder (via <code>custid</code>)</li>
+<li><strong>Belongs to:</strong> Source (via <code>source</code>)</li>
+</ul>
+<h4 id="methods">Methods<a class="headerlink" href="#methods" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>to_dict()</code> - Convert to dictionary</li>
+<li><code>clean_email()</code> - Remove <code>#mailto:</code> suffix</li>
+<li><code>clean_phone(field)</code> - Format phone numbers</li>
+<li><code>get_full_address()</code> - Formatted physical address</li>
+<li><code>get_mailing_address()</code> - Formatted mailing address</li>
+<li><code>get_primary_phone()</code> - First available phone number</li>
+</ul>
+<p><strong>Model:</strong> <a href="../../models/customer.py">models/customer.py</a></p>
+<hr />
+<h3 id="workorder-tblcustworkorderdetail">WorkOrder (<code>tblcustworkorderdetail</code>)<a class="headerlink" href="#workorder-tblcustworkorderdetail" title="Permanent link">&para;</a></h3>
+<p>Cleaning work orders.</p>
+<p><strong>Primary Key:</strong> <code>workorderno</code> (String)</p>
+<h4 id="columns_1">Columns<a class="headerlink" href="#columns_1" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>workorderno</code></td>
+<td>String</td>
+<td>Work order number (Primary Key)</td>
+</tr>
+<tr>
+<td><code>custid</code></td>
+<td>String</td>
+<td>Customer ID (FK → <code>tblcustomers.custid</code>)</td>
+</tr>
+<tr>
+<td><code>woname</code></td>
+<td>String</td>
+<td>Work order name/title</td>
+</tr>
+<tr>
+<td><code>storage</code></td>
+<td>String</td>
+<td><strong>DEPRECATED</strong> - Do not use</td>
+</tr>
+<tr>
+<td><code>storagetime</code></td>
+<td>String</td>
+<td>Storage duration: "Seasonal" or "Temporary"</td>
+</tr>
+<tr>
+<td><code>rack_number</code></td>
+<td>String</td>
+<td><strong>Physical location</strong> (e.g., "5 B", "bin 4 top")</td>
+</tr>
+<tr>
+<td><code>finallocation</code></td>
+<td>String</td>
+<td>Location after cleaning is complete</td>
+</tr>
+<tr>
+<td><code>specialinstructions</code></td>
+<td>Text</td>
+<td>Special instructions</td>
+</tr>
+<tr>
+<td><code>repairsneeded</code></td>
+<td>Boolean</td>
+<td>Repairs needed flag</td>
+</tr>
+<tr>
+<td><code>returnstatus</code></td>
+<td>String</td>
+<td>Return status</td>
+</tr>
+<tr>
+<td><code>datecompleted</code></td>
+<td>DateTime</td>
+<td>Completion timestamp</td>
+</tr>
+<tr>
+<td><code>daterequired</code></td>
+<td>Date</td>
+<td>Required by date</td>
+</tr>
+<tr>
+<td><code>datein</code></td>
+<td>Date</td>
+<td>Date received</td>
+</tr>
+<tr>
+<td><code>clean</code></td>
+<td>Date</td>
+<td>Date cleaned</td>
+</tr>
+<tr>
+<td><code>treat</code></td>
+<td>Date</td>
+<td>Date treated</td>
+</tr>
+<tr>
+<td><code>quote</code></td>
+<td>String</td>
+<td>Quote information</td>
+</tr>
+<tr>
+<td><code>rushorder</code></td>
+<td>Boolean</td>
+<td>Rush order flag</td>
+</tr>
+<tr>
+<td><code>firmrush</code></td>
+<td>Boolean</td>
+<td>Firm rush flag</td>
+</tr>
+<tr>
+<td><code>seerepair</code></td>
+<td>String</td>
+<td>Related repair order reference</td>
+</tr>
+<tr>
+<td><code>shipto</code></td>
+<td>String</td>
+<td>Ship to source (FK → <code>tblsource.ssource</code>)</td>
+</tr>
+<tr>
+<td><code>cleanfirstwo</code></td>
+<td>String</td>
+<td><strong>DEPRECATED</strong> - Historical only</td>
+</tr>
+<tr>
+<td><code>queueposition</code></td>
+<td>Integer</td>
+<td>Position in cleaning queue</td>
+</tr>
+<tr>
+<td><code>processingstatus</code></td>
+<td>Boolean</td>
+<td>Currently being processed</td>
+</tr>
+<tr>
+<td><code>source_name</code></td>
+<td>Text</td>
+<td><strong>Denormalized</strong> source name (for performance)</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>DateTime</td>
+<td>Record creation timestamp</td>
+</tr>
+<tr>
+<td><code>updated_at</code></td>
+<td>DateTime</td>
+<td>Last update timestamp</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Storage Fields</p>
+<p>See <a href="../../database/STORAGE_FIELDS_GUIDE/">Storage Fields Guide</a> for detailed explanation of <code>storage</code>, <code>storagetime</code>, and <code>rack_number</code> fields.</p>
+</div>
+<h4 id="relationships_1">Relationships<a class="headerlink" href="#relationships_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Belongs to:</strong> Customer (via <code>custid</code>)</li>
+<li><strong>Belongs to:</strong> Source (via <code>shipto</code> - ship to location)</li>
+<li><strong>Has many:</strong> WorkOrderItem (child items)</li>
+<li><strong>Has many:</strong> WorkOrderFile (attached files)</li>
+</ul>
+<h4 id="properties">Properties<a class="headerlink" href="#properties" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>is_completed</code> - Boolean indicating completion status</li>
+<li><code>total_items</code> - Count of order items</li>
+<li><code>file_count</code> - Count of attached files</li>
+</ul>
+<p><strong>Model:</strong> <a href="../../models/work_order.py">models/work_order.py</a></p>
+<hr />
+<h3 id="workorderitem-tblorddetcustawngs">WorkOrderItem (<code>tblorddetcustawngs</code>)<a class="headerlink" href="#workorderitem-tblorddetcustawngs" title="Permanent link">&para;</a></h3>
+<p>Individual items within a work order.</p>
+<p><strong>Primary Key:</strong> <code>itemid</code> (Integer, auto-increment)</p>
+<h4 id="columns_2">Columns<a class="headerlink" href="#columns_2" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>itemid</code></td>
+<td>Integer</td>
+<td>Item ID (Primary Key)</td>
+</tr>
+<tr>
+<td><code>workorderno</code></td>
+<td>String</td>
+<td>Work order number (FK → <code>tblcustworkorderdetail.workorderno</code>)</td>
+</tr>
+<tr>
+<td><code>sizewgt</code></td>
+<td>String</td>
+<td>Size/weight description (e.g., "8'x10'", "95#")</td>
+</tr>
+<tr>
+<td><code>price</code></td>
+<td>Numeric</td>
+<td>Item price</td>
+</tr>
+<tr>
+<td><code>qty</code></td>
+<td>String</td>
+<td>Quantity (may contain non-numeric values)</td>
+</tr>
+<tr>
+<td><code>desc</code></td>
+<td>Text</td>
+<td>Item description</td>
+</tr>
+<tr>
+<td><code>location</code></td>
+<td>String</td>
+<td>Item-specific location</td>
+</tr>
+</tbody>
+</table>
+<h4 id="item-types">Item Types<a class="headerlink" href="#item-types" title="Permanent link">&para;</a></h4>
+<p>The <code>sizewgt</code> field determines the item type:
+- <strong>Awning:</strong> Contains dimensions (e.g., "8'x10'", "12'6"x15'3"")
+- <strong>Sail:</strong> Contains weight with <code>#</code> (e.g., "95#", "120#")</p>
+<p><strong>Model:</strong> <a href="../../models/work_order.py">models/work_order.py</a> (WorkOrderItem class)</p>
+<hr />
+<h3 id="repairworkorder-tblrepairworkorderdetail">RepairWorkOrder (<code>tblrepairworkorderdetail</code>)<a class="headerlink" href="#repairworkorder-tblrepairworkorderdetail" title="Permanent link">&para;</a></h3>
+<p>Repair work orders.</p>
+<p><strong>Primary Key:</strong> <code>repairorderno</code> (String)</p>
+<h4 id="columns_3">Columns<a class="headerlink" href="#columns_3" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>repairorderno</code></td>
+<td>String</td>
+<td>Repair order number (Primary Key)</td>
+</tr>
+<tr>
+<td><code>custid</code></td>
+<td>String</td>
+<td>Customer ID (FK → <code>tblcustomers.custid</code>)</td>
+</tr>
+<tr>
+<td><code>roname</code></td>
+<td>String</td>
+<td>Repair order name/title</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>String</td>
+<td>Source field (not FK)</td>
+</tr>
+<tr>
+<td><code>WO DATE</code></td>
+<td>Date</td>
+<td>Work order date ⚠️ <strong>Uppercase with space</strong></td>
+</tr>
+<tr>
+<td><code>DATE TO SUB</code></td>
+<td>Date</td>
+<td>Date to subcontractor ⚠️ <strong>Uppercase with spaces</strong></td>
+</tr>
+<tr>
+<td><code>daterequired</code></td>
+<td>Date</td>
+<td>Required by date</td>
+</tr>
+<tr>
+<td><code>datecompleted</code></td>
+<td>DateTime</td>
+<td>Completion timestamp</td>
+</tr>
+<tr>
+<td><code>returndate</code></td>
+<td>Date</td>
+<td>Return date</td>
+</tr>
+<tr>
+<td><code>dateout</code></td>
+<td>Date</td>
+<td>Date sent out</td>
+</tr>
+<tr>
+<td><code>datein</code></td>
+<td>Date</td>
+<td>Date received</td>
+</tr>
+<tr>
+<td><code>rushorder</code></td>
+<td>Boolean</td>
+<td>Rush order flag</td>
+</tr>
+<tr>
+<td><code>firmrush</code></td>
+<td>Boolean</td>
+<td>Firm rush flag</td>
+</tr>
+<tr>
+<td><code>quote</code></td>
+<td>Boolean</td>
+<td>Quote flag</td>
+</tr>
+<tr>
+<td><code>approved</code></td>
+<td>Boolean</td>
+<td>Approved flag</td>
+</tr>
+<tr>
+<td><code>clean</code></td>
+<td>Boolean</td>
+<td>Clean before repair</td>
+</tr>
+<tr>
+<td><code>cleanfirst</code></td>
+<td>Boolean</td>
+<td><strong>DEPRECATED</strong> - Historical only</td>
+</tr>
+<tr>
+<td><code>QUOTE  BY</code></td>
+<td>String</td>
+<td>Quoted by ⚠️ <strong>Two spaces</strong></td>
+</tr>
+<tr>
+<td><code>RACK#</code></td>
+<td>String</td>
+<td><strong>Physical location</strong> (e.g., "hang 4", "6D")</td>
+</tr>
+<tr>
+<td><code>storage</code></td>
+<td>String</td>
+<td>Storage duration: "TEMPORARY" or "SEASONAL"</td>
+</tr>
+<tr>
+<td><code>location</code></td>
+<td>String</td>
+<td>Additional location details</td>
+</tr>
+<tr>
+<td><code>finallocation</code></td>
+<td>String</td>
+<td>Location after repair is complete</td>
+</tr>
+<tr>
+<td><code>ITEM TYPE</code></td>
+<td>String</td>
+<td>Item type ⚠️ <strong>Uppercase with space</strong></td>
+</tr>
+<tr>
+<td><code>TYPE OF REPAIR</code></td>
+<td>String</td>
+<td>Repair type ⚠️ <strong>Uppercase with spaces</strong></td>
+</tr>
+<tr>
+<td><code>specialinstructions</code></td>
+<td>Text</td>
+<td>Special instructions</td>
+</tr>
+<tr>
+<td><code>seeclean</code></td>
+<td>String</td>
+<td>Related work order reference</td>
+</tr>
+<tr>
+<td><code>repairsdoneby</code></td>
+<td>String</td>
+<td>Repair technician</td>
+</tr>
+<tr>
+<td><code>materiallist</code></td>
+<td>Text</td>
+<td>Materials used</td>
+</tr>
+<tr>
+<td><code>customerprice</code></td>
+<td>String</td>
+<td>Price quoted to customer</td>
+</tr>
+<tr>
+<td><code>returnstatus</code></td>
+<td>String</td>
+<td>Return status</td>
+</tr>
+<tr>
+<td><code>source_name</code></td>
+<td>Text</td>
+<td><strong>Denormalized</strong> source name (for performance)</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>DateTime</td>
+<td>Record creation timestamp</td>
+</tr>
+<tr>
+<td><code>updated_at</code></td>
+<td>DateTime</td>
+<td>Last update timestamp</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">Column Name Quirks</p>
+<p>Some columns have uppercase names or spaces: <code>WO DATE</code>, <code>DATE TO SUB</code>, <code>RACK#</code>, <code>QUOTE  BY</code>, <code>ITEM TYPE</code>, <code>TYPE OF REPAIR</code>.</p>
+</div>
+<h4 id="relationships_2">Relationships<a class="headerlink" href="#relationships_2" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Belongs to:</strong> Customer (via <code>custid</code>)</li>
+<li><strong>Has many:</strong> RepairOrderItem (child items)</li>
+<li><strong>Has many:</strong> RepairOrderFile (attached files)</li>
+</ul>
+<p><strong>Model:</strong> <a href="../../models/repair_order.py">models/repair_order.py</a></p>
+<hr />
+<h3 id="source-tblsource">Source (<code>tblsource</code>)<a class="headerlink" href="#source-tblsource" title="Permanent link">&para;</a></h3>
+<p>Vendors, sail lofts, and source organizations.</p>
+<p><strong>Primary Key:</strong> <code>ssource</code> (Text)</p>
+<h4 id="columns_4">Columns<a class="headerlink" href="#columns_4" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ssource</code></td>
+<td>Text</td>
+<td>Source identifier (Primary Key)</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>Text</td>
+<td>Source name</td>
+</tr>
+<tr>
+<td><code>contact</code></td>
+<td>Text</td>
+<td>Contact person</td>
+</tr>
+<tr>
+<td><code>address</code></td>
+<td>Text</td>
+<td>Address</td>
+</tr>
+<tr>
+<td><code>city</code></td>
+<td>Text</td>
+<td>City</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>Text</td>
+<td>State</td>
+</tr>
+<tr>
+<td><code>zip</code></td>
+<td>Text</td>
+<td>ZIP code</td>
+</tr>
+<tr>
+<td><code>phone</code></td>
+<td>Text</td>
+<td>Phone number</td>
+</tr>
+<tr>
+<td><code>email</code></td>
+<td>Text</td>
+<td>Email address</td>
+</tr>
+</tbody>
+</table>
+<h4 id="relationships_3">Relationships<a class="headerlink" href="#relationships_3" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Has many:</strong> Customer (via <code>source</code>)</li>
+<li><strong>Has many:</strong> WorkOrder (via <code>shipto</code>)</li>
+</ul>
+<p><strong>Model:</strong> <a href="../../models/source.py">models/source.py</a></p>
+<hr />
+<h3 id="inventory-tblinventory">Inventory (<code>tblinventory</code>)<a class="headerlink" href="#inventory-tblinventory" title="Permanent link">&para;</a></h3>
+<p>Inventory items available for use.</p>
+<p><strong>Primary Key:</strong> <code>invid</code> (Integer, auto-increment)</p>
+<h4 id="columns_5">Columns<a class="headerlink" href="#columns_5" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>invid</code></td>
+<td>Integer</td>
+<td>Inventory ID (Primary Key)</td>
+</tr>
+<tr>
+<td><code>custid</code></td>
+<td>String</td>
+<td>Customer ID (optional, for customer-specific items)</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>Text</td>
+<td>Item description</td>
+</tr>
+<tr>
+<td><code>size</code></td>
+<td>String</td>
+<td>Size/dimensions</td>
+</tr>
+<tr>
+<td><code>quantity</code></td>
+<td>Integer</td>
+<td>Quantity available</td>
+</tr>
+<tr>
+<td><code>location</code></td>
+<td>String</td>
+<td>Storage location</td>
+</tr>
+<tr>
+<td><code>notes</code></td>
+<td>Text</td>
+<td>Additional notes</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Model:</strong> <a href="../../models/inventory.py">models/inventory.py</a></p>
+<hr />
+<h2 id="file-attachments">File Attachments<a class="headerlink" href="#file-attachments" title="Permanent link">&para;</a></h2>
+<h3 id="workorderfile-work_order_files">WorkOrderFile (<code>work_order_files</code>)<a class="headerlink" href="#workorderfile-work_order_files" title="Permanent link">&para;</a></h3>
+<p>Files attached to work orders.</p>
+<p><strong>Primary Key:</strong> <code>id</code> (Integer, auto-increment)</p>
+<h4 id="columns_6">Columns<a class="headerlink" href="#columns_6" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>Integer</td>
+<td>File ID (Primary Key)</td>
+</tr>
+<tr>
+<td><code>work_order_no</code></td>
+<td>String</td>
+<td>Work order number (FK → <code>tblcustworkorderdetail.workorderno</code>)</td>
+</tr>
+<tr>
+<td><code>file_name</code></td>
+<td>String</td>
+<td>Original filename</td>
+</tr>
+<tr>
+<td><code>s3_key</code></td>
+<td>String</td>
+<td>S3 object key</td>
+</tr>
+<tr>
+<td><code>file_size</code></td>
+<td>Integer</td>
+<td>File size in bytes</td>
+</tr>
+<tr>
+<td><code>content_type</code></td>
+<td>String</td>
+<td>MIME type</td>
+</tr>
+<tr>
+<td><code>uploaded_at</code></td>
+<td>DateTime</td>
+<td>Upload timestamp</td>
+</tr>
+</tbody>
+</table>
+<h4 id="relationships_4">Relationships<a class="headerlink" href="#relationships_4" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Belongs to:</strong> WorkOrder (via <code>work_order_no</code>)</li>
+</ul>
+<p><strong>Storage:</strong> AWS S3 bucket</p>
+<p><strong>Model:</strong> <a href="../../models/work_order_file.py">models/work_order_file.py</a></p>
+<hr />
+<h3 id="repairorderfile-repair_order_files">RepairOrderFile (<code>repair_order_files</code>)<a class="headerlink" href="#repairorderfile-repair_order_files" title="Permanent link">&para;</a></h3>
+<p>Files attached to repair orders.</p>
+<p><strong>Primary Key:</strong> <code>id</code> (Integer, auto-increment)</p>
+<h4 id="columns_7">Columns<a class="headerlink" href="#columns_7" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>Integer</td>
+<td>File ID (Primary Key)</td>
+</tr>
+<tr>
+<td><code>repair_order_no</code></td>
+<td>String</td>
+<td>Repair order number (FK → <code>tblrepairworkorderdetail.repairorderno</code>)</td>
+</tr>
+<tr>
+<td><code>file_name</code></td>
+<td>String</td>
+<td>Original filename</td>
+</tr>
+<tr>
+<td><code>s3_key</code></td>
+<td>String</td>
+<td>S3 object key</td>
+</tr>
+<tr>
+<td><code>file_size</code></td>
+<td>Integer</td>
+<td>File size in bytes</td>
+</tr>
+<tr>
+<td><code>content_type</code></td>
+<td>String</td>
+<td>MIME type</td>
+</tr>
+<tr>
+<td><code>uploaded_at</code></td>
+<td>DateTime</td>
+<td>Upload timestamp</td>
+</tr>
+</tbody>
+</table>
+<h4 id="relationships_5">Relationships<a class="headerlink" href="#relationships_5" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>Belongs to:</strong> RepairWorkOrder (via <code>repair_order_no</code>)</li>
+</ul>
+<p><strong>Storage:</strong> AWS S3 bucket</p>
+<p><strong>Model:</strong> <a href="../../models/repair_order_file.py">models/repair_order_file.py</a></p>
+<hr />
+<h2 id="authentication-users">Authentication &amp; Users<a class="headerlink" href="#authentication-users" title="Permanent link">&para;</a></h2>
+<h3 id="user-users">User (<code>users</code>)<a class="headerlink" href="#user-users" title="Permanent link">&para;</a></h3>
+<p>Application users for Flask-Login authentication.</p>
+<p><strong>Primary Key:</strong> <code>id</code> (Integer, auto-increment)</p>
+<h4 id="columns_8">Columns<a class="headerlink" href="#columns_8" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>Integer</td>
+<td>User ID (Primary Key)</td>
+</tr>
+<tr>
+<td><code>username</code></td>
+<td>String(80)</td>
+<td>Username (unique)</td>
+</tr>
+<tr>
+<td><code>password_hash</code></td>
+<td>String(255)</td>
+<td>Bcrypt password hash</td>
+</tr>
+<tr>
+<td><code>role</code></td>
+<td>String(20)</td>
+<td>User role: "admin" or "user"</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>DateTime</td>
+<td>Account creation timestamp</td>
+</tr>
+</tbody>
+</table>
+<h4 id="methods_1">Methods<a class="headerlink" href="#methods_1" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>set_password(password)</code> - Hash and set password</li>
+<li><code>check_password(password)</code> - Verify password</li>
+<li><code>is_admin()</code> - Check if user has admin role</li>
+</ul>
+<p><strong>Model:</strong> <a href="../../models/user.py">models/user.py</a></p>
+<hr />
+<h3 id="invitetoken-invite_tokens">InviteToken (<code>invite_tokens</code>)<a class="headerlink" href="#invitetoken-invite_tokens" title="Permanent link">&para;</a></h3>
+<p>Invitation tokens for user registration.</p>
+<p><strong>Primary Key:</strong> <code>id</code> (Integer, auto-increment)</p>
+<h4 id="columns_9">Columns<a class="headerlink" href="#columns_9" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>Integer</td>
+<td>Token ID (Primary Key)</td>
+</tr>
+<tr>
+<td><code>token</code></td>
+<td>String(100)</td>
+<td>Invite token (unique, indexed)</td>
+</tr>
+<tr>
+<td><code>role</code></td>
+<td>String(20)</td>
+<td>Role to assign: "admin" or "user"</td>
+</tr>
+<tr>
+<td><code>used</code></td>
+<td>Boolean</td>
+<td>Token used flag</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>DateTime</td>
+<td>Token creation timestamp</td>
+</tr>
+<tr>
+<td><code>used_at</code></td>
+<td>DateTime</td>
+<td>Token usage timestamp</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Model:</strong> <a href="../../models/invite_token.py">models/invite_token.py</a></p>
+<hr />
+<h2 id="indexes">Indexes<a class="headerlink" href="#indexes" title="Permanent link">&para;</a></h2>
+<p>Key indexes for performance optimization:</p>
+<h3 id="work-orders">Work Orders<a class="headerlink" href="#work-orders" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>idx_workorder_custid</code> on <code>custid</code> (foreign key)</li>
+<li><code>idx_workorder_source_name</code> on <code>source_name</code> (denormalized field for filtering)</li>
+<li><code>idx_workorder_datecompleted</code> on <code>datecompleted</code> (filtering completed orders)</li>
+<li><code>idx_workorder_datein</code> on <code>datein</code> (filtering by intake date)</li>
+</ul>
+<h3 id="repair-orders">Repair Orders<a class="headerlink" href="#repair-orders" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>idx_repairorder_custid</code> on <code>custid</code> (foreign key)</li>
+<li><code>idx_repairorder_source_name</code> on <code>source_name</code> (denormalized field for filtering)</li>
+<li><code>idx_repairorder_datecompleted</code> on <code>datecompleted</code> (filtering completed orders)</li>
+</ul>
+<h3 id="customers">Customers<a class="headerlink" href="#customers" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>idx_customer_source</code> on <code>source</code> (foreign key)</li>
+<li><code>idx_customer_name</code> on <code>name</code> (searching by name)</li>
+</ul>
+<h3 id="files">Files<a class="headerlink" href="#files" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>idx_workorderfile_work_order_no</code> on <code>work_order_no</code> (foreign key)</li>
+<li><code>idx_repairorderfile_repair_order_no</code> on <code>repair_order_no</code> (foreign key)</li>
+</ul>
+<hr />
+<h2 id="performance-optimizations">Performance Optimizations<a class="headerlink" href="#performance-optimizations" title="Permanent link">&para;</a></h2>
+<h3 id="denormalization">Denormalization<a class="headerlink" href="#denormalization" title="Permanent link">&para;</a></h3>
+<p>The <code>source_name</code> field is denormalized in both <code>WorkOrder</code> and <code>RepairWorkOrder</code> tables:</p>
+<p><strong>Purpose:</strong> Avoid expensive 3-table joins when filtering/sorting by source
+<strong>Synced via:</strong> Database triggers and application-level sync methods
+<strong>Performance gain:</strong> ~100x faster for source filtering queries</p>
+<p>See <a href="../../planning/DENORMALIZATION_ANALYSIS/">Denormalization Analysis</a> for details.</p>
+<h3 id="lazy-loading">Lazy Loading<a class="headerlink" href="#lazy-loading" title="Permanent link">&para;</a></h3>
+<p>Relationships use strategic lazy loading:
+- <code>lazy='dynamic'</code> for large collections (e.g., customer → work_orders)
+- <code>lazy='joined'</code> for frequently accessed relationships (e.g., work_order → files)
+- Default <code>lazy='select'</code> for most relationships</p>
+<hr />
+<h2 id="data-types">Data Types<a class="headerlink" href="#data-types" title="Permanent link">&para;</a></h2>
+<h3 id="datedatetime-handling">Date/DateTime Handling<a class="headerlink" href="#datedatetime-handling" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Date:</strong> Used for calendar dates (no time component)</li>
+<li>Examples: <code>datein</code>, <code>daterequired</code>, <code>clean</code>, <code>treat</code></li>
+<li><strong>DateTime:</strong> Used when time matters</li>
+<li>Examples: <code>datecompleted</code>, <code>created_at</code>, <code>updated_at</code></li>
+</ul>
+<h3 id="boolean-fields">Boolean Fields<a class="headerlink" href="#boolean-fields" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Stored as PostgreSQL <code>BOOLEAN</code> type</li>
+<li>Python: <code>True</code>/<code>False</code></li>
+<li>Database: <code>true</code>/<code>false</code></li>
+<li>Legacy data may contain: "YES"/"NO", "TRUE"/"FALSE", 1/0</li>
+</ul>
+<h3 id="numeric-fields">Numeric Fields<a class="headerlink" href="#numeric-fields" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Prices:</strong> <code>Numeric</code> type (precise decimal)</li>
+<li><strong>Quantities:</strong> Often stored as <code>String</code> (may contain non-numeric values like "TBD")</li>
+<li><strong>IDs:</strong> Auto-increment integers or string-based custom IDs</li>
+</ul>
+<hr />
+<h2 id="common-queries">Common Queries<a class="headerlink" href="#common-queries" title="Permanent link">&para;</a></h2>
+<h3 id="get-all-pending-work-orders-for-a-customer">Get all pending work orders for a customer<a class="headerlink" href="#get-all-pending-work-orders-for-a-customer" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">pending_orders</span> <span class="o">=</span> <span class="n">WorkOrder</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">filter_by</span><span class="p">(</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">CustID</span><span class="o">=</span><span class="n">customer_id</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">DateCompleted</span><span class="o">=</span><span class="kc">None</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">)</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="n">WorkOrder</span><span class="o">.</span><span class="n">DateIn</span><span class="o">.</span><span class="n">desc</span><span class="p">())</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="get-work-orders-with-source-name-denormalized">Get work orders with source name (denormalized)<a class="headerlink" href="#get-work-orders-with-source-name-denormalized" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">work_orders</span> <span class="o">=</span> <span class="n">WorkOrder</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">WorkOrder</span><span class="o">.</span><span class="n">source_name</span> <span class="o">==</span> <span class="s1">&#39;Boat Covers Inc&#39;</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="get-customer-with-all-relationships">Get customer with all relationships<a class="headerlink" href="#get-customer-with-all-relationships" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">customer</span> <span class="o">=</span> <span class="n">Customer</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">options</span><span class="p">(</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">joinedload</span><span class="p">(</span><span class="n">Customer</span><span class="o">.</span><span class="n">work_orders</span><span class="p">),</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">joinedload</span><span class="p">(</span><span class="n">Customer</span><span class="o">.</span><span class="n">repair_work_orders</span><span class="p">),</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">joinedload</span><span class="p">(</span><span class="n">Customer</span><span class="o">.</span><span class="n">source_info</span><span class="p">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">customer_id</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="schema-changes">Schema Changes<a class="headerlink" href="#schema-changes" title="Permanent link">&para;</a></h2>
+<p>All schema changes must go through Alembic migrations. See the <a href="../../database/ALEMBIC_GUIDE/">Alembic Guide</a> for the workflow.</p>
+<h3 id="adding-a-column">Adding a Column<a class="headerlink" href="#adding-a-column" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Create migration</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="o">./</span><span class="n">alembic_db</span><span class="o">.</span><span class="n">sh</span> <span class="n">test</span> <span class="n">revision</span> <span class="o">--</span><span class="n">autogenerate</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;add_new_column&quot;</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Review and apply</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="o">./</span><span class="n">alembic_db</span><span class="o">.</span><span class="n">sh</span> <span class="n">test</span> <span class="n">upgrade</span> <span class="n">head</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="o">./</span><span class="n">alembic_db</span><span class="o">.</span><span class="n">sh</span> <span class="n">prod</span> <span class="n">upgrade</span> <span class="n">head</span>
+</code></pre></div>
+<h3 id="renaming-a-column">Renaming a Column<a class="headerlink" href="#renaming-a-column" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Create migration manually</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="o">./</span><span class="n">alembic_db</span><span class="o">.</span><span class="n">sh</span> <span class="n">test</span> <span class="n">revision</span> <span class="o">-</span><span class="n">m</span> <span class="s2">&quot;rename_column&quot;</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Edit migration file</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">upgrade</span><span class="p">():</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">op</span><span class="o">.</span><span class="n">alter_column</span><span class="p">(</span><span class="s1">&#39;table_name&#39;</span><span class="p">,</span> <span class="s1">&#39;old_name&#39;</span><span class="p">,</span> <span class="n">new_column_name</span><span class="o">=</span><span class="s1">&#39;new_name&#39;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="legacy-database-notes">Legacy Database Notes<a class="headerlink" href="#legacy-database-notes" title="Permanent link">&para;</a></h2>
+<p>This database was migrated from Microsoft Access, which explains some quirks:</p>
+<ul>
+<li><strong>Mixed case column names</strong> (e.g., <code>CustID</code>, <code>workorderno</code>)</li>
+<li><strong>Spaces in column names</strong> (e.g., <code>WO DATE</code>, <code>TYPE OF REPAIR</code>)</li>
+<li><strong>Inconsistent naming</strong> (some camelCase, some lowercase, some UPPERCASE)</li>
+<li><strong>Multiple spaces</strong> in names (e.g., <code>QUOTE  BY</code> has two spaces)</li>
+<li><strong>Deprecated fields</strong> left for historical data compatibility</li>
+</ul>
+<p>When working with the schema, always check the exact column name in the model definition.</p>
+<hr />
+<h2 id="er-diagram-detailed">ER Diagram - Detailed<a class="headerlink" href="#er-diagram-detailed" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>┌────────────────────────────────────────────┐
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>│              tblcustomers                  │
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>│────────────────────────────────────────────│
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>│ PK custid         TEXT                     │
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>│    name           TEXT                     │
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>│    contact        TEXT                     │
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>│    address        TEXT                     │
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>│    city, state, zipcode                    │
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>│    homephone, workphone, cellphone         │
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>│    emailaddress   TEXT                     │
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>│ FK source         TEXT  → tblsource        │
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>└────────────────────────────────────────────┘
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>          │                           │
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>          │ 1                       1 │
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>          │                           │
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>          │ N                       N │
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>          ▼                           ▼
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>┌─────────────────────┐     ┌─────────────────────┐
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>│ tblcustworkorder... │     │ tblrepairworkorder..│
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>│─────────────────────│     │─────────────────────│
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>│ PK workorderno      │     │ PK repairorderno    │
+<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>│ FK custid           │     │ FK custid           │
+<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>│    woname           │     │    roname           │
+<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>│    rack_number      │     │    RACK#            │
+<a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a>│    storagetime      │     │    storage          │
+<a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a>│    datein, dateout  │     │    datein, dateout  │
+<a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a>│    source_name      │     │    source_name      │
+<a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a>│    ...              │     │    ...              │
+<a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a>└─────────────────────┘     └─────────────────────┘
+<a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a>          │                           │
+<a id="__codelineno-6-31" name="__codelineno-6-31" href="#__codelineno-6-31"></a>          │ 1                       1 │
+<a id="__codelineno-6-32" name="__codelineno-6-32" href="#__codelineno-6-32"></a>          │                           │
+<a id="__codelineno-6-33" name="__codelineno-6-33" href="#__codelineno-6-33"></a>          │ N                       N │
+<a id="__codelineno-6-34" name="__codelineno-6-34" href="#__codelineno-6-34"></a>          ▼                           ▼
+<a id="__codelineno-6-35" name="__codelineno-6-35" href="#__codelineno-6-35"></a>┌─────────────────────┐     ┌─────────────────────┐
+<a id="__codelineno-6-36" name="__codelineno-6-36" href="#__codelineno-6-36"></a>│  tblorddetcust...   │     │ repair_order_items  │
+<a id="__codelineno-6-37" name="__codelineno-6-37" href="#__codelineno-6-37"></a>│─────────────────────│     │─────────────────────│
+<a id="__codelineno-6-38" name="__codelineno-6-38" href="#__codelineno-6-38"></a>│ PK itemid           │     │ PK id               │
+<a id="__codelineno-6-39" name="__codelineno-6-39" href="#__codelineno-6-39"></a>│ FK workorderno      │     │ FK repairorderno    │
+<a id="__codelineno-6-40" name="__codelineno-6-40" href="#__codelineno-6-40"></a>│    sizewgt          │     │    description      │
+<a id="__codelineno-6-41" name="__codelineno-6-41" href="#__codelineno-6-41"></a>│    price, qty       │     │    price, qty       │
+<a id="__codelineno-6-42" name="__codelineno-6-42" href="#__codelineno-6-42"></a>└─────────────────────┘     └─────────────────────┘
+<a id="__codelineno-6-43" name="__codelineno-6-43" href="#__codelineno-6-43"></a>
+<a id="__codelineno-6-44" name="__codelineno-6-44" href="#__codelineno-6-44"></a>          │ 1                       1 │
+<a id="__codelineno-6-45" name="__codelineno-6-45" href="#__codelineno-6-45"></a>          │ N                       N │
+<a id="__codelineno-6-46" name="__codelineno-6-46" href="#__codelineno-6-46"></a>          ▼                           ▼
+<a id="__codelineno-6-47" name="__codelineno-6-47" href="#__codelineno-6-47"></a>┌─────────────────────┐     ┌─────────────────────┐
+<a id="__codelineno-6-48" name="__codelineno-6-48" href="#__codelineno-6-48"></a>│ work_order_files    │     │ repair_order_files  │
+<a id="__codelineno-6-49" name="__codelineno-6-49" href="#__codelineno-6-49"></a>│─────────────────────│     │─────────────────────│
+<a id="__codelineno-6-50" name="__codelineno-6-50" href="#__codelineno-6-50"></a>│ PK id               │     │ PK id               │
+<a id="__codelineno-6-51" name="__codelineno-6-51" href="#__codelineno-6-51"></a>│ FK work_order_no    │     │ FK repair_order_no  │
+<a id="__codelineno-6-52" name="__codelineno-6-52" href="#__codelineno-6-52"></a>│    s3_key           │     │    s3_key           │
+<a id="__codelineno-6-53" name="__codelineno-6-53" href="#__codelineno-6-53"></a>│    file_name        │     │    file_name        │
+<a id="__codelineno-6-54" name="__codelineno-6-54" href="#__codelineno-6-54"></a>└─────────────────────┘     └─────────────────────┘
+<a id="__codelineno-6-55" name="__codelineno-6-55" href="#__codelineno-6-55"></a>
+<a id="__codelineno-6-56" name="__codelineno-6-56" href="#__codelineno-6-56"></a>┌────────────────────────────────────────────┐
+<a id="__codelineno-6-57" name="__codelineno-6-57" href="#__codelineno-6-57"></a>│              tblsource                     │
+<a id="__codelineno-6-58" name="__codelineno-6-58" href="#__codelineno-6-58"></a>│────────────────────────────────────────────│
+<a id="__codelineno-6-59" name="__codelineno-6-59" href="#__codelineno-6-59"></a>│ PK ssource        TEXT                     │
+<a id="__codelineno-6-60" name="__codelineno-6-60" href="#__codelineno-6-60"></a>│    name           TEXT                     │
+<a id="__codelineno-6-61" name="__codelineno-6-61" href="#__codelineno-6-61"></a>│    contact        TEXT                     │
+<a id="__codelineno-6-62" name="__codelineno-6-62" href="#__codelineno-6-62"></a>│    address        TEXT                     │
+<a id="__codelineno-6-63" name="__codelineno-6-63" href="#__codelineno-6-63"></a>│    phone, email   TEXT                     │
+<a id="__codelineno-6-64" name="__codelineno-6-64" href="#__codelineno-6-64"></a>└────────────────────────────────────────────┘
+</code></pre></div>
+<hr />
+<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="../../database/ALEMBIC_GUIDE/">Alembic Migration Guide</a> - Database migrations</li>
+<li><a href="../../database/STORAGE_FIELDS_GUIDE/">Storage Fields Guide</a> - Understanding storage/location fields</li>
+<li><a href="../api-reference/">API Reference</a> - API endpoints</li>
+<li><a href="../../architecture/PERFORMANCE_ANALYSIS/">Performance Analysis</a> - Query optimization</li>
+<li><a href="../../planning/DENORMALIZATION_ANALYSIS/">Denormalization Analysis</a> - Performance improvements</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/andrewimpellitteri/awning_wo" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>
