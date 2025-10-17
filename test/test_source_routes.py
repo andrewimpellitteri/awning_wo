@@ -89,23 +89,23 @@ def sample_sources(app):
 class TestSourceListRoutes:
     """Test source list and search functionality."""
 
-    def test_source_list_page_renders(self, logged_in_client, sample_sources):
+    def test_source_list_page_renders(self, admin_client, sample_sources):
         """GET /sources/ should render the list page."""
-        response = logged_in_client.get("/sources/")
+        response = admin_client.get("/sources/")
         assert response.status_code == 200
         assert b"Sources" in response.data or b"Test Source 1" in response.data
 
-    def test_source_list_search(self, logged_in_client, sample_sources):
+    def test_source_list_search(self, admin_client, sample_sources):
         """Test searching for sources."""
-        response = logged_in_client.get("/sources/?search=Test Source 1")
+        response = admin_client.get("/sources/?search=Test Source 1")
         assert response.status_code == 200
         assert b"Test Source 1" in response.data
 
 
 
-    def test_source_list_pagination(self, logged_in_client, sample_sources):
+    def test_source_list_pagination(self, admin_client, sample_sources):
         """Test pagination of source list."""
-        response = logged_in_client.get("/sources/?page=1")
+        response = admin_client.get("/sources/?page=1")
         assert response.status_code == 200
 
 

@@ -778,6 +778,7 @@ def edit_repair_order(repair_order_no):
             # Recreate existing items (that weren't marked for deletion)
             for i, descrip in enumerate(existing_descriptions):
                 if descrip and descrip.strip():
+                    price_str = existing_prices[i] if i < len(existing_prices) else None
                     repair_item = RepairWorkOrderItem(
                         RepairOrderNo=repair_order_no,
                         CustID=request.form.get("CustID"),
@@ -791,7 +792,7 @@ def edit_repair_order(repair_order_no):
                         else "",
                         Color=existing_colors[i] if i < len(existing_colors) else "",
                         SizeWgt=existing_sizes[i] if i < len(existing_sizes) else "",
-                        Price=existing_prices[i] if i < len(existing_prices) else "",
+                        Price=price_str if price_str else None,
                     )
                     db.session.add(repair_item)
 
@@ -851,6 +852,7 @@ def edit_repair_order(repair_order_no):
 
             for i, descrip in enumerate(new_descriptions):
                 if descrip and descrip.strip():
+                    price_str = new_prices[i] if i < len(new_prices) else None
                     repair_item = RepairWorkOrderItem(
                         RepairOrderNo=repair_order_no,
                         CustID=request.form.get("CustID"),
@@ -860,7 +862,7 @@ def edit_repair_order(repair_order_no):
                         Condition=new_conditions[i] if i < len(new_conditions) else "",
                         Color=new_colors[i] if i < len(new_colors) else "",
                         SizeWgt=new_sizes[i] if i < len(new_sizes) else "",
-                        Price=new_prices[i] if i < len(new_prices) else "",
+                        Price=price_str if price_str else None,
                     )
                     db.session.add(repair_item)
 

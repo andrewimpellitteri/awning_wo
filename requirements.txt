@@ -48,3 +48,4 @@ Flask-Caching>=2.0.0       # For application caching
 scipy
 mkdocs
 mkdocs-material
+hypothesis # For fuzzing tests. Consider moving to requirements-dev.txt for better dependency management.
