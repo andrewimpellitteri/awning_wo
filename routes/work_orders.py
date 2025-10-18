@@ -20,6 +20,8 @@ from utils.file_upload import (
     save_work_order_file,
     generate_presigned_url,
     get_file_size,
+    commit_deferred_uploads,
+    cleanup_deferred_files,
 )
 from sqlalchemy import or_, func, cast, Integer, case, literal
 from sqlalchemy.orm import joinedload
@@ -109,6 +111,9 @@ def _handle_file_uploads(files_list, work_order_no):
     """
     Process file uploads for a work order.
     Returns list of WorkOrderFile objects to add to session.
+
+    Uses deferred S3 upload to prevent orphaned files if DB commit fails.
+    Files are staged in memory and uploaded to S3 only after successful DB commit.
     """
     uploaded_files = []
     if not files_list:
@@ -118,17 +123,18 @@ def _handle_file_uploads(files_list, work_order_no):
         if not file or not file.filename:
             continue
 
+        # Use defer_s3_upload=True to prevent orphaned S3 files
         wo_file = save_work_order_file(
-            work_order_no, file, to_s3=True, generate_thumbnails=True
+            work_order_no, file, to_s3=True, generate_thumbnails=True, defer_s3_upload=True
         )
         if not wo_file:
             raise Exception(f"Failed to process file: {file.filename}")
 
         uploaded_files.append(wo_file)
-        print(f"Prepared file {i + 1}/{len(files_list)}: {wo_file.filename}")
+        print(f"Prepared file {i + 1}/{len(files_list)}: {wo_file.filename} (deferred upload)")
 
         if wo_file.thumbnail_path:
-            print(f"  - Thumbnail generated: {wo_file.thumbnail_path}")
+            print(f"  - Thumbnail prepared for deferred upload: {wo_file.thumbnail_path}")
 
     return uploaded_files
 
@@ -591,7 +597,7 @@ def create_work_order(prefill_cust_id=None):
                 for catalog_item in catalog_to_add:
                     db.session.add(catalog_item)
 
-                # Process file uploads
+                # Process file uploads (deferred - not uploaded to S3 yet)
                 uploaded_files = _handle_file_uploads(
                     request.files.getlist("files[]"), next_wo_no
                 )
@@ -605,7 +611,18 @@ def create_work_order(prefill_cust_id=None):
                 if backlink_msg:
                     flash(backlink_msg, "info")
 
+                # Commit DB transaction first
                 db.session.commit()
+
+                # AFTER successful DB commit, upload files to S3
+                # This prevents orphaned S3 files if DB commit fails
+                if uploaded_files:
+                    success, uploaded, failed = commit_deferred_uploads(uploaded_files)
+                    if not success:
+                        # Log warning but don't fail - DB is already committed
+                        print(f"WARNING: {len(failed)} files failed to upload to S3")
+                        for file_obj, error in failed:
+                            print(f"  - {file_obj.filename}: {error}")
 
                 flash(
                     f"Work Order {next_wo_no} created successfully with {len(uploaded_files)} files!",
@@ -615,6 +632,9 @@ def create_work_order(prefill_cust_id=None):
 
             except IntegrityError as ie:
                 db.session.rollback()
+                # Clean up deferred file data on rollback
+                if 'uploaded_files' in locals():
+                    cleanup_deferred_files(uploaded_files)
                 retry_count += 1
 
                 error_msg = str(ie.orig).lower() if hasattr(ie, "orig") else str(ie).lower()
@@ -637,6 +657,9 @@ def create_work_order(prefill_cust_id=None):
 
             except Exception as e:
                 db.session.rollback()
+                # Clean up deferred file data on rollback
+                if 'uploaded_files' in locals():
+                    cleanup_deferred_files(uploaded_files)
                 print(f"Error creating work order: {str(e)}")
                 flash(f"Error creating work order: {str(e)}", "error")
                 return render_template(
@@ -798,24 +821,32 @@ def cleaning_room_edit_work_order(work_order_no):
 
                 for i, file in enumerate(files):
                     if file and file.filename:
-                        # Use the no-commit version for batch processing
+                        # Use deferred upload to prevent orphaned S3 files
                         wo_file = save_work_order_file(
-                            work_order_no, file, to_s3=True, generate_thumbnails=True
+                            work_order_no, file, to_s3=True, generate_thumbnails=True, defer_s3_upload=True
                         )
                         if not wo_file:
                             raise Exception(f"Failed to process file: {file.filename}")
 
                         uploaded_files.append(wo_file)
                         db.session.add(wo_file)  # Add to session but don't commit yet
-                        print(f"Prepared file {i + 1}/{len(files)}: {wo_file.filename}")
+                        print(f"Prepared file {i + 1}/{len(files)}: {wo_file.filename} (deferred)")
 
                         # Log thumbnail info
                         if wo_file.thumbnail_path:
-                            print(f"  - Thumbnail generated: {wo_file.thumbnail_path}")
+                            print(f"  - Thumbnail prepared: {wo_file.thumbnail_path}")
 
             work_order.final_location = request.form.get("final_location")
 
+            # Commit DB transaction first
             db.session.commit()
+
+            # AFTER successful DB commit, upload files to S3
+            if uploaded_files:
+                success, uploaded, failed = commit_deferred_uploads(uploaded_files)
+                if not success:
+                    print(f"WARNING: {len(failed)} files failed to upload to S3")
+
             flash(
                 f"Work Order {work_order_no} (cleaning room update) saved successfully!",
                 "success",
@@ -826,6 +857,9 @@ def cleaning_room_edit_work_order(work_order_no):
 
         except Exception as e:
             db.session.rollback()
+            # Clean up deferred file data on rollback
+            if 'uploaded_files' in locals():
+                cleanup_deferred_files(uploaded_files)
             flash(f"Error updating work order: {str(e)}", "error")
 
     # GET request - show limited edit form

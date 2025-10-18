@@ -89,6 +89,7 @@ def save_order_file_generic(
     to_s3=True,
     generate_thumbnails=True,
     file_model_class=None,
+    defer_s3_upload=False,
 ):
     """
     Generic function to save order files (work orders or repair orders)
@@ -100,9 +101,16 @@ def save_order_file_generic(
         to_s3: Whether to save to S3 (True) or locally (False)
         generate_thumbnails: Whether to generate thumbnails
         file_model_class: The model class to use (WorkOrderFile or RepairOrderFile)
+        defer_s3_upload: If True, stores file content in memory and returns metadata
+                         for upload after DB commit. Prevents orphaned S3 files.
 
     Returns:
         File model instance (not committed to DB)
+        If defer_s3_upload=True, the file_obj will have temporary attributes:
+            - _deferred_file_content: The file bytes to upload
+            - _deferred_s3_key: The S3 key to upload to
+            - _deferred_thumbnail_content: Optional thumbnail bytes
+            - _deferred_thumbnail_key: Optional thumbnail S3 key
     """
     filename = secure_filename(file.filename)
 
@@ -110,12 +118,10 @@ def save_order_file_generic(
     if not allowed_file(filename):
         return None
 
-    # Read file content for thumbnail generation
-    file_content = None
-    if generate_thumbnails:
-        file.seek(0)
-        file_content = file.read()
-        file.seek(0)  # Reset file pointer for upload
+    # Always read file content (needed for deferred upload or thumbnails)
+    file.seek(0)
+    file_content = file.read()
+    file.seek(0)  # Reset file pointer
 
     # Determine folder prefix based on order type
     folder_prefix = "work_orders" if order_type == "work_order" else "repair_orders"
@@ -127,40 +133,63 @@ def save_order_file_generic(
         filename = filename.decode('utf-8') if isinstance(filename, bytes) else filename
 
         s3_key = f"{folder_prefix}/{order_no}/{filename}"
-
-        # Upload file to S3 with proper error handling
-        try:
-            s3_client.upload_fileobj(file, AWS_S3_BUCKET, s3_key)
-            file_path = f"s3://{AWS_S3_BUCKET}/{s3_key}"
-            print(f"Successfully uploaded file to S3: {s3_key}")
-        except s3_client.exceptions.NoSuchBucket:
-            error_msg = f"S3 bucket '{AWS_S3_BUCKET}' does not exist"
-            print(f"ERROR: {error_msg}")
-            raise ValueError(error_msg)
-        except s3_client.exceptions.ClientError as e:
-            error_code = e.response.get("Error", {}).get("Code", "Unknown")
-            error_msg = f"S3 client error ({error_code}) uploading {filename}: {e}"
-            print(f"ERROR: {error_msg}")
-            raise Exception(error_msg)
-        except Exception as e:
-            error_msg = f"Unexpected error uploading {filename} to S3: {e}"
-            print(f"ERROR: {error_msg}")
-            raise Exception(error_msg)
-
-        # Generate and save thumbnail to S3
+        file_path = f"s3://{AWS_S3_BUCKET}/{s3_key}"
         thumbnail_path = None
-        if generate_thumbnails and file_content:
+
+        if defer_s3_upload:
+            # DEFERRED MODE: Store content in memory, upload after DB commit
+            print(f"Deferring S3 upload for: {s3_key}")
+
+            # Generate thumbnail in memory if requested
+            thumbnail_img = None
+            thumbnail_key = None
+            if generate_thumbnails and file_content:
+                try:
+                    thumbnail_img = generate_thumbnail(file_content, filename)
+                    thumbnail_key = f"{folder_prefix}/{order_no}/thumbnails/{filename.rsplit('.', 1)[0]}_thumb.jpg"
+                    thumbnail_path = f"s3://{AWS_S3_BUCKET}/{thumbnail_key}"
+                    print(f"Prepared thumbnail for deferred upload: {thumbnail_key}")
+                except Exception as e:
+                    print(f"WARNING: Error generating thumbnail for {filename}: {e}")
+        else:
+            # IMMEDIATE MODE: Upload to S3 right away (old behavior, can cause orphans)
+            # Upload file to S3 with proper error handling
             try:
-                thumbnail_img = generate_thumbnail(file_content, filename)
-                thumbnail_key = save_thumbnail_to_s3(
-                    thumbnail_img, s3_client, AWS_S3_BUCKET, s3_key
-                )
-                thumbnail_path = f"s3://{AWS_S3_BUCKET}/{thumbnail_key}"
-                print(f"Generated thumbnail: {thumbnail_path}")
+                file.seek(0)
+                s3_client.upload_fileobj(file, AWS_S3_BUCKET, s3_key)
+                print(f"Successfully uploaded file to S3: {s3_key}")
+            except s3_client.exceptions.NoSuchBucket:
+                error_msg = f"S3 bucket '{AWS_S3_BUCKET}' does not exist"
+                print(f"ERROR: {error_msg}")
+                raise ValueError(error_msg)
+            except s3_client.exceptions.ClientError as e:
+                error_code = e.response.get("Error", {}).get("Code", "Unknown")
+                error_msg = f"S3 client error ({error_code}) uploading {filename}: {e}"
+                print(f"ERROR: {error_msg}")
+                raise Exception(error_msg)
             except Exception as e:
-                # Thumbnail generation is not critical - log but don't fail
-                print(f"WARNING: Error generating thumbnail for {filename}: {e}")
+                error_msg = f"Unexpected error uploading {filename} to S3: {e}"
+                print(f"ERROR: {error_msg}")
+                raise Exception(error_msg)
+
+            # Generate and save thumbnail to S3
+            if generate_thumbnails and file_content:
+                try:
+                    thumbnail_img = generate_thumbnail(file_content, filename)
+                    thumbnail_key = save_thumbnail_to_s3(
+                        thumbnail_img, s3_client, AWS_S3_BUCKET, s3_key
+                    )
+                    thumbnail_path = f"s3://{AWS_S3_BUCKET}/{thumbnail_key}"
+                    print(f"Generated thumbnail: {thumbnail_path}")
+                except Exception as e:
+                    # Thumbnail generation is not critical - log but don't fail
+                    print(f"WARNING: Error generating thumbnail for {filename}: {e}")
+
+            # Clear variables to prevent confusion
+            thumbnail_img = None
+            thumbnail_key = None
     else:
+        # Local file storage
         order_folder = os.path.join(UPLOAD_FOLDER, folder_prefix, str(order_no))
         os.makedirs(order_folder, exist_ok=True)
         file_path = os.path.join(order_folder, filename)
@@ -193,15 +222,30 @@ def save_order_file_generic(
         }
     )
 
+    # If deferred, attach content for later upload
+    if to_s3 and defer_s3_upload:
+        file_obj._deferred_file_content = file_content
+        file_obj._deferred_s3_key = s3_key
+        if generate_thumbnails and thumbnail_img and thumbnail_key:
+            file_obj._deferred_thumbnail_content = thumbnail_img
+            file_obj._deferred_thumbnail_key = thumbnail_key
+
     return file_obj
 
 
-def save_work_order_file(work_order_no, file, to_s3=True, generate_thumbnails=True):
+def save_work_order_file(work_order_no, file, to_s3=True, generate_thumbnails=True, defer_s3_upload=False):
     """
     Save work order file and generate thumbnail but don't commit to DB
     Returns the WorkOrderFile object for batch processing
 
     This is a wrapper around save_order_file_generic for backward compatibility
+
+    Args:
+        work_order_no: Work order number
+        file: File object to save
+        to_s3: Whether to save to S3
+        generate_thumbnails: Whether to generate thumbnails
+        defer_s3_upload: If True, delays S3 upload until after DB commit (prevents orphans)
     """
     from models.work_order_file import WorkOrderFile
 
@@ -212,13 +256,21 @@ def save_work_order_file(work_order_no, file, to_s3=True, generate_thumbnails=Tr
         to_s3=to_s3,
         generate_thumbnails=generate_thumbnails,
         file_model_class=WorkOrderFile,
+        defer_s3_upload=defer_s3_upload,
     )
 
 
-def save_repair_order_file(repair_order_no, file, to_s3=True, generate_thumbnails=True):
+def save_repair_order_file(repair_order_no, file, to_s3=True, generate_thumbnails=True, defer_s3_upload=False):
     """
     Save repair order file and generate thumbnail but don't commit to DB
     Returns the RepairOrderFile object for batch processing
+
+    Args:
+        repair_order_no: Repair order number
+        file: File object to save
+        to_s3: Whether to save to S3
+        generate_thumbnails: Whether to generate thumbnails
+        defer_s3_upload: If True, delays S3 upload until after DB commit (prevents orphans)
     """
     from models.repair_order_file import RepairOrderFile
 
@@ -229,6 +281,7 @@ def save_repair_order_file(repair_order_no, file, to_s3=True, generate_thumbnail
         to_s3=to_s3,
         generate_thumbnails=generate_thumbnails,
         file_model_class=RepairOrderFile,
+        defer_s3_upload=defer_s3_upload,
     )
 
 
@@ -464,3 +517,84 @@ def delete_file_from_s3(file_path):
     except Exception as e:
         print(f"Error deleting S3 file {file_path}: {e}")
         return False
+
+
+def commit_deferred_uploads(file_objects):
+    """
+    Upload files to S3 that were deferred until after DB commit.
+    This prevents orphaned S3 files when DB commits fail.
+
+    Args:
+        file_objects: List of file model objects with deferred upload data
+
+    Returns:
+        tuple: (success: bool, uploaded_files: list, failed_files: list)
+    """
+    uploaded_files = []
+    failed_files = []
+
+    for file_obj in file_objects:
+        # Check if this file has deferred content
+        if not hasattr(file_obj, '_deferred_file_content'):
+            continue
+
+        try:
+            # Upload main file
+            file_buffer = BytesIO(file_obj._deferred_file_content)
+            s3_client.upload_fileobj(file_buffer, AWS_S3_BUCKET, file_obj._deferred_s3_key)
+            print(f"Successfully uploaded deferred file to S3: {file_obj._deferred_s3_key}")
+
+            # Upload thumbnail if exists
+            if hasattr(file_obj, '_deferred_thumbnail_content'):
+                # Convert PIL Image to bytes if needed
+                thumbnail_buffer = BytesIO()
+                if hasattr(file_obj._deferred_thumbnail_content, 'save'):
+                    # It's a PIL Image
+                    file_obj._deferred_thumbnail_content.save(thumbnail_buffer, format='JPEG')
+                    thumbnail_buffer.seek(0)
+                else:
+                    # It's already bytes
+                    thumbnail_buffer = BytesIO(file_obj._deferred_thumbnail_content)
+
+                s3_client.upload_fileobj(
+                    thumbnail_buffer,
+                    AWS_S3_BUCKET,
+                    file_obj._deferred_thumbnail_key
+                )
+                print(f"Successfully uploaded deferred thumbnail to S3: {file_obj._deferred_thumbnail_key}")
+
+            uploaded_files.append(file_obj)
+
+            # Clean up temporary attributes
+            delattr(file_obj, '_deferred_file_content')
+            delattr(file_obj, '_deferred_s3_key')
+            if hasattr(file_obj, '_deferred_thumbnail_content'):
+                delattr(file_obj, '_deferred_thumbnail_content')
+                delattr(file_obj, '_deferred_thumbnail_key')
+
+        except Exception as e:
+            print(f"ERROR: Failed to upload deferred file {file_obj.filename}: {e}")
+            failed_files.append((file_obj, str(e)))
+
+    success = len(failed_files) == 0
+    return success, uploaded_files, failed_files
+
+
+def cleanup_deferred_files(file_objects):
+    """
+    Clean up memory for files that were staged for deferred upload
+    but the transaction was rolled back. This prevents memory leaks.
+
+    Args:
+        file_objects: List of file model objects with deferred upload data
+    """
+    for file_obj in file_objects:
+        if hasattr(file_obj, '_deferred_file_content'):
+            delattr(file_obj, '_deferred_file_content')
+        if hasattr(file_obj, '_deferred_s3_key'):
+            delattr(file_obj, '_deferred_s3_key')
+        if hasattr(file_obj, '_deferred_thumbnail_content'):
+            delattr(file_obj, '_deferred_thumbnail_content')
+        if hasattr(file_obj, '_deferred_thumbnail_key'):
+            delattr(file_obj, '_deferred_thumbnail_key')
+    print(f"Cleaned up deferred upload data for {len(file_objects)} files")

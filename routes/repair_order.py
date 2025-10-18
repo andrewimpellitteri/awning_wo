@@ -29,6 +29,8 @@ from utils.file_upload import (
     save_repair_order_file,
     generate_presigned_url,
     get_file_size,
+    commit_deferred_uploads,
+    cleanup_deferred_files,
 )
 from utils.query_helpers import (
     apply_column_filters,
@@ -542,7 +544,7 @@ def create_repair_order(prefill_cust_id=None):
                         print(f"[DEBUG] Qty raw from form: {qty}")
                         db.session.add(repair_item)
 
-                # Handle file uploads
+                # Handle file uploads (deferred - not uploaded to S3 yet)
                 uploaded_files = []
                 if "files[]" in request.files:
                     files = request.files.getlist("files[]")
@@ -550,11 +552,13 @@ def create_repair_order(prefill_cust_id=None):
 
                     for i, file in enumerate(files):
                         if file and file.filename:
+                            # Use deferred upload to prevent orphaned S3 files
                             ro_file = save_repair_order_file(
                                 next_order_no,
                                 file,
                                 to_s3=True,
                                 generate_thumbnails=True,
+                                defer_s3_upload=True,
                             )
                             if not ro_file:
                                 raise Exception(
@@ -564,12 +568,12 @@ def create_repair_order(prefill_cust_id=None):
                             uploaded_files.append(ro_file)
                             db.session.add(ro_file)
                             print(
-                                f"Prepared file {i + 1}/{len(files)}: {ro_file.filename}"
+                                f"Prepared file {i + 1}/{len(files)}: {ro_file.filename} (deferred)"
                             )
 
                             if ro_file.thumbnail_path:
                                 print(
-                                    f"  - Thumbnail generated: {ro_file.thumbnail_path}"
+                                    f"  - Thumbnail prepared: {ro_file.thumbnail_path}"
                                 )
 
                 # --- Handle SEECLEAN backlink ---
@@ -588,7 +592,18 @@ def create_repair_order(prefill_cust_id=None):
                             "info",
                         )
 
+                # Commit DB transaction first
                 db.session.commit()
+
+                # AFTER successful DB commit, upload files to S3
+                # This prevents orphaned S3 files if DB commit fails
+                if uploaded_files:
+                    success, uploaded, failed = commit_deferred_uploads(uploaded_files)
+                    if not success:
+                        print(f"WARNING: {len(failed)} files failed to upload to S3")
+                        for file_obj, error in failed:
+                            print(f"  - {file_obj.filename}: {error}")
+
                 flash(
                     f"Repair Work Order {next_order_no} created successfully"
                     + (
@@ -605,6 +620,9 @@ def create_repair_order(prefill_cust_id=None):
 
             except IntegrityError as ie:
                 db.session.rollback()
+                # Clean up deferred file data on rollback
+                if 'uploaded_files' in locals():
+                    cleanup_deferred_files(uploaded_files)
                 retry_count += 1
 
                 # Check if it's a duplicate key error
@@ -634,6 +652,9 @@ def create_repair_order(prefill_cust_id=None):
 
             except Exception as e:
                 db.session.rollback()
+                # Clean up deferred file data on rollback
+                if 'uploaded_files' in locals():
+                    cleanup_deferred_files(uploaded_files)
                 flash(f"Error creating repair work order: {str(e)}", "error")
                 return render_template(
                     "repair_orders/create.html",
@@ -871,7 +892,7 @@ def edit_repair_order(repair_order_no):
                     )
                     db.session.add(repair_item)
 
-            # Handle file uploads
+            # Handle file uploads (deferred - not uploaded to S3 yet)
             uploaded_files = []
             if "files[]" in request.files:
                 files = request.files.getlist("files[]")
@@ -879,18 +900,19 @@ def edit_repair_order(repair_order_no):
 
                 for i, file in enumerate(files):
                     if file and file.filename:
+                        # Use deferred upload to prevent orphaned S3 files
                         ro_file = save_repair_order_file(
-                            repair_order_no, file, to_s3=True, generate_thumbnails=True
+                            repair_order_no, file, to_s3=True, generate_thumbnails=True, defer_s3_upload=True
                         )
                         if not ro_file:
                             raise Exception(f"Failed to process file: {file.filename}")
 
                         uploaded_files.append(ro_file)
                         db.session.add(ro_file)
-                        print(f"Prepared file {i + 1}/{len(files)}: {ro_file.filename}")
+                        print(f"Prepared file {i + 1}/{len(files)}: {ro_file.filename} (deferred)")
 
                         if ro_file.thumbnail_path:
-                            print(f"  - Thumbnail generated: {ro_file.thumbnail_path}")
+                            print(f"  - Thumbnail prepared: {ro_file.thumbnail_path}")
 
             # --- Handle SEECLEAN backlink ---
             see_clean_new = request.form.get("SEECLEAN")
@@ -928,7 +950,15 @@ def edit_repair_order(repair_order_no):
             if repair_order.CustID != old_cust_id:
                 repair_order.sync_source_name()
 
+            # Commit DB transaction first
             db.session.commit()
+
+            # AFTER successful DB commit, upload files to S3
+            if uploaded_files:
+                success, uploaded, failed = commit_deferred_uploads(uploaded_files)
+                if not success:
+                    print(f"WARNING: {len(failed)} files failed to upload to S3")
+
             flash(
                 f"Repair Work Order {repair_order_no} updated successfully"
                 + (f" with {len(uploaded_files)} files!" if uploaded_files else "!"),
@@ -943,6 +973,9 @@ def edit_repair_order(repair_order_no):
 
         except Exception as e:
             db.session.rollback()
+            # Clean up deferred file data on rollback
+            if 'uploaded_files' in locals():
+                cleanup_deferred_files(uploaded_files)
             flash(f"Error updating repair work order: {str(e)}", "error")
 
     # GET request - show form with existing data
