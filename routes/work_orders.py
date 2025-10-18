@@ -628,7 +628,7 @@ def create_work_order(prefill_cust_id=None):
                     f"Work Order {next_wo_no} created successfully with {len(uploaded_files)} files!",
                     "success",
                 )
-                return redirect(url_for("work_orders.view_work_order", work_order_no=next_wo_no))
+                return redirect(url_for("customers.customer_detail", customer_id=work_order.CustID))
 
             except IntegrityError as ie:
                 db.session.rollback()
@@ -764,7 +764,9 @@ def edit_work_order(work_order_no):
                 + (f" with {len(uploaded_files)} files!" if uploaded_files else "!"),
                 "success",
             )
-            return redirect(url_for("work_orders.view_work_order", work_order_no=work_order_no))
+
+            # Redirect to customer page instead of work order page
+            return redirect(url_for("customers.customer_detail", customer_id=work_order.CustID))
 
         except Exception as e:
             db.session.rollback()
@@ -852,7 +854,7 @@ def cleaning_room_edit_work_order(work_order_no):
                 "success",
             )
             return redirect(
-                url_for("work_orders.view_work_order", work_order_no=work_order_no)
+                url_for("customers.customer_detail", customer_id=work_order.CustID)
             )
 
         except Exception as e:
