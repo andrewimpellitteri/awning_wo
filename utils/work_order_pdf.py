@@ -14,6 +14,7 @@ from reportlab.platypus import (
 from io import BytesIO
 from datetime import datetime
 from reportlab.lib.colors import green, red
+from utils.helpers import safe_bool_convert, map_bool_display
 
 
 def safe_paragraph(text, style, field_name=None):
@@ -38,25 +39,12 @@ def safe_paragraph(text, style, field_name=None):
         return Paragraph("", style)
 
 
-def get_safe_bool(value, default=False):
-    """Safely convert to boolean"""
-    if value is None:
-        return default
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, (int, float)):
-        return bool(value)
-    if isinstance(value, str):
-        return value.lower() in ("true", "yes", "1", "y")
-    return default
-
-
 def create_bool_paragraph(value, style):
     """Create a paragraph with colored check/X mark"""
 
-    value = get_safe_bool(value)
+    is_true = safe_bool_convert(value)
 
-    if value:
+    if is_true:
         text = "✓"
         # Create a copy of the style with green color
         green_style = style.clone("GreenStyle")
@@ -316,13 +304,13 @@ class WorkOrderPDF:
         def rush_value(label, flag):
             """Return a Paragraph with optional red highlighting for 'Yes'"""
             # Convert to boolean using the safe helper
-            is_rush = get_safe_bool(flag)
+            is_rush = safe_bool_convert(flag)
             style = (
                 self.styles["RushHighlight"]
                 if is_rush
                 else self.styles["SmallValue"]
             )
-            return safe_paragraph("Yes" if is_rush else "No", style)
+            return safe_paragraph(map_bool_display(flag), style)
 
         # Each column: [label, value] stacked vertically
         col1 = [

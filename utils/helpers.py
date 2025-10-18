@@ -136,3 +136,69 @@ def paginate_query(query, page, per_page=50):
         per_page=per_page,
         error_out=False
     )
+
+def map_bool_display(value, true_text="Yes", false_text="No", default=False):
+    """
+    Map boolean values to display text for PDFs and other outputs.
+
+    Args:
+        value: The value to convert (bool, int, str, or None)
+        true_text: Text to display for True values (default: "Yes")
+        false_text: Text to display for False values (default: "No")
+        default: Default boolean value if conversion fails (default: False)
+
+    Returns:
+        str: The mapped display text
+
+    Examples:
+        >>> map_bool_display(True)
+        'Yes'
+        >>> map_bool_display(False)
+        'No'
+        >>> map_bool_display("1")
+        'Yes'
+        >>> map_bool_display(0)
+        'No'
+        >>> map_bool_display(None)
+        'No'
+        >>> map_bool_display(True, "✓", "✗")
+        '✓'
+    """
+    # Convert to boolean first
+    is_true = safe_bool_convert(value, default=default)
+    return true_text if is_true else false_text
+
+def safe_bool_convert(value, default=False):
+    """
+    Safely convert various types to boolean.
+
+    Args:
+        value: The value to convert (bool, int, str, or None)
+        default: Default value if conversion fails (default: False)
+
+    Returns:
+        bool: The converted boolean value
+
+    Examples:
+        >>> safe_bool_convert(True)
+        True
+        >>> safe_bool_convert("1")
+        True
+        >>> safe_bool_convert("yes")
+        True
+        >>> safe_bool_convert(0)
+        False
+        >>> safe_bool_convert(None)
+        False
+        >>> safe_bool_convert("invalid", default=True)
+        True
+    """
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        return value.lower() in ("true", "yes", "1", "y")
+    return default

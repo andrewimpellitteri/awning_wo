@@ -13,6 +13,7 @@ from reportlab.platypus import (
 )
 from io import BytesIO
 from datetime import datetime
+from utils.helpers import safe_bool_convert, map_bool_display
 
 
 def safe_paragraph(text, style, field_name=None):
@@ -282,12 +283,13 @@ class RepairOrderPDF:
 
         def rush_value(label, flag):
             """Return a Paragraph with optional red highlighting for 'Yes'"""
+            is_rush = safe_bool_convert(flag)
             style = (
                 self.styles["RushHighlight"]
-                if flag == "1"
+                if is_rush
                 else self.styles["SmallValue"]
             )
-            return safe_paragraph("Yes" if flag == "1" else "No", style)
+            return safe_paragraph(map_bool_display(flag), style)
 
         # Each column: [label, value] stacked vertically
         col1 = [
@@ -624,7 +626,7 @@ class RepairOrderPDF:
             [
                 safe_paragraph("Clean", self.styles["SmallLabel"]),
                 safe_paragraph(
-                    self._format_date(ro.get("CLEAN", "")), self.styles["SmallValue"]
+                    map_bool_display(ro.get("CLEAN")), self.styles["SmallValue"]
                 ),
                 safe_paragraph("See Clean", self.styles["SmallLabel"]),
                 safe_paragraph(
@@ -632,7 +634,7 @@ class RepairOrderPDF:
                     self.styles["SmallValue"],
                 ),
                 safe_paragraph("Clean First", self.styles["SmallLabel"]),
-                safe_paragraph(ro.get("CLEANFIRST", ""), self.styles["SmallValue"]),
+                safe_paragraph(map_bool_display(ro.get("CLEANFIRST")), self.styles["SmallValue"]),
             ]
         ]
 
