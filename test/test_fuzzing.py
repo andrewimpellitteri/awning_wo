@@ -55,26 +55,26 @@ boolean_strategy = st.one_of(st.just("on"), st.just(""))
 
 def _setup_and_login(app, client):
     """Helper function to set up base data and log in admin for each fuzzed example."""
-    with app.app_context():
-        # Ensure a clean state for admin, customer, source for each example
-        db.session.query(User).filter_by(username="fuzz_admin").delete()
-        db.session.query(Customer).filter_by(CustID="FUZZ_CUST").delete()
-        db.session.query(Source).filter_by(SSource="FUZZ_SRC").delete()
-        db.session.commit()
+    # Ensure a clean state for admin, customer, source for each example
+    # Note: This function should be called within an app context
+    db.session.query(User).filter_by(username="fuzz_admin").delete()
+    db.session.query(Customer).filter_by(CustID="99999").delete()
+    db.session.query(Source).filter_by(SSource="FUZZ_SRC").delete()
+    db.session.commit()
 
-        admin = User(
-            username="fuzz_admin",
-            email="fuzz@example.com",
-            password_hash=generate_password_hash("fuzzpassword"),
-            role="admin",
-        )
-        customer = Customer(CustID="FUZZ_CUST", Name="Fuzz Customer")
-        source = Source(SSource="FUZZ_SRC")
-        db.session.add_all([admin, customer, source])
-        db.session.commit()
+    admin = User(
+        username="fuzz_admin",
+        email="fuzz@example.com",
+        password_hash=generate_password_hash("fuzzpassword"),
+        role="admin",
+    )
+    customer = Customer(CustID="99999", Name="Fuzz Customer")
+    source = Source(SSource="FUZZ_SRC")
+    db.session.add_all([admin, customer, source])
+    db.session.commit()
 
     client.post("/login", data={"username": "fuzz_admin", "password": "fuzzpassword"})
-    return {"cust_id": "FUZZ_CUST", "source_id": "FUZZ_SRC"}
+    return {"cust_id": "99999", "source_id": "FUZZ_SRC"}
 
 
 # --- Fuzzing Tests for Work Orders ---
@@ -119,8 +119,8 @@ class TestWorkOrderFuzzing:
         DateCompleted,
     ):
         """Fuzz test for creating a work order."""
-        setup_data = _setup_and_login(app, client)
         with app.app_context():
+            setup_data = _setup_and_login(app, client)
             data = {
                 "CustID": setup_data["cust_id"],
                 "WOName": WOName,
@@ -180,8 +180,8 @@ class TestWorkOrderFuzzing:
         DateCompleted,
     ):
         """Fuzz test for editing a work order."""
-        setup_data = _setup_and_login(app, client)
         with app.app_context():
+            setup_data = _setup_and_login(app, client)
             unique_wo_no = str(uuid.uuid4().int)[:10]  # Generate a unique WO number
             # Create a work order to edit first
             wo = WorkOrder(
@@ -214,8 +214,8 @@ class TestWorkOrderFuzzing:
     @given(work_order_no=text_strategy)
     def test_fuzz_view_work_order(self, app, client, work_order_no):
         """Fuzz test for viewing a work order."""
-        _setup_and_login(app, client)
         with app.app_context():
+            _setup_and_login(app, client)
             response = client.get(f"/work_orders/{work_order_no}")
             assert response.status_code in (200, 404)  # OK or Not Found, no 500
 
@@ -227,8 +227,8 @@ class TestWorkOrderFuzzing:
         self, app, client, work_order_no, file_id
     ):
         """Fuzz test for downloading files."""
-        _setup_and_login(app, client)
         with app.app_context():
+            _setup_and_login(app, client)
             response = client.get(
                 f"/work_orders/{work_order_no}/files/{file_id}/download"
             )
@@ -242,8 +242,8 @@ class TestWorkOrderFuzzing:
     @given(work_order_no=text_strategy)
     def test_fuzz_delete_work_order(self, app, client, work_order_no):
         """Fuzz test for deleting a work order."""
-        _setup_and_login(app, client)
         with app.app_context():
+            _setup_and_login(app, client)
             response = client.post(f"/work_orders/delete/{work_order_no}")
             assert response.status_code in (302, 404)  # Redirect or Not Found, no 500
 
@@ -252,8 +252,8 @@ class TestWorkOrderFuzzing:
         self, app, client, work_order_no
     ):
         """Fuzz test for downloading PDF."""
-        _setup_and_login(app, client)
         with app.app_context():
+            _setup_and_login(app, client)
             response = client.get(f"/work_orders/{work_order_no}/pdf/download")
             assert response.status_code in (200, 302, 308, 404)  # OK, redirect, permanent redirect, or Not Found
 
@@ -318,8 +318,8 @@ class TestRepairOrderFuzzing:
         DATEOUT,
     ):
         """Fuzz test for creating a repair order."""
-        setup_data = _setup_and_login(app, client)
         with app.app_context():
+            setup_data = _setup_and_login(app, client)
             data = {
                 "CustID": setup_data["cust_id"],
                 "ROName": ROName,
@@ -406,8 +406,8 @@ class TestRepairOrderFuzzing:
         DATEOUT,
     ):
         """Fuzz test for editing a repair order."""
-        setup_data = _setup_and_login(app, client)
         with app.app_context():
+            setup_data = _setup_and_login(app, client)
             unique_ro_no = str(uuid.uuid4().int)[:10]  # Generate a unique RO number
             # Create a repair order to edit first
             ro = RepairWorkOrder(
