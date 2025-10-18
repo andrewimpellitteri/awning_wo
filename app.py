@@ -78,32 +78,32 @@ def create_app(config_class=Config):
         return "-"
 
     @app.template_filter("date_format")
-    def format_date(value):
-        """Formats datetime/date objects to MM/DD/YYYY. Handles proper date types."""
+    def format_date(value, show_time=False):
+        """Formats datetime/date objects to MM/DD/YYYY, optionally with time."""
         if not value:
             return "-"
 
         try:
-            # Case 1: Already a datetime or date object (PRIMARY CASE NOW)
+            # Case 1: datetime
             if isinstance(value, datetime):
-                return value.strftime("%m/%d/%Y %H:%M:%S")
+                fmt = "%m/%d/%Y %H:%M:%S" if show_time else "%m/%d/%Y"
+                return value.strftime(fmt)
+
+            # Case 2: date
             if isinstance(value, date):
                 return value.strftime("%m/%d/%Y")
 
-            # Case 2: Legacy string handling (for backward compatibility)
-            # String already in MM/DD/YY HH:MM:SS format
+            # Case 3: legacy strings
             try:
                 dt_object = datetime.strptime(str(value), "%m/%d/%y %H:%M:%S")
                 return dt_object.strftime("%m/%d/%Y")
             except ValueError:
                 pass
 
-            # Case 3: Try ISO string
             dt_object = datetime.fromisoformat(str(value))
             return dt_object.strftime("%m/%d/%Y")
 
-        except Exception as e:
-            # Fallback: return as-is
+        except Exception:
             return str(value) if value else "-"
 
     # Import and register blueprints

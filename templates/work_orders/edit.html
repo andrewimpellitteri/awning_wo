@@ -128,7 +128,7 @@
                                                         <i class="fas fa-calendar-check text-success"></i>
                                                     </span>
                                                     <input type="date" class="form-control" id="DateCompleted" name="DateCompleted"
-                                                           value="{{ work_order.DateCompleted or '' }}">
+                                                           value="{{ work_order.DateCompleted.strftime('%Y-%m-%d') or '' }}">
                                                 </div>
                                             </div>
                                         </div>

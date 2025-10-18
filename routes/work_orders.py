@@ -94,7 +94,7 @@ def _update_work_order_fields(work_order, form_data):
 
     # Parse DateCompleted as datetime
     date_completed_str = form_data.get("DateCompleted")
-    if date_completed_str:
+    if date_completed_str not in (None, "", "null"):
         try:
             work_order.DateCompleted = datetime.strptime(date_completed_str, "%Y-%m-%d")
         except (ValueError, TypeError):
@@ -125,16 +125,24 @@ def _handle_file_uploads(files_list, work_order_no):
 
         # Use defer_s3_upload=True to prevent orphaned S3 files
         wo_file = save_work_order_file(
-            work_order_no, file, to_s3=True, generate_thumbnails=True, defer_s3_upload=True
+            work_order_no,
+            file,
+            to_s3=True,
+            generate_thumbnails=True,
+            defer_s3_upload=True,
         )
         if not wo_file:
             raise Exception(f"Failed to process file: {file.filename}")
 
         uploaded_files.append(wo_file)
-        print(f"Prepared file {i + 1}/{len(files_list)}: {wo_file.filename} (deferred upload)")
+        print(
+            f"Prepared file {i + 1}/{len(files_list)}: {wo_file.filename} (deferred upload)"
+        )
 
         if wo_file.thumbnail_path:
-            print(f"  - Thumbnail prepared for deferred upload: {wo_file.thumbnail_path}")
+            print(
+                f"  - Thumbnail prepared for deferred upload: {wo_file.thumbnail_path}"
+            )
 
     return uploaded_files
 
@@ -164,7 +172,9 @@ def _handle_see_repair_backlink(work_order_no, new_repair_no, old_repair_no=None
             ).first()
             if new_repair:
                 new_repair.SEECLEAN = work_order_no
-                flash_message = f"Auto-linked Repair Order {new_repair_no} to this Work Order"
+                flash_message = (
+                    f"Auto-linked Repair Order {new_repair_no} to this Work Order"
+                )
 
     return flash_message
 
@@ -574,7 +584,9 @@ def create_work_order(prefill_cust_id=None):
                 print("--- Form Data Received ---")
                 print(f"Request Form Keys: {request.form.keys()}")
                 print(f"Selected Items: {request.form.getlist('selected_items[]')}")
-                print(f"New Item Descriptions: {request.form.getlist('new_item_description[]')}")
+                print(
+                    f"New Item Descriptions: {request.form.getlist('new_item_description[]')}"
+                )
 
                 # Extract work order fields and create work order
                 wo_data = extract_work_order_fields(request.form)
@@ -628,21 +640,27 @@ def create_work_order(prefill_cust_id=None):
                     f"Work Order {next_wo_no} created successfully with {len(uploaded_files)} files!",
                     "success",
                 )
-                return redirect(url_for("customers.customer_detail", customer_id=work_order.CustID))
+                return redirect(
+                    url_for("customers.customer_detail", customer_id=work_order.CustID)
+                )
 
             except IntegrityError as ie:
                 db.session.rollback()
                 # Clean up deferred file data on rollback
-                if 'uploaded_files' in locals():
+                if "uploaded_files" in locals():
                     cleanup_deferred_files(uploaded_files)
                 retry_count += 1
 
-                error_msg = str(ie.orig).lower() if hasattr(ie, "orig") else str(ie).lower()
+                error_msg = (
+                    str(ie.orig).lower() if hasattr(ie, "orig") else str(ie).lower()
+                )
                 is_duplicate = "duplicate" in error_msg or "unique" in error_msg
 
                 if is_duplicate and retry_count < max_retries:
                     delay = base_delay * (2**retry_count) + (random.random() * 0.05)
-                    print(f"Duplicate work order number detected. Retry {retry_count}/{max_retries} after {delay:.3f}s")
+                    print(
+                        f"Duplicate work order number detected. Retry {retry_count}/{max_retries} after {delay:.3f}s"
+                    )
                     time.sleep(delay)
                     continue
                 else:
@@ -658,7 +676,7 @@ def create_work_order(prefill_cust_id=None):
             except Exception as e:
                 db.session.rollback()
                 # Clean up deferred file data on rollback
-                if 'uploaded_files' in locals():
+                if "uploaded_files" in locals():
                     cleanup_deferred_files(uploaded_files)
                 print(f"Error creating work order: {str(e)}")
                 flash(f"Error creating work order: {str(e)}", "error")
@@ -711,7 +729,9 @@ def edit_work_order(work_order_no):
     if request.method == "POST":
         try:
             old_cust_id = work_order.CustID
-            old_see_repair = work_order.SeeRepair.strip() if work_order.SeeRepair else None
+            old_see_repair = (
+                work_order.SeeRepair.strip() if work_order.SeeRepair else None
+            )
 
             # Update work order fields
             _update_work_order_fields(work_order, request.form)
@@ -733,7 +753,11 @@ def edit_work_order(work_order_no):
 
             # Handle new items being added to this work order
             new_items, catalog_updates = process_new_items(
-                request.form, work_order_no, work_order.CustID, WorkOrderItem, update_catalog=True
+                request.form,
+                work_order_no,
+                work_order.CustID,
+                WorkOrderItem,
+                update_catalog=True,
             )
             for item in new_items:
                 db.session.add(item)
@@ -759,6 +783,15 @@ def edit_work_order(work_order_no):
                 work_order.sync_source_name()
 
             db.session.commit()
+
+            # AFTER successful DB commit, upload files to S3
+            if uploaded_files:
+                success, uploaded, failed = commit_deferred_uploads(uploaded_files)
+                if not success:
+                    print(f"WARNING: {len(failed)} files failed to upload to S3")
+                    for file_obj, error in failed:
+                        print(f"  - {file_obj.filename}: {error}")
+
             flash(
                 f"Work Order {work_order_no} updated successfully"
                 + (f" with {len(uploaded_files)} files!" if uploaded_files else "!"),
@@ -766,7 +799,9 @@ def edit_work_order(work_order_no):
             )
 
             # Redirect to customer page instead of work order page
-            return redirect(url_for("customers.customer_detail", customer_id=work_order.CustID))
+            return redirect(
+                url_for("customers.customer_detail", customer_id=work_order.CustID)
+            )
 
         except Exception as e:
             db.session.rollback()
@@ -825,14 +860,20 @@ def cleaning_room_edit_work_order(work_order_no):
                     if file and file.filename:
                         # Use deferred upload to prevent orphaned S3 files
                         wo_file = save_work_order_file(
-                            work_order_no, file, to_s3=True, generate_thumbnails=True, defer_s3_upload=True
+                            work_order_no,
+                            file,
+                            to_s3=True,
+                            generate_thumbnails=True,
+                            defer_s3_upload=True,
                         )
                         if not wo_file:
                             raise Exception(f"Failed to process file: {file.filename}")
 
                         uploaded_files.append(wo_file)
                         db.session.add(wo_file)  # Add to session but don't commit yet
-                        print(f"Prepared file {i + 1}/{len(files)}: {wo_file.filename} (deferred)")
+                        print(
+                            f"Prepared file {i + 1}/{len(files)}: {wo_file.filename} (deferred)"
+                        )
 
                         # Log thumbnail info
                         if wo_file.thumbnail_path:
@@ -860,7 +901,7 @@ def cleaning_room_edit_work_order(work_order_no):
         except Exception as e:
             db.session.rollback()
             # Clean up deferred file data on rollback
-            if 'uploaded_files' in locals():
+            if "uploaded_files" in locals():
                 cleanup_deferred_files(uploaded_files)
             flash(f"Error updating work order: {str(e)}", "error")
 

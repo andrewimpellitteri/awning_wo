@@ -536,7 +536,7 @@
                           <div class="detail-label">Created</div>
                           <div class="detail-value">
                             <i class="fas fa-plus-circle text-success me-2"></i>
-                            <small>{{ (repair_work_order.created_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
+                            <small>{{ (repair_work_order.created_at | date_format(True)) or '<span class="text-muted">Unknown</span>' | safe }}</small>
                           </div>
                         </div>
 
@@ -544,7 +544,7 @@
                           <div class="detail-label">Updated</div>
                           <div class="detail-value">
                             <i class="fas fa-edit text-info me-2"></i>
-                            <small>{{ (repair_work_order.updated_at | date_format) or '<span class="text-muted">Unknown</span>' | safe }}</small>
+                            <small>{{ (repair_work_order.updated_at | date_format(True)) or '<span class="text-muted">Unknown</span>' | safe }}</small>
                           </div>
                         </div>
                       </div>
