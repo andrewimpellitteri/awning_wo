@@ -129,31 +129,31 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Date In</div>
                                             <div class="detail-value">
-                                                <input type="date" class="form-control" name="DateIn" value="{{ repair_work_order.DateIn or '' }}">
+                                                <input type="date" class="form-control" name="DateIn" value="{{ repair_work_order.DateIn.strftime('%Y-%m-%d') if repair_work_order.DateIn else '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">Date Required</div>
                                             <div class="detail-value">
-                                                <input type="date" class="form-control" name="DateRequired" value="{{ repair_work_order.DateRequired or '' }}">
+                                                <input type="date" class="form-control" name="DateRequired" value="{{ repair_work_order.DateRequired.strftime('%Y-%m-%d') if repair_work_order.DateRequired else '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">Date to Sub</div>
                                             <div class="detail-value">
-                                                <input type="date" class="form-control" name="DATE_TO_SUB" value="{{ repair_work_order.DATE_TO_SUB or '' }}">
+                                                <input type="date" class="form-control" name="DATE_TO_SUB" value="{{ repair_work_order.DATE_TO_SUB.strftime('%Y-%m-%d') if repair_work_order.DATE_TO_SUB else '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">Date Ret. from Sub.</div>
                                             <div class="detail-value">
-                                                <input type="date" class="form-control" name="RETURNDATE" value="{{ repair_work_order.RETURNDATE or '' }}">
+                                                <input type="date" class="form-control" name="RETURNDATE" value="{{ repair_work_order.RETURNDATE.strftime('%Y-%m-%d') if repair_work_order.RETURNDATE else '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">Date Completed</div>
                                             <div class="detail-value">
-                                                <input type="date" class="form-control" name="DateCompleted" value="{{ repair_work_order.DateCompleted or '' }}">
+                                                <input type="date" class="form-control" name="DateCompleted" value="{{ repair_work_order.DateCompleted.strftime('%Y-%m-%d') if repair_work_order.DateCompleted else '' }}">
                                             </div>
                                         </div>
                                         <div class="detail-row">
@@ -280,19 +280,6 @@
                                                        value="{{ repair_work_order.SEECLEAN or '' }}"
                                                        placeholder="Enter work order number">
                                                 <small class="form-text text-muted">Reference to cleaning work order</small>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <h6><i class="fas fa-map-marker-alt text-secondary me-1"></i>Additional Location Info:</h6>
-
-                                        <div class="detail-row">
-                                            <div class="detail-label">Location</div>
-                                            <div class="detail-value">
-                                                <input type="text" class="form-control" name="LOCATION"
-                                                       value="{{ repair_work_order.LOCATION or '' }}"
-                                                       placeholder="Current location">
                                             </div>
                                         </div>
                                     </div>

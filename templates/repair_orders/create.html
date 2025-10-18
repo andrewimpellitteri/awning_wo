@@ -217,22 +217,18 @@
                                     
                                     <div class="col-md-6">
                                         <h6><i class="fas fa-map-marker-alt text-secondary me-1"></i>Location & Storage:</h6>
-                                        
-                                        <div class="detail-row">
-                                            <div class="detail-label">Location</div>
-                                            <div class="detail-value">
-                                                <input type="text" class="form-control" name="LOCATION"
-                                                       value="{{ form_data.get('LOCATION', '') if form_data else '' }}"
-                                                       placeholder="Current location">
-                                            </div>
-                                        </div>
 
                                         <div class="detail-row">
-                                            <div class="detail-label">Final Location</div>
+                                            <div class="detail-label">Location / Rack #</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" name="final_location"
-                                                       value="{{ form_data.get('final_location', '') if form_data else '' }}"
-                                                       placeholder="Final location">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-map-marker-alt"></i>
+                                                    </span>
+                                                    <input type="text" class="form-control" name="RackNo"
+                                                           value="{{ form_data.get('RackNo', '') if form_data else '' }}"
+                                                           placeholder="e.g., hang 4, 6D, 1 D">
+                                                </div>
                                             </div>
                                         </div>
 
@@ -253,16 +249,11 @@
                                         </div>
 
                                         <div class="detail-row">
-                                            <div class="detail-label">Location / Rack #</div>
+                                            <div class="detail-label">Final Location</div>
                                             <div class="detail-value">
-                                                <div class="input-group">
-                                                    <span class="input-group-text">
-                                                        <i class="fas fa-map-marker-alt"></i>
-                                                    </span>
-                                                    <input type="text" class="form-control" name="RackNo"
-                                                           value="{{ form_data.get('RackNo', '') if form_data else '' }}"
-                                                           placeholder="e.g., hang 4, 6D, 1 D">
-                                                </div>
+                                                <input type="text" class="form-control" name="final_location"
+                                                       value="{{ form_data.get('final_location', '') if form_data else '' }}"
+                                                       placeholder="Final location after repair">
                                             </div>
                                         </div>
                                     </div>
