@@ -207,6 +207,8 @@
                                                     <option value="SHIP" {% if repair_work_order.RETURNSTATUS == 'SHIP' %}selected{% endif %}>Ship</option>
                                                     <option value="PICKUP" {% if repair_work_order.RETURNSTATUS == 'PICKUP' %}selected{% endif %}>Pickup</option>
                                                     <option value="DELIVERY" {% if repair_work_order.RETURNSTATUS == 'DELIVERY' %}selected{% endif %}>Delivery</option>
+                                                    <option value="REHANG" {% if form_data and form_data.get('RETURNSTATUS') == 'REHANG' %}selected{% endif %}>Re-Hang</option>
+                                                    <option value="UNKNOWN" {% if form_data and form_data.get('RETURNSTATUS') == 'UNKNOWN' %}selected{% endif %}>Unknown</option>
                                                 </select>
                                                 <small class="form-text text-muted">How the item will be returned to customer</small>
                                             </div>
