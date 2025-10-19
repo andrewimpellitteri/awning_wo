@@ -174,17 +174,17 @@ document.addEventListener("DOMContentLoaded", function() {
             sorter: "string",
               formatter: cell => cell.getValue() ? `<span class="badge bg-info">${cell.getValue()}</span>` : `<span class="text-muted">—</span>` },
 
-            { 
+            {
                 title: "Actions", field: "actions", width: 150, hozAlign: "center", headerFilter: false, headerSort: false,
                 formatter: (cell) => {
                     const data = cell.getRow().getData();
                     return `
-                        <div class="btn-group btn-group-sm">
-                            <a href="${data.detail_url}" class="btn btn-outline-primary" title="View">
+                        <div class="d-flex gap-1 justify-content-center">
+                            <a href="${data.detail_url}" class="btn btn-outline-primary btn-sm" title="View">
                                 <i class="fas fa-eye"></i>
                             </a>
                             {% if current_user.role != 'user' %}
-                            <a href="${data.edit_url}" class="btn btn-outline-warning" title="Edit">
+                            <a href="${data.edit_url}" class="btn btn-outline-warning btn-sm" title="Edit">
                                 <i class="fas fa-edit"></i>
                             </a>
                             {% endif %}

@@ -550,9 +550,9 @@ ax4 = plt.subplot(2, 3, 4)
 ax4.plot(seasonal_pattern['day_of_year'], seasonal_pattern['smoothed_mean'],
          linewidth=3, color='orange', label='Seasonal Baseline')
 # Add current team bias
-current_prediction = seasonal_pattern['smoothed_mean'] + current_team_bias
+current_prediction = seasonal_pattern['smoothed_mean'] + current_team_bias_30d
 ax4.plot(seasonal_pattern['day_of_year'], current_prediction,
-         linewidth=3, color='blue', linestyle='--', label=f'Current Prediction (bias: {current_team_bias:+.1f}d)')
+         linewidth=3, color='blue', linestyle='--', label=f'Current Prediction (bias: {current_team_bias_30d:+.1f}d)')
 ax4.set_xlabel('Day of Year')
 ax4.set_ylabel('Predicted Days to Complete')
 ax4.set_title('Components 2 + 3: Seasonal + Current Team Rate')
@@ -615,9 +615,9 @@ Example Prediction (Nov 15):
     fundamental=fundamental_mean,
     seasonal_min=seasonal_pattern['smoothed_mean'].min(),
     seasonal_max=seasonal_pattern['smoothed_mean'].max(),
-    team_bias=current_team_bias,
+    team_bias=current_team_bias_30d,
     example_seasonal=seasonal_pattern.loc[seasonal_pattern['day_of_year'] == 319, 'smoothed_mean'].values[0] - fundamental_mean,
-    example_total=seasonal_pattern.loc[seasonal_pattern['day_of_year'] == 319, 'smoothed_mean'].values[0] + current_team_bias
+    example_total=seasonal_pattern.loc[seasonal_pattern['day_of_year'] == 319, 'smoothed_mean'].values[0] + current_team_bias_30d
 )
 
 ax6.text(0.1, 0.5, formula_text, transform=ax6.transAxes,
@@ -639,15 +639,15 @@ print(f"   → Amplitude: {seasonal_pattern['smoothed_mean'].max() - seasonal_pa
 print(f"   → Peak (winter): {seasonal_pattern['smoothed_mean'].max():.2f} days")
 print(f"   → Trough (summer): {seasonal_pattern['smoothed_mean'].min():.2f} days")
 
-print(f"\n3. CURRENT TEAM RATE: {current_team_bias:+.2f} days bias")
-if abs(current_team_bias) < 1:
+print(f"\n3. CURRENT TEAM RATE: {current_team_bias_30d:+.2f} days bias")
+if abs(current_team_bias_30d) < 1:
     status = "performing AT baseline"
-elif current_team_bias > 0:
-    status = f"performing {current_team_bias:.1f} days SLOWER than baseline"
+elif current_team_bias_30d > 0:
+    status = f"performing {current_team_bias_30d:.1f} days SLOWER than baseline"
 else:
-    status = f"performing {abs(current_team_bias):.1f} days FASTER than baseline"
+    status = f"performing {abs(current_team_bias_30d):.1f} days FASTER than baseline"
 print(f"   → Team is {status}")
-print(f"   → 90-day average: {recent_500['team_rate_90d'].mean():+.2f} days")
+print(f"   → 90-day average: {current_team_bias_90d:+.2f} days")
 
 print("\n" + "=" * 80)
 print("PREDICTION IMPROVEMENT")
