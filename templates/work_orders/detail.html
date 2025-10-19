@@ -41,11 +41,11 @@
                     </div>
                     
                     {% set edit_endpoint = 'work_orders.cleaning_room_edit_work_order' if current_user.role == 'user' else 'work_orders.edit_work_order' %}
-                    <a href="{{ url_for(edit_endpoint, work_order_no=work_order.WorkOrderNo) }}"
+                    <a href="{{ url_for(edit_endpoint, work_order_no=work_order.WorkOrderNo, return_url=return_url) }}"
                     class="btn btn-primary">
                         <i class="fas fa-edit me-1"></i>Edit
                     </a>
-                    <a href="{{ url_for('work_orders.list_work_orders') }}" 
+                    <a href="{{ return_url }}"
                        class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-1"></i>Back to List
                     </a>

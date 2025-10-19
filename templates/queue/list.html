@@ -128,7 +128,7 @@
                                 </div>
                                 <div class="flex-grow-1 row">
                                     <div class="col-md-2 fw-bold text-primary">
-                                        <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}">
+                                        <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo, return_url=url_for('cleaning_queue.cleaning_queue')) }}">
                                             {{ work_order.WorkOrderNo }}
                                         </a>
                                     </div>
@@ -160,12 +160,12 @@
                                         {% endif %}
                                     </div>
                                     <div class="col-md-2 d-flex gap-1">
-                                        <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}" 
+                                        <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo, return_url=url_for('cleaning_queue.cleaning_queue')) }}"
                                            class="btn btn-sm btn-outline-primary">
                                            <i class="fas fa-eye"></i>
                                         </a>
                                         {% set edit_endpoint = 'work_orders.cleaning_room_edit_work_order' if current_user.role == 'user' else 'work_orders.edit_work_order' %}
-                                        <a href="{{ url_for(edit_endpoint, work_order_no=work_order.WorkOrderNo) }}" 
+                                        <a href="{{ url_for(edit_endpoint, work_order_no=work_order.WorkOrderNo, return_url=url_for('cleaning_queue.cleaning_queue')) }}"
                                            class="btn btn-sm btn-outline-warning">
                                            <i class="fas fa-edit"></i>
                                         </a>

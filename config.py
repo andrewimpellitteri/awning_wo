@@ -16,28 +16,33 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_pre_ping": True,
-        "pool_recycle": 300,
-        "pool_size": 10,
-        "max_overflow": 20,
-        "connect_args": {"connect_timeout": 10},
-    }
 
     # Database URI logic
-    SQLALCHEMY_DATABASE_URI = (
-        os.environ.get("DATABASE_URL")
-        or (
-            os.environ.get("RDS_HOSTNAME")
-            and f"postgresql://{os.environ.get('RDS_USERNAME')}:{os.environ.get('RDS_PASSWORD')}@"
-            f"{os.environ.get('RDS_HOSTNAME')}:{os.environ.get('RDS_PORT', 5432)}/"
-            f"{os.environ.get('RDS_DB_NAME')}"
+    # Use SQLite in-memory database if TESTING environment variable is set
+    if os.environ.get("TESTING", "").lower() in ("true", "1", "yes"):
+        SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+        SQLALCHEMY_ENGINE_OPTIONS = {}  # SQLite doesn't need connection pooling
+    else:
+        SQLALCHEMY_DATABASE_URI = (
+            os.environ.get("DATABASE_URL")
+            or (
+                os.environ.get("RDS_HOSTNAME")
+                and f"postgresql://{os.environ.get('RDS_USERNAME')}:{os.environ.get('RDS_PASSWORD')}@"
+                f"{os.environ.get('RDS_HOSTNAME')}:{os.environ.get('RDS_PORT', 5432)}/"
+                f"{os.environ.get('RDS_DB_NAME')}"
+            )
+            or f"postgresql://{os.environ.get('POSTGRES_USER', 'postgres')}:"
+            f"{os.environ.get('POSTGRES_PASSWORD', 'password')}@"
+            f"{os.environ.get('POSTGRES_HOST', 'localhost')}:{os.environ.get('POSTGRES_PORT', '5432')}/"
+            f"{os.environ.get('POSTGRES_DB', 'clean_repair')}"
         )
-        or f"postgresql://{os.environ.get('POSTGRES_USER', 'postgres')}:"
-        f"{os.environ.get('POSTGRES_PASSWORD', 'password')}@"
-        f"{os.environ.get('POSTGRES_HOST', 'localhost')}:{os.environ.get('POSTGRES_PORT', '5432')}/"
-        f"{os.environ.get('POSTGRES_DB', 'clean_repair')}"
-    )
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_pre_ping": True,
+            "pool_recycle": 300,
+            "pool_size": 10,
+            "max_overflow": 20,
+            "connect_args": {"connect_timeout": 10},
+        }
 
     AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
     AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")

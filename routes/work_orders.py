@@ -445,10 +445,14 @@ def view_work_order(work_order_no):
         .options(db.joinedload(WorkOrder.files))  # eager load for safety
         .first_or_404()
     )
+    # Get the referrer from query param or request referrer
+    return_url = request.args.get('return_url', request.referrer or url_for('work_orders.list_work_orders'))
+
     return render_template(
         "work_orders/detail.html",
         work_order=work_order,
         files=work_order.files,  # pass files explicitly
+        return_url=return_url,
     )
 
 
@@ -726,6 +730,9 @@ def edit_work_order(work_order_no):
     """Edit an existing work order (NO INVENTORY ADJUSTMENTS EVER)"""
     work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
 
+    # Get the return URL from query param or referrer
+    return_url = request.args.get('return_url', request.referrer or url_for('work_orders.list_work_orders'))
+
     if request.method == "POST":
         try:
             old_cust_id = work_order.CustID
@@ -818,6 +825,7 @@ def edit_work_order(work_order_no):
         work_order_items=work_order_items,
         customers=customers,
         sources=sources,
+        return_url=return_url,
     )
 
 
@@ -826,6 +834,9 @@ def edit_work_order(work_order_no):
 def cleaning_room_edit_work_order(work_order_no):
     """Restricted edit for cleaning room staff - can only edit Clean, Treat, and SpecialInstructions"""
     work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
+
+    # Get the return URL from query param or referrer
+    return_url = request.args.get('return_url', request.referrer or url_for('work_orders.list_work_orders'))
 
     if request.method == "POST":
         try:
@@ -909,6 +920,7 @@ def cleaning_room_edit_work_order(work_order_no):
     return render_template(
         "work_orders/cleaning_room_edit.html",
         work_order=work_order,
+        return_url=return_url,
     )
 
 
@@ -1036,10 +1048,10 @@ def api_work_orders():
             "Source": wo.source_name,  # Use denormalized column for performance
             "is_rush": bool(wo.RushOrder or wo.FirmRush),  # Add rush flag
             "detail_url": url_for(
-                "work_orders.view_work_order", work_order_no=wo.WorkOrderNo
+                "work_orders.view_work_order", work_order_no=wo.WorkOrderNo, return_url=url_for('work_orders.list_work_orders', _external=False)
             ),
             "edit_url": url_for(
-                "work_orders.edit_work_order", work_order_no=wo.WorkOrderNo
+                "work_orders.edit_work_order", work_order_no=wo.WorkOrderNo, return_url=url_for('work_orders.list_work_orders', _external=False)
             ),
             "delete_url": url_for(
                 "work_orders.delete_work_order", work_order_no=wo.WorkOrderNo

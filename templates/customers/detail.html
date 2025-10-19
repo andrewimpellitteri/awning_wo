@@ -351,7 +351,7 @@
                     <li class="list-group-item d-flex justify-content-between align-items-center mb-2 rounded shadow-sm">
                         <div class="d-flex align-items-center flex-grow-1">
                             <div style="min-width: 120px;">
-                                <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo) }}" class="badge bg-primary me-2">
+                                <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo, return_url=request.url) }}" class="badge bg-primary me-2">
                                     <i class="fas fa-hashtag me-1"></i>{{ wo.WorkOrderNo }}
                                 </a>
                             </div>
@@ -368,13 +368,13 @@
                             </div>
                         </div>
                         <div class="btn-group" role="group">
-                            <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo) }}"
+                            <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo, return_url=request.url) }}"
                                class="btn btn-sm btn-outline-primary"
                                title="View Details">
                                 <i class="fas fa-eye"></i> View
                             </a>
                             {% if current_user.role != 'user' %}
-                            <a href="{{ url_for('work_orders.edit_work_order', work_order_no=wo.WorkOrderNo) }}"
+                            <a href="{{ url_for('work_orders.edit_work_order', work_order_no=wo.WorkOrderNo, return_url=request.url) }}"
                                class="btn btn-sm btn-outline-warning"
                                title="Edit Work Order">
                                 <i class="fas fa-edit"></i> Edit

@@ -169,7 +169,7 @@
                                             <tr class="py-2">
                                                 <td class="py-2">
                                                     
-                                                    <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo) }}" class="wo-number" onclick="viewWorkOrder('{{ wo.WorkOrderNo }}')">
+                                                    <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo, return_url=request.url) }}" class="wo-number" onclick="viewWorkOrder('{{ wo.WorkOrderNo }}')">
                                                         {{ wo.WorkOrderNo }}
                                                     </a>
                                                     {% if wo.is_sail_order %}

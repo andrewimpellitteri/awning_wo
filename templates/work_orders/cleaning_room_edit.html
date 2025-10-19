@@ -63,14 +63,14 @@
 
     <!-- Buttons -->
     <div class="d-flex flex-column flex-sm-row gap-2">
-        <button type="submit" class="btn btn-primary fw-semibold shadow-sm" style="transition: transform 0.2s;" 
-                onmouseover="this.style.transform='translateY(-2px)'" 
+        <button type="submit" class="btn btn-primary fw-semibold shadow-sm" style="transition: transform 0.2s;"
+                onmouseover="this.style.transform='translateY(-2px)'"
                 onmouseout="this.style.transform='translateY(0)'">
             Save
         </button>
-        <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}"
+        <a href="{{ return_url }}"
            class="btn btn-secondary fw-semibold shadow-sm" style="transition: transform 0.2s;"
-           onmouseover="this.style.transform='translateY(-2px)'" 
+           onmouseover="this.style.transform='translateY(-2px)'"
            onmouseout="this.style.transform='translateY(0)'">
            Cancel
         </a>

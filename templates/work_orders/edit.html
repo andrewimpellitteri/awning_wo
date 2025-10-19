@@ -31,10 +31,10 @@
                 </div>
                 
                 <div>
-                    <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}" class="btn btn-outline-secondary me-2">
+                    <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo, return_url=return_url) }}" class="btn btn-outline-secondary me-2">
                         <i class="fas fa-eye me-1"></i>View
                     </a>
-                    <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-outline-secondary">
+                    <a href="{{ return_url }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-1"></i>Back to List
                     </a>
                 </div>
@@ -520,10 +520,10 @@
                                     <button type="submit" class="btn btn-primary btn-lg">
                                         <i class="fas fa-save me-2"></i>Update Work Order
                                     </button>
-                                    <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo) }}" class="btn btn-outline-success">
+                                    <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo, return_url=return_url) }}" class="btn btn-outline-success">
                                         <i class="fas fa-eye me-2"></i>View Work Order
                                     </a>
-                                    <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-outline-secondary">
+                                    <a href="{{ return_url }}" class="btn btn-outline-secondary">
                                         <i class="fas fa-arrow-left me-2"></i>Cancel
                                     </a>
                                 </div>

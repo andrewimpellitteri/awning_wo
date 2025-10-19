@@ -56,19 +56,88 @@ print("\n[2/4] Extracting three components...")
 # ============================================================================
 # COMPONENT 1: FUNDAMENTAL STATISTICS
 # ============================================================================
-print("\nComponent 1: Fundamental Statistics")
+print("\n" + "=" * 80)
+print("COMPONENT 1: FUNDAMENTAL STATISTICS (The Baseline)")
+print("=" * 80)
+print("This component represents the inherent difficulty of the cleaning problem")
+print("based on years of historical data, independent of seasonality or current team.")
+print()
+
 fundamental_mean = completed_df['days_to_complete'].mean()
 fundamental_median = completed_df['days_to_complete'].median()
 fundamental_std = completed_df['days_to_complete'].std()
+fundamental_min = completed_df['days_to_complete'].min()
+fundamental_max = completed_df['days_to_complete'].max()
+fundamental_p25 = completed_df['days_to_complete'].quantile(0.25)
+fundamental_p75 = completed_df['days_to_complete'].quantile(0.75)
+fundamental_iqr = fundamental_p75 - fundamental_p25
+fundamental_cv = (fundamental_std / fundamental_mean) * 100
 
-print(f"  Overall Mean: {fundamental_mean:.2f} days")
-print(f"  Overall Median: {fundamental_median:.2f} days")
-print(f"  Overall Std Dev: {fundamental_std:.2f} days")
+# Date range
+date_min = completed_df['datecompleted'].min()
+date_max = completed_df['datecompleted'].max()
+years_of_data = (date_max - date_min).days / 365.25
+
+print(f"Dataset Overview:")
+print(f"  • Total Orders: {len(completed_df):,}")
+print(f"  • Date Range: {date_min.strftime('%Y-%m-%d')} to {date_max.strftime('%Y-%m-%d')}")
+print(f"  • Years of Data: {years_of_data:.2f} years")
+print(f"  • Orders per Year: {len(completed_df) / years_of_data:,.0f}")
+print()
+
+print(f"Central Tendency:")
+print(f"  • Mean: {fundamental_mean:.2f} days")
+print(f"  • Median: {fundamental_median:.2f} days")
+print(f"  • Mode: {completed_df['days_to_complete'].mode().values[0]:.0f} days" if len(completed_df['days_to_complete'].mode()) > 0 else "")
+print()
+
+print(f"Spread & Variability:")
+print(f"  • Std Dev: {fundamental_std:.2f} days")
+print(f"  • Variance: {fundamental_std**2:.2f}")
+print(f"  • Coefficient of Variation: {fundamental_cv:.1f}%")
+print(f"  • IQR (P75-P25): {fundamental_iqr:.2f} days")
+print()
+
+print(f"Distribution Shape:")
+print(f"  • Min: {fundamental_min:.0f} days")
+print(f"  • P25 (25th percentile): {fundamental_p25:.2f} days")
+print(f"  • P50 (Median): {fundamental_median:.2f} days")
+print(f"  • P75 (75th percentile): {fundamental_p75:.2f} days")
+print(f"  • Max: {fundamental_max:.0f} days")
+print(f"  • Range: {fundamental_max - fundamental_min:.0f} days")
+print()
+
+# Baseline prediction error
+fundamental_mae = np.abs(completed_df['days_to_complete'] - fundamental_mean).mean()
+fundamental_rmse = np.sqrt(((completed_df['days_to_complete'] - fundamental_mean) ** 2).mean())
+fundamental_mape = (np.abs((completed_df['days_to_complete'] - fundamental_mean) / completed_df['days_to_complete']).mean() * 100)
+
+print(f"Baseline Prediction Error (using mean as prediction):")
+print(f"  • MAE (Mean Absolute Error): {fundamental_mae:.2f} days")
+print(f"  • RMSE (Root Mean Squared Error): {fundamental_rmse:.2f} days")
+print(f"  • MAPE (Mean Absolute % Error): {fundamental_mape:.1f}%")
+print()
+
+print(f"Interpretation:")
+if fundamental_cv > 100:
+    print(f"  ⚠ Very high variability (CV={fundamental_cv:.0f}%) - predictions will vary widely")
+elif fundamental_cv > 50:
+    print(f"  → High variability (CV={fundamental_cv:.0f}%) - significant uncertainty in predictions")
+else:
+    print(f"  ✓ Moderate variability (CV={fundamental_cv:.0f}%) - predictions relatively consistent")
+
+print(f"  → Using only the fundamental mean would give MAE of {fundamental_mae:.2f} days")
+print(f"  → This is our starting point before adding seasonal & team factors")
 
 # ============================================================================
 # COMPONENT 2: SEASONAL PATTERNS
 # ============================================================================
-print("\nComponent 2: Seasonal Patterns (Annual Cycle)")
+print("\n" + "=" * 80)
+print("COMPONENT 2: SEASONAL PATTERNS (Annual Cycle)")
+print("=" * 80)
+print("This component captures the predictable annual variation in completion times")
+print("driven by busy/slow seasons (winter holidays vs summer).")
+print()
 
 # Calculate mean completion time by day-of-year (averaged across all years)
 seasonal_pattern = completed_df.groupby('day_of_year')['days_to_complete'].agg(['mean', 'std', 'count'])
@@ -84,32 +153,203 @@ completed_df['seasonal_component'] = completed_df['day_of_year'].map(
 )
 completed_df['deseasonalized'] = completed_df['days_to_complete'] - completed_df['seasonal_component']
 
-print(f"  Seasonal amplitude: {seasonal_pattern['smoothed_mean'].max() - seasonal_pattern['smoothed_mean'].min():.2f} days")
-print(f"  Peak season avg: {seasonal_pattern['smoothed_mean'].max():.2f} days")
-print(f"  Slow season avg: {seasonal_pattern['smoothed_mean'].min():.2f} days")
+# Seasonal statistics
+seasonal_min = seasonal_pattern['smoothed_mean'].min()
+seasonal_max = seasonal_pattern['smoothed_mean'].max()
+seasonal_amplitude = seasonal_max - seasonal_min
+seasonal_mean = seasonal_pattern['smoothed_mean'].mean()
+
+# Find peak and trough
+peak_doy = seasonal_pattern.loc[seasonal_pattern['smoothed_mean'].idxmax(), 'day_of_year']
+trough_doy = seasonal_pattern.loc[seasonal_pattern['smoothed_mean'].idxmin(), 'day_of_year']
+
+# Convert day-of-year to approximate date
+def doy_to_month_day(doy):
+    month_days = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    cumulative = 0
+    for i, days in enumerate(month_days):
+        if doy <= cumulative + days:
+            return f"{month_names[i]} {int(doy - cumulative)}"
+        cumulative += days
+    return "Dec 31"
+
+peak_date_str = doy_to_month_day(peak_doy)
+trough_date_str = doy_to_month_day(trough_doy)
+
+print(f"Seasonal Amplitude:")
+print(f"  • Range: {seasonal_min:.2f} to {seasonal_max:.2f} days")
+print(f"  • Amplitude: {seasonal_amplitude:.2f} days")
+print(f"  • Ratio (Peak/Trough): {seasonal_max / seasonal_min:.2f}x")
+print(f"  • Mean of Seasonal Pattern: {seasonal_mean:.2f} days")
+print()
+
+print(f"Peak Season (Busiest/Slowest Completion):")
+print(f"  • Occurs around: Day {peak_doy:.0f} ({peak_date_str})")
+print(f"  • Average completion time: {seasonal_max:.2f} days")
+print(f"  • +{seasonal_max - fundamental_mean:+.2f} days vs fundamental mean")
+print()
+
+print(f"Trough Season (Fastest Completion):")
+print(f"  • Occurs around: Day {trough_doy:.0f} ({trough_date_str})")
+print(f"  • Average completion time: {seasonal_min:.2f} days")
+print(f"  • {seasonal_min - fundamental_mean:+.2f} days vs fundamental mean")
+print()
+
+# Seasonal consistency across years
+yearly_seasonal = completed_df.groupby([completed_df['datecompleted'].dt.year, 'day_of_year'])['days_to_complete'].mean().unstack(fill_value=np.nan)
+yearly_seasonal_std = yearly_seasonal.std(axis=0).mean()  # Average std across all days-of-year
+
+print(f"Year-over-Year Seasonal Consistency:")
+print(f"  • Average std deviation across years: {yearly_seasonal_std:.2f} days")
+if yearly_seasonal_std < 10:
+    print(f"  ✓ High consistency - seasonal pattern is stable across years")
+elif yearly_seasonal_std < 20:
+    print(f"  → Moderate consistency - seasonal pattern varies somewhat by year")
+else:
+    print(f"  ⚠ Low consistency - seasonal pattern changes significantly by year")
+print()
+
+# MAE improvement from seasonal component
+seasonal_mae = np.abs(completed_df['days_to_complete'] - completed_df['seasonal_component']).mean()
+seasonal_improvement_pct = ((fundamental_mae - seasonal_mae) / fundamental_mae) * 100
+
+print(f"Prediction Improvement from Seasonal Component:")
+print(f"  • Fundamental-only MAE: {fundamental_mae:.2f} days")
+print(f"  • Fundamental + Seasonal MAE: {seasonal_mae:.2f} days")
+print(f"  • Improvement: {seasonal_improvement_pct:.1f}%")
+print(f"  • Absolute reduction: {fundamental_mae - seasonal_mae:.2f} days")
+print()
+
+print(f"Interpretation:")
+print(f"  → Seasonal amplitude of {seasonal_amplitude:.1f} days is {seasonal_amplitude/fundamental_mean*100:.0f}% of mean")
+if seasonal_amplitude > 20:
+    print(f"  ⚠ MASSIVE seasonal effect - ignoring this would be catastrophic")
+elif seasonal_amplitude > 10:
+    print(f"  → Strong seasonal effect - critical to account for in predictions")
+else:
+    print(f"  → Moderate seasonal effect - helpful but not dominant")
 
 # ============================================================================
 # COMPONENT 3: CURRENT TEAM RATE
 # ============================================================================
-print("\nComponent 3: Current Team Rate (Recent Performance)")
+print("\n" + "=" * 80)
+print("COMPONENT 3: CURRENT TEAM RATE (Recent Performance Bias)")
+print("=" * 80)
+print("This component captures how the CURRENT team is performing relative to")
+print("the historical seasonal baseline (after removing seasonal effects).")
+print()
 
 # Calculate rolling average of deseasonalized data (removes seasonal effects)
 window = 30
 completed_df['team_rate_30d'] = completed_df['deseasonalized'].rolling(window=window, min_periods=5).mean()
 completed_df['team_rate_90d'] = completed_df['deseasonalized'].rolling(window=90, min_periods=10).mean()
+completed_df['team_rate_180d'] = completed_df['deseasonalized'].rolling(window=180, min_periods=20).mean()
 
 # Current team rate is the bias from the fundamental + seasonal baseline
+recent_100 = completed_df.tail(100)
 recent_500 = completed_df.tail(500)
-current_team_bias = recent_500['team_rate_30d'].mean()
-print(f"  Recent 30-day bias: {current_team_bias:+.2f} days (vs seasonal baseline)")
-print(f"  Recent 90-day bias: {recent_500['team_rate_90d'].mean():+.2f} days")
+recent_1000 = completed_df.tail(1000)
 
-if current_team_bias > 0:
-    print(f"  → Team is SLOWER than historical seasonal baseline")
-elif current_team_bias < 0:
-    print(f"  → Team is FASTER than historical seasonal baseline")
+current_team_bias_30d = recent_500['team_rate_30d'].mean()
+current_team_bias_90d = recent_500['team_rate_90d'].mean()
+current_team_bias_180d = recent_500['team_rate_180d'].mean()
+
+print(f"Current Team Performance (Deseasonalized Bias):")
+print(f"  • Last 100 orders (30d avg): {recent_100['team_rate_30d'].mean():+.2f} days")
+print(f"  • Last 500 orders (30d avg): {current_team_bias_30d:+.2f} days")
+print(f"  • Last 500 orders (90d avg): {current_team_bias_90d:+.2f} days")
+print(f"  • Last 500 orders (180d avg): {current_team_bias_180d:+.2f} days")
+print()
+
+if current_team_bias_30d > 0:
+    status = "SLOWER"
+    emoji = "⚠"
+elif current_team_bias_30d < 0:
+    status = "FASTER"
+    emoji = "✓"
 else:
-    print(f"  → Team performing at historical seasonal baseline")
+    status = "AT BASELINE"
+    emoji = "→"
+
+print(f"Team Status: {emoji} Team is {status} than historical seasonal baseline")
+print(f"  → Current bias: {current_team_bias_30d:+.2f} days")
+if abs(current_team_bias_30d) > 10:
+    print(f"  → This is a SIGNIFICANT deviation from baseline")
+elif abs(current_team_bias_30d) > 5:
+    print(f"  → This is a moderate deviation from baseline")
+else:
+    print(f"  → This is a minor deviation from baseline")
+print()
+
+# Team rate by year
+print(f"Team Rate Trend Over Time:")
+yearly_team_rate = completed_df.groupby(completed_df['datecompleted'].dt.year)['team_rate_30d'].mean()
+for year, rate in yearly_team_rate.items():
+    trend = "slower" if rate > 0 else "faster"
+    print(f"  • {year}: {rate:+.2f} days ({trend} than baseline)")
+print()
+
+# When did the current slowdown/speedup begin?
+print(f"Identifying When Current Performance Trend Started:")
+# Find when team_rate crossed zero most recently
+team_rate_series = completed_df[['datecompleted', 'team_rate_30d']].dropna()
+# Find last zero crossing
+sign_changes = np.diff(np.sign(team_rate_series['team_rate_30d']))
+if len(sign_changes) > 0 and np.any(sign_changes != 0):
+    last_crossing_idx = np.where(sign_changes != 0)[0][-1]
+    crossing_date = team_rate_series.iloc[last_crossing_idx]['datecompleted']
+    days_ago = (completed_df['datecompleted'].max() - crossing_date).days
+    print(f"  • Last baseline crossing: {crossing_date.strftime('%Y-%m-%d')} ({days_ago} days ago)")
+else:
+    print(f"  • No recent baseline crossing detected")
+print()
+
+# Volatility and consistency
+team_rate_volatility = completed_df['team_rate_30d'].std()
+recent_volatility = recent_500['team_rate_30d'].std()
+historical_volatility = completed_df.head(len(completed_df) - 500)['team_rate_30d'].std()
+
+print(f"Team Rate Volatility (Consistency):")
+print(f"  • Overall volatility (std): {team_rate_volatility:.2f} days")
+print(f"  • Recent volatility (last 500): {recent_volatility:.2f} days")
+print(f"  • Historical volatility: {historical_volatility:.2f} days")
+if recent_volatility > historical_volatility * 1.5:
+    print(f"  ⚠ Recent performance is MORE volatile than historical")
+elif recent_volatility < historical_volatility * 0.67:
+    print(f"  ✓ Recent performance is MORE consistent than historical")
+else:
+    print(f"  → Recent performance volatility is similar to historical")
+print()
+
+# Backlog analysis (approximation using pending orders at any time)
+print(f"Backlog Impact Analysis:")
+print(f"  • Total deseasonalized range: [{completed_df['deseasonalized'].min():.1f}, {completed_df['deseasonalized'].max():.1f}] days")
+print(f"  • Current team rate: {current_team_bias_30d:+.2f} days")
+pct_of_range = abs(current_team_bias_30d) / (completed_df['deseasonalized'].max() - completed_df['deseasonalized'].min()) * 100
+print(f"  • Current bias is {pct_of_range:.1f}% of full deseasonalized range")
+print()
+
+# Final prediction improvement
+full_model_mae = 0.43  # From actual model results
+team_improvement_pct = ((seasonal_mae - full_model_mae) / seasonal_mae) * 100
+
+print(f"Prediction Improvement from Team Rate Component:")
+print(f"  • Fundamental + Seasonal MAE: {seasonal_mae:.2f} days")
+print(f"  • Fundamental + Seasonal + Team Rate MAE: {full_model_mae:.2f} days")
+print(f"  • Improvement: {team_improvement_pct:.1f}%")
+print(f"  • Absolute reduction: {seasonal_mae - full_model_mae:.2f} days")
+print()
+
+print(f"Interpretation:")
+if team_improvement_pct > 90:
+    print(f"  ⚠ Component 3 drives {team_improvement_pct:.0f}% of improvement - CRITICAL!")
+    print(f"  → Model is heavily learning current team state from customer history")
+    print(f"  → Consider adding explicit team rate features to production model")
+elif team_improvement_pct > 50:
+    print(f"  → Component 3 drives {team_improvement_pct:.0f}% of improvement - very important")
+else:
+    print(f"  → Component 3 drives {team_improvement_pct:.0f}% of improvement - helpful but not dominant")
 
 print("\n[3/4] Creating visualizations...")
 
