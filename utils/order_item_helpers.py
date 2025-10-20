@@ -49,6 +49,40 @@ def safe_int_conversion(value):
         return 1
 
 
+def safe_price_conversion(value):
+    """
+    Safely convert a value to float/Decimal for price fields, handling various input types.
+
+    Args:
+        value: Value to convert (string, int, float, None, etc.)
+
+    Returns:
+        float or None: Converted value, or None if empty/invalid
+
+    Example:
+        price = safe_price_conversion(form.get("price"))
+    """
+    if value is None or value == "":
+        return None  # Return None for empty values
+
+    try:
+        # Handle string inputs
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                return None
+
+        # Convert to float
+        float_val = float(value)
+
+        # Ensure non-negative value
+        return max(0.0, float_val)
+
+    except (ValueError, TypeError):
+        print(f"Warning: Could not convert '{value}' to price, defaulting to None")
+        return None
+
+
 def process_selected_inventory_items(form, order_no, cust_id, item_class):
     """
     Process items selected from customer inventory.
@@ -103,7 +137,8 @@ def process_selected_inventory_items(form, order_no, cust_id, item_class):
             Condition=inventory_item.Condition,
             Color=inventory_item.Color,
             SizeWgt=inventory_item.SizeWgt,
-            Price=inventory_item.Price,
+            Price=safe_price_conversion(inventory_item.Price),
+            InventoryKey=inv_key,  # Track which inventory item this came from
         )
         items.append(item)
 
@@ -165,7 +200,8 @@ def process_new_items(form, order_no, cust_id, item_class, update_catalog=True):
         condition = conditions[i] if i < len(conditions) else ""
         color = colors[i] if i < len(colors) else ""
         size = sizes[i] if i < len(sizes) else ""
-        price = prices[i] if i < len(prices) else ""
+        price_raw = prices[i] if i < len(prices) else ""
+        price = safe_price_conversion(price_raw)
 
         # Create order item
         item = item_class(
@@ -190,7 +226,7 @@ def process_new_items(form, order_no, cust_id, item_class, update_catalog=True):
                 condition,
                 color,
                 size,
-                price,
+                price_raw,  # Pass raw price string, function will convert it
                 qty,
             )
             if catalog_item:
@@ -252,6 +288,7 @@ def add_or_update_catalog(cust_id, description, material, condition, color, size
         return existing_inventory
     else:
         # Create new catalog item
+        from datetime import datetime
         inventory_key = f"INV_{uuid.uuid4().hex[:8].upper()}"
         new_inventory_item = Inventory(
             InventoryKey=inventory_key,
@@ -261,8 +298,9 @@ def add_or_update_catalog(cust_id, description, material, condition, color, size
             Condition=condition,
             Color=color,
             SizeWgt=size,
-            Price=price,
+            Price=safe_price_conversion(price),
             Qty=qty,
+            created_at=datetime.utcnow(),
         )
         flash(
             f"New item '{description}' added to catalog with quantity {qty}",

@@ -42,6 +42,7 @@ from utils.order_item_helpers import (
     process_selected_inventory_items,
     process_new_items,
     safe_int_conversion,
+    safe_price_conversion,
 )
 from io import BytesIO
 import fitz  # PyMuPDF
@@ -200,11 +201,10 @@ def _update_existing_work_order_items(work_order_no, form_data):
                 updated_quantities[item_id] = safe_int_conversion(value)
         elif key.startswith("existing_item_price_"):
             item_id = key.replace("existing_item_price_", "")
-            if value:
-                try:
-                    updated_prices[item_id] = float(value)
-                except (ValueError, TypeError):
-                    updated_prices[item_id] = 0.0
+            # Use safe_price_conversion to handle empty strings and invalid values
+            price = safe_price_conversion(value)
+            if price is not None:
+                updated_prices[item_id] = price
 
     # Loop through items currently in the database for this work order
     for item in existing_items:
@@ -1121,7 +1121,7 @@ def delete_work_order(work_order_no):
         db.session.rollback()
         flash(f"Error deleting work order: {str(e)}", "danger")
 
-    return redirect(url_for("work_orders.list_work_orders"))
+    return redirect(url_for("customers.customer_detail", customer_id=work_order.CustID))
 
 
 @work_orders_bp.route("/<work_order_no>/pdf/download")

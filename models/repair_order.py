@@ -1,6 +1,7 @@
 from datetime import datetime, date
 from extensions import db
 from sqlalchemy.sql import func
+from sqlalchemy.orm import validates
 
 
 class RepairWorkOrder(db.Model):
@@ -26,7 +27,9 @@ class RepairWorkOrder(db.Model):
     )  # Uppercase with spaces
     DateRequired = db.Column("daterequired", db.Date, nullable=True)
     DateCompleted = db.Column("datecompleted", db.DateTime, nullable=True)
-    RETURNDATE = db.Column("returndate", db.Date, nullable=True)  # Date returned from sub
+    RETURNDATE = db.Column(
+        "returndate", db.Date, nullable=True
+    )  # Date returned from sub
     DATEOUT = db.Column("dateout", db.Date, nullable=True)  # DEPRECATED
     DateIn = db.Column("datein", db.Date, nullable=True)
 
@@ -122,6 +125,18 @@ class RepairWorkOrder(db.Model):
         if self.customer and self.customer.source_info:
             return self.customer.source_info.SSource
         return None
+
+    @validates("SEECLEAN")
+    def validate_seeclean(self, key, value):
+        if value is None:
+            return ""
+        if isinstance(value, (float, int)):
+            return str(int(value)) if float(value).is_integer() else str(value)
+        # Also handle string like "44321.0"
+        value = str(value)
+        if value.endswith(".0"):
+            value = value[:-2]
+        return value
 
     def to_dict(self):
         """Convert model instance to dictionary"""

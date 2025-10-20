@@ -9,6 +9,35 @@ let selectedItemsCount = 0;
 let newItemsCount = 0;
 
 /**
+ * Get inventory keys of items currently in the order
+ * @returns {Set} Set of inventory keys
+ */
+function getExistingItemInventoryKeys() {
+    const existingItems = document.querySelectorAll('.existing-item-card[data-inventory-key], input[type="checkbox"][name="existing_item_id[]"][data-inventory-key]');
+    const keys = new Set();
+
+    existingItems.forEach(item => {
+        // Check if the item is checked (not removed)
+        let isChecked = true;
+        if (item.tagName === 'INPUT') {
+            isChecked = item.checked;
+        } else {
+            const checkbox = item.querySelector('input[type="checkbox"][name="existing_item_id[]"]');
+            isChecked = checkbox ? checkbox.checked : true;
+        }
+
+        if (isChecked) {
+            const inventoryKey = item.getAttribute('data-inventory-key') || item.dataset.inventoryKey;
+            if (inventoryKey && inventoryKey.trim() !== '') {
+                keys.add(inventoryKey);
+            }
+        }
+    });
+
+    return keys;
+}
+
+/**
  * Format price as currency
  */
 function formatPrice(price) {
@@ -58,9 +87,15 @@ function loadCustomerInventory(custId) {
     fetch(`/work_orders/api/customer_inventory/${custId}`)
         .then(response => response.json())
         .then(data => {
-            updateInventoryCount(data.length);
+            // Get inventory keys of items currently in the order
+            const existingItemKeys = getExistingItemInventoryKeys();
 
-            if (data.length === 0) {
+            // Filter out items that are already in the order
+            const availableItems = data.filter(item => !existingItemKeys.has(item.id));
+
+            updateInventoryCount(availableItems.length);
+
+            if (availableItems.length === 0) {
                 inventoryContainer.innerHTML = `
                     <div class="inventory-empty">
                         <i class="fas fa-box-open"></i>
@@ -72,7 +107,7 @@ function loadCustomerInventory(custId) {
             }
 
             let html = '';
-            data.forEach(item => {
+            availableItems.forEach(item => {
                 html += `
                     <div class="inventory-item" onclick="toggleItem(this, '${item.id}')">
                         <div class="form-check">

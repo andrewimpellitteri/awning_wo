@@ -37,6 +37,7 @@ from utils.query_helpers import (
     apply_tabulator_sorting,
     apply_search_filter,
 )
+from utils.order_item_helpers import safe_price_conversion
 
 
 repair_work_orders_bp = Blueprint(
@@ -151,6 +152,7 @@ def _handle_new_repair_items(form_data, repair_order_no, cust_id):
 
     for i, descrip in enumerate(item_descriptions):
         if descrip and descrip.strip():
+            price_raw = item_prices[i] if i < len(item_prices) else ""
             repair_item = RepairWorkOrderItem(
                 RepairOrderNo=repair_order_no,
                 CustID=cust_id,
@@ -160,7 +162,7 @@ def _handle_new_repair_items(form_data, repair_order_no, cust_id):
                 Condition=item_conditions[i] if i < len(item_conditions) else "",
                 Color=item_colors[i] if i < len(item_colors) else "",
                 SizeWgt=item_sizes[i] if i < len(item_sizes) else "",
-                Price=item_prices[i] if i < len(item_prices) else "",
+                Price=safe_price_conversion(price_raw),
             )
             items_to_add.append(repair_item)
 
@@ -191,10 +193,12 @@ def _handle_existing_repair_items(form_data, repair_order_no, cust_id):
                 Description=descrip,
                 Material=existing_materials[i] if i < len(existing_materials) else "",
                 Qty=existing_qtys[i] if i < len(existing_qtys) else "1",
-                Condition=existing_conditions[i] if i < len(existing_conditions) else "",
+                Condition=existing_conditions[i]
+                if i < len(existing_conditions)
+                else "",
                 Color=existing_colors[i] if i < len(existing_colors) else "",
                 SizeWgt=existing_sizes[i] if i < len(existing_sizes) else "",
-                Price=price_str if price_str else None,
+                Price=safe_price_conversion(price_str),
             )
             items_to_add.append(repair_item)
 
@@ -228,7 +232,7 @@ def _handle_new_repair_items_edit(form_data, repair_order_no, cust_id):
                 Condition=new_conditions[i] if i < len(new_conditions) else "",
                 Color=new_colors[i] if i < len(new_colors) else "",
                 SizeWgt=new_sizes[i] if i < len(new_sizes) else "",
-                Price=price_str if price_str else None,
+                Price=safe_price_conversion(price_str),
             )
             items_to_add.append(repair_item)
 
@@ -261,10 +265,14 @@ def _handle_file_uploads_repair(files_list, repair_order_no):
             raise Exception(f"Failed to process file: {file.filename}")
 
         uploaded_files.append(ro_file)
-        print(f"Prepared file {i + 1}/{len(files_list)}: {ro_file.filename} (deferred upload)")
+        print(
+            f"Prepared file {i + 1}/{len(files_list)}: {ro_file.filename} (deferred upload)"
+        )
 
         if ro_file.thumbnail_path:
-            print(f"  - Thumbnail prepared for deferred upload: {ro_file.thumbnail_path}")
+            print(
+                f"  - Thumbnail prepared for deferred upload: {ro_file.thumbnail_path}"
+            )
 
     return uploaded_files
 
@@ -289,10 +297,14 @@ def _handle_seeclean_backlink(repair_order_no, new_seeclean, old_seeclean=None):
 
         # Add new backlink if provided
         if new_seeclean and new_seeclean.strip():
-            new_work_order = WorkOrder.query.filter_by(WorkOrderNo=new_seeclean.strip()).first()
+            new_work_order = WorkOrder.query.filter_by(
+                WorkOrderNo=new_seeclean.strip()
+            ).first()
             if new_work_order:
                 new_work_order.SeeRepair = repair_order_no
-                flash_message = f"Auto-linked Work Order {new_seeclean} to this Repair Order"
+                flash_message = (
+                    f"Auto-linked Work Order {new_seeclean} to this Repair Order"
+                )
 
     return flash_message
 
@@ -715,23 +727,26 @@ def create_repair_order(prefill_cust_id=None):
 
                 flash(
                     f"Repair Work Order {next_order_no} created successfully"
-                    + (f" with {len(uploaded_files)} files!" if uploaded_files else "!"),
+                    + (
+                        f" with {len(uploaded_files)} files!" if uploaded_files else "!"
+                    ),
                     "success",
                 )
                 return redirect(
                     url_for(
-                        "repair_work_orders.view_repair_work_order",
-                        repair_order_no=next_order_no,
+                        "customers.customer_detail", customer_id=repair_order.CustID
                     )
                 )
 
             except IntegrityError as ie:
                 db.session.rollback()
-                if 'uploaded_files' in locals():
+                if "uploaded_files" in locals():
                     cleanup_deferred_files(uploaded_files)
                 retry_count += 1
 
-                error_msg = str(ie.orig).lower() if hasattr(ie, "orig") else str(ie).lower()
+                error_msg = (
+                    str(ie.orig).lower() if hasattr(ie, "orig") else str(ie).lower()
+                )
                 is_duplicate = "duplicate" in error_msg or "unique" in error_msg
 
                 if is_duplicate and retry_count < max_retries:
@@ -753,7 +768,7 @@ def create_repair_order(prefill_cust_id=None):
 
             except Exception as e:
                 db.session.rollback()
-                if 'uploaded_files' in locals():
+                if "uploaded_files" in locals():
                     cleanup_deferred_files(uploaded_files)
                 flash(f"Error creating repair work order: {str(e)}", "error")
                 return render_template(
@@ -818,7 +833,9 @@ def edit_repair_order(repair_order_no):
 
         try:
             old_cust_id = repair_order.CustID
-            old_see_clean = repair_order.SEECLEAN.strip() if repair_order.SEECLEAN else None
+            old_see_clean = (
+                repair_order.SEECLEAN.strip() if repair_order.SEECLEAN else None
+            )
 
             # Update repair order fields
             _update_repair_order_fields(repair_order, request.form)
@@ -880,21 +897,30 @@ def edit_repair_order(repair_order_no):
                 "success",
             )
             return redirect(
-                url_for(
-                    "repair_work_orders.view_repair_work_order",
-                    repair_order_no=repair_order_no,
-                )
+                url_for("customers.customer_detail", customer_id=repair_order.CustID)
             )
 
         except Exception as e:
             db.session.rollback()
-            if 'uploaded_files' in locals():
+            if "uploaded_files" in locals():
                 cleanup_deferred_files(uploaded_files)
             flash(f"Error updating repair work order: {str(e)}", "error")
 
     # GET request - show form with existing data
     customers = Customer.query.order_by(Customer.CustID).all()
     sources = Source.query.order_by(Source.SSource).all()
+
+    # # Cast SEECLEAN to string if it's a float (avoid "4321.0" display bug)
+    # if isinstance(repair_order.SEECLEAN, float):
+    #     old_val = repair_order.SEECLEAN
+    #     repair_order.SEECLEAN = (
+    #         str(int(repair_order.SEECLEAN))
+    #         if repair_order.SEECLEAN.is_integer()
+    #         else str(repair_order.SEECLEAN)
+    #     )
+    #     print(
+    #         f"[DEBUG] Converted SEECLEAN from float {old_val} → '{repair_order.SEECLEAN}'"
+    #     )
 
     return render_template(
         "repair_orders/edit.html",
@@ -945,16 +971,15 @@ def delete_repair_order(repair_order_no):
                 f"Repair Work Order #{repair_order_no} has been deleted successfully",
                 "success",
             )
-        return redirect(url_for("repair_work_orders.list_repair_work_orders"))
+        return redirect(
+            url_for("customers.customer_detail", customer_id=repair_order.CustID)
+        )
 
     except Exception as e:
         db.session.rollback()
         flash(f"Error deleting repair work order: {str(e)}", "error")
         return redirect(
-            url_for(
-                "repair_work_orders.view_repair_work_order",
-                repair_order_no=repair_order_no,
-            )
+            url_for("customers.customer_detail", customer_id=repair_order.CustID)
         )
 
 

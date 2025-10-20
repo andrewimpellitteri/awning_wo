@@ -65,6 +65,7 @@ def create_inventory():
             if price == "" or price is None:
                 price = None
 
+            from datetime import datetime
             item = Inventory(
                 InventoryKey=inventory_key,
                 Description=data.get("Description"),
@@ -75,6 +76,7 @@ def create_inventory():
                 Price=price,
                 CustID=data.get("CustID"),
                 Qty=data.get("Qty", "0"),
+                created_at=datetime.utcnow(),
             )
 
             db.session.add(item)
@@ -264,6 +266,7 @@ def add_inventory_ajax():
         if price == "" or price is None:
             price = None
 
+        from datetime import datetime
         item = Inventory(
             InventoryKey=inventory_key,
             Description=data.get("Description"),
@@ -274,6 +277,7 @@ def add_inventory_ajax():
             Price=price,
             CustID=customer_id,
             Qty=data.get("Qty", "0"),
+            created_at=datetime.utcnow(),
         )
         db.session.add(item)
         db.session.commit()

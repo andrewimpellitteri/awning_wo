@@ -118,7 +118,7 @@
                                                         <i class="fas fa-calendar-alt"></i>
                                                     </span>
                                                     <input type="date" class="form-control" name="DateIn"
-                                                           value="{{ repair_work_order.DateIn.strftime('%Y-%m-%d') if repair_work_order.DateIn else '' }}">
+                                                           value="{{ repair_work_order.DateIn.strftime('%Y-%m-%d') if repair_work_order.DateIn else '' }}" autofocus>
                                                 </div>
                                             </div>
                                         </div>
@@ -262,7 +262,7 @@
                                             <div class="detail-label">See Clean (WO #)</div>
                                             <div class="detail-value">
                                                 <input type="text" class="form-control" name="SEECLEAN"
-                                                       value="{{ repair_work_order.SEECLEAN or '' }}"
+                                                       value="{{ repair_work_order.SEECLEAN|string|replace('.0','') or '' }}"
                                                        placeholder="Enter work order number">
                                                 <small class="form-text text-muted">Reference to cleaning work order</small>
                                             </div>
@@ -328,7 +328,8 @@
                             <div class="card-body">
                                 <div id="existing-items-container">
                                     {% for item in repair_work_order.items %}
-                                    <div class="existing-item-card mb-3" id="existing-item-{{ loop.index0 }}">
+                                    <div class="existing-item-card mb-3" id="existing-item-{{ loop.index0 }}" data-inventory-key="{{ item.InventoryKey or '' }}">
+                                        <input type="hidden" name="existing_item_inventory_key[]" value="{{ item.InventoryKey or '' }}">
                                         <div class="row align-items-center">
                                             <div class="col-md-3">
                                                 <label class="form-label small">Description *</label>
@@ -465,6 +466,12 @@ function removeExistingItem(itemIndex) {
         existingItemsCount--;
         document.getElementById('existing-items-count').textContent = existingItemsCount;
         updateCounts();
+
+        // Refresh customer inventory to show removed item
+        const custId = document.getElementById('CustID').value;
+        if (custId) {
+            loadCustomerInventory(custId);
+        }
     }
 }
 
