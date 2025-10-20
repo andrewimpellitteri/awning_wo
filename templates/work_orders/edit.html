@@ -434,10 +434,38 @@ let existingItemsCount = {{ work_order_items | length if work_order_items else 0
 // Toggle visual appearance of existing items when unchecked
 function toggleExistingItem(checkbox) {
     const card = checkbox.closest('.existing-item-card');
+    const isTempItem = card.getAttribute('data-temp-item') === 'true';
+    const inventoryKey = checkbox.getAttribute('data-inventory-key');
+
     if (checkbox.checked) {
+        // Show the card
+        card.style.display = '';
         card.classList.remove('unchecked');
+
+        // If it's a temp item being re-checked, keep it checked in customer history
+        if (isTempItem && inventoryKey) {
+            const historyCheckbox = document.querySelector(`input[name="selected_items[]"][value="${inventoryKey}"]`);
+            if (historyCheckbox) {
+                historyCheckbox.checked = true;
+                historyCheckbox.closest('.inventory-item')?.classList.add('selected');
+            }
+        }
     } else {
-        card.classList.add('unchecked');
+        // Hide the card completely when unchecked
+        card.style.display = 'none';
+
+        // If it's a temp item, uncheck it and show it back in customer history
+        if (isTempItem && inventoryKey) {
+            const historyCheckbox = document.querySelector(`input[name="selected_items[]"][value="${inventoryKey}"]`);
+            if (historyCheckbox) {
+                historyCheckbox.checked = false;
+                const historyItem = historyCheckbox.closest('.inventory-item');
+                if (historyItem) {
+                    historyItem.classList.remove('selected');
+                    historyItem.style.display = '';  // Show it back in history
+                }
+            }
+        }
     }
     updateExistingCount();
 
@@ -446,11 +474,40 @@ function toggleExistingItem(checkbox) {
     if (custId) {
         loadCustomerInventory(custId);
     }
+
+    // Show/hide empty state message
+    updateExistingItemsEmptyState();
+}
+
+// Show empty state message if no items are checked
+function updateExistingItemsEmptyState() {
+    const existingItemsContainer = document.getElementById('existing-items');
+    // Count both original items and temp items that are checked
+    const checkedCount = document.querySelectorAll('input[name="existing_item_id[]"]:checked, input[name="existing_item_id_temp[]"]:checked').length;
+
+    // Remove existing empty state if present
+    const existingEmptyState = existingItemsContainer.querySelector('.empty-state-message');
+    if (existingEmptyState) {
+        existingEmptyState.remove();
+    }
+
+    // Add empty state if no items are checked
+    if (checkedCount === 0) {
+        const emptyStateHtml = `
+            <div class="empty-state-message text-center py-4">
+                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No items currently in this order</p>
+                <small class="text-muted">Select items from Customer Item History below to add them</small>
+            </div>
+        `;
+        existingItemsContainer.insertAdjacentHTML('beforeend', emptyStateHtml);
+    }
 }
 
 // Update count of checked existing items
 function updateExistingCount() {
-    const checkedExisting = document.querySelectorAll('input[name="existing_item_id[]"]:checked').length;
+    // Count both original items and temp items
+    const checkedExisting = document.querySelectorAll('input[name="existing_item_id[]"]:checked, input[name="existing_item_id_temp[]"]:checked').length;
     document.getElementById('existing-items-count').textContent = checkedExisting;
 }
 
@@ -488,6 +545,7 @@ function loadOpenRepairOrders(custId) {
             datalist.innerHTML = '';
             data.forEach(order => {
                 const option = document.createElement('option');
+                // Store just the numeric value (without R prefix) - matches DB schema
                 option.value = order.RepairOrderNo;
                 datalist.appendChild(option);
             });
@@ -584,6 +642,18 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             alert('Please provide descriptions for all new items.');
             return;
+        }
+
+        // Sanitize SeeRepair field: strip "R" prefix if present (Issue #166)
+        // Database stores just the numeric repair order number (e.g., "12345" not "R12345")
+        const seeRepairInput = document.getElementById('SeeRepair');
+        if (seeRepairInput && seeRepairInput.value) {
+            let seeRepairValue = seeRepairInput.value.trim();
+            // Remove "R" or "r" prefix if present
+            if (seeRepairValue.match(/^[Rr]\d+$/)) {
+                seeRepairValue = seeRepairValue.substring(1);
+                seeRepairInput.value = seeRepairValue;
+            }
         }
 
         // Show loading state

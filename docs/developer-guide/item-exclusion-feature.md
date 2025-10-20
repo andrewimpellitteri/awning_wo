@@ -240,19 +240,40 @@ Start with Option 2 for quick implementation if migration is not feasible immedi
 ## Implementation Steps
 
 1. ✅ Document requirements (this file)
-2. ⏳ Decide on Option 1 vs Option 2
-3. ⏳ If Option 1: Create and run database migration
-4. ⏳ Update models to include InventoryKey field
-5. ⏳ Update backend to store InventoryKey when creating items
-6. ⏳ Update edit templates to output InventoryKey in hidden fields
-7. ⏳ Update JavaScript to collect and track InventoryKeys
-8. ⏳ Implement dynamic filtering in loadCustomerInventory()
-9. ⏳ Add event handlers for add/remove actions
-10. ⏳ Test thoroughly with various scenarios
+2. ✅ Decided on Option 1 (InventoryKey tracking)
+3. ✅ Created and ran database migration (20251019_2216-47b99b554807_add_inventory_key_to_order_items.py)
+4. ✅ Updated models to include InventoryKey field (WorkOrderItem, RepairWorkOrderItem)
+5. ✅ Updated backend to store InventoryKey when creating items (utils/order_item_helpers.py)
+6. ✅ Updated edit templates to output InventoryKey in hidden fields and data attributes
+7. ✅ Updated JavaScript to collect and track InventoryKeys (getExistingItemInventoryKeys())
+8. ✅ Implemented dynamic filtering in loadCustomerInventory()
+9. ✅ Added event handlers for add/remove actions (toggleItem(), toggleExistingItem(), removeExistingItem())
+10. ✅ Tested with pytest
 11. ⏳ Deploy and monitor
+
+## Implementation Summary
+
+**Completed**: The item exclusion feature is now fully implemented using Option 1 (InventoryKey tracking).
+
+**Key Changes**:
+- Database migration added `inventory_key` column to both `tblorddetcustawngs` and `tblreporddetcustawngs`
+- Backend stores InventoryKey when processing selected inventory items
+- Templates output InventoryKey as data attributes on existing item cards/checkboxes
+- JavaScript dynamically filters customer history based on:
+  - Items already in the work order (checked existing items)
+  - Items newly selected from customer history
+- Real-time refresh when items are added or removed
+
+**Files Modified**:
+- `/models/work_order.py` - Added InventoryKey field to WorkOrderItem
+- `/models/repair_order.py` - Added InventoryKey field to RepairWorkOrderItem
+- `/utils/order_item_helpers.py` - Store InventoryKey when processing items
+- `/templates/work_orders/edit.html` - Output InventoryKey in data attributes
+- `/templates/repair_orders/edit.html` - Output InventoryKey in data attributes
+- `/static/js/order-form-shared.js` - Dynamic filtering logic
 
 ## Questions/Decisions
 
-- **Decision needed**: Option 1 (InventoryKey tracking) vs Option 2 (Description+Material matching)?
-- **Decision needed**: Should manually added items (not from inventory) also get an InventoryKey generated?
-- **Question**: What happens if an item exists in the work order but was deleted from inventory?
+- ✅ **Decision**: Using Option 1 (InventoryKey tracking)
+- **Decision**: Manually added items (not from inventory) do NOT get an InventoryKey - they will have `null` or empty string
+- **Answer**: If an item exists in the work order but was deleted from inventory, the item remains in the work order (it's a snapshot) and won't appear in customer history (since it no longer exists in inventory)

@@ -13,9 +13,10 @@ let newItemsCount = 0;
  * @returns {Set} Set of inventory keys
  */
 function getExistingItemInventoryKeys() {
-    const existingItems = document.querySelectorAll('.existing-item-card[data-inventory-key], input[type="checkbox"][name="existing_item_id[]"][data-inventory-key]');
     const keys = new Set();
 
+    // 1. Get inventory keys from existing items (already in the work order)
+    const existingItems = document.querySelectorAll('.existing-item-card[data-inventory-key], input[type="checkbox"][name="existing_item_id[]"][data-inventory-key]');
     existingItems.forEach(item => {
         // Check if the item is checked (not removed)
         let isChecked = true;
@@ -31,6 +32,15 @@ function getExistingItemInventoryKeys() {
             if (inventoryKey && inventoryKey.trim() !== '') {
                 keys.add(inventoryKey);
             }
+        }
+    });
+
+    // 2. Get inventory keys from newly selected items in customer history
+    const selectedInventoryItems = document.querySelectorAll('input[type="checkbox"][name="selected_items[]"]:checked');
+    selectedInventoryItems.forEach(checkbox => {
+        const inventoryKey = checkbox.value;
+        if (inventoryKey && inventoryKey.trim() !== '') {
+            keys.add(inventoryKey);
         }
     });
 
@@ -163,15 +173,124 @@ function toggleItem(element) {
         checkbox.checked = !checkbox.checked;
     }
 
+    // Check if we're on edit page (has existing items section)
+    const existingItemsContainer = document.getElementById('existing-items');
+    const isEditPage = existingItemsContainer !== null;
+
     if (checkbox.checked) {
         element.classList.add('selected');
         selectedItemsCount++;
+
+        if (isEditPage) {
+            // EDIT PAGE: Move item to "Existing Items" section and hide from history
+            moveItemToExistingItems(element, checkbox);
+            element.style.display = 'none';
+        }
+        // CREATE PAGE: Just leave it visible and selected
     } else {
         element.classList.remove('selected');
         selectedItemsCount--;
+
+        if (isEditPage) {
+            // EDIT PAGE: Remove from "Existing Items" and show back in history
+            removeItemFromExistingItems(checkbox.value);
+            element.style.display = '';
+        }
+        // CREATE PAGE: Just leave it visible and unselected
     }
 
     updateCounts();
+}
+
+/**
+ * Move an item from Customer History to Existing Items section
+ */
+function moveItemToExistingItems(inventoryElement, checkbox) {
+    const existingItemsContainer = document.getElementById('existing-items');
+    if (!existingItemsContainer) return; // Not on edit page
+
+    // Remove empty state if present
+    const emptyState = existingItemsContainer.querySelector('.empty-state-message');
+    if (emptyState) {
+        emptyState.remove();
+    }
+
+    // Get item data from the inventory element
+    const inventoryKey = checkbox.value;
+    const label = inventoryElement.querySelector('.form-check-label');
+    const description = label.querySelector('.detail-label')?.textContent || 'Unknown Item';
+    const material = label.querySelector('.text-muted')?.textContent || '';
+    const conditionBadge = label.querySelector('.badge')?.textContent || '';
+    const color = label.querySelectorAll('.text-muted')[1]?.textContent || '';
+    const sizeElement = label.querySelectorAll('small')[2];
+    const size = sizeElement ? sizeElement.textContent : '';
+    const priceElement = label.querySelector('strong');
+    const price = priceElement ? priceElement.textContent : '$0.00';
+    const qtyInput = inventoryElement.querySelector(`input[name="item_qty_${inventoryKey}"]`);
+    const qty = qtyInput ? qtyInput.value : '1';
+
+    // Create a card for the existing items section
+    const cardHtml = `
+        <div class="existing-item-card" data-inventory-key="${inventoryKey}" data-temp-item="true" id="temp-item-${inventoryKey}">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="existing_item_id_temp[]"
+                       value="${inventoryKey}" checked
+                       onchange="toggleExistingItem(this)"
+                       data-inventory-key="${inventoryKey}">
+                <label class="form-check-label w-100">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <div class="detail-label">${description}</div>
+                            <small class="text-muted">${material}</small>
+                        </div>
+                        <div class="col-md-3">
+                            <span class="badge bg-secondary">${conditionBadge}</span>
+                            <br><small class="text-muted">${color}</small>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <small class="text-muted">Size:</small><br>
+                            <small>${size}</small><br>
+                            <strong>${price}</strong>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <small class="text-muted">Qty:</small><br>
+                            <strong>${qty}</strong>
+                        </div>
+                        <div class="col-md-1 text-center">
+                            <span class="badge bg-info">New</span>
+                        </div>
+                    </div>
+                </label>
+            </div>
+        </div>
+    `;
+
+    existingItemsContainer.insertAdjacentHTML('beforeend', cardHtml);
+
+    // Update existing items count
+    if (typeof updateExistingCount === 'function') {
+        updateExistingCount();
+    }
+}
+
+/**
+ * Remove an item from Existing Items section (temp items only)
+ */
+function removeItemFromExistingItems(inventoryKey) {
+    const tempItem = document.getElementById(`temp-item-${inventoryKey}`);
+    if (tempItem) {
+        tempItem.remove();
+
+        // Update existing items count
+        if (typeof updateExistingCount === 'function') {
+            updateExistingCount();
+        }
+
+        // Check if we need to show empty state
+        if (typeof updateExistingItemsEmptyState === 'function') {
+            updateExistingItemsEmptyState();
+        }
+    }
 }
 
 /**

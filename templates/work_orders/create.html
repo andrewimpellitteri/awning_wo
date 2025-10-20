@@ -470,6 +470,18 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // Sanitize SeeRepair field: strip "R" prefix if present (Issue #166)
+        // Database stores just the numeric repair order number (e.g., "12345" not "R12345")
+        const seeRepairInput = document.getElementById('SeeRepair');
+        if (seeRepairInput && seeRepairInput.value) {
+            let seeRepairValue = seeRepairInput.value.trim();
+            // Remove "R" or "r" prefix if present
+            if (seeRepairValue.match(/^[Rr]\d+$/)) {
+                seeRepairValue = seeRepairValue.substring(1);
+                seeRepairInput.value = seeRepairValue;
+            }
+        }
+
         // Show loading state
         const submitBtn = this.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;

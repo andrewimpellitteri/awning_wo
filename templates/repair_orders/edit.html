@@ -472,6 +472,33 @@ function removeExistingItem(itemIndex) {
         if (custId) {
             loadCustomerInventory(custId);
         }
+
+        // Show/hide empty state message
+        updateExistingItemsEmptyState();
+    }
+}
+
+// Show empty state message if no items remain
+function updateExistingItemsEmptyState() {
+    const existingItemsContainer = document.getElementById('existing-items-container');
+    const remainingItems = existingItemsContainer.querySelectorAll('.existing-item-card').length;
+
+    // Remove existing empty state if present
+    const existingEmptyState = existingItemsContainer.querySelector('.empty-state-message');
+    if (existingEmptyState) {
+        existingEmptyState.remove();
+    }
+
+    // Add empty state if no items remain
+    if (remainingItems === 0) {
+        const emptyStateHtml = `
+            <div class="empty-state-message text-center py-4">
+                <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No items currently in this order</p>
+                <small class="text-muted">Select items from Customer Item History below to add them</small>
+            </div>
+        `;
+        existingItemsContainer.insertAdjacentHTML('beforeend', emptyStateHtml);
     }
 }
 
