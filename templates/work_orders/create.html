@@ -189,6 +189,32 @@
                                                 </div>
                                             </div>
                                         </div>
+
+                                        <div class="detail-row">
+                                            <div class="detail-label">Clean Date</div>
+                                            <div class="detail-value">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-calendar"></i>
+                                                    </span>
+                                                    <input type="date" class="form-control" id="Clean" name="Clean"
+                                                           value="{{ form_data.get('Clean', '') if form_data else '' }}">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <div class="detail-label">Treat Date</div>
+                                            <div class="detail-value">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-calendar"></i>
+                                                    </span>
+                                                    <input type="date" class="form-control" id="Treat" name="Treat"
+                                                           value="{{ form_data.get('Treat', '') if form_data else '' }}">
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -209,6 +235,14 @@
                                             <div class="detail-value">
                                                 <textarea class="form-control" id="SpecialInstructions" name="SpecialInstructions" rows="4"
                                                           placeholder="Enter any special instructions...">{{ form_data.get('SpecialInstructions', '') if form_data else '' }}</textarea>
+                                            </div>
+                                        </div>
+
+                                        <div class="detail-row">
+                                            <div class="detail-label">Final Location</div>
+                                            <div class="detail-value">
+                                                <textarea class="form-control" id="final_location" name="final_location" rows="3"
+                                                          placeholder="Enter final location...">{{ form_data.get('final_location', '') if form_data else '' }}</textarea>
                                             </div>
                                         </div>
                                     </div>

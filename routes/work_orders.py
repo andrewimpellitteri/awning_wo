@@ -1000,17 +1000,24 @@ def api_work_orders():
             WorkOrder.DateCompleted.is_(None),
         )
 
+    # Make request.args mutable
+    args = request.args.copy()
+
+    # Ensure CustID filter is a string
+    if "filter_CustID" in args:
+        args["filter_CustID"] = str(args["filter_CustID"])
+
     # Apply column-specific filters
     query = apply_column_filters(
         query,
         WorkOrder,
-        request.args,
+        args,
         {
             "filter_WorkOrderNo": {
                 "column": WorkOrder.WorkOrderNo,
                 "type": "range_or_exact",
             },
-            "filter_CustID": {"column": WorkOrder.CustID, "type": "integer_exact"},
+            "filter_CustID": {"column": WorkOrder.CustID, "type": "exact"},
             "filter_WOName": {"column": WorkOrder.WOName, "type": "like"},
             "filter_DateIn": {"column": WorkOrder.DateIn, "type": "like"},
             "filter_DateRequired": {"column": WorkOrder.DateRequired, "type": "like"},

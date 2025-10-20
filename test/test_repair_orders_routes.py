@@ -278,7 +278,8 @@ class TestRepairOrderRoutes:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        assert b"Updated Test Item 1" in response.data
+        # Now redirects to customer detail page instead of repair order detail
+        assert "/customers/view/123" in response.request.path
 
         # Query by filter since primary key is now 'id' (auto-increment)
         updated_item = RepairWorkOrderItem.query.filter_by(
@@ -316,7 +317,8 @@ class TestRepairOrderRoutes:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        assert b"Newly Added Item" in response.data
+        # Now redirects to customer detail page instead of repair order detail
+        assert "/customers/view/123" in response.request.path
 
         new_item = RepairWorkOrderItem.query.filter_by(
             Description="Newly Added Item"
@@ -344,16 +346,24 @@ class TestRepairOrderRoutes:
             follow_redirects=True,
         )
         assert response.status_code == 200
-        assert b"Test Item 1" in response.data
-        assert b"Test Item 2" not in response.data
+        # Now redirects to customer detail page instead of repair order detail
+        assert "/customers/view/123" in response.request.path
 
-        # Verify Test Item 2 was deleted by checking it doesn't exist
+        # Verify Test Item 2 was deleted by checking it doesn't exist in DB
         deleted_item = RepairWorkOrderItem.query.filter_by(
             RepairOrderNo="2001",
             Description="Test Item 2",
             Material="A"
         ).first()
         assert deleted_item is None
+
+        # Verify Test Item 1 still exists
+        existing_item = RepairWorkOrderItem.query.filter_by(
+            RepairOrderNo="2001",
+            Description="Test Item 1",
+            Material="A"
+        ).first()
+        assert existing_item is not None
 
     def test_generate_repair_order_pdf(
         self, logged_in_client, sample_repair_order_with_items
@@ -395,7 +405,8 @@ class TestRepairOrderRoutes:
             follow_redirects=True,
         )
         assert response.status_code == 200  # After redirect
-        assert f"/repair_work_orders/{next_ro_num}" in response.request.path
+        # Now redirects to customer detail page instead of repair order detail
+        assert "/customers/view/123" in response.request.path
 
         new_ro = RepairWorkOrder.query.get(str(next_ro_num))
         assert new_ro is not None
@@ -437,7 +448,8 @@ class TestRepairOrderRoutes:
             follow_redirects=True,
         )
         assert response.status_code == 200  # After redirect
-        assert b"Updated Order Name" in response.data
+        # Now redirects to customer detail page instead of repair order detail
+        assert "/customers/view/123" in response.request.path
 
         updated_ro = RepairWorkOrder.query.get(1001)
         assert updated_ro.ROName == "Updated Order Name"
