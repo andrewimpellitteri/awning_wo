@@ -8,7 +8,6 @@ from models.repair_order import RepairWorkOrder
 from extensions import db, cache
 from sqlalchemy import or_, func, cast, Integer, desc, asc
 from sqlalchemy.exc import IntegrityError
-import json
 import time
 import random
 from decorators import role_required

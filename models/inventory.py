@@ -16,17 +16,17 @@ class Inventory(db.Model):
     InventoryKey = db.Column("inventorykey", db.Text, primary_key=True)
 
     def to_dict(self):
-        """Convert model instance to dictionary"""
+        """Convert model instance to dictionary, replacing None with empty strings for text fields"""
         return {
-            "Description": self.Description,
-            "Material": self.Material,
-            "Condition": self.Condition,
-            "Color": self.Color,
-            "SizeWgt": self.SizeWgt,
-            "Price": float(self.Price) if self.Price is not None else None,
-            "CustID": self.CustID,
-            "Qty": self.Qty,
             "InventoryKey": self.InventoryKey,
+            "Description": self.Description or "",
+            "Material": self.Material or "",
+            "Condition": self.Condition or "",
+            "Color": self.Color or "",
+            "SizeWgt": self.SizeWgt or "",
+            "Price": float(self.Price) if self.Price is not None else None,
+            "CustID": self.CustID or "",
+            "Qty": self.Qty or 0,
         }
 
     def __repr__(self):

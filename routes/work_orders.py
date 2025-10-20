@@ -23,12 +23,11 @@ from utils.file_upload import (
     commit_deferred_uploads,
     cleanup_deferred_files,
 )
-from sqlalchemy import or_, func, cast, Integer, case, literal
+from sqlalchemy import or_, func, cast, Integer
 from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import IntegrityError
 from extensions import db
 from datetime import datetime, date
-import uuid
 import time
 import random
 from utils.work_order_pdf import generate_work_order_pdf
@@ -446,7 +445,9 @@ def view_work_order(work_order_no):
         .first_or_404()
     )
     # Get the referrer from query param or request referrer
-    return_url = request.args.get('return_url', request.referrer or url_for('work_orders.list_work_orders'))
+    return_url = request.args.get(
+        "return_url", request.referrer or url_for("work_orders.list_work_orders")
+    )
 
     return render_template(
         "work_orders/detail.html",
@@ -731,7 +732,9 @@ def edit_work_order(work_order_no):
     work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
 
     # Get the return URL from query param or referrer
-    return_url = request.args.get('return_url', request.referrer or url_for('work_orders.list_work_orders'))
+    return_url = request.args.get(
+        "return_url", request.referrer or url_for("work_orders.list_work_orders")
+    )
 
     if request.method == "POST":
         try:
@@ -836,7 +839,9 @@ def cleaning_room_edit_work_order(work_order_no):
     work_order = WorkOrder.query.filter_by(WorkOrderNo=work_order_no).first_or_404()
 
     # Get the return URL from query param or referrer
-    return_url = request.args.get('return_url', request.referrer or url_for('work_orders.list_work_orders'))
+    return_url = request.args.get(
+        "return_url", request.referrer or url_for("work_orders.list_work_orders")
+    )
 
     if request.method == "POST":
         try:
@@ -1048,10 +1053,14 @@ def api_work_orders():
             "Source": wo.source_name,  # Use denormalized column for performance
             "is_rush": bool(wo.RushOrder or wo.FirmRush),  # Add rush flag
             "detail_url": url_for(
-                "work_orders.view_work_order", work_order_no=wo.WorkOrderNo, return_url=url_for('work_orders.list_work_orders', _external=False)
+                "work_orders.view_work_order",
+                work_order_no=wo.WorkOrderNo,
+                return_url=url_for("work_orders.list_work_orders", _external=False),
             ),
             "edit_url": url_for(
-                "work_orders.edit_work_order", work_order_no=wo.WorkOrderNo, return_url=url_for('work_orders.list_work_orders', _external=False)
+                "work_orders.edit_work_order",
+                work_order_no=wo.WorkOrderNo,
+                return_url=url_for("work_orders.list_work_orders", _external=False),
             ),
             "delete_url": url_for(
                 "work_orders.delete_work_order", work_order_no=wo.WorkOrderNo
