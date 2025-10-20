@@ -1,0 +1,126 @@
+{#
+  Shared Jinja2 macros for work orders and repair orders
+  This file contains reusable components to ensure UI consistency (DRY principle)
+#}
+
+{# Customer Inventory Section - shared between work and repair orders #}
+{% macro customer_inventory_section() %}
+<div class="card mb-4 shadow-sm">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-boxes me-2"></i>Customer Item History
+            <span class="badge bg-secondary ms-2" id="inventory-count">0</span>
+        </h5>
+        <small class="text-muted">Items from previous work orders for this customer</small>
+    </div>
+    <div class="card-body">
+        <div id="customer-inventory">
+            <div class="inventory-empty">
+                <i class="fas fa-boxes"></i>
+                <p>Select a customer to view their inventory items</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# File Upload Section - shared between work and repair orders #}
+{% macro file_upload_section() %}
+<div class="card mb-4 shadow-sm">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-cloud-upload-alt me-2"></i>Upload Files
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="card mb-3" id="fileDropzone" style="cursor: pointer;">
+            <div class="card-body text-center">
+                <h5 class="card-title">
+                    <i class="fas fa-cloud-upload-alt me-2"></i>Upload Files
+                </h5>
+                <p class="card-text">Drag & drop files here, or click to select</p>
+                <small class="text-muted">Supported: PDF, JPG, PNG, DOCX, XLSX, TXT, CSV (Max 10MB each)</small>
+
+                <!-- Hidden file input -->
+                <input type="file" name="files[]" id="files" multiple
+                    accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx,.txt,.csv"
+                    style="display: none;">
+
+                <!-- File list display -->
+                <div class="mt-3" id="fileListContainer" style="display: none;">
+                    <h6>Selected Files:</h6>
+                    <ul class="list-group list-group-flush" id="fileList"></ul>
+                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="clearFiles()">
+                        <i class="fas fa-trash me-1"></i>Clear All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{# New Items Section - Card style (modern UI) #}
+{% macro new_items_section_cards(title="Add New Items to Inventory") %}
+<div class="card mb-4 shadow-sm">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-plus me-2"></i>{{ title }}
+            <span class="badge bg-secondary ms-2" id="new-items-count">0</span>
+        </h5>
+    </div>
+    <div class="card-body">
+        <div id="new-items-container">
+            <!-- New items will be added here -->
+        </div>
+        <button type="button" class="btn btn-add-item" onclick="addNewItem()">
+            <i class="fas fa-plus me-2"></i>Add New Item
+        </button>
+    </div>
+</div>
+{% endmacro %}
+
+{# Order Summary Sidebar #}
+{% macro order_summary_sidebar() %}
+<div class="card mb-4 shadow-sm">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <i class="fas fa-flag me-2"></i>Order Summary
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="detail-row">
+            <div class="detail-label">Selected Items</div>
+            <div class="detail-value">
+                <span class="badge bg-primary" id="selected-count">0</span>
+            </div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">New Items</div>
+            <div class="detail-value">
+                <span class="badge bg-success" id="new-count">0</span>
+            </div>
+        </div>
+
+        <div class="detail-row">
+            <div class="detail-label">Total Items</div>
+            <div class="detail-value">
+                <span class="badge bg-info" id="total-count">0</span>
+            </div>
+        </div>
+
+        <div class="detail-row" id="rush-status" style="display: none;">
+            <div class="detail-label">Priority</div>
+            <div class="detail-value">
+                <span class="badge bg-warning text-dark" id="rush-badge" style="display: none;">
+                    <i class="fas fa-bolt me-1"></i>Rush Order
+                </span>
+                <span class="badge bg-danger" id="firm-rush-badge" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}

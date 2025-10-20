@@ -122,7 +122,7 @@ document.addEventListener("DOMContentLoaded", function() {
         paginationMode: "remote",
         paginationSize: 25,
         paginationSizeSelector: [10, 25, 50, 100, 250, 500],
-        layout: "fitColumns",
+        layout: "fitDataFill",
         filterMode: "remote",
         sortMode: "remote",
         multiSort: true,
@@ -135,10 +135,10 @@ document.addEventListener("DOMContentLoaded", function() {
         
         // Use a unique ID for this table's persistence
         persistenceID: "repair_table",
-
+        
         columns: [
             {
-                title: "Order #", field: "RepairOrderNo", width: 167, headerFilter: "input",
+                title: "Order #", field: "RepairOrderNo", width: 190, headerFilter: "input",
                 formatter: (cell) => {
                     const rowData = cell.getRow().getData();
                     let rushBadge = rowData.is_rush ? ' <span class="badge bg-danger ms-1">RUSH</span>' : '';
@@ -148,28 +148,27 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             },
             {
-                title: "Customer", field: "CustID", width: 120, headerFilter: "input",
+                title: "Customer", field: "CustID", headerFilter: "input",
                 formatter: (cell) => {
                     const row = cell.getRow().getData();
                     return row.customer_url ? `<a href="${row.customer_url}" class="badge bg-info">${cell.getValue()}</a>` : `<span class="text-muted">—</span>`;
                 }
             },
             { title: "Name", field: "ROName", headerFilter: "input" },
-            { title: "Date In", field: "DateIn", width: 120, headerFilter: "input",
+            { title: "Date In", field: "DateIn", headerFilter: "input",
             sorter: dateSorter,
             sorterParams: {
                 format: "YYYY-MM-DD" // Tabulator will parse dates in this format
             },
             formatter: (cell) => formatDate(cell.getValue())},
-            { title: "Date Completed", field: "DateCompleted", width: 120, headerFilter: "input", 
+            { title: "Date Completed", field: "DateCompleted", headerFilter: "input", 
             sorter: dateSorter,
             sorterParams: {
                 format: "YYYY-MM-DD" // Tabulator will parse dates in this format
             },
             formatter: (cell) => formatDate(cell.getValue())},
             { title: "Source", 
-            field: "Source", 
-            width: 140,
+            field: "Source",
             headerFilter: "input",
             sorter: "string",
               formatter: cell => cell.getValue() ? `<span class="badge bg-info">${cell.getValue()}</span>` : `<span class="text-muted">—</span>` },

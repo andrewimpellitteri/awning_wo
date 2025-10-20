@@ -145,7 +145,7 @@ def api_customers():
                 "Contact": c.Contact,
                 "Location": location or None,
                 "Phone": getattr(c, "get_primary_phone", lambda: c.HomePhone)(),
-                "EmailAddress": c.EmailAddress,
+                "EmailAddress": c.clean_email(),
                 "Source": c.Source,
                 "detail_url": url_for(
                     "customers.customer_detail", customer_id=c.CustID
@@ -278,13 +278,17 @@ def create_customer():
                 retry_count += 1
 
                 # Check if it's a duplicate key error
-                error_msg = str(ie.orig).lower() if hasattr(ie, 'orig') else str(ie).lower()
-                is_duplicate = 'duplicate' in error_msg or 'unique' in error_msg
+                error_msg = (
+                    str(ie.orig).lower() if hasattr(ie, "orig") else str(ie).lower()
+                )
+                is_duplicate = "duplicate" in error_msg or "unique" in error_msg
 
                 if is_duplicate and retry_count < max_retries:
                     # Exponential backoff with jitter
-                    delay = base_delay * (2 ** retry_count) + (random.random() * 0.05)
-                    print(f"Duplicate customer ID detected. Retry {retry_count}/{max_retries} after {delay:.3f}s")
+                    delay = base_delay * (2**retry_count) + (random.random() * 0.05)
+                    print(
+                        f"Duplicate customer ID detected. Retry {retry_count}/{max_retries} after {delay:.3f}s"
+                    )
                     time.sleep(delay)
                     continue  # Retry the loop
                 else:
@@ -294,7 +298,7 @@ def create_customer():
                     return render_template(
                         "customers/form.html",
                         form_data=data,
-                        sources=Source.query.all()
+                        sources=Source.query.all(),
                     )
 
             except Exception as e:
@@ -305,11 +309,12 @@ def create_customer():
                 )
 
         # If we exhausted all retries
-        flash("Error creating customer: Unable to generate unique customer ID after multiple attempts", "error")
+        flash(
+            "Error creating customer: Unable to generate unique customer ID after multiple attempts",
+            "error",
+        )
         return render_template(
-            "customers/form.html",
-            form_data=data,
-            sources=Source.query.all()
+            "customers/form.html", form_data=data, sources=Source.query.all()
         )
 
     sources = Source.query.order_by(Source.SSource).all()

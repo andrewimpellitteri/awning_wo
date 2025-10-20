@@ -163,3 +163,5 @@ backups/
 
 scripts/*.db
 scripts/*.csv
+
+templates_archive/

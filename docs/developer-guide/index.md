@@ -16,6 +16,13 @@ Start here to get your development environment set up:
 - [Contributing](contributing.md) - Contribution guidelines
 - [API Reference](api-reference.md) - API endpoints and usage
 
+## Code Refactoring & Maintenance
+
+Learn about recent refactoring efforts and patterns:
+
+- [Template Refactoring Summary](template-refactoring-summary.md) - UI unification between work orders and repair orders
+- [Template Refactoring Plan](template-refactoring-plan.md) - Detailed refactoring strategy and approach
+
 ## Architecture Documentation
 
 For deeper technical understanding:

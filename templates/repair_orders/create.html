@@ -1,4 +1,10 @@
 {% extends "base.html" %}
+{% from "_order_macros.html" import
+    customer_inventory_section,
+    file_upload_section,
+    new_items_section_cards,
+    order_summary_sidebar
+%}
 
 {% block title %}Create New Repair Work Order{% endblock %}
 
@@ -46,7 +52,12 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Order Number</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" id="next_ro_number" readonly placeholder="Auto-generated">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-hashtag"></i>
+                                                    </span>
+                                                    <input type="text" class="form-control" id="next_ro_number" readonly placeholder="Auto-generated">
+                                                </div>
                                                 <small id="ro-number-display" class="text-muted"></small>
                                             </div>
                                         </div>
@@ -60,9 +71,14 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Source</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" id="SOURCE" name="SOURCE" readonly
-                                                       value="{{ form_data.get('SOURCE', '') if form_data else '' }}"
-                                                       placeholder="Auto-selected from customer">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-shipping-fast"></i>
+                                                    </span>
+                                                    <input type="text" class="form-control" id="SOURCE" name="SOURCE" readonly
+                                                           value="{{ form_data.get('SOURCE', '') if form_data else '' }}"
+                                                           placeholder="Auto-selected from customer">
+                                                </div>
                                                 <small class="form-text text-muted">Automatically populated from customer record (cannot be changed)</small>
                                             </div>
                                         </div>
@@ -71,15 +87,25 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Date In</div>
                                             <div class="detail-value">
-                                                <input type="date" class="form-control" name="DateIn" 
-                                                       value="{{ form_data.get('DateIn', '') if form_data else '' }}">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-calendar-alt"></i>
+                                                    </span>
+                                                    <input type="date" class="form-control" name="DateIn"
+                                                           value="{{ form_data.get('DateIn', '') if form_data else '' }}">
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="detail-row">
                                             <div class="detail-label">Date Required</div>
                                             <div class="detail-value">
-                                                <input type="date" class="form-control" name="DateRequired" 
-                                                       value="{{ form_data.get('DateRequired', '') if form_data else '' }}">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-calendar-check"></i>
+                                                    </span>
+                                                    <input type="date" class="form-control" name="DateRequired"
+                                                           value="{{ form_data.get('DateRequired', '') if form_data else '' }}">
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="detail-row">
@@ -154,7 +180,7 @@
                                                 <i class="fas fa-exclamation-circle text-warning me-1"></i>Special Instructions
                                             </div>
                                             <div class="detail-value">
-                                                <textarea class="form-control" name="SPECIALINSTRUCTIONS" rows="3" 
+                                                <textarea class="form-control" name="SPECIALINSTRUCTIONS" rows="3"
                                                           placeholder="Enter any special instructions or notes for this repair work order..."
                                                           >{{ form_data.get('SPECIALINSTRUCTIONS', '') if form_data else '' }}</textarea>
                                                 <small class="form-text text-muted">Provide detailed instructions for the repair team</small>
@@ -171,7 +197,7 @@
                                                 <i class="fas fa-list text-primary me-1"></i>Material List
                                             </div>
                                             <div class="detail-value">
-                                                <textarea class="form-control" name="MaterialList" rows="3" 
+                                                <textarea class="form-control" name="MaterialList" rows="3"
                                                           placeholder="List materials needed for this repair..."
                                                           >{{ form_data.get('MaterialList', '') if form_data else '' }}</textarea>
                                                 <small class="form-text text-muted">Materials and supplies required for the repair</small>
@@ -183,16 +209,16 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <h6><i class="fas fa-scissors text-secondary me-1"></i>Repair Information:</h6>
-                                        
+
                                         <div class="detail-row">
                                             <div class="detail-label">Repairs Done By</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" name="REPAIRSDONEBY" 
+                                                <input type="text" class="form-control" name="REPAIRSDONEBY"
                                                        value="{{ form_data.get('REPAIRSDONEBY', '') if form_data else '' }}"
                                                        placeholder="Enter technician name">
                                             </div>
                                         </div>
-                                        
+
                                         <div class="detail-row">
                                             <div class="detail-label">Clean</div>
                                             <div class="detail-value">
@@ -200,23 +226,23 @@
                                                     <input class="form-check-input" type="checkbox" id="CLEAN" name="CLEAN" value="YES"
                                                            {% if form_data and form_data.get('CLEAN') == 'YES' %}checked{% endif %}>
                                                     <label class="form-check-label" for="CLEAN">
-                                                        
+                                                        Clean before repair
                                                     </label>
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <div class="detail-row">
                                             <div class="detail-label">See Clean (WO #)</div>
                                             <div class="detail-value">
-                                                <input type="text" class="form-control" name="SEECLEAN" 
+                                                <input type="text" class="form-control" name="SEECLEAN"
                                                        value="{{ form_data.get('SEECLEAN', '') if form_data else '' }}"
                                                        placeholder="Enter work order number">
                                                 <small class="form-text text-muted">Reference to cleaning work order</small>
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="col-md-6">
                                         <h6><i class="fas fa-map-marker-alt text-secondary me-1"></i>Location & Storage:</h6>
 
@@ -263,87 +289,14 @@
                             </div>
                         </div>
 
-                        <!-- Customer Inventory -->
-                        <div class="card mb-4 shadow-sm">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">
-                                    <i class="fas fa-boxes me-2"></i>Customer Item History
-                                    <span class="badge bg-secondary ms-2" id="inventory-count">0</span>
-                                </h5>
-                                <small class="text-muted">Items from previous work orders for this customer</small>
-                            </div>
-                            <div class="card-body">
-                                <div id="customer-inventory">
-                                    <div class="inventory-empty">
-                                        <i class="fas fa-boxes"></i>
-                                        <p>Select a customer to view their inventory items</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Customer Inventory - SHARED MACRO -->
+                        {{ customer_inventory_section() }}
 
-                        <!-- Order Items -->
-                        <div class="card mb-4 shadow-sm">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">
-                                    <i class="fas fa-list me-2"></i>Add New Items
-                                    <span class="badge bg-secondary ms-2" id="items-count">0</span>
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-bordered item-table" id="items-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Qty</th>
-                                                <th>Description</th>
-                                                <th>Material</th>
-                                                <th>Condition</th>
-                                                <th>Color</th>
-                                                <th>Size/Weight</th>
-                                                <th>Price</th>
-                                                <th>Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="items-tbody">
-                                            <!-- Items will be added here dynamically -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <button type="button" class="btn btn-add-item" onclick="addItemRow()">
-                                    <i class="fas fa-plus me-2"></i>Add Item
-                                </button>
-                            </div>
-                        </div>
+                        <!-- New Items - SHARED MACRO -->
+                        {{ new_items_section_cards(title="Add New Items") }}
 
-                        <!-- File Upload -->
-                        <div class="card mb-4 shadow-sm">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">
-                                    <i class="fas fa-cloud-upload-alt me-2"></i>Upload Files
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="card mb-3" id="fileDropzone" style="cursor: pointer;">
-                                    <div class="card-body text-center">
-                                        <p class="card-text">Drag & drop files here, or click to select</p>
-                                        <small class="text-muted">Supported: PDF, JPG, PNG, DOCX, XLSX, TXT, CSV (Max 10MB each)</small>
-
-                                        <input type="file" name="files[]" id="files" multiple
-                                            accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx,.txt,.csv"
-                                            style="display: none;">
-
-                                        <div class="mt-3" id="fileListContainer" style="display: none;">
-                                            <h6>Selected Files:</h6>
-                                            <ul class="list-group list-group-flush" id="fileList"></ul>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="clearFiles()">
-                                                <i class="fas fa-trash me-1"></i>Clear All
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- File Upload - SHARED MACRO -->
+                        {{ file_upload_section() }}
                     </div>
 
                     <div class="col-lg-4">
@@ -370,56 +323,19 @@
                                 <div class="detail-row">
                                     <div class="detail-label">Customer Price</div>
                                     <div class="detail-value">
-                                        <input type="number" step="0.01" class="form-control" name="CUSTOMERPRICE"
-                                               value="{{ form_data.get('CUSTOMERPRICE', '') if form_data else '' }}"
-                                               placeholder="0.00">
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" step="0.01" class="form-control" name="CUSTOMERPRICE"
+                                                   value="{{ form_data.get('CUSTOMERPRICE', '') if form_data else '' }}"
+                                                   placeholder="0.00">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Order Summary -->
-                        <div class="card mb-4 shadow-sm">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">
-                                    <i class="fas fa-flag me-2"></i>Order Summary
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="detail-row">
-                                    <div class="detail-label">Selected Items</div>
-                                    <div class="detail-value">
-                                        <span class="badge bg-primary" id="selected-count">0</span>
-                                    </div>
-                                </div>
-
-                                <div class="detail-row">
-                                    <div class="detail-label">New Items</div>
-                                    <div class="detail-value">
-                                        <span class="badge bg-success" id="new-items-count">0</span>
-                                    </div>
-                                </div>
-
-                                <div class="detail-row">
-                                    <div class="detail-label">Total Items</div>
-                                    <div class="detail-value">
-                                        <span class="badge bg-info" id="total-items">0</span>
-                                    </div>
-                                </div>
-
-                                <div class="detail-row" id="rush-status" style="display: none;">
-                                    <div class="detail-label">Priority</div>
-                                    <div class="detail-value">
-                                        <span class="badge bg-warning text-dark" id="rush-badge" style="display: none;">
-                                            <i class="fas fa-bolt me-1"></i>Rush Order
-                                        </span>
-                                        <span class="badge bg-danger" id="firm-rush-badge" style="display: none;">
-                                            <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Order Summary - SHARED MACRO -->
+                        {{ order_summary_sidebar() }}
 
                         <!-- Actions -->
                         <div class="card shadow-sm">
@@ -445,409 +361,114 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
+{{ super() }}
+<!-- Include shared JavaScript -->
+<script src="{{ url_for('static', filename='js/order-form-shared.js') }}"></script>
+
+<!-- Repair-order-specific initialization -->
 <script>
-let itemCounter = 0;
-let selectedItemsCount = 0;
-
-function formatPrice(price) {
-    let num = parseFloat(price);
-    if (isNaN(num)) return "$0.00";
-    return `$${num.toFixed(2)}`;
-}
-
-function loadCustomerInventory(custId) {
-    const inventoryContainer = document.getElementById('customer-inventory');
-
-    if (!custId) {
-        inventoryContainer.innerHTML = `
-            <div class="inventory-empty">
-                <i class="fas fa-boxes"></i>
-                <p>Select a customer to view their inventory items</p>
-            </div>
-        `;
-        updateInventoryCount(0);
-        return;
-    }
-
-    // Show loading
-    inventoryContainer.innerHTML = `
-        <div class="inventory-empty">
-            <div class="spinner-border text-primary loading-spinner" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p>Loading inventory items...</p>
-        </div>
-    `;
-
-    fetch(`/work_orders/api/customer_inventory/${custId}`)
-        .then(response => response.json())
-        .then(data => {
-            updateInventoryCount(data.length);
-
-            if (data.length === 0) {
-                inventoryContainer.innerHTML = `
-                    <div class="inventory-empty">
-                        <i class="fas fa-box-open"></i>
-                        <p>No items found in previous work orders for this customer</p>
-                        <small class="text-muted">Add new items below to get started</small>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '';
-            data.forEach(item => {
-                html += `
-                    <div class="inventory-item" onclick="toggleItem(this, '${item.id}')">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="selected_items[]" value="${item.id}" id="item_${item.id}">
-                            <label class="form-check-label w-100" for="item_${item.id}">
-                                <div class="row align-items-center">
-                                    <div class="col-md-5">
-                                        <div class="detail-label">${item.description}</div>
-                                        <small class="text-muted">${item.material || 'No material specified'}</small>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <span class="badge bg-secondary">${item.condition || 'Unknown'}</span>
-                                        <br><small class="text-muted">${item.color || 'No color'}</small>
-                                    </div>
-                                    <div class="col-md-2 text-center">
-                                        <small class="text-muted">Size:</small><br>
-                                        <small>${item.size_wgt || '-'}</small><br>
-                                        <strong>${formatPrice(item.price)}</strong>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label small">Qty:</label>
-                                        <input type="number" class="form-control form-control-sm qty-input"
-                                            name="item_qty_${item.id}" value="${item.qty || 1}" min="1"
-                                            onclick="event.stopPropagation()">
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-                `;
-            });
-            inventoryContainer.innerHTML = html;
-        })
-        .catch(error => {
-            console.error('Error loading inventory:', error);
-            inventoryContainer.innerHTML = `
-                <div class="inventory-empty">
-                    <i class="fas fa-exclamation-triangle text-danger"></i>
-                    <p class="text-danger">Error loading previous work order items</p>
-                </div>
-            `;
-        });
-}
-
-function toggleItem(element, itemId) {
-    const checkbox = element.querySelector('input[type="checkbox"]');
-    if (event.target.type !== 'checkbox' && event.target.type !== 'number') {
-        checkbox.checked = !checkbox.checked;
-    }
-
-    if (checkbox.checked) {
-        element.classList.add('selected');
-        selectedItemsCount++;
-    } else {
-        element.classList.remove('selected');
-        selectedItemsCount--;
-    }
-
-    updateCounts();
-}
-
-function updateInventoryCount(count) {
-    document.getElementById('inventory-count').textContent = count;
-}
-
-function updateCounts() {
-    const newItemCount = document.querySelectorAll('#items-tbody tr').length;
-    document.getElementById('items-count').textContent = newItemCount;
-    document.getElementById('selected-count').textContent = selectedItemsCount;
-    document.getElementById('new-items-count').textContent = newItemCount;
-    document.getElementById('total-items').textContent = selectedItemsCount + newItemCount;
-
-    // Update rush badges
-    const rush = document.getElementById('RushOrder').checked;
-    const firmRush = document.getElementById('FirmRush').checked;
-    document.getElementById('rush-status').style.display = (rush || firmRush) ? 'block' : 'none';
-    document.getElementById('rush-badge').style.display = rush ? 'inline-block' : 'none';
-    document.getElementById('firm-rush-badge').style.display = firmRush ? 'inline-block' : 'none';
-}
-
-// Create datalists for autocomplete suggestions
-function createDatalists() {
-    // Description datalist
-    const descriptionDatalist = document.createElement('datalist');
-    descriptionDatalist.id = 'description-list';
-    descriptionValues.forEach(val => {
-        const option = document.createElement('option');
-        option.value = val;
-        descriptionDatalist.appendChild(option);
-    });
-    document.body.appendChild(descriptionDatalist);
-
-    // Material datalist
-    const materialDatalist = document.createElement('datalist');
-    materialDatalist.id = 'material-list';
-    materialValues.forEach(val => {
-        const option = document.createElement('option');
-        option.value = val;
-        materialDatalist.appendChild(option);
-    });
-    document.body.appendChild(materialDatalist);
-
-    // Color datalist
-    const colorDatalist = document.createElement('datalist');
-    colorDatalist.id = 'color-list';
-    colorValues.forEach(val => {
-        const option = document.createElement('option');
-        option.value = val;
-        colorDatalist.appendChild(option);
-    });
-    document.body.appendChild(colorDatalist);
-
-    // Condition datalist
-    const conditionDatalist = document.createElement('datalist');
-    conditionDatalist.id = 'condition-list';
-    conditionValues.forEach(val => {
-        const option = document.createElement('option');
-        option.value = val;
-        conditionDatalist.appendChild(option);
-    });
-    document.body.appendChild(conditionDatalist);
-}
-
-function addItemRow() {
-    itemCounter++;
-    const tbody = document.getElementById('items-tbody');
-    const row = document.createElement('tr');
-    row.innerHTML = `
-        <td><input type="number" name="item_qty[]" class="form-control" placeholder="1" min="1"></td>
-        <td><input type="text" name="item_description[]" class="form-control" placeholder="Item description" list="description-list"></td>
-        <td><input type="text" name="item_material[]" class="form-control" placeholder="Material" list="material-list"></td>
-        <td><input type="text" name="item_condition[]" class="form-control" placeholder="Condition" list="condition-list"></td>
-        <td><input type="text" name="item_color[]" class="form-control" placeholder="Color" list="color-list"></td>
-        <td><input type="text" name="item_size_wgt[]" class="form-control" placeholder="Size/Weight"></td>
-        <td><input type="number" name="item_price[]" class="form-control" placeholder="0.00" step="0.01"></td>
-        <td><button type="button" class="btn btn-danger btn-sm" onclick="removeItemRow(this)">Remove</button></td>
-    `;
-    tbody.appendChild(row);
-    updateCounts();
-}
-
-function removeItemRow(button) {
-    button.closest('tr').remove();
-    updateCounts();
-}
-
-// Update counts if priority checkboxes change
-document.getElementById('RushOrder').addEventListener('change', updateCounts);
-document.getElementById('FirmRush').addEventListener('change', updateCounts);
-
-// Load customer data (inventory and source) when customer changes
-document.getElementById('CustID').addEventListener('change', function() {
-    const custId = this.value;
-    loadCustomerInventory(custId);
-
-    // Auto-populate source from customer
-    if (custId) {
-        fetch(`/customers/api/customer/${custId}`)
-            .then(response => response.json())
-            .then(customer => {
-                const sourceInput = document.getElementById('SOURCE');
-                if (customer.Source && sourceInput) {
-                    // Set the source input to customer's Source (readonly)
-                    sourceInput.value = customer.Source;
-                }
-            })
-            .catch(error => {
-                console.error('Error loading customer data:', error);
-            });
-    }
-});
-
-// Initialize datalists on load
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize shared components
     createDatalists();
-
-    // Load customer inventory and source if CustID is already set
-    const custInput = document.getElementById('CustID');
-    if (custInput.value) {
-        const custId = custInput.value;
-        loadCustomerInventory(custId);
-
-        // Auto-populate source from customer
-        fetch(`/customers/api/customer/${custId}`)
-            .then(response => response.json())
-            .then(customer => {
-                const sourceInput = document.getElementById('SOURCE');
-                if (customer.Source && sourceInput) {
-                    sourceInput.value = customer.Source;
-                }
-            })
-            .catch(error => {
-                console.error('Error loading customer data:', error);
-            });
-    }
+    initializeFileUpload();
 
     // Load next repair order number
-    const roInput = document.getElementById('next_ro_number');
-    const roDisplay = document.getElementById('ro-number-display');
+    fetch('/repair_work_orders/api/next_ro_number')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('next_ro_number').value = data.next_ro_number;
+            document.getElementById('ro-number-display').textContent = `RO-${data.next_ro_number}`;
+        })
+        .catch(error => {
+            console.error('Error loading next RO number:', error);
+            document.getElementById('ro-number-display').textContent = 'Error loading RO number';
+        });
 
-    if (roInput && roDisplay) {
-        roDisplay.textContent = '';
+    // Customer change handler
+    document.getElementById('CustID').addEventListener('change', function() {
+        const custId = this.value;
+        loadCustomerInventory(custId);
 
-        fetch('/repair_orders/api/next_ro_number')
-            .then(response => response.json())
-            .then(data => {
-                roInput.value = data.next_ro_number;
-                roDisplay.textContent = `RO-${data.next_ro_number}`;
-            })
-            .catch(error => {
-                console.error('Error loading next RO number:', error);
-                roDisplay.textContent = 'Error loading RO number';
-            });
-    }
-});
-
-// Initialize with one item row
-addItemRow();
-
-// Initialize counts on load
-updateCounts();
-
-// File upload handling
-const dropzone = document.getElementById('fileDropzone');
-const fileInput = document.getElementById('files');
-const fileList = document.getElementById('fileList');
-const fileListContainer = document.getElementById('fileListContainer');
-
-const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'docx', 'xlsx', 'txt', 'csv'];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-
-function validateFile(file) {
-    const extension = file.name.split('.').pop().toLowerCase();
-    if (!ALLOWED_EXTENSIONS.includes(extension)) {
-        alert(`File type not allowed: ${file.name}\nAllowed types: ${ALLOWED_EXTENSIONS.join(', ')}`);
-        return false;
-    }
-    if (file.size > MAX_FILE_SIZE) {
-        alert(`File too large: ${file.name}\nMaximum size: 10MB`);
-        return false;
-    }
-    return true;
-}
-
-dropzone.addEventListener('click', (e) => {
-    if (e.target.tagName !== 'BUTTON') {
-        fileInput.click();
-    }
-});
-
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    dropzone.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-    }, false);
-});
-
-['dragenter', 'dragover'].forEach(eventName => {
-    dropzone.addEventListener(eventName, () => {
-        dropzone.classList.add('border-primary', 'border-2', 'bg-light');
-    }, false);
-});
-
-['dragleave', 'drop'].forEach(eventName => {
-    dropzone.addEventListener(eventName, () => {
-        dropzone.classList.remove('border-primary', 'border-2', 'bg-light');
-    }, false);
-});
-
-dropzone.addEventListener('drop', (e) => {
-    const dt = e.dataTransfer;
-    const files = dt.files;
-    const validFiles = [];
-    for (let i = 0; i < files.length; i++) {
-        if (validateFile(files[i])) {
-            validFiles.push(files[i]);
+        // Load customer source
+        if (custId) {
+            fetch(`/customers/api/customer/${custId}`)
+                .then(response => response.json())
+                .then(customer => {
+                    const sourceInput = document.getElementById('SOURCE');
+                    if (customer.Source && sourceInput) {
+                        sourceInput.value = customer.Source;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading customer data:', error);
+                });
         }
-    }
-    if (validFiles.length > 0) {
-        const dataTransfer = new DataTransfer();
-        validFiles.forEach(file => dataTransfer.items.add(file));
-        fileInput.files = dataTransfer.files;
-        updateFileList();
-    }
-}, false);
+    });
 
-fileInput.addEventListener('change', () => {
-    const validFiles = [];
-    for (let i = 0; i < fileInput.files.length; i++) {
-        if (validateFile(fileInput.files[i])) {
-            validFiles.push(fileInput.files[i]);
+    // If customer is already set, load inventory
+    const custInput = document.getElementById('CustID');
+    if (custInput.value) {
+        loadCustomerInventory(custInput.value);
+    }
+
+    // Rush order change handlers
+    document.getElementById('RushOrder').addEventListener('change', updateRushStatus);
+    document.getElementById('FirmRush').addEventListener('change', updateRushStatus);
+
+    // Form validation
+    document.getElementById('repairOrderForm').addEventListener('submit', function(e) {
+        const custId = document.getElementById('CustID').value;
+        if (!custId) {
+            e.preventDefault();
+            alert('Please select a customer.');
+            document.getElementById('CustID').focus();
+            return;
         }
-    }
-    if (validFiles.length !== fileInput.files.length) {
-        const dataTransfer = new DataTransfer();
-        validFiles.forEach(file => dataTransfer.items.add(file));
-        fileInput.files = dataTransfer.files;
-    }
-    updateFileList();
+
+        // Check if at least one item is selected or added
+        const selectedItems = document.querySelectorAll('input[name="selected_items[]"]:checked').length;
+        const newItems = document.querySelectorAll('input[name="new_item_description[]"]').length;
+
+        if (selectedItems === 0 && newItems === 0) {
+            e.preventDefault();
+            alert('Please select at least one inventory item or add a new item.');
+            return;
+        }
+
+        // Validate new items have descriptions
+        const newItemDescriptions = document.querySelectorAll('input[name="new_item_description[]"]');
+        let hasEmptyDescription = false;
+        newItemDescriptions.forEach(input => {
+            if (!input.value.trim()) {
+                hasEmptyDescription = true;
+                input.focus();
+            }
+        });
+
+        if (hasEmptyDescription) {
+            e.preventDefault();
+            alert('Please provide descriptions for all new items.');
+            return;
+        }
+
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
+        submitBtn.disabled = true;
+
+        // Re-enable button after 10 seconds in case of issues
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 10000);
+    });
+
+    // Initialize counts
+    updateCounts();
 });
-
-function updateFileList() {
-    const files = fileInput.files;
-    if (files.length === 0) {
-        fileListContainer.style.display = 'none';
-        return;
-    }
-    fileListContainer.style.display = 'block';
-    fileList.innerHTML = '';
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const li = document.createElement('li');
-        li.className = 'list-group-item d-flex justify-content-between align-items-center';
-        const fileInfo = document.createElement('div');
-        fileInfo.innerHTML = `
-            <i class="fas fa-file me-2"></i>
-            <strong>${file.name}</strong>
-            <small class="text-muted ms-2">(${formatFileSize(file.size)})</small>
-        `;
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.className = 'btn btn-sm btn-outline-danger';
-        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-        removeBtn.onclick = () => removeFile(i);
-        li.appendChild(fileInfo);
-        li.appendChild(removeBtn);
-        fileList.appendChild(li);
-    }
-}
-
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-function removeFile(index) {
-    const files = Array.from(fileInput.files);
-    files.splice(index, 1);
-    const dataTransfer = new DataTransfer();
-    files.forEach(file => dataTransfer.items.add(file));
-    fileInput.files = dataTransfer.files;
-    updateFileList();
-}
-
-function clearFiles() {
-    fileInput.value = '';
-    updateFileList();
-}
 </script>
 {% endblock %}

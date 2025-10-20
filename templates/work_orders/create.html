@@ -1,136 +1,15 @@
 {% extends "base.html" %}
+{% from "_order_macros.html" import
+    customer_inventory_section,
+    file_upload_section,
+    new_items_section_cards,
+    order_summary_sidebar
+%}
 
 {% block title %}Create New Work Order{% endblock %}
 
 {% block styles %}
 {{ super() }}
-<style>
-    /* Floating Help Panel Styles - page specific */
-    #floating-help {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        width: 350px;
-        max-height: 80vh;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        border-radius: 12px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-        z-index: 1050;
-        transform: translateX(100%);
-        opacity: 0;
-        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        overflow: hidden;
-    }
-
-    #floating-help.show {
-        transform: translateX(0);
-        opacity: 1;
-    }
-
-    .help-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 15px 20px;
-        border-radius: 12px 12px 0 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .help-content {
-        padding: 20px;
-        max-height: 60vh;
-        overflow-y: auto;
-    }
-
-    .shortcut-group {
-        margin-bottom: 20px;
-    }
-
-    .shortcut-group h6 {
-        color: #495057;
-        font-weight: 600;
-        margin-bottom: 10px;
-        border-bottom: 1px solid #e9ecef;
-        padding-bottom: 5px;
-    }
-
-    .shortcut-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 0;
-        border-bottom: 1px solid #f8f9fa;
-    }
-
-    .shortcut-item:last-child {
-        border-bottom: none;
-    }
-
-    .shortcut-desc {
-        color: #6c757d;
-        font-size: 0.9rem;
-    }
-
-    .kbd-combo {
-        display: flex;
-        gap: 2px;
-    }
-
-    .kbd {
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
-        padding: 2px 6px;
-        font-size: 0.8rem;
-        font-family: monospace;
-        color: #495057;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-
-    .close-btn {
-        background: none;
-        border: none;
-        color: white;
-        font-size: 1.2rem;
-        cursor: pointer;
-        padding: 0;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        transition: background-color 0.2s;
-    }
-
-    .close-btn:hover {
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    .help-trigger {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        width: 50px;
-        height: 50px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        border-radius: 50%;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        cursor: pointer;
-        z-index: 1040;
-        transition: all 0.3s ease;
-    }
-
-    .help-trigger:hover {
-        transform: scale(1.1);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-    }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -145,7 +24,7 @@
                     </h1>
                     <p class="text-muted mb-0">Create a new work order and manage inventory items</p>
                 </div>
-                
+
                 <div>
                     <a href="{{ url_for('work_orders.list_work_orders') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-arrow-left me-1"></i>Back to List
@@ -168,15 +47,15 @@
                                 <div class="row">
                                     <div class="col-md-6">
                                         <div class="detail-row">
-                                                <div class="detail-label">Customer <span class="text-danger">*</span></div>
-                                                <div class="detail-value">
-                                                    <input type="text"
-                                                           class="form-control"
-                                                           id="CustID"
-                                                           name="CustID"
-                                                           required
-                                                           value="{% if form_data and form_data.get('CustID') %}{{ form_data.get('CustID') }}{% endif %}">
-                                                </div>
+                                            <div class="detail-label">Customer <span class="text-danger">*</span></div>
+                                            <div class="detail-value">
+                                                <input type="text"
+                                                       class="form-control"
+                                                       id="CustID"
+                                                       name="CustID"
+                                                       required
+                                                       value="{% if form_data and form_data.get('CustID') %}{{ form_data.get('CustID') }}{% endif %}">
+                                            </div>
                                         </div>
 
                                         <div class="detail-row">
@@ -227,9 +106,8 @@
                                             </div>
                                         </div>
                                     </div>
-                                    
 
-                                        
+                                    <div class="col-md-6">
                                         <div class="detail-row">
                                             <div class="detail-label">Source</div>
                                             <div class="detail-value">
@@ -244,7 +122,7 @@
                                                 <small class="form-text text-muted">Automatically populated from customer record (cannot be changed)</small>
                                             </div>
                                         </div>
-                                        
+
                                         <div class="detail-row">
                                             <div class="detail-label">Storage Time</div>
                                             <div class="detail-value">
@@ -260,9 +138,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        
-                                        
-                                        <!-- Replace this section in your create.html template -->
+
                                         <div class="detail-row">
                                             <div class="detail-label">Return Status</div>
                                             <div class="detail-value">
@@ -276,8 +152,7 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        
-                                                                                
+
                                         <div class="detail-row">
                                             <div class="detail-label">Priority Options</div>
                                             <div class="detail-value">
@@ -299,21 +174,20 @@
                                                         </span>
                                                     </label>
                                                 </div>
+                                            </div>
+                                        </div>
 
-                                                <div class="col-md-6">
-                                                    <div class="detail-row" id="date-required-row">
-                                                        <div class="detail-label">Date Required</div>
-                                                        <div class="detail-value">
-                                                            <div class="input-group">
-                                                                <span class="input-group-text">
-                                                                    <i class="fas fa-calendar-check text-danger"></i>
-                                                                </span>
-                                                                <input type="date" class="form-control" id="DateRequired" name="DateRequired"
-                                                                       value="{{ form_data.get('DateRequired', '') if form_data else '' }}">
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                        <div class="detail-row" id="date-required-row" style="display: none;">
+                                            <div class="detail-label">Date Required</div>
+                                            <div class="detail-value">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-calendar-check text-danger"></i>
+                                                    </span>
+                                                    <input type="date" class="form-control" id="DateRequired" name="DateRequired"
+                                                           value="{{ form_data.get('DateRequired', '') if form_data else '' }}">
                                                 </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -333,12 +207,12 @@
                                         <div class="detail-row">
                                             <div class="detail-label">Special Instructions</div>
                                             <div class="detail-value">
-                                                <textarea class="form-control" id="SpecialInstructions" name="SpecialInstructions" rows="4" 
+                                                <textarea class="form-control" id="SpecialInstructions" name="SpecialInstructions" rows="4"
                                                           placeholder="Enter any special instructions...">{{ form_data.get('SpecialInstructions', '') if form_data else '' }}</textarea>
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="col-md-6">
                                         <div class="form-check mt-3">
                                             <input class="form-check-input" type="checkbox" id="RepairsNeeded" name="RepairsNeeded" value="true" {% if form_data and form_data.get('RepairsNeeded') %}checked{% endif %}>
@@ -346,10 +220,8 @@
                                                 Repairs Needed
                                             </label>
                                         </div>
-                                    </div>
 
-                                    <div class="col-md-6" id="see-repair-field">
-                                        <div class="detail-row">
+                                        <div class="detail-row mt-3" id="see-repair-field" style="display: none;">
                                             <div class="detail-label">See Repair</div>
                                             <div class="detail-value">
                                                 <input type="text" class="form-control" id="SeeRepair" name="SeeRepair" list="open-repair-orders-list"
@@ -357,37 +229,8 @@
                                                 <datalist id="open-repair-orders-list"></datalist>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <!-- Replace your file upload section with this improved version -->
-                                    <div class="card mb-3" id="fileDropzone" style="cursor: pointer;">
-                                        <div class="card-body text-center">
-                                            <h5 class="card-title">
-                                                <i class="fas fa-cloud-upload-alt me-2"></i>Upload Files
-                                            </h5>
-                                            <p class="card-text">Drag & drop files here, or click to select</p>
-                                            <small class="text-muted">Supported: PDF, JPG, PNG, DOCX, XLSX, TXT, CSV (Max 10MB each)</small>
-                                            
-                                            <!-- Hidden file input - CRITICAL: Make sure name matches what your backend expects -->
-                                            <input type="file" name="files[]" id="files" multiple 
-                                                accept=".pdf,.jpg,.jpeg,.png,.docx,.xlsx,.txt,.csv" 
-                                                style="display: none;">
-                                            
-                                            <!-- File list display -->
-                                            <div class="mt-3" id="fileListContainer" style="display: none;">
-                                                <h6>Selected Files:</h6>
-                                                <ul class="list-group list-group-flush" id="fileList"></ul>
-                                                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="clearFiles()">
-                                                    <i class="fas fa-trash me-1"></i>Clear All
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="detail-row">
+                                        <div class="detail-row mt-3">
                                             <div class="detail-label">Quote</div>
                                             <div class="detail-value">
                                                 <select class="form-select" id="Quote" name="Quote">
@@ -398,93 +241,24 @@
                                             </div>
                                         </div>
                                     </div>
-                                    
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Customer Inventory -->
-                        <div class="card mb-4 shadow-sm">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">
-                                    <i class="fas fa-boxes me-2"></i>Customer Item History
-                                    <span class="badge bg-secondary ms-2" id="inventory-count">0</span>
-                                </h5>
-                                <small class="text-muted">Items from previous work orders for this customer</small>
-                            </div>
-                            <div class="card-body">
-                                <div id="customer-inventory">
-                                    <div class="inventory-empty">
-                                        <i class="fas fa-boxes"></i>
-                                        <p>Select a customer to view their inventory items</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Customer Inventory - SHARED MACRO -->
+                        {{ customer_inventory_section() }}
 
-                        <!-- Add New Items -->
-                        <div class="card mb-4 shadow-sm">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">
-                                    <i class="fas fa-plus me-2"></i>Add New Items to Inventory
-                                    <span class="badge bg-secondary ms-2" id="new-items-count">0</span>
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <div id="new-items-container">
-                                    <!-- New items will be added here -->
-                                </div>
-                                <button type="button" class="btn btn-add-item" onclick="addNewItem()">
-                                    <i class="fas fa-plus me-2"></i>Add New Item
-                                </button>
-                            </div>
-                        </div>
+                        <!-- New Items - SHARED MACRO -->
+                        {{ new_items_section_cards() }}
+
+                        <!-- File Upload - SHARED MACRO -->
+                        {{ file_upload_section() }}
                     </div>
 
                     <!-- Sidebar -->
                     <div class="col-lg-4">
-                        <!-- Order Summary -->
-                        <div class="card mb-4 shadow-sm">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">
-                                    <i class="fas fa-flag me-2"></i>Order Summary
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="detail-row">
-                                    <div class="detail-label">Selected Items</div>
-                                    <div class="detail-value">
-                                        <span class="badge bg-primary" id="selected-count">0</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="detail-row">
-                                    <div class="detail-label">New Items</div>
-                                    <div class="detail-value">
-                                        <span class="badge bg-success" id="new-count">0</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="detail-row">
-                                    <div class="detail-label">Total Items</div>
-                                    <div class="detail-value">
-                                        <span class="badge bg-info" id="total-count">0</span>
-                                    </div>
-                                </div>
-                                
-                                <div class="detail-row" id="rush-status" style="display: none;">
-                                    <div class="detail-label">Priority</div>
-                                    <div class="detail-value">
-                                        <span class="badge bg-warning text-dark" id="rush-badge" style="display: none;">
-                                            <i class="fas fa-bolt me-1"></i>Rush Order
-                                        </span>
-                                        <span class="badge bg-danger" id="firm-rush-badge" style="display: none;">
-                                            <i class="fas fa-exclamation-triangle me-1"></i>Firm Rush
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Order Summary - SHARED MACRO -->
+                        {{ order_summary_sidebar() }}
 
                         <!-- Actions -->
                         <div class="card shadow-sm">
@@ -502,10 +276,6 @@
                                         <i class="fas fa-arrow-left me-2"></i>Cancel
                                     </a>
                                 </div>
-                                
-                                <hr class="my-3">
-                                
-
                             </div>
                         </div>
                     </div>
@@ -514,216 +284,76 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- Include shared JavaScript -->
+<script src="{{ url_for('static', filename='js/order-form-shared.js') }}"></script>
+
+<!-- Work-order-specific JavaScript -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+// Work order specific: Show/hide See Repair field based on RepairsNeeded checkbox
+function updateSeeRepairFieldVisibility() {
     const repairsNeededCheckbox = document.getElementById('RepairsNeeded');
     const seeRepairField = document.getElementById('see-repair-field');
 
-    function updateSeeRepairFieldVisibility() {
-        if (repairsNeededCheckbox.checked) {
-            seeRepairField.style.display = 'block';
-        } else {
-            seeRepairField.style.display = 'none';
-        }
+    if (repairsNeededCheckbox.checked) {
+        seeRepairField.style.display = 'block';
+    } else {
+        seeRepairField.style.display = 'none';
+    }
+}
+
+// Work order specific: Show/hide Date Required field based on FirmRush checkbox
+function toggleFirmRush(isChecked) {
+    const dateRequiredInput = document.getElementById("date-required-row");
+    if (dateRequiredInput) {
+        dateRequiredInput.style.display = isChecked ? "block" : "none";
+    }
+}
+
+// Work order specific: Load open repair orders for autocomplete
+function loadOpenRepairOrders(custId) {
+    const datalist = document.getElementById('open-repair-orders-list');
+    if (!custId) {
+        datalist.innerHTML = '';
+        return;
     }
 
-    // Initial check
-    updateSeeRepairFieldVisibility();
-
-    // Listen for changes
-    repairsNeededCheckbox.addEventListener('change', updateSeeRepairFieldVisibility);
-});
-</script>
-
-<script>
-    let newItemCounter = 0;
-    let selectedItemsCount = 0;
-    let newItemsCount = 0;
-
-    // Create datalists for autocomplete suggestions (run once on load)
-    function createDatalists() {
-        // Description datalist
-        const descriptionDatalist = document.createElement('datalist');
-        descriptionDatalist.id = 'description-list';
-        descriptionValues.forEach(val => {
-            const option = document.createElement('option');
-            option.value = val;
-            descriptionDatalist.appendChild(option);
-        });
-        document.body.appendChild(descriptionDatalist);
-
-        // Material datalist
-        const materialDatalist = document.createElement('datalist');
-        materialDatalist.id = 'material-list';
-        materialValues.forEach(val => {
-            const option = document.createElement('option');
-            option.value = val;
-            materialDatalist.appendChild(option);
-        });
-        document.body.appendChild(materialDatalist);
-
-        // Color datalist
-        const colorDatalist = document.createElement('datalist');
-        colorDatalist.id = 'color-list';
-        colorValues.forEach(val => {
-            const option = document.createElement('option');
-            option.value = val;
-            colorDatalist.appendChild(option);
-        });
-        document.body.appendChild(colorDatalist);
-    }
-
-    // Initialize datalists on DOM load
-    document.addEventListener("DOMContentLoaded", createDatalists);
-
-        // Condition datalist
-        const conditionDatalist = document.createElement('datalist');
-        conditionDatalist.id = 'condition-list';
-        conditionValues.forEach(val => {
-            const option = document.createElement('option');
-            option.value = val;
-            conditionDatalist.appendChild(option);
-        });
-        document.body.appendChild(conditionDatalist);
-
-    function formatPrice(price) {
-        let num = parseFloat(price);
-        if (isNaN(num)) return "$0.00";
-        return `$${num.toFixed(2)}`;
-    }
-
-    function toggleFirmRush(isChecked) {
-        const dateRequiredInput = document.getElementById("date-required-row");
-
-        if (dateRequiredInput) {
-            // Hide or show the input itself
-            dateRequiredInput.style.display = isChecked ? "flex" : "none";
-        }
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-        const firmRushCheckbox = document.getElementById("FirmRush");
-        if (firmRushCheckbox) {
-            // Set initial state on load
-            toggleFirmRush(firmRushCheckbox.checked);
-
-            // Update when checkbox changes
-            firmRushCheckbox.addEventListener("change", (e) => {
-                toggleFirmRush(e.target.checked);
+    fetch(`/work_orders/api/open_repair_orders/${custId}`)
+        .then(response => response.json())
+        .then(data => {
+            datalist.innerHTML = '';
+            data.forEach(order => {
+                const option = document.createElement('option');
+                option.value = order.RepairOrderNo;
+                datalist.appendChild(option);
             });
-        }
-    });
+        })
+        .catch(error => {
+            console.error('Error loading open repair orders:', error);
+        });
+}
 
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize shared components
+    createDatalists();
+    initializeFileUpload();
 
-    function loadCustomerInventory(custId) {
-        const inventoryContainer = document.getElementById('customer-inventory');
-        
-        if (!custId) {
-            inventoryContainer.innerHTML = `
-                <div class="inventory-empty">
-                    <i class="fas fa-boxes"></i>
-                    <p>Select a customer to view their inventory items</p>
-                </div>
-            `;
-            updateInventoryCount(0);
-            return;
-        }
+    // Load next work order number
+    fetch('/work_orders/api/next_wo_number')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('next_wo_number').value = data.next_wo_number;
+            document.getElementById('wo-number-display').textContent = `WO-${data.next_wo_number}`;
+        })
+        .catch(error => {
+            console.error('Error loading next WO number:', error);
+            document.getElementById('wo-number-display').textContent = 'Error loading WO number';
+        });
 
-        // Show loading
-        inventoryContainer.innerHTML = `
-            <div class="inventory-empty">
-                <div class="spinner-border text-primary loading-spinner" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p>Loading inventory items...</p>
-            </div>
-        `;
-
-        fetch(`/work_orders/api/customer_inventory/${custId}`)
-            .then(response => response.json())
-            .then(data => {
-                updateInventoryCount(data.length);
-                
-                if (data.length === 0) {
-                    inventoryContainer.innerHTML = `
-                        <div class="inventory-empty">
-                            <i class="fas fa-box-open"></i>
-                            <p>No items found in previous work orders for this customer</p>
-                            <small class="text-muted">Add new items below to get started</small>
-                        </div>
-                    `;
-                    return;
-                }
-
-                let html = '';
-                data.forEach(item => {
-                    html += `
-                        <div class="inventory-item" onclick="toggleItem(this, '${item.id}')">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="selected_items[]" value="${item.id}" id="item_${item.id}">
-                                <label class="form-check-label w-100" for="item_${item.id}">
-                                    <div class="row align-items-center">
-                                        <div class="col-md-5">
-                                            <div class="detail-label">${item.description}</div>
-                                            <small class="text-muted">${item.material || 'No material specified'}</small>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <span class="badge bg-secondary">${item.condition || 'Unknown'}</span>
-                                            <br><small class="text-muted">${item.color || 'No color'}</small>
-                                        </div>
-                                        <div class="col-md-2 text-center">
-                                            <small class="text-muted">Size:</small><br>
-                                            <small>${item.size_wgt || '-'}</small><br>
-                                            <strong>${formatPrice(item.price)}</strong>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label class="form-label small">Qty:</label>
-                                            <input type="number" class="form-control form-control-sm qty-input" 
-                                                name="item_qty_${item.id}" value="${item.qty || 1}" min="1" 
-                                                onclick="event.stopPropagation()">
-                                        </div>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-                    `;
-                });
-                inventoryContainer.innerHTML = html;
-            })
-            .catch(error => {
-                console.error('Error loading inventory:', error);
-                inventoryContainer.innerHTML = `
-                    <div class="inventory-empty">
-                        <i class="fas fa-exclamation-triangle text-danger"></i>
-                        <p class="text-danger">Error loading previous work order items</p>
-                    </div>
-                `;
-            });
-    }
-
-
-
-    // Load next work order number on page load
-    window.addEventListener('DOMContentLoaded', function() {
-        const woInput = document.getElementById('next_wo_number');
-        const woDisplay = document.getElementById('wo-number-display');
-
-        // Hide the display until we fetch
-        woDisplay.textContent = '';
-
-        fetch('/work_orders/api/next_wo_number')
-            .then(response => response.json())
-            .then(data => {
-                woInput.value = data.next_wo_number;
-                woDisplay.textContent = `WO-${data.next_wo_number}`;
-            })
-            .catch(error => {
-                console.error('Error loading next WO number:', error);
-                woDisplay.textContent = 'Error loading WO number';
-            });
-    });
-
-
+    // Customer change handler
     document.getElementById('CustID').addEventListener('change', function() {
         const custId = this.value;
         loadCustomerInventory(custId);
@@ -745,195 +375,33 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    window.addEventListener('DOMContentLoaded', function() {
-        const custInput = document.getElementById('CustID');
-        if (custInput.value) {
-            loadCustomerInventory(custInput.value);
-            loadOpenRepairOrders(custInput.value);
-        }
-    });
-
-    function loadOpenRepairOrders(custId) {
-        const datalist = document.getElementById('open-repair-orders-list');
-        if (!custId) {
-            datalist.innerHTML = '';
-            return;
-        }
-
-        fetch(`/work_orders/api/open_repair_orders/${custId}`)
-            .then(response => response.json())
-            .then(data => {
-                datalist.innerHTML = '';
-                data.forEach(order => {
-                    const option = document.createElement('option');
-                    option.value = order.RepairOrderNo;
-                    datalist.appendChild(option);
-                });
-            })
-            .catch(error => {
-                console.error('Error loading open repair orders:', error);
-            });
+    // If customer is already set, load inventory
+    const custInput = document.getElementById('CustID');
+    if (custInput.value) {
+        loadCustomerInventory(custInput.value);
+        loadOpenRepairOrders(custInput.value);
     }
 
+    // RepairsNeeded checkbox handler
+    const repairsNeededCheckbox = document.getElementById('RepairsNeeded');
+    updateSeeRepairFieldVisibility();
+    repairsNeededCheckbox.addEventListener('change', updateSeeRepairFieldVisibility);
 
-
-    function toggleItem(element, itemId) {
-        const checkbox = element.querySelector('input[type="checkbox"]');
-        if (event.target.type !== 'checkbox' && event.target.type !== 'number') {
-            checkbox.checked = !checkbox.checked;
-        }
-        
-        if (checkbox.checked) {
-            element.classList.add('selected');
-            selectedItemsCount++;
-        } else {
-            element.classList.remove('selected');
-            selectedItemsCount--;
-        }
-        
-        updateCounts();
+    // FirmRush checkbox handler
+    const firmRushCheckbox = document.getElementById("FirmRush");
+    if (firmRushCheckbox) {
+        toggleFirmRush(firmRushCheckbox.checked);
+        firmRushCheckbox.addEventListener("change", (e) => {
+            toggleFirmRush(e.target.checked);
+        });
     }
 
-    function addNewItem() {
-        const container = document.getElementById('new-items-container');
-        const itemHtml = `
-            <div class="new-item-row" id="new-item-${newItemCounter}">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="mb-0">
-                        <i class="fas fa-box me-2"></i>New Item ${newItemCounter + 1}
-                    </h6>
-                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeNewItem(${newItemCounter})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label detail-label">Quantity</label>
-                        <input type="number" class="form-control" name="new_item_qty[]" value="1" min="1">
-                    </div>
-                    <div class="col-md-9 mb-3">
-                        <label class="form-label detail-label">Description *</label>
-                        <input type="text" class="form-control" name="new_item_description[]" required list="description-list">
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label detail-label">Material</label>
-                        <input type="text" class="form-control" name="new_item_material[]" list="material-list">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label detail-label">Condition</label>
-                        <input type="text" class="form-control" name="new_item_condition[]" list="condition-list">
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label detail-label">Color</label>
-                        <input type="text" class="form-control" name="new_item_color[]" list="color-list">
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label detail-label">Size/Weight</label>
-                        <input type="text" class="form-control" name="new_item_size[]">
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label detail-label">Price</label>
-                        <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            <input type="number" class="form-control" name="new_item_price[]" step="0.01" min="0">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        container.insertAdjacentHTML('beforeend', itemHtml);
-        newItemCounter++;
-        newItemsCount++;
-        updateCounts();
-    }
-
-    function removeNewItem(itemId) {
-        const element = document.getElementById(`new-item-${itemId}`);
-        if (element) {
-            element.remove();
-            newItemsCount--;
-            updateCounts();
-        }
-    }
-
-    function updateInventoryCount(count) {
-        document.getElementById('inventory-count').textContent = count;
-    }
-
-    function updateCounts() {
-        document.getElementById('selected-count').textContent = selectedItemsCount;
-        document.getElementById('new-count').textContent = newItemsCount;
-        document.getElementById('new-items-count').textContent = newItemsCount;
-        document.getElementById('total-count').textContent = selectedItemsCount + newItemsCount;
-    }
-
-    // Monitor rush order checkboxes
+    // Rush order change handlers
     document.getElementById('RushOrder').addEventListener('change', updateRushStatus);
     document.getElementById('FirmRush').addEventListener('change', updateRushStatus);
 
-    function updateRushStatus() {
-        const rushOrder = document.getElementById('RushOrder').checked;
-        const firmRush = document.getElementById('FirmRush').checked;
-        const rushStatus = document.getElementById('rush-status');
-        const rushBadge = document.getElementById('rush-badge');
-        const firmRushBadge = document.getElementById('firm-rush-badge');
-
-        if (rushOrder || firmRush) {
-            rushStatus.style.display = 'block';
-            rushBadge.style.display = rushOrder ? 'inline' : 'none';
-            firmRushBadge.style.display = firmRush ? 'inline' : 'none';
-        } else {
-            rushStatus.style.display = 'none';
-        }
-    }
-
     // Form validation
     document.getElementById('workOrderForm').addEventListener('submit', function(e) {
-
-        // e.preventDefault();
-
-        console.log('Form enctype:', this.enctype);
-        console.log('Form method:', this.method);
-        
-        // Check file input
-        const fileInput = document.getElementById('files');
-        console.log('File input found:', !!fileInput);
-        console.log('File input name:', fileInput ? fileInput.name : 'N/A');
-        console.log('File input disabled:', fileInput ? fileInput.disabled : 'N/A');
-        console.log('Files selected:', fileInput ? fileInput.files.length : 'N/A');
-        
-        if (fileInput && fileInput.files.length > 0) {
-            console.log('File details:');
-            for (let i = 0; i < fileInput.files.length; i++) {
-                console.log(`- File ${i}: ${fileInput.files[i].name} (${fileInput.files[i].size} bytes)`);
-            }
-        }
-        
-        // Check if file input is inside the form
-        const formContainsFileInput = this.contains(fileInput);
-        console.log('File input inside form:', formContainsFileInput);
-        
-        // Check FormData contents
-        const formData = new FormData(this);
-        console.log('FormData contents:');
-        for (let [key, value] of formData.entries()) {
-            if (value instanceof File) {
-                console.log(`${key}: ${value.name} (${value.size} bytes)`);
-            } else {
-                console.log(`${key}: ${value}`);
-            }
-        }
-
-
-
         const custId = document.getElementById('CustID').value;
         if (!custId) {
             e.preventDefault();
@@ -945,7 +413,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Check if at least one item is selected or added
         const selectedItems = document.querySelectorAll('input[name="selected_items[]"]:checked').length;
         const newItems = document.querySelectorAll('input[name="new_item_description[]"]').length;
-        
+
         if (selectedItems === 0 && newItems === 0) {
             e.preventDefault();
             alert('Please select at least one inventory item or add a new item.');
@@ -983,231 +451,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize counts
     updateCounts();
-
-// Replace your file upload JavaScript with this improved version
-
-const dropzone = document.getElementById('fileDropzone');
-const fileInput = document.getElementById('files');
-const fileList = document.getElementById('fileList');
-const fileListContainer = document.getElementById('fileListContainer');
-
-// Allowed file types and max size
-const ALLOWED_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'docx', 'xlsx', 'txt', 'csv'];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-
-// Validate file type and size
-function validateFile(file) {
-    const extension = file.name.split('.').pop().toLowerCase();
-    if (!ALLOWED_EXTENSIONS.includes(extension)) {
-        alert(`File type not allowed: ${file.name}\nAllowed types: ${ALLOWED_EXTENSIONS.join(', ')}`);
-        return false;
-    }
-    
-    if (file.size > MAX_FILE_SIZE) {
-        alert(`File too large: ${file.name}\nMaximum size: 10MB`);
-        return false;
-    }
-    
-    return true;
-}
-
-// Click opens file selector
-dropzone.addEventListener('click', (e) => {
-    // Don't trigger if clicking on buttons inside dropzone
-    if (e.target.tagName !== 'BUTTON') {
-        fileInput.click();
-    }
-});
-
-// Prevent default drag behaviors
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    dropzone.addEventListener(eventName, preventDefaults, false);
-    document.body.addEventListener(eventName, preventDefaults, false);
-});
-
-function preventDefaults(e) {
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-// Highlight drop area when item is dragged over it
-['dragenter', 'dragover'].forEach(eventName => {
-    dropzone.addEventListener(eventName, highlight, false);
-});
-
-['dragleave', 'drop'].forEach(eventName => {
-    dropzone.addEventListener(eventName, unhighlight, false);
-});
-
-function highlight() {
-    dropzone.classList.add('border-primary', 'border-2', 'bg-light');
-}
-
-function unhighlight() {
-    dropzone.classList.remove('border-primary', 'border-2', 'bg-light');
-}
-
-// Handle dropped files
-dropzone.addEventListener('drop', handleDrop, false);
-
-function handleDrop(e) {
-    const dt = e.dataTransfer;
-    const files = dt.files;
-    
-    // Validate all files first
-    const validFiles = [];
-    for (let i = 0; i < files.length; i++) {
-        if (validateFile(files[i])) {
-            validFiles.push(files[i]);
-        }
-    }
-    
-    if (validFiles.length > 0) {
-        // Create new FileList-like object
-        const dataTransfer = new DataTransfer();
-        validFiles.forEach(file => dataTransfer.items.add(file));
-        fileInput.files = dataTransfer.files;
-        updateFileList();
-    }
-}
-
-// Handle file input change
-fileInput.addEventListener('change', () => {
-    // Validate selected files
-    const validFiles = [];
-    for (let i = 0; i < fileInput.files.length; i++) {
-        if (validateFile(fileInput.files[i])) {
-            validFiles.push(fileInput.files[i]);
-        }
-    }
-    
-    if (validFiles.length !== fileInput.files.length) {
-        // Some files were invalid, update the input
-        const dataTransfer = new DataTransfer();
-        validFiles.forEach(file => dataTransfer.items.add(file));
-        fileInput.files = dataTransfer.files;
-    }
-    
-    updateFileList();
-});
-
-// Update file list display
-function updateFileList() {
-    const files = fileInput.files;
-    
-    if (files.length === 0) {
-        fileListContainer.style.display = 'none';
-        return;
-    }
-    
-    fileListContainer.style.display = 'block';
-    fileList.innerHTML = '';
-    
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const li = document.createElement('li');
-        li.className = 'list-group-item d-flex justify-content-between align-items-center';
-        
-        const fileInfo = document.createElement('div');
-        fileInfo.innerHTML = `
-            <i class="fas fa-file me-2"></i>
-            <strong>${file.name}</strong>
-            <small class="text-muted ms-2">(${formatFileSize(file.size)})</small>
-        `;
-        
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.className = 'btn btn-sm btn-outline-danger';
-        removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-        removeBtn.onclick = () => removeFile(i);
-        
-        li.appendChild(fileInfo);
-        li.appendChild(removeBtn);
-        fileList.appendChild(li);
-    }
-}
-
-// Format file size for display
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
-// Remove individual file
-function removeFile(index) {
-    const files = Array.from(fileInput.files);
-    files.splice(index, 1);
-    
-    const dataTransfer = new DataTransfer();
-    files.forEach(file => dataTransfer.items.add(file));
-    fileInput.files = dataTransfer.files;
-    
-    updateFileList();
-}
-
-// Clear all files
-function clearFiles() {
-    fileInput.value = '';
-    updateFileList();
-}
-
-// Add file count to form validation
-document.getElementById('workOrderForm').addEventListener('submit', function(e) {
-    const custId = document.getElementById('CustID').value;
-    if (!custId) {
-        e.preventDefault();
-        alert('Please select a customer.');
-        document.getElementById('CustID').focus();
-        return;
-    }
-
-    // Check if at least one item is selected or added
-    const selectedItems = document.querySelectorAll('input[name="selected_items[]"]:checked').length;
-    const newItems = document.querySelectorAll('input[name="new_item_description[]"]').length;
-    
-    if (selectedItems === 0 && newItems === 0) {
-        e.preventDefault();
-        alert('Please select at least one inventory item or add a new item.');
-        return;
-    }
-
-    // Validate new items have descriptions
-    const newItemDescriptions = document.querySelectorAll('input[name="new_item_description[]"]');
-    let hasEmptyDescription = false;
-    newItemDescriptions.forEach(input => {
-        if (!input.value.trim()) {
-            hasEmptyDescription = true;
-            input.focus();
-        }
-    });
-
-    if (hasEmptyDescription) {
-        e.preventDefault();
-        alert('Please provide descriptions for all new items.');
-        return;
-    }
-
-    // Log files being submitted for debugging
-    const files = fileInput.files;
-    console.log(`Submitting ${files.length} files:`);
-    for (let i = 0; i < files.length; i++) {
-        console.log(`- ${files[i].name} (${formatFileSize(files[i].size)})`);
-    }
-
-    // Show loading state
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Creating...';
-    submitBtn.disabled = true;
-
-    // Re-enable button after 15 seconds in case of issues
-    setTimeout(() => {
-        submitBtn.innerHTML = originalText;
-        submitBtn.disabled = false;
-    }, 15000);
 });
 </script>
 {% endblock %}

@@ -203,6 +203,7 @@ class WorkOrderItem(db.Model):
     Color = db.Column("color", db.String)
     SizeWgt = db.Column("sizewgt", db.String)
     Price = db.Column("price", db.Numeric(10, 2), nullable=True)
+    InventoryKey = db.Column("inventory_key", db.String, nullable=True)
 
     # relationships
     work_order = db.relationship("WorkOrder", back_populates="items")
@@ -221,6 +222,7 @@ class WorkOrderItem(db.Model):
             "Color": self.Color,
             "SizeWgt": self.SizeWgt,
             "Price": self.Price,
+            "InventoryKey": self.InventoryKey,
         }
 
     def __repr__(self):
