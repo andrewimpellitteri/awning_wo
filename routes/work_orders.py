@@ -454,6 +454,7 @@ def view_work_order(work_order_no):
         work_order=work_order,
         files=work_order.files,  # pass files explicitly
         return_url=return_url,
+        get_file_size=get_file_size,  # pass function to template
     )
 
 
