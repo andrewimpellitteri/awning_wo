@@ -2,98 +2,110 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/README_DOCS_REORGANIZATION/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/architecture/CACHING_GUIDE/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/architecture/CONCURRENCY_AUDIT/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/architecture/PERFORMANCE_ANALYSIS/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/database/ALEMBIC_GUIDE/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/database/STORAGE_FIELDS_GUIDE/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/deployment/DEPLOYMENT_CHECKLIST/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/deployment/aws-eb/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/developer-guide/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/developer-guide/api-reference/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/developer-guide/database-schema/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
+    </url>
+    <url>
+         <loc>https://andrewimpellitteri.github.com/awning_wo/developer-guide/item-exclusion-feature/</loc>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/developer-guide/project-structure/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/developer-guide/setup/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
+    </url>
+    <url>
+         <loc>https://andrewimpellitteri.github.com/awning_wo/developer-guide/template-refactoring-plan/</loc>
+         <lastmod>2025-10-20</lastmod>
+    </url>
+    <url>
+         <loc>https://andrewimpellitteri.github.com/awning_wo/developer-guide/template-refactoring-summary/</loc>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/planning/DENORMALIZATION_ANALYSIS/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/planning/IMPROVEMENTS/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/planning/REFACTORING_PLAN/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/planning/WASM_THUMBNAIL_OPTIMIZATION/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/reference/faq/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/reference/glossary/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/reference/troubleshooting/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/user-guide/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/user-guide/getting-started/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
     <url>
          <loc>https://andrewimpellitteri.github.com/awning_wo/user-guide/work-orders/</loc>
-         <lastmod>2025-10-17</lastmod>
+         <lastmod>2025-10-20</lastmod>
     </url>
 </urlset>

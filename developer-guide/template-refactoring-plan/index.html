@@ -8,28 +8,24 @@
       
       
       
-        <link rel="canonical" href="https://andrewimpellitteri.github.com/awning_wo/developer-guide/">
+        <link rel="canonical" href="https://andrewimpellitteri.github.com/awning_wo/developer-guide/template-refactoring-plan/">
       
       
-        <link rel="prev" href="../user-guide/work-orders/">
       
       
-        <link rel="next" href="setup/">
-      
-      
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.22">
     
     
       
-        <title>Developer Guide - Awning Management System Documentation</title>
+        <title>Template Unification Refactoring Plan - Awning Management System Documentation</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.84d31ad4.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.84d31ad4.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -48,7 +44,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -74,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#developer-guide" class="md-skip">
+        <a href="#template-unification-refactoring-plan" class="md-skip">
           Skip to content
         </a>
       
@@ -88,7 +84,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="Awning Management System Documentation" class="md-header__button md-logo" aria-label="Awning Management System Documentation" data-md-component="logo">
+    <a href="../.." title="Awning Management System Documentation" class="md-header__button md-logo" aria-label="Awning Management System Documentation" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -108,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Developer Guide
+              Template Unification Refactoring Plan
             
           </span>
         </div>
@@ -221,7 +217,7 @@
   
   
     <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -242,7 +238,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../user-guide/" class="md-tabs__link">
+        <a href="../../user-guide/" class="md-tabs__link">
           
   
   
@@ -258,13 +254,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -284,7 +278,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../database/ALEMBIC_GUIDE/" class="md-tabs__link">
+        <a href="../../database/ALEMBIC_GUIDE/" class="md-tabs__link">
           
   
   
@@ -304,7 +298,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../deployment/aws-eb/" class="md-tabs__link">
+        <a href="../../deployment/aws-eb/" class="md-tabs__link">
           
   
   
@@ -324,7 +318,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../architecture/overview.md" class="md-tabs__link">
+        <a href="../../architecture/overview.md" class="md-tabs__link">
           
   
   
@@ -344,7 +338,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../planning/IMPROVEMENTS/" class="md-tabs__link">
+        <a href="../../planning/IMPROVEMENTS/" class="md-tabs__link">
           
   
   
@@ -364,7 +358,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../reference/faq/" class="md-tabs__link">
+        <a href="../../reference/faq/" class="md-tabs__link">
           
   
   
@@ -398,7 +392,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="Awning Management System Documentation" class="md-nav__button md-logo" aria-label="Awning Management System Documentation" data-md-component="logo">
+    <a href="../.." title="Awning Management System Documentation" class="md-nav__button md-logo" aria-label="Awning Management System Documentation" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -428,7 +422,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -495,7 +489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/" class="md-nav__link">
+      <a href="../../user-guide/" class="md-nav__link">
         
   
   
@@ -518,7 +512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/getting-started/" class="md-nav__link">
+      <a href="../../user-guide/getting-started/" class="md-nav__link">
         
   
   
@@ -541,7 +535,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/work-orders/" class="md-nav__link">
+      <a href="../../user-guide/work-orders/" class="md-nav__link">
         
   
   
@@ -564,7 +558,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/repair-orders.md" class="md-nav__link">
+      <a href="../../user-guide/repair-orders.md" class="md-nav__link">
         
   
   
@@ -587,7 +581,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/customers.md" class="md-nav__link">
+      <a href="../../user-guide/customers.md" class="md-nav__link">
         
   
   
@@ -610,7 +604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/sources.md" class="md-nav__link">
+      <a href="../../user-guide/sources.md" class="md-nav__link">
         
   
   
@@ -633,7 +627,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/inventory.md" class="md-nav__link">
+      <a href="../../user-guide/inventory.md" class="md-nav__link">
         
   
   
@@ -656,7 +650,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/queue.md" class="md-nav__link">
+      <a href="../../user-guide/queue.md" class="md-nav__link">
         
   
   
@@ -679,7 +673,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/analytics.md" class="md-nav__link">
+      <a href="../../user-guide/analytics.md" class="md-nav__link">
         
   
   
@@ -702,7 +696,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/pdf-reports.md" class="md-nav__link">
+      <a href="../../user-guide/pdf-reports.md" class="md-nav__link">
         
   
   
@@ -725,7 +719,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../user-guide/keyboard-shortcuts.md" class="md-nav__link">
+      <a href="../../user-guide/keyboard-shortcuts.md" class="md-nav__link">
         
   
   
@@ -752,31 +746,28 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -789,7 +780,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Developer Guide
@@ -800,32 +791,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Developer Guide
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
         
   
   
@@ -836,71 +805,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#for-new-developers" class="md-nav__link">
-    <span class="md-ellipsis">
-      For New Developers
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#development-workflow" class="md-nav__link">
-    <span class="md-ellipsis">
-      Development Workflow
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#code-refactoring-maintenance" class="md-nav__link">
-    <span class="md-ellipsis">
-      Code Refactoring &amp; Maintenance
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#architecture-documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      Architecture Documentation
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#deployment" class="md-nav__link">
-    <span class="md-ellipsis">
-      Deployment
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -913,7 +817,7 @@
   
   
     <li class="md-nav__item">
-      <a href="setup/" class="md-nav__link">
+      <a href="../setup/" class="md-nav__link">
         
   
   
@@ -936,7 +840,7 @@
   
   
     <li class="md-nav__item">
-      <a href="project-structure/" class="md-nav__link">
+      <a href="../project-structure/" class="md-nav__link">
         
   
   
@@ -959,7 +863,7 @@
   
   
     <li class="md-nav__item">
-      <a href="database-schema/" class="md-nav__link">
+      <a href="../database-schema/" class="md-nav__link">
         
   
   
@@ -982,7 +886,7 @@
   
   
     <li class="md-nav__item">
-      <a href="api-reference/" class="md-nav__link">
+      <a href="../api-reference/" class="md-nav__link">
         
   
   
@@ -1005,7 +909,7 @@
   
   
     <li class="md-nav__item">
-      <a href="testing.md" class="md-nav__link">
+      <a href="../testing.md" class="md-nav__link">
         
   
   
@@ -1028,7 +932,7 @@
   
   
     <li class="md-nav__item">
-      <a href="contributing.md" class="md-nav__link">
+      <a href="../contributing.md" class="md-nav__link">
         
   
   
@@ -1103,7 +1007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../database/ALEMBIC_GUIDE/" class="md-nav__link">
+      <a href="../../database/ALEMBIC_GUIDE/" class="md-nav__link">
         
   
   
@@ -1126,7 +1030,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../database/STORAGE_FIELDS_GUIDE/" class="md-nav__link">
+      <a href="../../database/STORAGE_FIELDS_GUIDE/" class="md-nav__link">
         
   
   
@@ -1149,7 +1053,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../database/schema-changes.md" class="md-nav__link">
+      <a href="../../database/schema-changes.md" class="md-nav__link">
         
   
   
@@ -1224,7 +1128,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../deployment/aws-eb/" class="md-nav__link">
+      <a href="../../deployment/aws-eb/" class="md-nav__link">
         
   
   
@@ -1247,7 +1151,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../deployment/DEPLOYMENT_CHECKLIST/" class="md-nav__link">
+      <a href="../../deployment/DEPLOYMENT_CHECKLIST/" class="md-nav__link">
         
   
   
@@ -1270,7 +1174,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../deployment/environment-variables.md" class="md-nav__link">
+      <a href="../../deployment/environment-variables.md" class="md-nav__link">
         
   
   
@@ -1293,7 +1197,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../deployment/monitoring.md" class="md-nav__link">
+      <a href="../../deployment/monitoring.md" class="md-nav__link">
         
   
   
@@ -1316,7 +1220,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../deployment/rollback.md" class="md-nav__link">
+      <a href="../../deployment/rollback.md" class="md-nav__link">
         
   
   
@@ -1391,7 +1295,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/overview.md" class="md-nav__link">
+      <a href="../../architecture/overview.md" class="md-nav__link">
         
   
   
@@ -1414,7 +1318,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/ml-system.md" class="md-nav__link">
+      <a href="../../architecture/ml-system.md" class="md-nav__link">
         
   
   
@@ -1437,7 +1341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/CACHING_GUIDE/" class="md-nav__link">
+      <a href="../../architecture/CACHING_GUIDE/" class="md-nav__link">
         
   
   
@@ -1460,7 +1364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/PERFORMANCE_ANALYSIS/" class="md-nav__link">
+      <a href="../../architecture/PERFORMANCE_ANALYSIS/" class="md-nav__link">
         
   
   
@@ -1483,7 +1387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/CONCURRENCY_AUDIT/" class="md-nav__link">
+      <a href="../../architecture/CONCURRENCY_AUDIT/" class="md-nav__link">
         
   
   
@@ -1558,7 +1462,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../planning/IMPROVEMENTS/" class="md-nav__link">
+      <a href="../../planning/IMPROVEMENTS/" class="md-nav__link">
         
   
   
@@ -1581,7 +1485,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../planning/REFACTORING_PLAN/" class="md-nav__link">
+      <a href="../../planning/REFACTORING_PLAN/" class="md-nav__link">
         
   
   
@@ -1604,7 +1508,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../planning/DENORMALIZATION_ANALYSIS/" class="md-nav__link">
+      <a href="../../planning/DENORMALIZATION_ANALYSIS/" class="md-nav__link">
         
   
   
@@ -1627,7 +1531,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../planning/WASM_THUMBNAIL_OPTIMIZATION/" class="md-nav__link">
+      <a href="../../planning/WASM_THUMBNAIL_OPTIMIZATION/" class="md-nav__link">
         
   
   
@@ -1702,7 +1606,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/faq/" class="md-nav__link">
+      <a href="../../reference/faq/" class="md-nav__link">
         
   
   
@@ -1725,7 +1629,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/troubleshooting/" class="md-nav__link">
+      <a href="../../reference/troubleshooting/" class="md-nav__link">
         
   
   
@@ -1748,7 +1652,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/glossary/" class="md-nav__link">
+      <a href="../../reference/glossary/" class="md-nav__link">
         
   
   
@@ -1798,45 +1702,177 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#for-new-developers" class="md-nav__link">
+  <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
-      For New Developers
+      Overview
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#development-workflow" class="md-nav__link">
+  <a href="#current-state" class="md-nav__link">
     <span class="md-ellipsis">
-      Development Workflow
+      Current State
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Current State">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#work-orders" class="md-nav__link">
+    <span class="md-ellipsis">
+      Work Orders
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#repair-orders" class="md-nav__link">
+    <span class="md-ellipsis">
+      Repair Orders
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#completed-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      Completed Work
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Completed Work">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-shared-components-created" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Shared Components Created
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-backend-refactoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Backend Refactoring
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#refactoring-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Refactoring Strategy
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Refactoring Strategy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-update-repair-order-templates-priority" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 1: Update Repair Order Templates (Priority)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-update-work-order-templates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 2: Update Work Order Templates
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 3: Testing
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#specific-template-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Specific Template Structure
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Specific Template Structure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proposed-repair-order-create-template-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Proposed Repair Order Create Template Structure
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#benefits" class="md-nav__link">
+    <span class="md-ellipsis">
+      Benefits
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#code-refactoring-maintenance" class="md-nav__link">
+  <a href="#risks-mitigations" class="md-nav__link">
     <span class="md-ellipsis">
-      Code Refactoring &amp; Maintenance
+      Risks &amp; Mitigations
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#architecture-documentation" class="md-nav__link">
+  <a href="#implementation-order" class="md-nav__link">
     <span class="md-ellipsis">
-      Architecture Documentation
+      Implementation Order
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#deployment" class="md-nav__link">
+  <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
-      Deployment
+      Next Steps
     </span>
   </a>
   
@@ -1861,41 +1897,266 @@
   
 
 
-<h1 id="developer-guide">Developer Guide<a class="headerlink" href="#developer-guide" title="Permanent link">&para;</a></h1>
-<p>Welcome to the Awning Management System Developer Guide!</p>
-<h2 id="for-new-developers">For New Developers<a class="headerlink" href="#for-new-developers" title="Permanent link">&para;</a></h2>
-<p>Start here to get your development environment set up:</p>
+<h1 id="template-unification-refactoring-plan">Template Unification Refactoring Plan<a class="headerlink" href="#template-unification-refactoring-plan" title="Permanent link">&para;</a></h1>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>This document outlines the plan to unify the UI between Work Orders and Repair Orders, following DRY principles and ensuring consistent user experience.</p>
+<h2 id="current-state">Current State<a class="headerlink" href="#current-state" title="Permanent link">&para;</a></h2>
+<h3 id="work-orders">Work Orders<a class="headerlink" href="#work-orders" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>create.html</strong>: 1,212 lines - Modern card-based UI</li>
+<li><strong>edit.html</strong>: 1,110 lines - Similar to create</li>
+<li><strong>Features</strong>:</li>
+<li>Card-style new item layout</li>
+<li>Sophisticated file upload with drag-and-drop</li>
+<li>Customer inventory selection with modern UI</li>
+<li>Comprehensive field organization</li>
+<li>Inline JavaScript (~700 lines)</li>
+</ul>
+<h3 id="repair-orders">Repair Orders<a class="headerlink" href="#repair-orders" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>create.html</strong>: 852 lines - Table-based UI</li>
+<li><strong>edit.html</strong>: 945 lines - Similar to create</li>
+<li><strong>Features</strong>:</li>
+<li>Table-based item layout (less user-friendly)</li>
+<li>Basic file upload</li>
+<li>Customer inventory selection (similar to work orders)</li>
+<li>Inline JavaScript (~400 lines)</li>
+</ul>
+<h2 id="completed-work">Completed Work<a class="headerlink" href="#completed-work" title="Permanent link">&para;</a></h2>
+<h3 id="1-shared-components-created">1. Shared Components Created<a class="headerlink" href="#1-shared-components-created" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ <strong>templates/_order_macros.html</strong> - Reusable Jinja2 macros</li>
+<li><code>customer_inventory_section()</code> - Customer item history</li>
+<li><code>file_upload_section()</code> - File upload with drag-and-drop</li>
+<li><code>new_items_section_cards()</code> - Modern card-style item layout</li>
+<li>
+<p><code>order_summary_sidebar()</code> - Order summary with counters</p>
+</li>
+<li>
+<p>✅ <strong>static/js/order-form-shared.js</strong> - Centralized JavaScript (~450 lines)</p>
+</li>
+<li>Inventory management functions</li>
+<li>Item CRUD operations (add/remove)</li>
+<li>File upload handling with validation</li>
+<li>Counter updates and UI state management</li>
+<li>Autocomplete datalist creation</li>
+</ul>
+<h3 id="2-backend-refactoring">2. Backend Refactoring<a class="headerlink" href="#2-backend-refactoring" title="Permanent link">&para;</a></h3>
+<ul>
+<li>✅ Work order routes refactored with private helper functions</li>
+<li>✅ Repair order routes refactored with private helper functions</li>
+<li>✅ Both follow same clean pattern</li>
+</ul>
+<h2 id="refactoring-strategy">Refactoring Strategy<a class="headerlink" href="#refactoring-strategy" title="Permanent link">&para;</a></h2>
+<h3 id="phase-1-update-repair-order-templates-priority">Phase 1: Update Repair Order Templates (Priority)<a class="headerlink" href="#phase-1-update-repair-order-templates-priority" title="Permanent link">&para;</a></h3>
+<p>Replace table-based layout with modern card-based layout to match work orders.</p>
+<p><strong>Files to modify</strong>:
+1. <code>templates/repair_orders/create.html</code>
+2. <code>templates/repair_orders/edit.html</code></p>
+<p><strong>Changes</strong>:
+1. Import <code>_order_macros.html</code> at top
+2. Replace "Add New Items" table section with <code>new_items_section_cards()</code> macro
+3. Replace inline customer inventory code with <code>customer_inventory_section()</code> macro
+4. Replace inline file upload code with <code>file_upload_section()</code> macro
+5. Replace inline order summary with <code>order_summary_sidebar()</code> macro
+6. Include <code>order-form-shared.js</code> script
+7. Add repair-order-specific JavaScript only (minimal)
+8. Remove duplicate JavaScript code</p>
+<p><strong>Expected reduction</strong>: ~400 lines per file (~800 lines total)</p>
+<h3 id="phase-2-update-work-order-templates">Phase 2: Update Work Order Templates<a class="headerlink" href="#phase-2-update-work-order-templates" title="Permanent link">&para;</a></h3>
+<p>Refactor to use shared components and remove duplication.</p>
+<p><strong>Files to modify</strong>:
+1. <code>templates/work_orders/create.html</code>
+2. <code>templates/work_orders/edit.html</code></p>
+<p><strong>Changes</strong>:
+1. Import <code>_order_macros.html</code> at top
+2. Replace inline sections with macros (same as repair orders)
+3. Include <code>order-form-shared.js</code> script
+4. Add work-order-specific JavaScript only (e.g., RepairsNeeded logic, SeeRepair field)
+5. Remove duplicate JavaScript code</p>
+<p><strong>Expected reduction</strong>: ~700 lines per file (~1,400 lines total)</p>
+<h3 id="phase-3-testing">Phase 3: Testing<a class="headerlink" href="#phase-3-testing" title="Permanent link">&para;</a></h3>
+<p>Test all functionality in both work orders and repair orders:
+- ✅ Customer selection and inventory loading
+- ✅ Item selection from inventory
+- ✅ Adding new items (card-based UI)
+- ✅ Removing items
+- ✅ File upload (drag-and-drop and click)
+- ✅ File removal
+- ✅ Form validation
+- ✅ Form submission
+- ✅ Counter updates
+- ✅ Rush order badges</p>
+<h2 id="specific-template-structure">Specific Template Structure<a class="headerlink" href="#specific-template-structure" title="Permanent link">&para;</a></h2>
+<h3 id="proposed-repair-order-create-template-structure">Proposed Repair Order Create Template Structure<a class="headerlink" href="#proposed-repair-order-create-template-structure" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>{% extends &quot;base.html&quot; %}
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>{% from &quot;_order_macros.html&quot; import
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    customer_inventory_section,
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    file_upload_section,
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    new_items_section_cards,
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    order_summary_sidebar
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>%}
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>{% block title %}Create New Repair Work Order{% endblock %}
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>{% block styles %}
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>{{ super() }}
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>&lt;!-- Any repair-order-specific styles --&gt;
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>{% endblock %}
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>{% block content %}
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>&lt;div class=&quot;container-fluid&quot;&gt;
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    &lt;form method=&quot;POST&quot; id=&quot;repairOrderForm&quot; enctype=&quot;multipart/form-data&quot;&gt;
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        &lt;div class=&quot;row&quot;&gt;
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>            &lt;div class=&quot;col-lg-8&quot;&gt;
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>                &lt;!-- Order Information Card --&gt;
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>                &lt;!-- (repair-order-specific fields) --&gt;
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>                &lt;!-- Repair Details Card --&gt;
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>                &lt;!-- (repair-order-specific fields) --&gt;
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>                &lt;!-- Customer Inventory - SHARED MACRO --&gt;
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>                {{ customer_inventory_section() }}
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>                &lt;!-- New Items - SHARED MACRO --&gt;
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>                {{ new_items_section_cards(title=&quot;Add New Items&quot;) }}
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>                &lt;!-- File Upload - SHARED MACRO --&gt;
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>                {{ file_upload_section() }}
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>            &lt;/div&gt;
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>            &lt;div class=&quot;col-lg-4&quot;&gt;
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>                &lt;!-- Quote &amp; Pricing Card --&gt;
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>                &lt;!-- (repair-order-specific) --&gt;
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>                &lt;!-- Order Summary - SHARED MACRO --&gt;
+<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>                {{ order_summary_sidebar() }}
+<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>
+<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>                &lt;!-- Actions Card --&gt;
+<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>                &lt;!-- (form buttons) --&gt;
+<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>            &lt;/div&gt;
+<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>        &lt;/div&gt;
+<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>    &lt;/form&gt;
+<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>&lt;/div&gt;
+<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>{% endblock %}
+<a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>
+<a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>{% block scripts %}
+<a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>{{ super() }}
+<a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>&lt;!-- Include shared JavaScript --&gt;
+<a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>&lt;script src=&quot;{{ url_for(&#39;static&#39;, filename=&#39;js/order-form-shared.js&#39;) }}&quot;&gt;&lt;/script&gt;
+<a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>
+<a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>&lt;!-- Repair-order-specific initialization --&gt;
+<a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>&lt;script&gt;
+<a id="__codelineno-0-59" name="__codelineno-0-59" href="#__codelineno-0-59"></a>document.addEventListener(&#39;DOMContentLoaded&#39;, function() {
+<a id="__codelineno-0-60" name="__codelineno-0-60" href="#__codelineno-0-60"></a>    // Initialize shared components
+<a id="__codelineno-0-61" name="__codelineno-0-61" href="#__codelineno-0-61"></a>    createDatalists();
+<a id="__codelineno-0-62" name="__codelineno-0-62" href="#__codelineno-0-62"></a>    initializeFileUpload();
+<a id="__codelineno-0-63" name="__codelineno-0-63" href="#__codelineno-0-63"></a>
+<a id="__codelineno-0-64" name="__codelineno-0-64" href="#__codelineno-0-64"></a>    // Load next repair order number
+<a id="__codelineno-0-65" name="__codelineno-0-65" href="#__codelineno-0-65"></a>    fetch(&#39;/repair_work_orders/api/next_ro_number&#39;)
+<a id="__codelineno-0-66" name="__codelineno-0-66" href="#__codelineno-0-66"></a>        .then(response =&gt; response.json())
+<a id="__codelineno-0-67" name="__codelineno-0-67" href="#__codelineno-0-67"></a>        .then(data =&gt; {
+<a id="__codelineno-0-68" name="__codelineno-0-68" href="#__codelineno-0-68"></a>            document.getElementById(&#39;next_ro_number&#39;).value = data.next_ro_number;
+<a id="__codelineno-0-69" name="__codelineno-0-69" href="#__codelineno-0-69"></a>            document.getElementById(&#39;ro-number-display&#39;).textContent = `RO-${data.next_ro_number}`;
+<a id="__codelineno-0-70" name="__codelineno-0-70" href="#__codelineno-0-70"></a>        });
+<a id="__codelineno-0-71" name="__codelineno-0-71" href="#__codelineno-0-71"></a>
+<a id="__codelineno-0-72" name="__codelineno-0-72" href="#__codelineno-0-72"></a>    // Customer change handler
+<a id="__codelineno-0-73" name="__codelineno-0-73" href="#__codelineno-0-73"></a>    document.getElementById(&#39;CustID&#39;).addEventListener(&#39;change&#39;, function() {
+<a id="__codelineno-0-74" name="__codelineno-0-74" href="#__codelineno-0-74"></a>        loadCustomerInventory(this.value);
+<a id="__codelineno-0-75" name="__codelineno-0-75" href="#__codelineno-0-75"></a>        // Load customer source
+<a id="__codelineno-0-76" name="__codelineno-0-76" href="#__codelineno-0-76"></a>        fetch(`/customers/api/customer/${this.value}`)
+<a id="__codelineno-0-77" name="__codelineno-0-77" href="#__codelineno-0-77"></a>            .then(response =&gt; response.json())
+<a id="__codelineno-0-78" name="__codelineno-0-78" href="#__codelineno-0-78"></a>            .then(customer =&gt; {
+<a id="__codelineno-0-79" name="__codelineno-0-79" href="#__codelineno-0-79"></a>                document.getElementById(&#39;SOURCE&#39;).value = customer.Source || &#39;&#39;;
+<a id="__codelineno-0-80" name="__codelineno-0-80" href="#__codelineno-0-80"></a>            });
+<a id="__codelineno-0-81" name="__codelineno-0-81" href="#__codelineno-0-81"></a>    });
+<a id="__codelineno-0-82" name="__codelineno-0-82" href="#__codelineno-0-82"></a>
+<a id="__codelineno-0-83" name="__codelineno-0-83" href="#__codelineno-0-83"></a>    // Rush order change handlers
+<a id="__codelineno-0-84" name="__codelineno-0-84" href="#__codelineno-0-84"></a>    document.getElementById(&#39;RushOrder&#39;).addEventListener(&#39;change&#39;, updateRushStatus);
+<a id="__codelineno-0-85" name="__codelineno-0-85" href="#__codelineno-0-85"></a>    document.getElementById(&#39;FirmRush&#39;).addEventListener(&#39;change&#39;, updateRushStatus);
+<a id="__codelineno-0-86" name="__codelineno-0-86" href="#__codelineno-0-86"></a>
+<a id="__codelineno-0-87" name="__codelineno-0-87" href="#__codelineno-0-87"></a>    // Initialize counts
+<a id="__codelineno-0-88" name="__codelineno-0-88" href="#__codelineno-0-88"></a>    updateCounts();
+<a id="__codelineno-0-89" name="__codelineno-0-89" href="#__codelineno-0-89"></a>});
+<a id="__codelineno-0-90" name="__codelineno-0-90" href="#__codelineno-0-90"></a>&lt;/script&gt;
+<a id="__codelineno-0-91" name="__codelineno-0-91" href="#__codelineno-0-91"></a>{% endblock %}
+</code></pre></div>
+<h2 id="benefits">Benefits<a class="headerlink" href="#benefits" title="Permanent link">&para;</a></h2>
 <ol>
-<li><a href="setup/">Setup &amp; Installation</a> - Get the app running locally</li>
-<li><a href="project-structure/">Project Structure</a> - Understand the codebase organization</li>
-<li><a href="database-schema/">Database Schema</a> - Learn the data model</li>
+<li><strong>Code Reduction</strong>: ~2,200 lines removed across 4 templates</li>
+<li><strong>Consistency</strong>: Identical UI/UX between work orders and repair orders</li>
+<li><strong>Maintainability</strong>: Single source of truth for common components</li>
+<li><strong>DRY Principle</strong>: No duplicate code</li>
+<li><strong>Modern UI</strong>: Card-based layout everywhere (better UX)</li>
+<li><strong>Easier Updates</strong>: Change once, applies everywhere</li>
 </ol>
-<h2 id="development-workflow">Development Workflow<a class="headerlink" href="#development-workflow" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="testing.md">Testing</a> - Running and writing tests</li>
-<li><a href="contributing.md">Contributing</a> - Contribution guidelines</li>
-<li><a href="api-reference/">API Reference</a> - API endpoints and usage</li>
-</ul>
-<h2 id="code-refactoring-maintenance">Code Refactoring &amp; Maintenance<a class="headerlink" href="#code-refactoring-maintenance" title="Permanent link">&para;</a></h2>
-<p>Learn about recent refactoring efforts and patterns:</p>
-<ul>
-<li><a href="template-refactoring-summary/">Template Refactoring Summary</a> - UI unification between work orders and repair orders</li>
-<li><a href="template-refactoring-plan/">Template Refactoring Plan</a> - Detailed refactoring strategy and approach</li>
-</ul>
-<h2 id="architecture-documentation">Architecture Documentation<a class="headerlink" href="#architecture-documentation" title="Permanent link">&para;</a></h2>
-<p>For deeper technical understanding:</p>
-<ul>
-<li><a href="../architecture/overview.md">System Overview</a> - High-level architecture</li>
-<li><a href="../architecture/ml-system.md">ML Prediction System</a> - Machine learning details</li>
-<li><a href="../architecture/PERFORMANCE_ANALYSIS/">Performance Analysis</a> - Optimization strategies</li>
-</ul>
-<h2 id="deployment">Deployment<a class="headerlink" href="#deployment" title="Permanent link">&para;</a></h2>
-<p>Learn about deploying to production:</p>
-<ul>
-<li><a href="../deployment/aws-eb/">AWS Elastic Beanstalk</a> - Deployment guide</li>
-<li><a href="../deployment/environment-variables.md">Environment Variables</a> - Configuration</li>
-<li><a href="../deployment/monitoring.md">Monitoring</a> - Production monitoring</li>
-</ul>
+<h2 id="risks-mitigations">Risks &amp; Mitigations<a class="headerlink" href="#risks-mitigations" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Breaking existing functionality</td>
+<td>Comprehensive testing after each template</td>
+</tr>
+<tr>
+<td>Form field names mismatch</td>
+<td>Careful review of backend expectations</td>
+</tr>
+<tr>
+<td>JavaScript conflicts</td>
+<td>Proper namespace management</td>
+</tr>
+<tr>
+<td>CSS styling issues</td>
+<td>Test in actual browser</td>
+</tr>
+</tbody>
+</table>
+<h2 id="implementation-order">Implementation Order<a class="headerlink" href="#implementation-order" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Repair Orders First</strong> - They need the most improvement</li>
+<li>create.html (estimated 2 hours)</li>
+<li>edit.html (estimated 2 hours)</li>
+<li>
+<p>Testing (1 hour)</p>
+</li>
+<li>
+<p><strong>Work Orders Second</strong> - They're already good, just DRY them</p>
+</li>
+<li>create.html (estimated 1.5 hours)</li>
+<li>edit.html (estimated 1.5 hours)</li>
+<li>
+<p>Testing (1 hour)</p>
+</li>
+<li>
+<p><strong>Integration Testing</strong> - Full end-to-end</p>
+</li>
+<li>Create work order flow</li>
+<li>Edit work order flow</li>
+<li>Create repair order flow</li>
+<li>Edit repair order flow</li>
+<li>File uploads</li>
+<li>Form validation</li>
+</ol>
+<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<p><strong>Option A: Full Automated Refactoring</strong>
+- I proceed with refactoring all 4 templates
+- Run tests after each template
+- Create git commits for each phase</p>
+<p><strong>Option B: Incremental Refactoring</strong>
+- Start with <code>repair_orders/create.html</code> only
+- Test thoroughly
+- Get approval before proceeding to next template</p>
+<p><strong>Option C: Manual Review First</strong>
+- I provide detailed diffs for one template
+- You review and approve approach
+- Then I proceed with remaining templates</p>
+<p>Which approach would you prefer?</p>
 
 
 
@@ -1966,10 +2227,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
       
     
   </body>
