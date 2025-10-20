@@ -180,7 +180,7 @@ def view_customer(customer_id):
 def customer_detail(customer_id):
     """Display detailed view of a customer"""
     customer = Customer.query.get_or_404(customer_id)
-    inventory_items = Inventory.query.filter_by(CustID=customer_id).all()
+    inventory_items = Inventory.query.filter_by(CustID=customer_id).order_by(desc(Inventory.created_at).nulls_last()).all()
 
     # Work Orders: newest first by date
     work_orders = (

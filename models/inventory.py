@@ -1,4 +1,5 @@
 from extensions import db
+from datetime import datetime
 
 
 class Inventory(db.Model):
@@ -14,6 +15,7 @@ class Inventory(db.Model):
     CustID = db.Column("custid", db.Text)
     Qty = db.Column("qty", db.Integer, nullable=True)
     InventoryKey = db.Column("inventorykey", db.Text, primary_key=True)
+    created_at = db.Column("created_at", db.DateTime, default=datetime.utcnow, nullable=True)
 
     def to_dict(self):
         """Convert model instance to dictionary, replacing None with empty strings for text fields"""
