@@ -595,11 +595,16 @@ class WorkOrderPDF:
         instruction_rows = self._calculate_dynamic_instruction_rows(items_count)
 
         # --- Special Instructions with dynamic rows ---
+        # Replace newlines with <br/> tags to preserve formatting in PDF
+        special_instr_text = wo.get("SpecialInstructions", "")
+        if special_instr_text:
+            special_instr_text = special_instr_text.replace("\n", "<br/>")
+
         special_instructions = [
             [
                 safe_paragraph("Special<br/>Instructions", self.styles["SmallLabel"]),
                 safe_paragraph(
-                    wo.get("SpecialInstructions", ""), self.styles["SmallValue"]
+                    special_instr_text, self.styles["SmallValue"]
                 ),
             ]
         ]

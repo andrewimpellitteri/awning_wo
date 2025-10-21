@@ -40,6 +40,8 @@ def prepare_order_data_for_pdf(order, order_type="work_order"):
         order_dict["customer"]["PrimaryPhone"] = order.customer.get_primary_phone()
         order_dict["customer"]["FullAddress"] = order.customer.get_full_address()
         order_dict["customer"]["MailingAddress"] = order.customer.get_mailing_address()
+        # Use clean email to remove #mailto: suffix
+        order_dict["customer"]["EmailAddress"] = order.customer.clean_email()
 
     # Handle source information
     order_dict["source"] = _prepare_source_info(order, order_type)

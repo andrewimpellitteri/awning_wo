@@ -15,27 +15,30 @@ let newItemsCount = 0;
 function getExistingItemInventoryKeys() {
     const keys = new Set();
 
-    // 1. Get inventory keys from existing items (already in the work order)
-    const existingItems = document.querySelectorAll('.existing-item-card[data-inventory-key], input[type="checkbox"][name="existing_item_id[]"][data-inventory-key]');
-    existingItems.forEach(item => {
-        // Check if the item is checked (not removed)
-        let isChecked = true;
-        if (item.tagName === 'INPUT') {
-            isChecked = item.checked;
-        } else {
-            const checkbox = item.querySelector('input[type="checkbox"][name="existing_item_id[]"]');
-            isChecked = checkbox ? checkbox.checked : true;
-        }
-
-        if (isChecked) {
-            const inventoryKey = item.getAttribute('data-inventory-key') || item.dataset.inventoryKey;
+    // 1. Get inventory keys from original existing items (already in the work order)
+    const existingItems = document.querySelectorAll('input[type="checkbox"][name="existing_item_id[]"][data-inventory-key]');
+    existingItems.forEach(checkbox => {
+        if (checkbox.checked) {
+            const inventoryKey = checkbox.getAttribute('data-inventory-key') || checkbox.dataset.inventoryKey;
             if (inventoryKey && inventoryKey.trim() !== '') {
                 keys.add(inventoryKey);
             }
         }
     });
 
-    // 2. Get inventory keys from newly selected items in customer history
+    // 2. Get inventory keys from temp items (newly added from history)
+    const tempItems = document.querySelectorAll('input[type="checkbox"][name="existing_item_id_temp[]"][data-inventory-key]');
+    tempItems.forEach(checkbox => {
+        if (checkbox.checked) {
+            const inventoryKey = checkbox.getAttribute('data-inventory-key') || checkbox.dataset.inventoryKey;
+            if (inventoryKey && inventoryKey.trim() !== '') {
+                keys.add(inventoryKey);
+            }
+        }
+    });
+
+    // 3. Get inventory keys from newly selected items still in customer history
+    // (These are items that are checked but haven't been moved to existing items yet)
     const selectedInventoryItems = document.querySelectorAll('input[type="checkbox"][name="selected_items[]"]:checked');
     selectedInventoryItems.forEach(checkbox => {
         const inventoryKey = checkbox.value;
