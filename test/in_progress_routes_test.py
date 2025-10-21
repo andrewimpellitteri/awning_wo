@@ -269,3 +269,50 @@ class TestInProgressRoutes:
             ).delete()
             db.session.query(Customer).filter_by(CustID="C004").delete()
             db.session.commit()
+
+    def test_all_recent_excludes_empty_untouched_orders(self, logged_in_client, app):
+        """All Recent should NOT show work orders with empty final_location and no progress (Issue #144)."""
+        from models.customer import Customer
+        with app.app_context():
+            c1 = Customer(CustID="C005", Name="Test Customer 5")
+            db.session.add(c1)
+            db.session.commit()
+
+            # Create WO like 56390 - has empty final_location but NO progress
+            wo_untouched = WorkOrder(
+                WorkOrderNo="5001",
+                WOName="Untouched Order",
+                ProcessingStatus=False,
+                Clean=None,
+                Treat=None,
+                final_location="",  # Empty string (database default)
+                DateIn=date(2024, 1, 11),
+                CustID=c1.CustID,
+            )
+            # Create WO that SHOULD appear - has Clean date
+            wo_cleaned = WorkOrder(
+                WorkOrderNo="5002",
+                WOName="Has Progress",
+                ProcessingStatus=False,
+                Clean=date(2024, 1, 12),
+                Treat=None,
+                final_location="",
+                DateIn=date(2024, 1, 11),
+                CustID=c1.CustID,
+            )
+            db.session.add_all([wo_untouched, wo_cleaned])
+            db.session.commit()
+
+            # Check all_recent tab
+            response = logged_in_client.get("/in_progress/all_recent")
+            assert response.status_code == 200
+            # Should NOT show untouched order
+            assert b"Untouched Order" not in response.data
+            # Should show order with progress
+            assert b"Has Progress" in response.data
+
+            db.session.query(WorkOrder).filter(
+                WorkOrder.WorkOrderNo.in_(["5001", "5002"])
+            ).delete()
+            db.session.query(Customer).filter_by(CustID="C005").delete()
+            db.session.commit()

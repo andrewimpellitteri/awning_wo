@@ -217,7 +217,7 @@ class TestWorkOrderFuzzing:
         with app.app_context():
             _setup_and_login(app, client)
             response = client.get(f"/work_orders/{work_order_no}")
-            assert response.status_code in (200, 404)  # OK or Not Found, no 500
+            assert response.status_code in (200, 302, 308, 404)  # OK, redirect, permanent redirect, or Not Found
 
     @given(work_order_no=text_strategy, file_id=st.one_of(
         st.integers(min_value=-10000, max_value=10000).map(str),

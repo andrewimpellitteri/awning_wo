@@ -166,7 +166,7 @@ def all_recent():
             WorkOrder.ProcessingStatus == True,
             WorkOrder.Clean.isnot(None),
             WorkOrder.Treat.isnot(None),
-            WorkOrder.final_location.isnot(None),
+            (WorkOrder.final_location.isnot(None)) & (WorkOrder.final_location != ""),
         ),
         WorkOrder.DateCompleted.is_(None),
     )
