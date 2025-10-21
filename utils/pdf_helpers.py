@@ -2,7 +2,6 @@
 Shared PDF generation helpers for work orders and repair orders.
 This module contains common data preparation logic used by both PDF route handlers.
 """
-from extensions import db
 
 
 def prepare_order_data_for_pdf(order, order_type="work_order"):
@@ -78,7 +77,11 @@ def _prepare_source_info(order, order_type):
         }
 
     # Work order specific: try ship_to_source relationship
-    if order_type == "work_order" and hasattr(order, "ship_to_source") and order.ship_to_source:
+    if (
+        order_type == "work_order"
+        and hasattr(order, "ship_to_source")
+        and order.ship_to_source
+    ):
         return {
             "Name": order.ship_to_source.SSource or "",
             "FullAddress": order.ship_to_source.get_full_address(),

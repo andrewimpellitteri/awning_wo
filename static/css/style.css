@@ -1094,18 +1094,34 @@ body {
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    border-radius: 8px; /* soft corners for frosted look */
 }
 
+/* Low-res thumbnail styling with frosted effect */
 .file-thumbnail {
     width: 100%;
     height: 100%;
     object-fit: cover;
     border-radius: 0;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, filter 0.3s ease, backdrop-filter 0.3s ease;
+    filter: blur(2px) brightness(0.95); /* subtle blur + slight dimming */
 }
 
+/* Hover effect: sharpen and scale */
 .file-item:hover .file-thumbnail {
     transform: scale(1.05);
+    filter: blur(0) brightness(1); /* remove blur, restore brightness */
+}
+
+/* Frosted overlay */
+.file-thumbnail-container::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.15); /* semi-transparent white */
+    backdrop-filter: blur(4px); /* frosted glass effect */
+    pointer-events: none;
+    border-radius: 8px; /* match container */
 }
 
 /* File Icons */

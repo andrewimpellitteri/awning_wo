@@ -661,6 +661,13 @@ def create_work_order(prefill_cust_id=None):
                 error_msg = (
                     str(ie.orig).lower() if hasattr(ie, "orig") else str(ie).lower()
                 )
+
+                if "datein" in error_msg:
+                    flash(
+                        "⚠️ Date In field is required. Please select a valid date before saving.",
+                        "danger",
+                    )
+
                 is_duplicate = "duplicate" in error_msg or "unique" in error_msg
 
                 if is_duplicate and retry_count < max_retries:
@@ -1130,6 +1137,32 @@ def delete_work_order(work_order_no):
         flash(f"Error deleting work order: {str(e)}", "danger")
 
     return redirect(url_for("customers.customer_detail", customer_id=work_order.CustID))
+
+
+@work_orders_bp.route("/delete_file/<int:file_id>", methods=["DELETE"])
+@login_required
+@role_required("admin", "manager")
+def delete_work_order_file(file_id):
+    """Delete a single file associated with a work order (from S3 + DB)"""
+    file_obj = WorkOrderFile.query.get_or_404(file_id)
+
+    try:
+        from utils.file_upload import delete_file_from_s3
+
+        # Delete from S3 (main + thumbnail)
+        if file_obj.file_path:
+            delete_file_from_s3(file_obj.file_path)
+        if file_obj.thumbnail_path:
+            delete_file_from_s3(file_obj.thumbnail_path)
+
+        # Delete DB record
+        db.session.delete(file_obj)
+        db.session.commit()
+
+        return jsonify({"success": True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @work_orders_bp.route("/<work_order_no>/pdf/download")
