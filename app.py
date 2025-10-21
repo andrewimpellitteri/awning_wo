@@ -6,6 +6,7 @@ from sqlalchemy import inspect
 from datetime import datetime, date
 import os
 import re
+from markupsafe import Markup, escape
 
 
 def create_app(config_class=Config):
@@ -18,6 +19,15 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
     cache.init_app(app)
+
+    @app.template_filter("nl2br")
+    def nl2br_filter(s):
+        if not s:
+            return ""
+        # Normalize Windows CRLF and old Mac CR to LF
+        text = s.replace("\r\n", "\n").replace("\r", "\n")
+        # Replace newlines with <br> and mark as safe HTML
+        return Markup(text.replace("\n", "<br>"))
 
     @app.template_filter("price_format")
     def format_price(price):
@@ -33,8 +43,6 @@ def create_app(config_class=Config):
         except (ValueError, TypeError):
             # Return None for invalid values instead of printing error
             return None
-
-    import re
 
     @app.template_filter("format_phone")
     def format_phone(phone) -> str:

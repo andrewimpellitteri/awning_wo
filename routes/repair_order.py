@@ -470,6 +470,7 @@ def view_repair_work_order(repair_order_no):
         .filter_by(RepairOrderNo=repair_order_no)
         .first_or_404()
     )
+
     return render_template(
         "repair_orders/detail.html",
         repair_work_order=repair_work_order,

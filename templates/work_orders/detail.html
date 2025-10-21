@@ -133,7 +133,7 @@
                                     
                                     <div class="detail-row">
                                         <div class="detail-label">Special Instructions</div>
-                                        <div class="detail-value">{{ work_order.SpecialInstructions or '<span class="text-muted">-</span>' | safe }}</div>
+                                        <div class="detail-value">{{ work_order.SpecialInstructions | nl2br or '<span class="text-muted">-</span>' | safe }}</div>
                                     </div>
                                     
                                     <div class="detail-row">
