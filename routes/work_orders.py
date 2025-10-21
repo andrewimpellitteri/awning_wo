@@ -81,6 +81,7 @@ def _update_work_order_fields(work_order, form_data):
     work_order.SpecialInstructions = form_data.get("SpecialInstructions")
     work_order.RepairsNeeded = "RepairsNeeded" in form_data
     work_order.ReturnStatus = form_data.get("ReturnStatus")
+    work_order.ReturnTo = form_data.get("ReturnTo")
     work_order.ShipTo = form_data.get("ShipTo")
     work_order.SeeRepair = form_data.get("SeeRepair")
     work_order.Quote = form_data.get("Quote")

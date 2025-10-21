@@ -940,7 +940,8 @@ addForm.addEventListener('submit', async function(e) {
                     </div>
                 </td>
             `;
-            tableBody.appendChild(row);
+            // Insert new item at the top (newest first) instead of bottom
+            tableBody.insertBefore(row, tableBody.firstChild);
             addForm.reset();
             bootstrap.Modal.getInstance(document.getElementById('addInventoryModal')).hide();
             

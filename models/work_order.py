@@ -29,6 +29,7 @@ class WorkOrder(db.Model):
     SpecialInstructions = db.Column("specialinstructions", db.Text)
     RepairsNeeded = db.Column("repairsneeded", db.Boolean)  # should be bool
     ReturnStatus = db.Column("returnstatus", db.String)
+    ReturnTo = db.Column("returnto", db.String, nullable=True)
     # Date/DateTime fields with proper types
     DateCompleted = db.Column("datecompleted", db.DateTime, nullable=True)
     DateRequired = db.Column("daterequired", db.Date, nullable=True)
@@ -141,6 +142,7 @@ class WorkOrder(db.Model):
             "RepairsNeeded": self.RepairsNeeded,
             "SeeRepair": self.SeeRepair,
             "ReturnStatus": self.ReturnStatus,
+            "ReturnTo": self.ReturnTo,
             # Serialize dates properly
             "DateCompleted": self.DateCompleted.strftime("%m/%d/%Y %H:%M:%S")
             if self.DateCompleted

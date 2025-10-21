@@ -209,6 +209,13 @@
                                     </div>
 
                                     <div class="detail-row">
+                                        <div class="detail-label">Return To</div>
+                                        <div class="detail-value">
+                                            <span class="badge bg-primary">{{ work_order.ReturnTo or 'Not Set' }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="detail-row">
                                         <div class="detail-label">Return Status</div>
                                         <div class="detail-value">
                                             <span class="badge bg-info">{{ work_order.ReturnStatus or 'Not Set' }}</span>

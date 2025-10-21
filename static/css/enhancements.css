@@ -838,6 +838,24 @@ html {
     background: linear-gradient(135deg, var(--text-secondary) 0%, var(--text-primary) 100%);
 }
 
+/* ===== Admin Panel Fixes ===== */
+/* Fix for Update button being cut off in admin user management */
+table tbody td form.d-flex {
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+table tbody td form.d-flex .form-select {
+    flex: 1 1 auto;
+    min-width: 0; /* Allow flex to shrink */
+}
+
+table tbody td form.d-flex .btn {
+    flex: 0 0 auto;
+    white-space: nowrap; /* Prevent button text wrapping */
+    min-width: fit-content;
+}
+
 /* ===== Print Optimizations ===== */
 @media print {
     .card {

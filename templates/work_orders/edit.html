@@ -163,6 +163,19 @@
                                         </div>
 
                                         <div class="detail-row">
+                                            <div class="detail-label">Return To</div>
+                                            <div class="detail-value">
+                                                <select class="form-control" id="ReturnTo" name="ReturnTo">
+                                                    <option value="">-- Select --</option>
+                                                    <option value="Source" {% if work_order.ReturnTo == 'Source' %}selected{% endif %}>Source</option>
+                                                    <option value="Customer" {% if work_order.ReturnTo == 'Customer' %}selected{% endif %}>Customer</option>
+                                                    <option value="Other" {% if work_order.ReturnTo == 'Other' %}selected{% endif %}>Other</option>
+                                                </select>
+                                                <small class="form-text text-muted">Where the package will be returned to</small>
+                                            </div>
+                                        </div>
+
+                                        <div class="detail-row">
                                             <div class="detail-label">Return Status</div>
                                             <div class="detail-value">
                                                 <select class="form-control" id="ReturnStatus" name="ReturnStatus">
@@ -173,6 +186,7 @@
                                                     <option value="Re-Hang" {% if work_order.ReturnStatus == 'Re-Hang' %}selected{% endif %}>Re-hang</option>
                                                     <option value="Unknown" {% if work_order.ReturnStatus == 'Unknown' %}selected{% endif %}>Unknown</option>
                                                 </select>
+                                                <small class="form-text text-muted">How the order will be returned</small>
                                             </div>
                                         </div>
 

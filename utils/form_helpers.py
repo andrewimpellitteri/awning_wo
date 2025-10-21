@@ -46,12 +46,13 @@ def extract_work_order_fields(form):
         "Quote": form.get("Quote"),
         "RushOrder": "RushOrder" in form,
         "FirmRush": "FirmRush" in form,
-        "DateIn": parse_form_date(form, "DateIn", default=date.today()),
+        "DateIn": parse_form_date(form, "DateIn"),
         "DateRequired": parse_form_date(form, "DateRequired"),
         "Clean": parse_form_date(form, "Clean"),
         "Treat": parse_form_date(form, "Treat"),
         "DateCompleted": parse_form_date(form, "DateCompleted"),
         "ReturnStatus": form.get("ReturnStatus"),
+        "ReturnTo": form.get("ReturnTo"),
         "ShipTo": form.get("ShipTo"),
     }
 
@@ -89,9 +90,10 @@ def extract_repair_order_fields(form):
         "SEECLEAN": form.get("SEECLEAN"),
         "RushOrder": "RushOrder" in form,
         "FirmRush": "FirmRush" in form,
-        "DateIn": parse_form_date(form, "DateIn", default=date.today()),
+        "DateIn": parse_form_date(form, "DateIn"),
         "DateRequired": parse_form_date(form, "DateRequired"),
         "DateCompleted": parse_form_date(form, "DateCompleted"),
         "ReturnStatus": form.get("ReturnStatus"),
+        "RETURNTO": form.get("RETURNTO"),
         "ShipTo": form.get("ShipTo"),
     }

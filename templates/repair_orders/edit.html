@@ -172,6 +172,18 @@
                                             </div>
                                         </div>
                                         <div class="detail-row">
+                                            <div class="detail-label">Return To</div>
+                                            <div class="detail-value">
+                                                <select class="form-select" name="RETURNTO">
+                                                    <option value="">-- Select --</option>
+                                                    <option value="Source" {% if repair_work_order.RETURNTO == 'Source' %}selected{% endif %}>Source</option>
+                                                    <option value="Customer" {% if repair_work_order.RETURNTO == 'Customer' %}selected{% endif %}>Customer</option>
+                                                    <option value="Other" {% if repair_work_order.RETURNTO == 'Other' %}selected{% endif %}>Other</option>
+                                                </select>
+                                                <small class="form-text text-muted">Where the package will be returned to</small>
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
                                             <div class="detail-label">Return Method</div>
                                             <div class="detail-value">
                                                 <select class="form-select" name="RETURNSTATUS">

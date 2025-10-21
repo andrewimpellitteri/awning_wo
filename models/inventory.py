@@ -29,6 +29,7 @@ class Inventory(db.Model):
             "Price": float(self.Price) if self.Price is not None else None,
             "CustID": self.CustID or "",
             "Qty": self.Qty or 0,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 
     def __repr__(self):

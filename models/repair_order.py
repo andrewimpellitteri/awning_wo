@@ -78,6 +78,7 @@ class RepairWorkOrder(db.Model):
     MaterialList = db.Column("materiallist", db.Text)
     CUSTOMERPRICE = db.Column("customerprice", db.String)
     RETURNSTATUS = db.Column("returnstatus", db.String)
+    RETURNTO = db.Column("returnto", db.String, nullable=True)
 
     # Denormalized source name from customer (for performance)
     source_name = db.Column("source_name", db.Text, nullable=True)
@@ -180,6 +181,7 @@ class RepairWorkOrder(db.Model):
             "MaterialList": self.MaterialList,
             "CUSTOMERPRICE": self.CUSTOMERPRICE,
             "RETURNSTATUS": self.RETURNSTATUS,
+            "RETURNTO": self.RETURNTO,
             "LOCATION": self.LOCATION,
             "final_location": self.final_location,
             # Timestamps
