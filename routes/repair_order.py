@@ -80,6 +80,7 @@ def _update_repair_order_fields(repair_order, form_data):
     repair_order.MaterialList = form_data.get("MaterialList")
     repair_order.CUSTOMERPRICE = form_data.get("CUSTOMERPRICE")
     repair_order.RETURNSTATUS = form_data.get("RETURNSTATUS")
+    repair_order.RETURNTO = form_data.get("RETURNTO")
     repair_order.LOCATION = form_data.get("LOCATION")
     repair_order.final_location = form_data.get("final_location")
     repair_order.RushOrder = "RushOrder" in form_data

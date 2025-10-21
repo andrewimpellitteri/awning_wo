@@ -123,6 +123,18 @@
                                             </div>
                                         </div>
                                         <div class="detail-row">
+                                            <div class="detail-label">Date Completed</div>
+                                            <div class="detail-value">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">
+                                                        <i class="fas fa-check-circle"></i>
+                                                    </span>
+                                                    <input type="date" class="form-control" name="DateCompleted"
+                                                           value="{{ form_data.get('DateCompleted', '') if form_data else '' }}">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="detail-row">
                                             <div class="detail-label">Priority Options</div>
                                             <div class="detail-value">
                                                 <div class="form-check form-check-inline">
