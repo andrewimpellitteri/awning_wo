@@ -367,6 +367,9 @@
                                 {% if (wo.RushOrder or wo.FirmRush) and not wo.DateCompleted %}
                                 <span class="badge bg-danger me-2">RUSH</span>
                                 {% endif %}
+                                {% if wo.Quote and not wo.DateCompleted %}
+                                <span class="badge bg-info me-2">Quote: {{ wo.Quote }}</span>
+                                {% endif %}
                             </div>
                             <div class="text-center flex-grow-1">
                                 <span class="text-muted">In: {{ (wo.DateIn | date_format) or "No Date" }}</span>
@@ -418,6 +421,9 @@
                                 {% endif %}
                                 {% if ro.RushOrder and not ro.DateCompleted %}
                                 <span class="badge bg-danger me-2">RUSH</span>
+                                {% endif %}
+                                {% if ro.QUOTE and not ro.DateCompleted %}
+                                <span class="badge bg-info me-2">Quote: {{ ro.QUOTE }}</span>
                                 {% endif %}
                             </div>
                             <div class="text-center flex-grow-1">

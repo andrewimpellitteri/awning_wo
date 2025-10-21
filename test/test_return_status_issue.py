@@ -5,8 +5,28 @@ import pytest
 from models.work_order import WorkOrder
 from models.repair_order import RepairWorkOrder
 from models.customer import Customer
+from models.user import User
 from extensions import db
 from datetime import date
+from werkzeug.security import generate_password_hash
+
+
+@pytest.fixture
+def admin_client(client, app):
+    """Provide a logged-in client with admin privileges."""
+    with app.app_context():
+        admin = User(
+            username="admin",
+            email="admin@example.com",
+            password_hash=generate_password_hash("password"),
+            role="admin"
+        )
+        db.session.add(admin)
+        db.session.commit()
+
+    client.post("/login", data={"username": "admin", "password": "password"})
+    yield client
+    client.get("/logout")
 
 
 def test_work_order_return_status_save(client, app):
@@ -93,7 +113,7 @@ def test_repair_order_return_status_save(client, app):
         db.session.commit()
 
 
-def test_work_order_form_submission(client, app, login_admin):
+def test_work_order_form_submission(admin_client, app):
     """Test that ReturnStatus is saved when submitting the work order form"""
     with app.app_context():
         # Create a test customer first
@@ -106,7 +126,7 @@ def test_work_order_form_submission(client, app, login_admin):
         db.session.commit()
 
     # Submit the work order create form with ReturnStatus
-    response = client.post('/work_orders/new', data={
+    response = admin_client.post('/work_orders/new', data={
         'CustID': '999993',
         'WOName': 'Form Test WO',
         'ReturnStatus': 'Ship',
@@ -122,7 +142,7 @@ def test_work_order_form_submission(client, app, login_admin):
         assert wo.ReturnStatus == 'Ship', f"ReturnStatus was not saved from form. Expected 'Ship', got '{wo.ReturnStatus}'"
 
         # Test editing the work order
-        response = client.post(f'/work_orders/edit/{wo.WorkOrderNo}', data={
+        response = admin_client.post(f'/work_orders/edit/{wo.WorkOrderNo}', data={
             'CustID': '999993',
             'WOName': 'Form Test WO',
             'ReturnStatus': 'Pickup',

@@ -336,10 +336,16 @@ body {
 }
 
 /* Dropdown styles */
+.nav-item.dropdown {
+    position: relative;
+    z-index: 1040;
+}
+
 .dropdown-menu {
     background-color: var(--bg-secondary);
     border-color: var(--border-color);
-    z-index: 9999 !important;
+    position: absolute !important;
+    z-index: 10000 !important;
 }
 
 .dropdown-item {
@@ -355,6 +361,8 @@ body {
 .navbar {
     background-color: var(--bg-secondary) !important;
     border-bottom: 1px solid var(--border-color);
+    position: relative;
+    z-index: 1030;
 }
 
 .navbar-nav .nav-link {
