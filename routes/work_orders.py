@@ -679,7 +679,9 @@ def create_work_order(prefill_cust_id=None):
                     continue
                 else:
                     print(f"Error creating work order (IntegrityError): {str(ie)}")
-                    flash(f"Error creating work order: {str(ie)}", "error")
+                    flash(
+                        "⚠️ Database error occurred. Please contact support.", "danger"
+                    )
                     return render_template(
                         "work_orders/create.html",
                         customers=Customer.query.all(),
@@ -824,6 +826,7 @@ def edit_work_order(work_order_no):
 
         except Exception as e:
             db.session.rollback()
+            print(f"Error editing Work Order: {e}")
             flash(f"Error updating work order: {str(e)}", "error")
 
     # GET request - show the form with prefilled data
