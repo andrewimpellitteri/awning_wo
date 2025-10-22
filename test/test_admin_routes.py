@@ -1,10 +1,10 @@
-
 import pytest
 from flask import url_for
 from models.user import User
 from models.invite_token import InviteToken
 from extensions import db
 from werkzeug.security import generate_password_hash
+
 
 class TestAdminRoutes:
     @pytest.fixture(autouse=True)
@@ -120,14 +120,15 @@ class TestAdminRoutes:
         response = client.post(
             url_for("admin.update_user_role", user_id=test_user.id),
             data={"role": "invalid_role"},
-            follow_redirects=True,
+            follow_redirects=False,
         )
-        assert response.status_code == 200
+        assert response.status_code == 302
+        assert response.headers["Location"].endswith(url_for("admin.manage_users"))
         with client.session_transaction() as session:
-            flashed_messages = session.get('_flashes', [])
+            flashed_messages = session.get("_flashes", [])
         assert len(flashed_messages) == 1
-        assert flashed_messages[0][0] == 'error'
+        assert flashed_messages[0][0] == "error"
         assert "Invalid role selected." in flashed_messages[0][1]
         with client.application.app_context():
             updated_user = User.query.get(test_user.id)
-            assert updated_user.role == "user" # Role should not have changed
+            assert updated_user.role == "user"  # Role should not have changed

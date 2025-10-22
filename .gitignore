@@ -166,3 +166,7 @@ scripts/*.csv
 
 templates_archive/
 *.sql
+
+*.prof
+
+profiles/

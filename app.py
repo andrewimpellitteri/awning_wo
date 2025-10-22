@@ -6,7 +6,7 @@ from sqlalchemy import inspect
 from datetime import datetime, date
 import os
 import re
-from markupsafe import Markup, escape
+from markupsafe import Markup
 
 
 def create_app(config_class=Config):
@@ -113,6 +113,19 @@ def create_app(config_class=Config):
 
         except Exception:
             return str(value) if value else "-"
+
+    if os.environ.get("RUN_PROFILER") == "True":
+        from werkzeug.middleware.profiler import ProfilerMiddleware
+
+        os.makedirs("profiles", exist_ok=True)  # Create dir if needed
+        app.wsgi_app = ProfilerMiddleware(
+            app.wsgi_app,
+            profile_dir="profiles",
+            filename_format="{method}.{path}.{elapsed:2.4f}ms.{time}.prof",
+            restrictions=[
+                30
+            ],  # Limit output to top 30 functions (optional, adjust as needed)
+        )
 
     # Import and register blueprints
     from routes.auth import auth_bp

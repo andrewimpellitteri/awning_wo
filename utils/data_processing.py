@@ -91,7 +91,7 @@ def _feet_inches_to_feet(dim_str: str) -> float:
 
         inches = 0.0
         if len(parts) > 1 and parts[1]:
-            inches_str = parts[1].replace('"', '').strip()
+            inches_str = parts[1].replace('"', "").strip()
             if inches_str:
                 try:
                     inches = float(inches_str) / 12.0
@@ -101,7 +101,7 @@ def _feet_inches_to_feet(dim_str: str) -> float:
 
     # Handle inches only: 6"
     elif '"' in dim_str:
-        inches_str = dim_str.replace('"', '').strip()
+        inches_str = dim_str.replace('"', "").strip()
         try:
             return float(inches_str) / 12.0
         except ValueError:
@@ -131,10 +131,10 @@ def _extract_calculated_value(value_str: str) -> Tuple[float, bool]:
     Returns:
         Tuple of (calculated_value, found_value)
     """
-    if '=' not in value_str:
+    if "=" not in value_str:
         return 0.0, False
 
-    parts = value_str.split('=')
+    parts = value_str.split("=")
     if len(parts) < 2:
         return 0.0, False
 
@@ -178,18 +178,18 @@ def _parse_dimension_string(value_str: str) -> float:
         return calc_val
 
     # Remove approximation markers
-    cleaned = value_str.replace('~', '').strip()
+    cleaned = value_str.replace("~", "").strip()
 
     # Handle complex expressions with + (multiple sections)
-    if '+' in cleaned and '=' not in cleaned:
+    if "+" in cleaned and "=" not in cleaned:
         # Try to sum multiple dimensions: "10x5+2x3"
-        sections = cleaned.split('+')
+        sections = cleaned.split("+")
         total = 0.0
         for section in sections:
             section = section.strip()
             # Remove descriptive text after dimensions
-            section = re.sub(r'[-a-zA-Z]+$', '', section)
-            if 'x' in section:
+            section = re.sub(r"[-a-zA-Z]+$", "", section)
+            if "x" in section:
                 section_val = _parse_single_dimension(section)
                 total += section_val
         if total > 0:
@@ -197,7 +197,7 @@ def _parse_dimension_string(value_str: str) -> float:
 
     # Handle dimensions with modifiers (-, wings, cutouts, etc)
     # Remove descriptive suffixes but preserve the dimension
-    cleaned = re.sub(r'[-+][a-zA-Z]+$', '', cleaned)
+    cleaned = re.sub(r"[-+][a-zA-Z]+$", "", cleaned)
 
     # Parse single dimension
     return _parse_single_dimension(cleaned)
@@ -215,7 +215,7 @@ def _parse_single_dimension(dim_str: str) -> float:
     """
     # Match patterns like: 10'6"x8'3" or 10x8 or 10'x8' or 10"x6"
     # Allow optional whitespace around 'x'
-    match = re.match(r'^([\d\'\"]+)\s*x\s*([\d\'\"]+)', dim_str.lower())
+    match = re.match(r"^([\d\'\"]+)\s*x\s*([\d\'\"]+)", dim_str.lower())
 
     if match:
         length_str = match.group(1)
@@ -259,7 +259,8 @@ def _parse_circular_dimension(value_str: str) -> float:
         dim = _feet_inches_to_feet(match.group(1))
         # Assume dimension is radius, calculate area: π * r²
         import math
-        return round(math.pi * (dim ** 2), 2)
+
+        return round(math.pi * (dim**2), 2)
 
     return 0.0
 
@@ -335,7 +336,7 @@ def _parse_ea_price(value_str: str) -> float:
         Numeric value
     """
     # Remove currency symbols and extract number
-    cleaned = value_str.replace('$', '').strip()
+    cleaned = value_str.replace("$", "").strip()
     match = re.match(r"^([\d.]+)\s*(?:ea\.?)", cleaned, re.IGNORECASE)
     if match:
         try:
@@ -363,7 +364,7 @@ def _parse_parentheses_notation(value_str: str) -> float:
     """
     # Try to extract pre-calculated value after parentheses
     # Pattern: (dimensions) [optional text] number
-    match = re.match(r'^\([^)]+\)\s*(?:[A-Z\s]+)?\s*([\d.]+)', value_str, re.IGNORECASE)
+    match = re.match(r"^\([^)]+\)\s*(?:[A-Z\s]+)?\s*([\d.]+)", value_str, re.IGNORECASE)
     if match:
         try:
             return float(match.group(1))
@@ -371,7 +372,7 @@ def _parse_parentheses_notation(value_str: str) -> float:
             pass
 
     # If no pre-calculated, try to extract dimensions from parentheses
-    paren_match = re.match(r'^\(([^)]+)\)', value_str)
+    paren_match = re.match(r"^\(([^)]+)\)", value_str)
     if paren_match:
         inner = paren_match.group(1)
         # Try to parse the inner dimension
@@ -437,43 +438,43 @@ def clean_square_footage(value: Union[str, float, int, None]) -> float:
     val = str(value).strip()
 
     # Quick check for sail weights (ends with #)
-    if val.endswith('#'):
+    if val.endswith("#"):
         return clean_sail_weight(val)
 
     # Remove currency symbols, approximation markers, and common prefixes
-    val = val.replace('$', '').replace('~', '').strip()
+    val = val.replace("$", "").replace("~", "").strip()
 
     # Remove unit markers at end that interfere with parsing
     # But preserve them for specific parsers
     val_for_parsing = val
 
     # Check for parentheses notation first (most specific)
-    if val.startswith('('):
+    if val.startswith("("):
         result = _parse_parentheses_notation(val)
         if result > 0:
             return result
 
     # Check for circular/round dimensions (R notation or "round")
     # Look for patterns like "4'8R=", "4'R=", "round="
-    if re.search(r'R\s*=|round', val, re.IGNORECASE):
+    if re.search(r"R\s*=|round", val, re.IGNORECASE):
         result = _parse_circular_dimension(val)
         if result > 0:
             return result
 
     # Check for pound notation (lb.)
-    if 'lb' in val.lower():
+    if "lb" in val.lower():
         result = _parse_pound_notation(val)
         if result > 0:
             return result
 
     # Check for yardage
-    if 'yd' in val.lower():
+    if "yd" in val.lower():
         result = _parse_yardage(val)
         if result > 0:
             return result
 
     # Check for dimensions (contains 'x')
-    if 'x' in val.lower():
+    if "x" in val.lower():
         result = _parse_dimension_string(val)
         if result > 0:
             return result
@@ -486,13 +487,13 @@ def clean_square_footage(value: Union[str, float, int, None]) -> float:
             return result
 
     # Check for "ea." notation (might be price, might be size)
-    if 'ea' in val.lower():
+    if "ea" in val.lower():
         result = _parse_ea_price(val)
         if result > 0:
             return result
 
     # Try plain number (after removing units)
-    val_clean = re.sub(r'\s*(ea\.?|pcs?|each)\s*$', '', val, flags=re.IGNORECASE)
+    val_clean = re.sub(r"\s*(ea\.?|pcs?|each)\s*$", "", val, flags=re.IGNORECASE)
     val_clean = val_clean.strip("'\"")
     try:
         result = float(val_clean)
@@ -529,8 +530,8 @@ def identify_product_type(sizewgt: Union[str, None]) -> str:
 def parse_work_order_items(
     items_df: pd.DataFrame,
     detect_outliers: bool = True,
-    outlier_threshold: float = 10000.0,
-    replace_with_mean: bool = True
+    outlier_threshold: float = 8000.0,
+    replace_with_mean: bool = True,
 ) -> pd.DataFrame:
     """
     Process a DataFrame of work order items, parsing sizes and identifying product types.
@@ -562,49 +563,53 @@ def parse_work_order_items(
     df = items_df.copy()
 
     # Clean price column
-    df['price_numeric'] = df['price'].apply(clean_numeric_string)
+    df["price_numeric"] = df["price"].apply(clean_numeric_string)
 
     # Identify product type
-    df['sizewgt'] = df['sizewgt'].astype(str)
-    df['product_type'] = df['sizewgt'].apply(identify_product_type)
+    df["sizewgt"] = df["sizewgt"].astype(str)
+    df["product_type"] = df["sizewgt"].apply(identify_product_type)
 
     # Clean quantity
-    df['qty_numeric'] = pd.to_numeric(df['qty'], errors='coerce').fillna(0)
+    df["qty_numeric"] = pd.to_numeric(df["qty"], errors="coerce").fillna(0)
 
     # Calculate square footage - ONLY for Awnings, exclude Sails
-    df['sqft'] = df.apply(
+    df["sqft"] = df.apply(
         lambda row: (
-            row['qty_numeric'] * clean_square_footage(row['sizewgt'])
-            if row['product_type'] == 'Awning'
+            row["qty_numeric"] * clean_square_footage(row["sizewgt"])
+            if row["product_type"] == "Awning"
             else 0.0
         ),
-        axis=1
+        axis=1,
     )
 
     # Outlier detection and replacement
     if detect_outliers:
         # Flag outliers
-        df['is_outlier'] = (df['sqft'] > outlier_threshold) & (df['product_type'] == 'Awning')
+        df["is_outlier"] = (df["sqft"] > outlier_threshold) & (
+            df["product_type"] == "Awning"
+        )
 
-        if replace_with_mean and df['is_outlier'].any():
+        if replace_with_mean and df["is_outlier"].any():
             # Calculate mean from non-outlier awnings with sqft > 0
             non_outlier_awnings = df[
-                (df['product_type'] == 'Awning') &
-                (df['sqft'] > 0) &
-                (~df['is_outlier'])
+                (df["product_type"] == "Awning")
+                & (df["sqft"] > 0)
+                & (~df["is_outlier"])
             ]
 
             if len(non_outlier_awnings) > 0:
-                mean_sqft = non_outlier_awnings['sqft'].mean()
+                mean_sqft = non_outlier_awnings["sqft"].mean()
 
                 # Replace outliers with mean
-                df.loc[df['is_outlier'], 'sqft'] = mean_sqft
+                df.loc[df["is_outlier"], "sqft"] = mean_sqft
 
                 # Log replacement (optional - could be removed for production)
-                n_outliers = df['is_outlier'].sum()
+                n_outliers = df["is_outlier"].sum()
                 if n_outliers > 0:
-                    print(f"[INFO] Replaced {n_outliers} outliers (>{outlier_threshold:,.0f} sqft) with mean: {mean_sqft:,.2f} sqft")
+                    print(
+                        f"[INFO] Replaced {n_outliers} outliers (>{outlier_threshold:,.0f} sqft) with mean: {mean_sqft:,.2f} sqft"
+                    )
     else:
-        df['is_outlier'] = False
+        df["is_outlier"] = False
 
     return df
