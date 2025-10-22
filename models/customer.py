@@ -1,4 +1,5 @@
 from extensions import db
+import re
 
 
 class Customer(db.Model):
@@ -57,6 +58,7 @@ class Customer(db.Model):
             "WorkPhone": self.WorkPhone,
             "CellPhone": self.CellPhone,
             "EmailAddress": self.EmailAddress,
+            "CleanEmail": self.clean_email(),
             "MailAddress": self.MailAddress,
             "MailCity": self.MailCity,
             "MailState": self.MailState,
@@ -70,10 +72,22 @@ class Customer(db.Model):
         }
 
     def clean_email(self):
-        """Clean email by removing #mailto: suffix"""
-        if self.EmailAddress and "#mailto:" in self.EmailAddress:
-            return self.EmailAddress.split("#mailto:")[0]
-        return self.EmailAddress
+        """Clean up duplicated '#mailto:' email strings and return a single valid email."""
+        if not self.EmailAddress:
+            return None
+
+        text = str(self.EmailAddress).strip()
+
+        # Remove everything after the first '#mailto:' (common duplication)
+        if "#mailto:" in text:
+            text = text.split("#mailto:")[0]
+
+        # Remove trailing '#' or stray characters
+        text = text.split("#")[0].strip()
+
+        # Extract the first valid email address
+        match = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", text)
+        return match.group(0) if match else None
 
     def clean_phone(self, phone_field):
         """Format phone number for display"""

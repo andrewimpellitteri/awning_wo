@@ -144,7 +144,7 @@ class WorkOrder(db.Model):
             "ReturnStatus": self.ReturnStatus,
             "ReturnTo": self.ReturnTo,
             # Serialize dates properly
-            "DateCompleted": self.DateCompleted.strftime("%m/%d/%Y %H:%M:%S")
+            "DateCompleted": self.DateCompleted.strftime("%m/%d/%Y")
             if self.DateCompleted
             else None,
             "DateRequired": self.DateRequired.strftime("%m/%d/%Y")

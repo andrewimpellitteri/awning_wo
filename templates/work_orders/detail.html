@@ -26,19 +26,12 @@
                 </div>
                 
                 <div class="d-flex gap-2">
-                    <div class="dropdown">
-                        <button class="btn btn-info dropdown-toggle" type="button" id="pdfDropdown5" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-file-pdf"></i> PDF Options
-                        </button>
-                        <ul class="dropdown-menu" aria-labelledby="pdfDropdown5">
-                            <li><a class="dropdown-item" href="{{ url_for('work_orders.download_work_order_pdf', work_order_no=work_order.WorkOrderNo) }}">
-                                <i class="fas fa-download"></i> Download PDF
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('work_orders.view_work_order_pdf', work_order_no=work_order.WorkOrderNo) }}" target="_blank">
-                                <i class="fas fa-eye"></i> View PDF
-                            </a></li>
-                        </ul>
-                    </div>
+                    <a href="{{ url_for('work_orders.view_work_order_pdf', work_order_no=work_order.WorkOrderNo) }}" 
+                        target="_blank" 
+                        class="btn btn-info">
+                            <i class="fas fa-eye"></i> View PDF
+                    </a>
+
                     
                     {% set edit_endpoint = 'work_orders.cleaning_room_edit_work_order' if current_user.role == 'user' else 'work_orders.edit_work_order' %}
                     <a href="{{ url_for(edit_endpoint, work_order_no=work_order.WorkOrderNo, return_url=return_url) }}"

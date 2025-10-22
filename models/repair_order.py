@@ -154,7 +154,7 @@ class RepairWorkOrder(db.Model):
             "DateRequired": self.DateRequired.strftime("%m/%d/%Y")
             if self.DateRequired
             else None,
-            "DateCompleted": self.DateCompleted.strftime("%m/%d/%Y %H:%M:%S")
+            "DateCompleted": self.DateCompleted.strftime("%m/%d/%Y")
             if self.DateCompleted
             else None,
             "RETURNDATE": self.RETURNDATE.strftime("%m/%d/%Y")

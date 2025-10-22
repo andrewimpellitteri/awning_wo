@@ -285,9 +285,7 @@ class RepairOrderPDF:
             """Return a Paragraph with optional red highlighting for 'Yes'"""
             is_rush = safe_bool_convert(flag)
             style = (
-                self.styles["RushHighlight"]
-                if is_rush
-                else self.styles["SmallValue"]
+                self.styles["RushHighlight"] if is_rush else self.styles["SmallValue"]
             )
             return safe_paragraph(map_bool_display(flag), style)
 
@@ -399,7 +397,7 @@ class RepairOrderPDF:
             [
                 safe_paragraph("Email", self.styles["SmallLabel"]),
                 safe_paragraph(
-                    customer.get("EmailAddress", ""), self.styles["SmallValue"]
+                    customer.get("CleanEmail", ""), self.styles["SmallValue"]
                 ),
             ],
         ]
@@ -526,7 +524,12 @@ class RepairOrderPDF:
                 ),
                 safe_paragraph(str(item.get("Material", "")), self.styles["TableCell"]),
                 safe_paragraph(
-                    str(item.get("Condition", "")), self.styles["TableCell"]
+                    (
+                        str(item.get("Condition"))
+                        if item.get("Condition") is not None
+                        else ""
+                    ),
+                    self.styles["TableCell"],
                 ),
                 safe_paragraph(str(item.get("Color", "")), self.styles["TableCell"]),
                 safe_paragraph(str(item.get("SizeWgt", "")), self.styles["TableCell"]),
@@ -634,7 +637,9 @@ class RepairOrderPDF:
                     self.styles["SmallValue"],
                 ),
                 safe_paragraph("Clean First", self.styles["SmallLabel"]),
-                safe_paragraph(map_bool_display(ro.get("CLEANFIRST")), self.styles["SmallValue"]),
+                safe_paragraph(
+                    map_bool_display(ro.get("CLEANFIRST")), self.styles["SmallValue"]
+                ),
             ]
         ]
 

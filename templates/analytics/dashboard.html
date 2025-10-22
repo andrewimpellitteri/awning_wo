@@ -245,6 +245,36 @@
 
 {% block scripts %}
 <script>
+/**
+ * Animate a Plotly line chart rising up from the x-axis.
+ * @param {string} divId - The ID of the chart div.
+ * @param {Array} traces - The Plotly trace(s) to plot.
+ * @param {Object} layout - The layout object.
+ * @param {Object} [config] - Optional Plotly config (responsive, modebar, etc.).
+ * @param {number} [duration=1200] - Animation duration in ms.
+ */
+function animatePlotlyRise(divId, traces, layout, config = {}, duration = 1200) {
+    // Deep copy traces so we don’t mutate the original
+    const initialTraces = traces.map(trace => ({
+        ...trace,
+        y: trace.y ? Array(trace.y.length).fill(0) : []
+    }));
+
+    // Render flat line first
+    Plotly.newPlot(divId, initialTraces, layout, config).then(() => {
+        // Animate upward
+        Plotly.animate(divId, {
+            data: traces.map(t => ({ y: t.y })),
+            traces: traces.map((_, i) => i),
+            layout: {}
+        }, {
+            transition: { duration: duration, easing: 'cubic-in-out' },
+            frame: { duration: duration, redraw: false }
+        });
+    });
+}
+
+
 document.addEventListener('DOMContentLoaded', function() {
     // Check for dark theme
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -418,6 +448,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Backlog Chart
             if (data.backlog && data.backlog.length > 0) {
+                // NEW: Compute true min/max dates from all data points to avoid parsing issues or unsorted data
+                const dates = data.backlog.map(d => new Date(d.date)).filter(d => !isNaN(d.getTime())); // Filter invalid dates
+                if (dates.length === 0) {
+                    document.getElementById('backlog-chart').innerHTML = '<div class="loading">No valid data available</div>';
+                    return;
+                }
+                const minDate = new Date(Math.min(...dates));
+                const maxDate = new Date(Math.max(...dates));
+                console.log(minDate, maxDate);
+
+
                 const backlogTrace = {
                     x: data.backlog.map(d => d.date),
                     y: data.backlog.map(d => d.backlog_sqft),
@@ -438,7 +479,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     xaxis: {
                         ...commonLayout.xaxis,
                         title: 'Date',
-                        range: [data.backlog[0].date, new Date().toISOString().split('T')[0]],
+                        range: [minDate.toISOString().split('T')[0], maxDate.toISOString().split('T')[0]],
+                        autorange: false,
+                        rangeMode: 'normal',
                         rangeselector: {
                             buttons: [
                                 { count: 7, label: '1W', step: 'day', stepmode: 'backward' },

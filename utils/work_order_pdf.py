@@ -306,9 +306,7 @@ class WorkOrderPDF:
             # Convert to boolean using the safe helper
             is_rush = safe_bool_convert(flag)
             style = (
-                self.styles["RushHighlight"]
-                if is_rush
-                else self.styles["SmallValue"]
+                self.styles["RushHighlight"] if is_rush else self.styles["SmallValue"]
             )
             return safe_paragraph(map_bool_display(flag), style)
 
@@ -420,7 +418,7 @@ class WorkOrderPDF:
             [
                 safe_paragraph("Email", self.styles["SmallLabel"]),
                 safe_paragraph(
-                    customer.get("EmailAddress", ""), self.styles["SmallValue"]
+                    customer.get("CleanEmail", ""), self.styles["SmallValue"]
                 ),
             ],
         ]
@@ -531,7 +529,12 @@ class WorkOrderPDF:
                 ),
                 safe_paragraph(str(item.get("Material", "")), self.styles["TableCell"]),
                 safe_paragraph(
-                    str(item.get("Condition", "")), self.styles["TableCell"]
+                    (
+                        str(item.get("Condition"))
+                        if item.get("Condition") is not None
+                        else ""
+                    ),
+                    self.styles["TableCell"],
                 ),
                 safe_paragraph(str(item.get("Color", "")), self.styles["TableCell"]),
                 safe_paragraph(str(item.get("SizeWgt", "")), self.styles["TableCell"]),
@@ -603,9 +606,7 @@ class WorkOrderPDF:
         special_instructions = [
             [
                 safe_paragraph("Special<br/>Instructions", self.styles["SmallLabel"]),
-                safe_paragraph(
-                    special_instr_text, self.styles["SmallValue"]
-                ),
+                safe_paragraph(special_instr_text, self.styles["SmallValue"]),
             ]
         ]
 
