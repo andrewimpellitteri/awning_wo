@@ -47,6 +47,44 @@ def load_work_orders(db_engine):
         df["datein"] = pd.to_datetime(df["datein"], errors="coerce")
         df["datecompleted"] = pd.to_datetime(df["datecompleted"], errors="coerce")
 
+        valid_start = pd.to_datetime("2001-01-01")
+        valid_end = pd.to_datetime("2025-12-31")
+
+        # For datein: Keep NaT or valid range
+        df = df[
+            (df["datein"].isna())
+            | ((df["datein"] >= valid_start) & (df["datein"] <= valid_end))
+        ]
+
+        # For datecompleted: Keep NaT or valid range
+        df = df[
+            (df["datecompleted"].isna())
+            | (
+                (df["datecompleted"] >= valid_start)
+                & (df["datecompleted"] <= valid_end)
+            )
+        ]
+
+        # NEW DEBUG: Post-filter stats
+        print(
+            "[DEBUG] Post-filter datein min/max/NaT count:",
+            df["datein"].min(),
+            df["datein"].max(),
+            df["datein"].isna().sum(),
+        )
+        print(
+            "[DEBUG] Post-filter datecompleted min/max/NaT count:",
+            df["datecompleted"].min(),
+            df["datecompleted"].max(),
+            df["datecompleted"].isna().sum(),
+        )
+        print("[DEBUG] Rows after date filter:", len(df))
+        # Optional: Log removed bad years for audit
+
+        # pre_filter_rows = len(df) + (df['datecompleted'].isna().sum() + df['datein'].isna().sum())  # Rough, but adjust if needed
+
+        # print(f"[DEBUG] Approx rows removed by filter: {original_rows - len(df)}")  # Set original_rows = len(df) before filter
+
         # Load order items
         items_query = (
             "SELECT workorderno, custid, qty, sizewgt, price FROM tblorddetcustawngs"
