@@ -60,6 +60,8 @@ def initialize_queue_positions_for_unassigned():
     try:
         base_filter = and_(
             WorkOrder.DateCompleted.is_(None),
+            WorkOrder.Clean.is_(None),        # Exclude already cleaned orders
+            WorkOrder.Treat.is_(None),        # Exclude already treated orders
             WorkOrder.Quote == 'Approved'
         )
 
@@ -198,7 +200,12 @@ def initialize_queue_positions_for_unassigned():
 def initialize_all_queue_positions(force_reset=False):
     """Initialize queue positions for all work orders that don't have them"""
     try:
-        base_filter = WorkOrder.DateCompleted.is_(None)
+        base_filter = and_(
+            WorkOrder.DateCompleted.is_(None),
+            WorkOrder.Clean.is_(None),        # Exclude already cleaned orders
+            WorkOrder.Treat.is_(None),        # Exclude already treated orders
+            WorkOrder.Quote == 'Approved'
+        )
 
         if force_reset:
             # Clear all existing positions first
@@ -249,54 +256,6 @@ def initialize_all_queue_positions(force_reset=False):
         print(f"Error initializing queue positions: {e}")
         return 0
 
-    """Initialize queue positions for work orders that don't have them (preserves existing manual ordering)"""
-    try:
-        base_filter = WorkOrder.DateCompleted.is_(None)
-
-        # Only get work orders without queue positions
-        unassigned_orders = WorkOrder.query.filter(
-            base_filter, WorkOrder.QueuePosition.is_(None)
-        ).all()
-
-        if not unassigned_orders:
-            return 0
-
-        # Sort unassigned orders by priority and date
-        def priority_sort_key(wo):
-            if wo.FirmRush:
-                return (
-                    1,
-                    safe_date_sort_key(wo.DateRequired),
-                    safe_date_sort_key(wo.DateIn),
-                    wo.WorkOrderNo,
-                )
-            elif wo.RushOrder:
-                return (2, safe_date_sort_key(wo.DateIn), wo.WorkOrderNo)
-            else:
-                return (3, safe_date_sort_key(wo.DateIn), wo.WorkOrderNo)
-
-        sorted_unassigned = sorted(unassigned_orders, key=priority_sort_key)
-
-        # Get the highest existing queue position to continue from there
-        max_position = (
-            db.session.query(func.max(WorkOrder.QueuePosition))
-            .filter(base_filter)
-            .scalar()
-            or 0
-        )
-
-        # Assign positions to unassigned orders
-        for i, wo in enumerate(sorted_unassigned):
-            wo.QueuePosition = max_position + i + 1
-
-        db.session.commit()
-        return len(sorted_unassigned)
-
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error initializing queue positions: {e}")
-        return 0
-
 
 @queue_bp.route("/cleaning-queue")
 @login_required
@@ -324,9 +283,11 @@ def cleaning_queue():
             )
         )
 
-    # Base filters: incomplete work orders with approved quotes
+    # Base filters: incomplete work orders with approved quotes that haven't been cleaned/treated yet
     base_filter = and_(
         WorkOrder.DateCompleted.is_(None),
+        WorkOrder.Clean.is_(None),        # Exclude already cleaned orders
+        WorkOrder.Treat.is_(None),        # Exclude already treated orders
         WorkOrder.Quote == 'Approved'
     )
 
@@ -568,9 +529,11 @@ def reorder_cleaning_queue():
 @login_required
 def cleaning_queue_summary():
     """API endpoint for dashboard summary of cleaning queue"""
-    # Count work orders in cleaning queue by priority (only approved quotes)
+    # Count work orders in cleaning queue by priority (only approved quotes that haven't been cleaned/treated)
     base_filter = and_(
         WorkOrder.DateCompleted.is_(None),
+        WorkOrder.Clean.is_(None),        # Exclude already cleaned orders
+        WorkOrder.Treat.is_(None),        # Exclude already treated orders
         WorkOrder.Quote == 'Approved'
     )
 
@@ -715,7 +678,12 @@ def initialize_queue_positions():
 def reset_all_queue_positions():
     """Reset all queue positions and reassign them from scratch (WARNING: destroys manual ordering)"""
     try:
-        base_filter = WorkOrder.DateCompleted.is_(None)
+        base_filter = and_(
+            WorkOrder.DateCompleted.is_(None),
+            WorkOrder.Clean.is_(None),        # Exclude already cleaned orders
+            WorkOrder.Treat.is_(None),        # Exclude already treated orders
+            WorkOrder.Quote == 'Approved'
+        )
 
         # Clear all existing queue positions
         cleared_count = WorkOrder.query.filter(base_filter).update(

@@ -754,6 +754,16 @@ def edit_work_order(work_order_no):
                 work_order.SeeRepair.strip() if work_order.SeeRepair else None
             )
 
+            # Track old values for queue-relevant fields
+            old_rush_order = work_order.RushOrder
+            old_firm_rush = work_order.FirmRush
+            old_date_required = work_order.DateRequired
+            old_date_in = work_order.DateIn
+            old_clean = work_order.Clean
+            old_treat = work_order.Treat
+            old_date_completed = work_order.DateCompleted
+            old_quote = work_order.Quote
+
             # Update work order fields
             _update_work_order_fields(work_order, request.form)
 
@@ -802,6 +812,23 @@ def edit_work_order(work_order_no):
             # Sync source_name if customer changed
             if work_order.CustID != old_cust_id:
                 work_order.sync_source_name()
+
+            # Clear queue position if queue-relevant fields changed
+            # The queue page will auto-reassign position correctly on next load
+            queue_fields_changed = (
+                work_order.RushOrder != old_rush_order
+                or work_order.FirmRush != old_firm_rush
+                or work_order.DateRequired != old_date_required
+                or work_order.DateIn != old_date_in
+                or work_order.Clean != old_clean
+                or work_order.Treat != old_treat
+                or work_order.DateCompleted != old_date_completed
+                or work_order.Quote != old_quote
+            )
+
+            if queue_fields_changed and work_order.QueuePosition is not None:
+                print(f"Queue-relevant fields changed for WO {work_order_no}, clearing QueuePosition")
+                work_order.QueuePosition = None
 
             db.session.commit()
 
@@ -857,6 +884,10 @@ def cleaning_room_edit_work_order(work_order_no):
 
     if request.method == "POST":
         try:
+            # Track old values for queue-relevant fields
+            old_clean = work_order.Clean
+            old_treat = work_order.Treat
+
             clean_str = request.form.get("Clean")
             work_order.Clean = (
                 datetime.strptime(clean_str, "%Y-%m-%d").date() if clean_str else None
@@ -908,6 +939,16 @@ def cleaning_room_edit_work_order(work_order_no):
                             print(f"  - Thumbnail prepared: {wo_file.thumbnail_path}")
 
             work_order.final_location = request.form.get("final_location")
+
+            # Clear queue position if Clean or Treat dates were set
+            # (work order is now in progress, should not be in cleaning queue)
+            queue_fields_changed = (
+                work_order.Clean != old_clean or work_order.Treat != old_treat
+            )
+
+            if queue_fields_changed and work_order.QueuePosition is not None:
+                print(f"Clean/Treat date changed for WO {work_order_no}, clearing QueuePosition")
+                work_order.QueuePosition = None
 
             # Commit DB transaction first
             db.session.commit()
