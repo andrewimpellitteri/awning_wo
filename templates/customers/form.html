@@ -91,8 +91,8 @@
                                             <select class="form-select" id="Source" name="Source">
                                                 <option value="">Select a source...</option>
                                                 {% for source in sources %}
-                                                    <option value="{{ source.SSource }}" 
-                                                            {% if (edit_mode and source.SSource == customer.Source) or (form_data and source.SSource == form_data.Source) %}selected{% endif %}>
+                                                    <option value="{{ source.SSource }}"
+                                                            {% if (edit_mode and source.SSource == customer.Source) or (form_data and source.SSource == form_data.Source) or (pre_selected_source and source.SSource == pre_selected_source) %}selected{% endif %}>
                                                         {{ source.SSource }}
                                                     </option>
                                                 {% endfor %}

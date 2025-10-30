@@ -317,7 +317,10 @@ def create_customer():
         )
 
     sources = Source.query.order_by(Source.SSource).all()
-    return render_template("customers/form.html", sources=sources)
+    pre_selected_source = request.args.get("source", "").strip()
+    return render_template(
+        "customers/form.html", sources=sources, pre_selected_source=pre_selected_source
+    )
 
 
 @customers_bp.route("/edit/<customer_id>", methods=["GET", "POST"])

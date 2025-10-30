@@ -227,6 +227,15 @@ class TestCustomerRoutes:
         new_cust = Customer.query.filter_by(Name="New Customer").first()
         assert new_cust is not None
 
+    def test_create_customer_with_source_preselected(self, admin_client):
+        """Test that source is pre-selected when passed as query parameter."""
+        response = admin_client.get("/customers/new?source=SRC1")
+        assert response.status_code == 200
+        assert b"Create Customer" in response.data
+        # Check that the source is pre-selected in the dropdown
+        assert b'<option value="SRC1"' in response.data
+        assert b'selected' in response.data
+
     def test_create_customer_invalid_data(self, admin_client, sample_customers):
         """Test creating a customer with invalid data."""
         response = admin_client.post("/customers/new", data={"Source": "SRC1"})
