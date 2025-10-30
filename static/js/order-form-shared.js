@@ -8,6 +8,9 @@ let newItemCounter = 0;
 let selectedItemsCount = 0;
 let newItemsCount = 0;
 
+// Global flag to determine if we're on a repair order form (set by page)
+let isRepairOrder = false;
+
 /**
  * Get inventory keys of items currently in the order
  * @returns {Set} Set of inventory keys
@@ -121,6 +124,11 @@ function loadCustomerInventory(custId) {
 
             let html = '';
             availableItems.forEach(item => {
+                // For repair orders, don't show price (it's a cleaning price, not relevant)
+                const priceDisplay = isRepairOrder ? '' : `<strong>${formatPrice(item.price)}</strong>`;
+                const sizeColClass = isRepairOrder ? 'col-md-3' : 'col-md-2';
+                const qtyColClass = isRepairOrder ? 'col-md-3' : 'col-md-2';
+
                 html += `
                     <div class="inventory-item" onclick="toggleItem(this, '${item.id}')">
                         <div class="form-check">
@@ -135,12 +143,12 @@ function loadCustomerInventory(custId) {
                                         <span class="badge bg-secondary">${item.condition || 'Unknown'}</span>
                                         <br><small class="text-muted">${item.color || 'No color'}</small>
                                     </div>
-                                    <div class="col-md-2 text-center">
+                                    <div class="${sizeColClass} text-center">
                                         <small class="text-muted">Size:</small><br>
                                         <small>${item.size_wgt || '-'}</small><br>
-                                        <strong>${formatPrice(item.price)}</strong>
+                                        ${priceDisplay}
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="${qtyColClass}">
                                         <label class="form-label small">Qty:</label>
                                         <input type="number" class="form-control form-control-sm qty-input"
                                             name="item_qty_${item.id}" value="${item.qty || 1}" min="1"
@@ -301,6 +309,20 @@ function removeItemFromExistingItems(inventoryKey) {
  */
 function addNewItem() {
     const container = document.getElementById('new-items-container');
+
+    // For repair orders, don't show price field (only overall repair price matters)
+    const priceField = isRepairOrder ? '' : `
+                <div class="col-md-4 mb-3">
+                    <label class="form-label detail-label">Price</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" name="new_item_price[]" step="0.01" min="0">
+                    </div>
+                </div>`;
+
+    const colorColClass = isRepairOrder ? 'col-md-6' : 'col-md-4';
+    const sizeColClass = isRepairOrder ? 'col-md-6' : 'col-md-4';
+
     const itemHtml = `
         <div class="new-item-row" id="new-item-${newItemCounter}">
             <div class="d-flex justify-content-between align-items-center mb-3">
@@ -335,21 +357,15 @@ function addNewItem() {
             </div>
 
             <div class="row">
-                <div class="col-md-4 mb-3">
+                <div class="${colorColClass} mb-3">
                     <label class="form-label detail-label">Color</label>
                     <input type="text" class="form-control" name="new_item_color[]" list="color-list">
                 </div>
-                <div class="col-md-4 mb-3">
+                <div class="${sizeColClass} mb-3">
                     <label class="form-label detail-label">Size/Weight</label>
                     <input type="text" class="form-control" name="new_item_size[]">
                 </div>
-                <div class="col-md-4 mb-3">
-                    <label class="form-label detail-label">Price</label>
-                    <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input type="number" class="form-control" name="new_item_price[]" step="0.01" min="0">
-                    </div>
-                </div>
+                ${priceField}
             </div>
         </div>
     `;

@@ -378,7 +378,6 @@
                       <th>Condition</th>
                       <th>Color</th>
                       <th>Size/Weight</th>
-                      <th>Price</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -390,7 +389,6 @@
                       <td>{{ item.Condition or '-' }}</td>
                       <td>{{ item.Color or '-' }}</td>
                       <td>{{ item.SizeWgt or '-' }}</td>
-                      <td>{{ (item.Price | price_format) or '-' }}</td>
                     </tr>
                     {% endfor %}
                   </tbody>
@@ -493,7 +491,7 @@
               </div>
 
               <div class="detail-row">
-                <div class="detail-label">Customer Price</div>
+                <div class="detail-label">Repair Price</div>
                 <div class="detail-value">
                   <strong>{{ (repair_work_order.CUSTOMERPRICE | price_format) or '<span class="text-muted">TBD</span>' | safe }}</strong>
                 </div>

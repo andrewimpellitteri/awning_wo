@@ -345,7 +345,7 @@
                                 </div>
 
                                 <div class="detail-row">
-                                    <div class="detail-label">Customer Price</div>
+                                    <div class="detail-label">Repair Price</div>
                                     <div class="detail-value">
                                         <div class="input-group">
                                             <span class="input-group-text">$</span>
@@ -353,6 +353,7 @@
                                                    value="{{ form_data.get('CUSTOMERPRICE', '') if form_data else '' }}"
                                                    placeholder="0.00">
                                         </div>
+                                        <small class="form-text text-muted">Overall price for the repair work</small>
                                     </div>
                                 </div>
                             </div>
@@ -395,6 +396,9 @@
 <!-- Repair-order-specific initialization -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Set flag for repair order form (hides item prices in shared JS)
+    isRepairOrder = true;
+
     // Initialize shared components
     createDatalists();
     initializeFileUpload();

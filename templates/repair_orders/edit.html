@@ -368,18 +368,12 @@
                                                 <label class="form-label small mt-2">Color</label>
                                                 <input type="text" class="form-control form-control-sm" name="existing_color[]" value="{{ item.Color or '' }}" list="color-list">
                                             </div>
-                                            <div class="col-md-2">
+                                            <div class="col-md-3">
                                                 <label class="form-label small">Size/Weight</label>
                                                 <input type="text" class="form-control form-control-sm" name="existing_size[]" value="{{ item.SizeWgt or '' }}">
                                             </div>
-                                            <div class="col-md-2">
-                                                <label class="form-label small">Price</label>
-                                                <div class="input-group input-group-sm">
-                                                    <span class="input-group-text">$</span>
-                                                    <input type="number" class="form-control form-control-sm" name="existing_price[]" value="{{ item.Price or '' }}" step="0.01" min="0">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-2">
+                                            <!-- Price field hidden for repair orders - only overall repair price matters -->
+                                            <div class="col-md-3">
                                                 <label class="form-label small">Quantity</label>
                                                 <input type="number" class="form-control form-control-sm" name="existing_qty[]" value="{{ item.Qty or '1' }}" min="1">
                                             </div>
@@ -429,7 +423,7 @@
                                 </div>
 
                                 <div class="detail-row">
-                                    <div class="detail-label">Customer Price</div>
+                                    <div class="detail-label">Repair Price</div>
                                     <div class="detail-value">
                                         <div class="input-group">
                                             <span class="input-group-text">$</span>
@@ -437,6 +431,7 @@
                                                    value="{{ repair_work_order.CUSTOMERPRICE or '' }}"
                                                    placeholder="0.00">
                                         </div>
+                                        <small class="form-text text-muted">Overall price for the repair work</small>
                                     </div>
                                 </div>
                             </div>
@@ -528,6 +523,9 @@ function updateExistingItemsEmptyState() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Set flag for repair order form (hides item prices in shared JS)
+    isRepairOrder = true;
+
     // Initialize shared components
     createDatalists();
     initializeFileUpload();
