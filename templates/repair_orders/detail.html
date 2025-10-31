@@ -219,11 +219,18 @@
                     <div class="detail-label">See Clean</div>
                     <div class="detail-value">
                       {% if repair_work_order.SEECLEAN %}
-                        <a href="{{ url_for('work_orders.view_work_order', work_order_no=repair_work_order.SEECLEAN|int) }}" class="text-decoration-none">
-                          <span class="badge bg-primary">
-                            <i class="fas fa-check me-1"></i>{{ repair_work_order.SEECLEAN | int }}
-                          </span>
-                        </a>
+                        {% set seeclean_str = repair_work_order.SEECLEAN | string %}
+                        {% if seeclean_str.replace('.', '', 1).replace('-', '', 1).isdigit() %}
+                          {# Numeric value - show as badge link to work order #}
+                          <a href="{{ url_for('work_orders.view_work_order', work_order_no=repair_work_order.SEECLEAN|int) }}" class="text-decoration-none">
+                            <span class="badge bg-primary">
+                              <i class="fas fa-check me-1"></i>{{ repair_work_order.SEECLEAN | int }}
+                            </span>
+                          </a>
+                        {% else %}
+                          {# Text note - show as plain text #}
+                          <span class="text-info">{{ repair_work_order.SEECLEAN }}</span>
+                        {% endif %}
                       {% else %}
                         <span class="text-muted">No</span>
                       {% endif %}
