@@ -226,6 +226,31 @@ class RepairOrderPDF:
         except Exception:
             return str(date_str)
 
+    def _format_seeclean(self, value):
+        """
+        Format SEECLEAN field value for PDF display.
+
+        The SEECLEAN field can contain either:
+        - A numeric work order number (e.g., "46738")
+        - A text note (e.g., "can't be cleaned")
+
+        Args:
+            value: The SEECLEAN value to format
+
+        Returns:
+            str: Formatted value - either converted to int or original string
+        """
+        if value is None or value == "":
+            return "0"
+
+        try:
+            # Try to convert to numeric value (work order number)
+            float_val = float(value)
+            return str(int(float_val))
+        except (ValueError, TypeError):
+            # If conversion fails, it's a text note - return as-is
+            return str(value)
+
     def _build_header_with_ro_number(self):
         """Build header with repair order number prominently displayed with blue background and hline"""
         ro_number = "RO#" + str(self.repair_order.get("RepairOrderNo", ""))
@@ -633,7 +658,7 @@ class RepairOrderPDF:
                 ),
                 safe_paragraph("See Clean", self.styles["SmallLabel"]),
                 safe_paragraph(
-                    str(int(float(ro.get("SEECLEAN", 0) or 0))),
+                    self._format_seeclean(ro.get("SEECLEAN")),
                     self.styles["SmallValue"],
                 ),
                 safe_paragraph("Clean First", self.styles["SmallLabel"]),
