@@ -283,21 +283,34 @@ def _handle_seeclean_backlink(repair_order_no, new_seeclean, old_seeclean=None):
     Manage SEECLEAN backlink between repair orders and work orders.
     Removes old backlink if changed, adds new backlink if provided.
     Returns a flash message if a new link was created.
+
+    Note: Only creates backlinks for numeric SEECLEAN values (work order numbers).
+    Text values (notes like "can't be cleaned") are ignored for backlinking.
     """
     from models.work_order import WorkOrder
 
     flash_message = None
 
+    def _is_numeric(value):
+        """Check if a value is numeric (work order number) vs text (note)."""
+        if not value:
+            return False
+        try:
+            float(str(value).strip())
+            return True
+        except (ValueError, TypeError):
+            return False
+
     # If SEECLEAN changed, update backlinks
     if new_seeclean != old_seeclean:
-        # Remove old backlink if it existed
-        if old_seeclean:
+        # Remove old backlink if it existed and was numeric
+        if old_seeclean and _is_numeric(old_seeclean):
             old_work_order = WorkOrder.query.filter_by(WorkOrderNo=old_seeclean).first()
             if old_work_order and old_work_order.SeeRepair == repair_order_no:
                 old_work_order.SeeRepair = None
 
-        # Add new backlink if provided
-        if new_seeclean and new_seeclean.strip():
+        # Add new backlink if provided and is numeric (work order number)
+        if new_seeclean and new_seeclean.strip() and _is_numeric(new_seeclean):
             new_work_order = WorkOrder.query.filter_by(
                 WorkOrderNo=new_seeclean.strip()
             ).first()

@@ -153,29 +153,54 @@ def _handle_see_repair_backlink(work_order_no, new_repair_no, old_repair_no=None
     Manage SeeRepair backlink between work orders and repair orders.
     Removes old backlink if changed, adds new backlink if provided.
     Returns a flash message if a new link was created.
+
+    Note: Only creates backlinks for numeric repair order numbers.
+    Text values in SeeRepair are ignored for backlinking.
+    Will not overwrite existing SEECLEAN values (which may contain text notes).
     """
     flash_message = None
 
+    def _is_numeric(value):
+        """Check if a value is numeric (repair order number) vs text (note)."""
+        if not value:
+            return False
+        try:
+            float(str(value).strip())
+            return True
+        except (ValueError, TypeError):
+            return False
+
     # If SeeRepair changed, update backlinks
     if new_repair_no != old_repair_no:
-        # Remove old backlink if it existed
-        if old_repair_no:
+        # Remove old backlink if it existed and was numeric
+        if old_repair_no and _is_numeric(old_repair_no):
             old_repair = RepairWorkOrder.query.filter_by(
                 RepairOrderNo=old_repair_no
             ).first()
             if old_repair and old_repair.SEECLEAN == work_order_no:
                 old_repair.SEECLEAN = None
 
-        # Add new backlink if provided
-        if new_repair_no and new_repair_no.strip():
+        # Add new backlink if provided and is numeric (repair order number)
+        if new_repair_no and new_repair_no.strip() and _is_numeric(new_repair_no):
             new_repair = RepairWorkOrder.query.filter_by(
                 RepairOrderNo=new_repair_no.strip()
             ).first()
             if new_repair:
-                new_repair.SEECLEAN = work_order_no
-                flash_message = (
-                    f"Auto-linked Repair Order {new_repair_no} to this Work Order"
-                )
+                # Only set backlink if SEECLEAN is empty or already points to this WO
+                # Don't overwrite text notes like "can't be cleaned"
+                if not new_repair.SEECLEAN or new_repair.SEECLEAN == work_order_no:
+                    new_repair.SEECLEAN = work_order_no
+                    flash_message = (
+                        f"Auto-linked Repair Order {new_repair_no} to this Work Order"
+                    )
+                elif _is_numeric(new_repair.SEECLEAN):
+                    # SEECLEAN already has a different WO number - allow overwrite
+                    new_repair.SEECLEAN = work_order_no
+                    flash_message = (
+                        f"Auto-linked Repair Order {new_repair_no} to this Work Order "
+                        f"(replaced previous link to WO {new_repair.SEECLEAN})"
+                    )
+                # else: SEECLEAN has a text note - don't overwrite it
 
     return flash_message
 
