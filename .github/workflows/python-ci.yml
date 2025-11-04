@@ -23,10 +23,22 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Install JavaScript dependencies
+        run: npm ci
+
+      - name: Run JavaScript tests
+        run: npm run test:ci
 
       - name: Run all non-fuzzing tests
         run: |
@@ -44,17 +56,36 @@ jobs:
           FLASK_ENV: testing
           TESTING: True
 
-      - name: Extract coverage percentage
+      - name: Extract Python coverage percentage
         run: |
           COVERAGE=$(python -c "import json; print(json.load(open('coverage.json'))['totals']['percent_covered_display'])")
           echo "COVERAGE=${COVERAGE}" >> $GITHUB_ENV
 
-      - name: Create coverage badge
+      - name: Extract JavaScript coverage percentage
+        run: |
+          if [ -f coverage-js/coverage-summary.json ]; then
+            JS_COVERAGE=$(node -e "console.log(require('./coverage-js/coverage-summary.json').total.lines.pct)")
+            echo "JS_COVERAGE=${JS_COVERAGE}" >> $GITHUB_ENV
+          else
+            echo "JS_COVERAGE=0" >> $GITHUB_ENV
+          fi
+
+      - name: Create Python coverage badge
         uses: schneegans/dynamic-badges-action@v1.7.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
           gistID: 44c7c17b0a9d04574018f0518fd13a6b
           filename: awning-coverage.json
-          label: coverage
+          label: coverage (python)
           message: ${{ env.COVERAGE }}%
           color: green
+
+      - name: Create JavaScript coverage badge
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: 44c7c17b0a9d04574018f0518fd13a6b
+          filename: awning-js-coverage.json
+          label: coverage (js)
+          message: ${{ env.JS_COVERAGE }}%
+          color: blue

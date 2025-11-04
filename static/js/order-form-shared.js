@@ -54,6 +54,18 @@ function getExistingItemInventoryKeys() {
 }
 
 /**
+ * Escape HTML to prevent XSS attacks
+ * @param {string} text - Text to escape
+ * @returns {string} HTML-safe text
+ */
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
+/**
  * Format price as currency
  */
 function formatPrice(price) {
@@ -129,8 +141,18 @@ function loadCustomerInventory(custId) {
                 const sizeColClass = isRepairOrder ? 'col-md-3' : 'col-md-2';
                 const qtyColClass = isRepairOrder ? 'col-md-3' : 'col-md-2';
 
+                // Store item data in data attributes for safe retrieval later (Issue #167)
+                // This prevents brittle DOM parsing in moveItemToExistingItems()
                 html += `
-                    <div class="inventory-item" onclick="toggleItem(this, '${item.id}')">
+                    <div class="inventory-item" onclick="toggleItem(this, '${item.id}')"
+                         data-inventory-key="${escapeHtml(item.id)}"
+                         data-description="${escapeHtml(item.description)}"
+                         data-material="${escapeHtml(item.material)}"
+                         data-condition="${escapeHtml(item.condition)}"
+                         data-color="${escapeHtml(item.color)}"
+                         data-size="${escapeHtml(item.size_wgt)}"
+                         data-price="${escapeHtml(item.price)}"
+                         data-qty="${escapeHtml(item.qty)}">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="selected_items[]" value="${item.id}" id="item_${item.id}">
                             <label class="form-check-label w-100" for="item_${item.id}">
@@ -215,6 +237,7 @@ function toggleItem(element) {
 
 /**
  * Move an item from Customer History to Existing Items section
+ * Fixed in Issue #167: Now uses data attributes instead of brittle DOM parsing
  */
 function moveItemToExistingItems(inventoryElement, checkbox) {
     const existingItemsContainer = document.getElementById('existing-items');
@@ -226,46 +249,49 @@ function moveItemToExistingItems(inventoryElement, checkbox) {
         emptyState.remove();
     }
 
-    // Get item data from the inventory element
+    // Get item data from data attributes (safe and reliable)
     const inventoryKey = checkbox.value;
-    const label = inventoryElement.querySelector('.form-check-label');
-    const description = label.querySelector('.detail-label')?.textContent || 'Unknown Item';
-    const material = label.querySelector('.text-muted')?.textContent || '';
-    const conditionBadge = label.querySelector('.badge')?.textContent || '';
-    const color = label.querySelectorAll('.text-muted')[1]?.textContent || '';
-    const sizeElement = label.querySelectorAll('small')[2];
-    const size = sizeElement ? sizeElement.textContent : '';
-    const priceElement = label.querySelector('strong');
-    const price = priceElement ? priceElement.textContent : '$0.00';
+    const description = inventoryElement.dataset.description || 'Unknown Item';
+    const material = inventoryElement.dataset.material || '';
+    const condition = inventoryElement.dataset.condition || '';
+    const color = inventoryElement.dataset.color || '';
+    const size = inventoryElement.dataset.size || '';
+    const price = inventoryElement.dataset.price || '0.00';
+
+    // Get quantity from input field (user may have changed it)
     const qtyInput = inventoryElement.querySelector(`input[name="item_qty_${inventoryKey}"]`);
-    const qty = qtyInput ? qtyInput.value : '1';
+    const qty = qtyInput ? qtyInput.value : (inventoryElement.dataset.qty || '1');
+
+    // Format price display
+    const priceDisplay = price ? formatPrice(price) : '$0.00';
 
     // Create a card for the existing items section
+    // Note: We escape HTML here to prevent XSS even though data came from backend
     const cardHtml = `
-        <div class="existing-item-card" data-inventory-key="${inventoryKey}" data-temp-item="true" id="temp-item-${inventoryKey}">
+        <div class="existing-item-card" data-inventory-key="${escapeHtml(inventoryKey)}" data-temp-item="true" id="temp-item-${escapeHtml(inventoryKey)}">
             <div class="form-check">
                 <input class="form-check-input" type="checkbox" name="existing_item_id_temp[]"
-                       value="${inventoryKey}" checked
+                       value="${escapeHtml(inventoryKey)}" checked
                        onchange="toggleExistingItem(this)"
-                       data-inventory-key="${inventoryKey}">
+                       data-inventory-key="${escapeHtml(inventoryKey)}">
                 <label class="form-check-label w-100">
                     <div class="row align-items-center">
                         <div class="col-md-4">
-                            <div class="detail-label">${description}</div>
-                            <small class="text-muted">${material}</small>
+                            <div class="detail-label">${escapeHtml(description)}</div>
+                            <small class="text-muted">${escapeHtml(material)}</small>
                         </div>
                         <div class="col-md-3">
-                            <span class="badge bg-secondary">${conditionBadge}</span>
-                            <br><small class="text-muted">${color}</small>
+                            <span class="badge bg-secondary">${escapeHtml(condition)}</span>
+                            <br><small class="text-muted">${escapeHtml(color)}</small>
                         </div>
                         <div class="col-md-2 text-center">
                             <small class="text-muted">Size:</small><br>
-                            <small>${size}</small><br>
-                            <strong>${price}</strong>
+                            <small>${escapeHtml(size)}</small><br>
+                            <strong>${priceDisplay}</strong>
                         </div>
                         <div class="col-md-2 text-center">
                             <small class="text-muted">Qty:</small><br>
-                            <strong>${qty}</strong>
+                            <strong>${escapeHtml(qty)}</strong>
                         </div>
                         <div class="col-md-1 text-center">
                             <span class="badge bg-info">New</span>

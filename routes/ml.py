@@ -58,14 +58,57 @@ MODEL_CONFIGS = {
     },
 }
 
-# Global model storage
-current_model = None
-model_metadata = {}
+# Model cache with TTL (thread-safe, simple solution for multi-worker issue #93)
+# Each worker loads the model independently, with a 5-minute cache
+# When cron job saves a new model to S3, workers pick it up on next load
+_model_cache = {
+    "model": None,
+    "metadata": {},
+    "loaded_at": None,
+    "cache_ttl_seconds": 300,  # 5 minutes
+}
+
+
+def get_current_model():
+    """
+    Get the current model, loading from S3 if cache is expired or empty.
+
+    This fixes issue #93 by:
+    - Each worker has its own cache (no shared global state)
+    - Cache expires after 5 minutes (workers pick up new models automatically)
+    - Falls back to S3 as single source of truth
+
+    Returns:
+        tuple: (model, metadata) or (None, {}) if no model available
+    """
+    import time
+    from datetime import datetime
+
+    cache = _model_cache
+    now = time.time()
+
+    # Check if cache is valid
+    if (cache["model"] is not None and
+        cache["loaded_at"] is not None and
+        (now - cache["loaded_at"]) < cache["cache_ttl_seconds"]):
+        # Cache hit
+        return cache["model"], cache["metadata"]
+
+    # Cache miss or expired - load from S3
+    print(f"[ML CACHE] Loading model from S3 (cache expired or empty)")
+    success = load_latest_model_from_s3()
+
+    if success:
+        return cache["model"], cache["metadata"]
+    else:
+        return None, {}
 
 
 def load_latest_model_from_s3():
-    """Load the most recently trained model from S3 on startup"""
-    global current_model, model_metadata
+    """Load the most recently trained model from S3 and update cache"""
+    import time
+
+    cache = _model_cache
 
     try:
         from utils.file_upload import s3_client, AWS_S3_BUCKET
@@ -80,7 +123,7 @@ def load_latest_model_from_s3():
         )
 
         if "Contents" not in response:
-            print("[ML STARTUP] No models found in S3")
+            print("[ML LOAD] No models found in S3")
             return False
 
         # Get all .pkl model files
@@ -90,7 +133,7 @@ def load_latest_model_from_s3():
         ]
 
         if not all_model_files:
-            print("[ML STARTUP] No model files found in S3")
+            print("[ML LOAD] No model files found in S3")
             return False
 
         # Prefer cron models, but fall back to any model
@@ -99,38 +142,43 @@ def load_latest_model_from_s3():
         if cron_models:
             # Use the most recent cron model
             model_files = cron_models
-            print(f"[ML STARTUP] Found {len(cron_models)} cron model(s)")
+            print(f"[ML LOAD] Found {len(cron_models)} cron model(s)")
         else:
             # Fall back to any available model
             model_files = all_model_files
-            print(f"[ML STARTUP] No cron models found, using fallback - found {len(model_files)} model(s)")
+            print(f"[ML LOAD] No cron models found, using fallback - found {len(model_files)} model(s)")
 
         # Sort by last modified date, get most recent
         latest_model = sorted(model_files, key=lambda x: x["LastModified"], reverse=True)[0]
         model_name = latest_model["Key"].replace("ml_models/", "").replace(".pkl", "")
 
-        print(f"[ML STARTUP] Loading model: {model_name}")
+        print(f"[ML LOAD] Loading model: {model_name}")
 
         # Download model from S3
         model_buffer = BytesIO()
         s3_client.download_fileobj(AWS_S3_BUCKET, latest_model["Key"], model_buffer)
         model_buffer.seek(0)
-        current_model = pickle.load(model_buffer)
+        model = pickle.load(model_buffer)
 
         # Download metadata from S3
         metadata_key = f"ml_models/{model_name}_metadata.json"
         metadata_buffer = BytesIO()
         s3_client.download_fileobj(AWS_S3_BUCKET, metadata_key, metadata_buffer)
         metadata_buffer.seek(0)
-        model_metadata = json.loads(metadata_buffer.read().decode("utf-8"))
+        metadata = json.loads(metadata_buffer.read().decode("utf-8"))
 
-        print(f"[ML STARTUP] Model loaded successfully - MAE: {model_metadata.get('mae')}, "
-              f"Trained at: {model_metadata.get('trained_at')}")
+        print(f"[ML LOAD] Model loaded successfully - MAE: {metadata.get('mae')}, "
+              f"Trained at: {metadata.get('trained_at')}")
+
+        # Update cache
+        cache["model"] = model
+        cache["metadata"] = metadata
+        cache["loaded_at"] = time.time()
 
         return True
 
     except Exception as e:
-        print(f"[ML STARTUP] Failed to load model from S3: {e}")
+        print(f"[ML LOAD] Failed to load model from S3: {e}")
         return False
 
 
@@ -362,7 +410,8 @@ def dashboard():
 @login_required
 def train_model():
     """Train a new model"""
-    global current_model, model_metadata
+    # Store in cache after training (fixes #93 race condition)
+    cache = _model_cache
 
     try:
         config_name = request.json.get("config", "baseline")
@@ -453,7 +502,7 @@ def train_model():
         ss_tot = np.sum((y_test - np.mean(y_test)) ** 2)
         r2 = 1 - (ss_res / ss_tot)
 
-        # Store model
+        # Store model and update cache (fixes #93 race condition)
         current_model = model
         model_metadata = {
             "config_name": config_name,
@@ -465,6 +514,11 @@ def train_model():
             "sample_count": len(X_train),
             "feature_columns": feature_cols,
         }
+
+        # Update cache so this worker immediately uses new model
+        cache["model"] = current_model
+        cache["metadata"] = model_metadata
+        cache["loaded_at"] = time.time()
 
         # Auto-save the model if requested
         save_result = None
@@ -501,7 +555,8 @@ def train_model():
 @login_required
 def predict():
     """Make a prediction"""
-    global current_model, model_metadata
+    # Use cached model (fixes #93 race condition)
+    current_model, model_metadata = get_current_model()
 
     if current_model is None:
         return jsonify({"error": "No trained model available"}), 400
@@ -575,7 +630,8 @@ def predict():
 @login_required
 def batch_predict():
     """Predict for all pending orders"""
-    global current_model, model_metadata
+    # Use cached model (fixes #93 race condition)
+    current_model, model_metadata = get_current_model()
 
     if current_model is None:
         return jsonify({"error": "No trained model available"}), 400
@@ -661,7 +717,8 @@ def batch_predict():
 @login_required
 def predict_work_order(work_order_no):
     """Predict estimated completion days for a specific work order"""
-    global current_model, model_metadata
+    # Use cached model (fixes #93 race condition)
+    current_model, model_metadata = get_current_model()
 
     if current_model is None:
         return jsonify({"error": "No trained model available"}), 400
@@ -729,7 +786,8 @@ def predict_work_order(work_order_no):
 @login_required
 def status():
     """Get current model status"""
-    global current_model, model_metadata
+    # Use cached model (fixes #93 race condition)
+    current_model, model_metadata = get_current_model()
 
     return jsonify(
         {
@@ -872,7 +930,8 @@ def cron_retrain():
             f"[CRON RETRAIN] Training metrics - MAE: {mae:.3f}, RMSE: {rmse:.3f}, R²: {r2:.3f}"
         )
 
-        # Store model globally
+        # Store model globally and update cache (fixes #93 race condition)
+        cache = _model_cache
         current_model = model
         model_metadata = {
             "config_name": config_name,
@@ -886,6 +945,11 @@ def cron_retrain():
             "training_type": "cron_full_data",  # Distinguish from regular training
             "data_version": start_timestamp.strftime("%Y%m%d_%H%M%S"),
         }
+
+        # Update cache so this worker immediately uses new model
+        cache["model"] = current_model
+        cache["metadata"] = model_metadata
+        cache["loaded_at"] = time.time()
 
         # Auto-save the model with timestamp
         model_name = f"cron_{config_name}_{start_timestamp.strftime('%Y%m%d_%H%M%S')}"
