@@ -559,12 +559,23 @@ class TestWorkOrderFileRoutes:
 
     def test_upload_file_to_work_order(self, admin_client, sample_data, app, mocker):
         """POST /work_orders/<no>/files/upload should upload file."""
-        # Mock the file upload utility function completely
+        # Mock the file upload utility functions
         mock_save_file = mocker.patch("routes.work_orders.save_work_order_file")
+        mock_commit_uploads = mocker.patch("routes.work_orders.commit_deferred_uploads")
+        mock_cleanup = mocker.patch("routes.work_orders.cleanup_deferred_files")
+
         # Create a mock file object to return
-        mock_file_obj = mocker.Mock()
-        mock_file_obj.id = 123  # Correct field name after bug fix
+        from models.work_order_file import WorkOrderFile
+        mock_file_obj = WorkOrderFile(
+            WorkOrderNo="10001",
+            filename="test.pdf",
+            file_path="s3://bucket/test.pdf"
+        )
+        mock_file_obj.id = 123
+
         mock_save_file.return_value = mock_file_obj
+        # Mock commit_deferred_uploads to return success
+        mock_commit_uploads.return_value = (True, [mock_file_obj], [])
 
         with app.app_context():
             # Create a test file
@@ -582,6 +593,10 @@ class TestWorkOrderFileRoutes:
             data = response.get_json()
             assert "file_id" in data
             assert data["file_id"] == 123
+
+            # Verify the functions were called correctly
+            assert mock_save_file.called
+            assert mock_commit_uploads.called
 
     def test_list_work_order_files(self, admin_client, sample_data, app):
         """GET /work_orders/<no>/files should list files."""

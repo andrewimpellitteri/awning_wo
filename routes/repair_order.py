@@ -370,14 +370,45 @@ def upload_repair_order_file(repair_order_no):
     if file.filename == "":
         return jsonify({"error": "No selected file"}), 400
 
-    saved_file = save_repair_order_file(repair_order_no, file)
-    if saved_file:
+    try:
+        # Use deferred upload to prevent orphaned S3 files if DB commit fails
+        saved_file = save_repair_order_file(
+            repair_order_no,
+            file,
+            to_s3=True,
+            generate_thumbnails=True,
+            defer_s3_upload=True
+        )
+
+        if not saved_file:
+            return jsonify({"error": "Invalid file type"}), 400
+
+        # Add to database session
         db.session.add(saved_file)
+
+        # Commit to database first
         db.session.commit()
+
+        # Then upload to S3 (prevents orphaned S3 files)
+        success, uploaded, failed = commit_deferred_uploads([saved_file])
+        if not success:
+            print(f"WARNING: File failed to upload to S3: {saved_file.filename}")
+            # Database record exists but S3 upload failed
+            # Consider rolling back or flagging the record
+            db.session.delete(saved_file)
+            db.session.commit()
+            return jsonify({"error": "Failed to upload file to S3"}), 500
+
         return jsonify(
             {"message": "File uploaded successfully", "file_id": saved_file.id}
         )
-    return jsonify({"error": "Invalid file type"}), 400
+
+    except Exception as e:
+        db.session.rollback()
+        if 'saved_file' in locals():
+            cleanup_deferred_files([saved_file])
+        print(f"Error uploading file: {str(e)}")
+        return jsonify({"error": f"Error uploading file: {str(e)}"}), 500
 
 
 @repair_work_orders_bp.route("/<repair_order_no>/files/<int:file_id>/download")
