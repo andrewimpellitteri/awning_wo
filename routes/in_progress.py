@@ -202,6 +202,11 @@ def treat_work_order(work_order_no):
     if not treat_date:
         return jsonify({"success": False, "message": "Treat date is required"}), 400
     work_order.Treat = datetime.strptime(treat_date, "%Y-%m-%d").date()
+
+    # Clear queue position when moving to in-progress
+    if work_order.QueuePosition is not None:
+        work_order.QueuePosition = None
+
     db.session.commit()
     return jsonify({"success": True})
 
@@ -231,6 +236,11 @@ def package_work_order(work_order_no):
         flash(warning, "warning")
 
     work_order.final_location = final_location
+
+    # Clear queue position when moving to in-progress
+    if work_order.QueuePosition is not None:
+        work_order.QueuePosition = None
+
     db.session.commit()
     return jsonify({"success": True, "warning": warning})
 
@@ -248,5 +258,10 @@ def complete_work_order(work_order_no):
     if not date_completed:
         return jsonify({"success": False, "message": "Date completed is required"}), 400
     work_order.DateCompleted = datetime.strptime(date_completed, "%Y-%m-%d").date()
+
+    # Clear queue position when completing work order
+    if work_order.QueuePosition is not None:
+        work_order.QueuePosition = None
+
     db.session.commit()
     return jsonify({"success": True})

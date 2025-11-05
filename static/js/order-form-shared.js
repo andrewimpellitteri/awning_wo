@@ -573,6 +573,9 @@ function removeFile(index) {
     files.forEach(file => dataTransfer.items.add(file));
     fileInput.files = dataTransfer.files;
 
+    // Update global storage
+    window.uploadedFiles = files;
+
     updateFileList();
 }
 
@@ -582,6 +585,10 @@ function removeFile(index) {
 function clearFiles() {
     const fileInput = document.getElementById('files');
     fileInput.value = '';
+
+    // Clear global storage
+    window.uploadedFiles = [];
+
     updateFileList();
 }
 
@@ -627,6 +634,11 @@ function initializeFileUpload() {
         const dt = e.dataTransfer;
         const files = dt.files;
 
+        // Initialize global file storage if it doesn't exist
+        if (!window.uploadedFiles) {
+            window.uploadedFiles = [];
+        }
+
         const validFiles = [];
         for (let i = 0; i < files.length; i++) {
             if (validateFile(files[i])) {
@@ -635,27 +647,48 @@ function initializeFileUpload() {
         }
 
         if (validFiles.length > 0) {
+            // Merge with existing files (prevents removing previously selected files)
+            const allFiles = [...window.uploadedFiles, ...validFiles];
+
             const dataTransfer = new DataTransfer();
-            validFiles.forEach(file => dataTransfer.items.add(file));
+            allFiles.forEach(file => dataTransfer.items.add(file));
             fileInput.files = dataTransfer.files;
+
+            // Store for next time
+            window.uploadedFiles = allFiles;
+
             updateFileList();
         }
     }, false);
 
     // Handle file input change
     fileInput.addEventListener('change', () => {
+        // Initialize global file storage if it doesn't exist
+        if (!window.uploadedFiles) {
+            window.uploadedFiles = [];
+        }
+
+        // Get newly selected files
+        const newFiles = Array.from(fileInput.files);
         const validFiles = [];
-        for (let i = 0; i < fileInput.files.length; i++) {
-            if (validateFile(fileInput.files[i])) {
-                validFiles.push(fileInput.files[i]);
+
+        // Validate each new file
+        for (let i = 0; i < newFiles.length; i++) {
+            if (validateFile(newFiles[i])) {
+                validFiles.push(newFiles[i]);
             }
         }
 
-        if (validFiles.length !== fileInput.files.length) {
-            const dataTransfer = new DataTransfer();
-            validFiles.forEach(file => dataTransfer.items.add(file));
-            fileInput.files = dataTransfer.files;
-        }
+        // Merge with existing files (prevents removing previously selected files)
+        const allFiles = [...window.uploadedFiles, ...validFiles];
+
+        // Update the file input with all files
+        const dataTransfer = new DataTransfer();
+        allFiles.forEach(file => dataTransfer.items.add(file));
+        fileInput.files = dataTransfer.files;
+
+        // Store for next time
+        window.uploadedFiles = allFiles;
 
         updateFileList();
     });

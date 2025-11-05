@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template
+from flask_login import login_required
 from extensions import db
 from models.work_order import WorkOrder
 from models.customer import Customer
@@ -39,6 +40,7 @@ def get_recent_orders(limit=10):
 
 
 @dashboard_bp.route("/")
+@login_required
 def dashboard():
     try:
         recent_orders = get_recent_orders()

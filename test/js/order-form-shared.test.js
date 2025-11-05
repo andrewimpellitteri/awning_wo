@@ -510,3 +510,234 @@ describe('XSS Protection', () => {
         expect(escaped).toBe('text" onclick="alert(1)"');  // Exact match - quotes not escaped by textContent
     });
 });
+
+describe('File Upload Management (Issue #175)', () => {
+    beforeEach(() => {
+        // Execute the JavaScript code
+        loadJavaScriptCode();
+
+        // Reset DOM with file upload elements
+        document.body.innerHTML = `
+            <div id="fileDropzone">
+                <input type="file" name="files[]" id="files" multiple>
+                <div id="fileListContainer" style="display: none;">
+                    <ul id="fileList"></ul>
+                </div>
+            </div>
+        `;
+
+        // Reset global file storage
+        window.uploadedFiles = [];
+    });
+
+    afterEach(() => {
+        // Clean up global state
+        delete window.uploadedFiles;
+    });
+
+    describe('File input change handler', () => {
+        test('should initialize window.uploadedFiles array', () => {
+            const fileInput = document.getElementById('files');
+            initializeFileUpload();
+
+            // Create a mock file
+            const mockFile = new File(['content'], 'test.pdf', { type: 'application/pdf' });
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(mockFile);
+            fileInput.files = dataTransfer.files;
+
+            // Trigger change event
+            fileInput.dispatchEvent(new Event('change'));
+
+            expect(window.uploadedFiles).toBeDefined();
+            expect(Array.isArray(window.uploadedFiles)).toBe(true);
+        });
+
+        test('should preserve first file when second file is selected (Issue #175)', () => {
+            const fileInput = document.getElementById('files');
+            initializeFileUpload();
+
+            // Upload first file
+            const file1 = new File(['content1'], 'test1.pdf', { type: 'application/pdf' });
+            const dataTransfer1 = new DataTransfer();
+            dataTransfer1.items.add(file1);
+            fileInput.files = dataTransfer1.files;
+            fileInput.dispatchEvent(new Event('change'));
+
+            expect(window.uploadedFiles.length).toBe(1);
+            expect(window.uploadedFiles[0].name).toBe('test1.pdf');
+
+            // Upload second file
+            const file2 = new File(['content2'], 'test2.pdf', { type: 'application/pdf' });
+            const dataTransfer2 = new DataTransfer();
+            dataTransfer2.items.add(file2);
+            fileInput.files = dataTransfer2.files;
+            fileInput.dispatchEvent(new Event('change'));
+
+            // Both files should be present
+            expect(window.uploadedFiles.length).toBe(2);
+            expect(window.uploadedFiles[0].name).toBe('test1.pdf');
+            expect(window.uploadedFiles[1].name).toBe('test2.pdf');
+        });
+
+        test('should handle multiple file uploads in sequence', () => {
+            const fileInput = document.getElementById('files');
+            initializeFileUpload();
+
+            // Upload three files one by one
+            const files = [
+                new File(['a'], 'file1.pdf', { type: 'application/pdf' }),
+                new File(['b'], 'file2.jpg', { type: 'image/jpeg' }),
+                new File(['c'], 'file3.png', { type: 'image/png' })
+            ];
+
+            files.forEach(file => {
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+                fileInput.dispatchEvent(new Event('change'));
+            });
+
+            // All three files should be present
+            expect(window.uploadedFiles.length).toBe(3);
+            expect(window.uploadedFiles[0].name).toBe('file1.pdf');
+            expect(window.uploadedFiles[1].name).toBe('file2.jpg');
+            expect(window.uploadedFiles[2].name).toBe('file3.png');
+        });
+
+        test('should validate files before adding to collection', () => {
+            const fileInput = document.getElementById('files');
+            initializeFileUpload();
+
+            // Mock validateFile to reject .exe files
+            global.validateFile = jest.fn((file) => {
+                return !file.name.endsWith('.exe');
+            });
+
+            // Try to upload valid and invalid files
+            const validFile = new File(['content'], 'test.pdf', { type: 'application/pdf' });
+            const dataTransfer1 = new DataTransfer();
+            dataTransfer1.items.add(validFile);
+            fileInput.files = dataTransfer1.files;
+            fileInput.dispatchEvent(new Event('change'));
+
+            expect(window.uploadedFiles.length).toBe(1);
+
+            // Try to upload invalid file - should be rejected
+            const invalidFile = new File(['malware'], 'virus.exe', { type: 'application/x-msdownload' });
+            const dataTransfer2 = new DataTransfer();
+            dataTransfer2.items.add(invalidFile);
+            fileInput.files = dataTransfer2.files;
+            fileInput.dispatchEvent(new Event('change'));
+
+            // Only the valid file should remain
+            expect(window.uploadedFiles.length).toBe(1);
+            expect(window.uploadedFiles[0].name).toBe('test.pdf');
+        });
+    });
+
+    describe('clearFiles()', () => {
+        test('should clear window.uploadedFiles array', () => {
+            window.uploadedFiles = [
+                new File(['a'], 'file1.pdf'),
+                new File(['b'], 'file2.pdf')
+            ];
+
+            clearFiles();
+
+            expect(window.uploadedFiles).toEqual([]);
+        });
+
+        test('should clear file input', () => {
+            const fileInput = document.getElementById('files');
+            const file = new File(['content'], 'test.pdf');
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+
+            clearFiles();
+
+            expect(fileInput.files.length).toBe(0);
+        });
+    });
+
+    describe('removeFile()', () => {
+        test('should remove file from both input and global storage', () => {
+            const fileInput = document.getElementById('files');
+
+            // Set up files
+            const files = [
+                new File(['a'], 'file1.pdf'),
+                new File(['b'], 'file2.pdf'),
+                new File(['c'], 'file3.pdf')
+            ];
+
+            const dataTransfer = new DataTransfer();
+            files.forEach(f => dataTransfer.items.add(f));
+            fileInput.files = dataTransfer.files;
+            window.uploadedFiles = Array.from(fileInput.files);
+
+            // Remove middle file (index 1)
+            removeFile(1);
+
+            expect(window.uploadedFiles.length).toBe(2);
+            expect(window.uploadedFiles[0].name).toBe('file1.pdf');
+            expect(window.uploadedFiles[1].name).toBe('file3.pdf');
+            expect(fileInput.files.length).toBe(2);
+        });
+
+        test('should handle removing the only file', () => {
+            const fileInput = document.getElementById('files');
+
+            const file = new File(['content'], 'test.pdf');
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            fileInput.files = dataTransfer.files;
+            window.uploadedFiles = [file];
+
+            removeFile(0);
+
+            expect(window.uploadedFiles.length).toBe(0);
+            expect(fileInput.files.length).toBe(0);
+        });
+    });
+
+    describe('Drag and drop', () => {
+        test('should merge dropped files with existing files', () => {
+            const fileInput = document.getElementById('files');
+            const dropzone = document.getElementById('fileDropzone');
+            initializeFileUpload();
+
+            // Add first file via normal input
+            const file1 = new File(['content1'], 'test1.pdf', { type: 'application/pdf' });
+            const dataTransfer1 = new DataTransfer();
+            dataTransfer1.items.add(file1);
+            fileInput.files = dataTransfer1.files;
+            fileInput.dispatchEvent(new Event('change'));
+
+            expect(window.uploadedFiles.length).toBe(1);
+
+            // Drop second file
+            const file2 = new File(['content2'], 'test2.pdf', { type: 'application/pdf' });
+            const dropEvent = new DragEvent('drop', {
+                dataTransfer: {
+                    files: [file2]
+                }
+            });
+
+            // Mock the dataTransfer
+            Object.defineProperty(dropEvent, 'dataTransfer', {
+                value: {
+                    files: [file2]
+                }
+            });
+
+            dropzone.dispatchEvent(dropEvent);
+
+            // Both files should be present
+            expect(window.uploadedFiles.length).toBe(2);
+            expect(window.uploadedFiles[0].name).toBe('test1.pdf');
+            expect(window.uploadedFiles[1].name).toBe('test2.pdf');
+        });
+    });
+});

@@ -316,3 +316,69 @@ class TestInProgressRoutes:
             ).delete()
             db.session.query(Customer).filter_by(CustID="C005").delete()
             db.session.commit()
+
+    def test_treat_work_order_clears_queue_position(self, logged_in_client, sample_work_orders, app):
+        """POST /in_progress/treat_work_order should clear QueuePosition when treating."""
+        with app.app_context():
+            # Set a queue position on the work order
+            work_order = WorkOrder.query.get("1002")
+            work_order.QueuePosition = 5
+            db.session.commit()
+
+            # Verify queue position is set
+            assert work_order.QueuePosition == 5
+
+            # Treat the work order
+            response = logged_in_client.post("/in_progress/treat_work_order/1002",
+                                           json={"treatDate": "2024-01-15"})
+            assert response.status_code == 200
+            assert response.get_json()["success"] is True
+
+            # Verify queue position is cleared
+            work_order = WorkOrder.query.get("1002")
+            assert work_order.Treat == date(2024, 1, 15)
+            assert work_order.QueuePosition is None
+
+    def test_package_work_order_clears_queue_position(self, logged_in_client, sample_work_orders, app):
+        """POST /in_progress/package_work_order should clear QueuePosition when packaging."""
+        with app.app_context():
+            # Set a queue position on the work order
+            work_order = WorkOrder.query.get("1003")
+            work_order.QueuePosition = 3
+            db.session.commit()
+
+            # Verify queue position is set
+            assert work_order.QueuePosition == 3
+
+            # Package the work order
+            response = logged_in_client.post("/in_progress/package_work_order/1003",
+                                           json={"finalLocation": "Shelf B"})
+            assert response.status_code == 200
+            assert response.get_json()["success"] is True
+
+            # Verify queue position is cleared
+            work_order = WorkOrder.query.get("1003")
+            assert work_order.final_location == "Shelf B"
+            assert work_order.QueuePosition is None
+
+    def test_complete_work_order_clears_queue_position(self, logged_in_client, sample_work_orders, app):
+        """POST /in_progress/complete_work_order should clear QueuePosition when completing."""
+        with app.app_context():
+            # Set a queue position on the work order
+            work_order = WorkOrder.query.get("1004")
+            work_order.QueuePosition = 1
+            db.session.commit()
+
+            # Verify queue position is set
+            assert work_order.QueuePosition == 1
+
+            # Complete the work order
+            response = logged_in_client.post("/in_progress/complete_work_order/1004",
+                                           json={"dateCompleted": "2024-01-16"})
+            assert response.status_code == 200
+            assert response.get_json()["success"] is True
+
+            # Verify queue position is cleared
+            work_order = WorkOrder.query.get("1004")
+            assert work_order.DateCompleted.date() == date(2024, 1, 16)
+            assert work_order.QueuePosition is None
