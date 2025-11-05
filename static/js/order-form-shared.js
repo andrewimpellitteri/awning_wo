@@ -693,3 +693,28 @@ function initializeFileUpload() {
         updateFileList();
     });
 }
+
+// Export for Node.js/Jest (CommonJS) - browser ignores this
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        escapeHtml,
+        formatPrice,
+        formatFileSize,
+        getExistingItemInventoryKeys,
+        loadCustomerInventory,
+        toggleItem,
+        moveItemToExistingItems,
+        removeItemFromExistingItems,
+        addNewItem,
+        removeNewItem,
+        updateInventoryCount,
+        updateCounts,
+        updateRushStatus,
+        createDatalists,
+        validateFile,
+        updateFileList,
+        removeFile,
+        clearFiles,
+        initializeFileUpload
+    };
+}

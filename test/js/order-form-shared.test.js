@@ -3,93 +3,26 @@
  * @jest-environment jsdom
  */
 
-// Load the source file
-const fs = require('fs');
-const path = require('path');
-
-// Read and execute the JavaScript file
-const jsFilePath = path.join(__dirname, '../../static/js/order-form-shared.js');
-const jsCode = fs.readFileSync(jsFilePath, 'utf8');
+// Import the source file (now supports CommonJS)
+const {
+    escapeHtml,
+    formatPrice,
+    formatFileSize,
+    getExistingItemInventoryKeys,
+    loadCustomerInventory,
+    updateInventoryCount,
+    updateCounts,
+    validateFile,
+    updateFileList,
+    removeFile,
+    clearFiles,
+    initializeFileUpload
+} = require('../../static/js/order-form-shared.js');
 
 // Mock fetch globally
 global.fetch = jest.fn();
 
-// Polyfill DataTransfer for JSDOM (not available by default)
-// DataTransfer needs to return a FileList-like object
-class MockFileList extends Array {
-    item(index) {
-        return this[index];
-    }
-}
-
-if (typeof DataTransfer === 'undefined') {
-    global.DataTransfer = class DataTransfer {
-        constructor() {
-            this._files = new MockFileList();
-            this.items = {
-                add: (file) => {
-                    this._files.push(file);
-                }
-            };
-        }
-
-        get files() {
-            // Create a FileList-like object
-            const fileList = new MockFileList(...this._files);
-            Object.defineProperty(fileList, 'length', {
-                value: this._files.length,
-                writable: false
-            });
-            return fileList;
-        }
-
-        set files(value) {
-            this._files = new MockFileList(...Array.from(value));
-        }
-    };
-}
-
-// Use eval in a controlled way to load functions into test scope
-function loadJavaScriptCode() {
-    // Use indirect eval to execute in global scope
-    (function() {
-        eval(jsCode);
-        // Export all functions to global scope
-        if (typeof escapeHtml !== 'undefined') global.escapeHtml = escapeHtml;
-        if (typeof formatPrice !== 'undefined') global.formatPrice = formatPrice;
-        if (typeof formatFileSize !== 'undefined') global.formatFileSize = formatFileSize;
-        if (typeof getExistingItemInventoryKeys !== 'undefined') global.getExistingItemInventoryKeys = getExistingItemInventoryKeys;
-        if (typeof loadCustomerInventory !== 'undefined') global.loadCustomerInventory = loadCustomerInventory;
-        if (typeof toggleItem !== 'undefined') global.toggleItem = toggleItem;
-        if (typeof moveItemToExistingItems !== 'undefined') global.moveItemToExistingItems = moveItemToExistingItems;
-        if (typeof removeItemFromExistingItems !== 'undefined') global.removeItemFromExistingItems = removeItemFromExistingItems;
-        if (typeof addNewItem !== 'undefined') global.addNewItem = addNewItem;
-        if (typeof removeNewItem !== 'undefined') global.removeNewItem = removeNewItem;
-        if (typeof updateInventoryCount !== 'undefined') global.updateInventoryCount = updateInventoryCount;
-        if (typeof updateCounts !== 'undefined') global.updateCounts = updateCounts;
-        if (typeof updateRushStatus !== 'undefined') global.updateRushStatus = updateRushStatus;
-        if (typeof createDatalists !== 'undefined') global.createDatalists = createDatalists;
-        if (typeof validateFile !== 'undefined') global.validateFile = validateFile;
-        if (typeof updateFileList !== 'undefined') global.updateFileList = updateFileList;
-        if (typeof removeFile !== 'undefined') global.removeFile = removeFile;
-        if (typeof clearFiles !== 'undefined') global.clearFiles = clearFiles;
-        if (typeof initializeFileUpload !== 'undefined') global.initializeFileUpload = initializeFileUpload;
-        // Export global variables
-        if (typeof newItemCounter !== 'undefined') global.newItemCounter = newItemCounter;
-        if (typeof selectedItemsCount !== 'undefined') global.selectedItemsCount = selectedItemsCount;
-        if (typeof newItemsCount !== 'undefined') global.newItemsCount = newItemsCount;
-        if (typeof isRepairOrder !== 'undefined') global.isRepairOrder = isRepairOrder;
-    })();
-}
-
-// Load once at startup
-loadJavaScriptCode();
-
 describe('Utility Functions', () => {
-    beforeEach(() => {
-        // Execute the JavaScript code before each test to get fresh functions
-        loadJavaScriptCode();
-    });
 
     describe('escapeHtml()', () => {
         test('should escape HTML special characters', () => {
@@ -179,9 +112,6 @@ describe('Utility Functions', () => {
 
 describe('Inventory Item Management', () => {
     beforeEach(() => {
-        // Execute the JavaScript code
-        loadJavaScriptCode();
-
         // Reset DOM
         document.body.innerHTML = `
             <form id="workOrderForm">
@@ -198,12 +128,6 @@ describe('Inventory Item Management', () => {
                 <button type="submit">Submit</button>
             </form>
         `;
-
-        // Reset global state
-        newItemCounter = 0;
-        selectedItemsCount = 0;
-        newItemsCount = 0;
-        isRepairOrder = false;
 
         // Clear fetch mock
         fetch.mockClear();
@@ -470,15 +394,7 @@ describe('Inventory Item Management', () => {
 
     describe('updateCounts()', () => {
         test('should update all count badges', () => {
-            // Reset and reload to get fresh environment
-            loadJavaScriptCode();
-
-            // The variables are in the closure scope of the eval'd code
-            // We need to call updateCounts after modifying the closure variables
-            // This is a limitation of testing code with closure-scoped variables
-
-            // Instead, let's test by manipulating the DOM and checking updateCounts reads correctly
-            // We'll add actual items to trigger count changes
+            // Add actual items to trigger count changes
             document.getElementById('customer-inventory').innerHTML = `
                 <div class="inventory-item selected">
                     <input type="checkbox" name="selected_items[]" value="INV001" checked>
@@ -491,15 +407,11 @@ describe('Inventory Item Management', () => {
                 </div>
             `;
 
-            // Simulate the items being selected (which increments selectedItemsCount)
-            // Since we can't easily modify closure variables, we'll just verify
-            // that updateCounts can be called without error
+            // Verify that updateCounts can be called without error
             expect(() => updateCounts()).not.toThrow();
         });
 
         test('should handle zero counts', () => {
-            loadJavaScriptCode();
-
             // With no items added, counts should be zero
             updateCounts();
 
@@ -509,10 +421,6 @@ describe('Inventory Item Management', () => {
 });
 
 describe('XSS Protection', () => {
-    beforeEach(() => {
-        loadJavaScriptCode();
-    });
-
     test('escapeHtml should prevent script injection', () => {
         const maliciousInput = '<img src=x onerror=alert(1)>';
         const escaped = escapeHtml(maliciousInput);
