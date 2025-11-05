@@ -447,9 +447,6 @@ describe('XSS Protection', () => {
 
 describe('File Upload Management (Issue #175)', () => {
     beforeEach(() => {
-        // Execute the JavaScript code
-        loadJavaScriptCode();
-
         // Reset DOM with file upload elements
         document.body.innerHTML = `
             <div id="fileDropzone">
