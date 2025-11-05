@@ -443,7 +443,7 @@
                         <h5 class="card-title mb-0">
                             <i class="fas fa-list me-2"></i> Order Items
                             {% if work_order.items %}
-                            <span class="badge bg-secondary ms-2">{{ work_order.items|length }}</span>
+                            <span class="badge bg-secondary ms-2">{{ work_order.items|sum(attribute='Qty')|int }}</span>
                             {% endif %}
                         </h5>
                     </div>
