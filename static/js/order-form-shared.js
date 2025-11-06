@@ -419,6 +419,12 @@ function removeNewItem(itemId) {
  */
 function updateInventoryCount(count) {
     document.getElementById('inventory-count').textContent = count;
+
+    // Show/hide select all controls based on whether there are items
+    const selectAllControls = document.getElementById('select-all-controls');
+    if (selectAllControls) {
+        selectAllControls.style.display = count > 0 ? 'block' : 'none';
+    }
 }
 
 /**
@@ -493,6 +499,81 @@ function createDatalists() {
         conditionDatalist.appendChild(option);
     });
     document.body.appendChild(conditionDatalist);
+}
+
+// ============================================================================
+// SELECT ALL / DESELECT ALL HANDLERS
+// ============================================================================
+
+/**
+ * Select all inventory items from customer history
+ * Issue #104: Add select all button to customer inventory
+ */
+function selectAllInventoryItems() {
+    const inventoryContainer = document.getElementById('customer-inventory');
+    if (!inventoryContainer) return;
+
+    // Get all visible inventory items (not hidden by edit page logic)
+    const inventoryItems = inventoryContainer.querySelectorAll('.inventory-item');
+
+    inventoryItems.forEach(item => {
+        // Skip items that are already hidden (on edit page, already selected)
+        if (item.style.display === 'none') return;
+
+        const checkbox = item.querySelector('input[type="checkbox"][name="selected_items[]"]');
+        if (checkbox && !checkbox.checked) {
+            // Trigger the checkbox programmatically
+            checkbox.checked = true;
+            item.classList.add('selected');
+            selectedItemsCount++;
+
+            // Check if we're on edit page and move item if needed
+            const existingItemsContainer = document.getElementById('existing-items');
+            const isEditPage = existingItemsContainer !== null;
+
+            if (isEditPage) {
+                // Move item to "Existing Items" section and hide from history
+                moveItemToExistingItems(item, checkbox);
+                item.style.display = 'none';
+            }
+        }
+    });
+
+    updateCounts();
+}
+
+/**
+ * Deselect all inventory items from customer history
+ * Issue #104: Add select all button to customer inventory
+ */
+function deselectAllInventoryItems() {
+    const inventoryContainer = document.getElementById('customer-inventory');
+    if (!inventoryContainer) return;
+
+    // Get all inventory items (including hidden ones)
+    const inventoryItems = inventoryContainer.querySelectorAll('.inventory-item');
+
+    inventoryItems.forEach(item => {
+        const checkbox = item.querySelector('input[type="checkbox"][name="selected_items[]"]');
+        if (checkbox && checkbox.checked) {
+            // Uncheck the checkbox
+            checkbox.checked = false;
+            item.classList.remove('selected');
+            selectedItemsCount--;
+
+            // Check if we're on edit page and remove from existing items if needed
+            const existingItemsContainer = document.getElementById('existing-items');
+            const isEditPage = existingItemsContainer !== null;
+
+            if (isEditPage) {
+                // Remove from "Existing Items" and show back in history
+                removeItemFromExistingItems(checkbox.value);
+                item.style.display = '';
+            }
+        }
+    });
+
+    updateCounts();
 }
 
 // ============================================================================
@@ -711,6 +792,8 @@ if (typeof module !== 'undefined' && module.exports) {
         updateCounts,
         updateRushStatus,
         createDatalists,
+        selectAllInventoryItems,
+        deselectAllInventoryItems,
         validateFile,
         updateFileList,
         removeFile,
