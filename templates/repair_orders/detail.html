@@ -11,46 +11,47 @@
   <div class="row">
     <div class="col-12">
       <!-- Header -->
-      <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 class="h3">
-            <i class="fas fa-scissors me-2"></i> 
-            Repair Order R{{ repair_work_order.RepairOrderNo }}
-            {% if repair_work_order.RushOrder or repair_work_order.FirmRush %}
-            <span class="badge bg-danger ms-2">
-              <i class="fas fa-bolt me-1"></i>RUSH ORDER
-            </span>
+      <div class="mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+          <div class="flex-grow-1">
+            <h1 class="h3 mb-1">
+              <i class="fas fa-scissors me-2"></i>
+              Repair Order R{{ repair_work_order.RepairOrderNo }}
+              {% if repair_work_order.RushOrder or repair_work_order.FirmRush %}
+              <span class="badge bg-danger ms-2">
+                <i class="fas fa-bolt me-1"></i>RUSH ORDER
+              </span>
+              {% endif %}
+            </h1>
+            <p class="text-muted mb-0">{{ repair_work_order.ROName or 'Unnamed Order' }}</p>
+          </div>
+
+          <div class="d-flex flex-wrap gap-2 w-100 w-md-auto">
+            <a href="{{ url_for('repair_work_orders.view_repair_order_pdf', repair_order_no=repair_work_order.RepairOrderNo) }}"
+              target="_blank"
+              class="btn btn-info flex-fill flex-md-grow-0">
+                <i class="fas fa-eye"></i> View PDF
+            </a>
+
+            {% if current_user.role != 'user' %}
+            <a href="{{ url_for('repair_work_orders.edit_repair_order', repair_order_no=repair_work_order.RepairOrderNo) }}"
+              class="btn btn-warning flex-fill flex-md-grow-0">
+              <i class="fas fa-edit me-1"></i>Edit Order
+            </a>
+
+            <button type="button"
+                    class="btn btn-danger flex-fill flex-md-grow-0"
+                    onclick="confirmDelete('{{ repair_work_order.RepairOrderNo }}')">
+              <i class="fas fa-trash me-1"></i>Delete Order
+            </button>
             {% endif %}
-          </h1>
-          <p class="text-muted mb-0">{{ repair_work_order.ROName or 'Unnamed Order' }}</p>
+
+            <a href="{{ url_for('repair_work_orders.list_repair_work_orders') }}"
+              class="btn btn-outline-secondary flex-fill flex-md-grow-0">
+              <i class="fas fa-arrow-left me-1"></i> Back to List
+            </a>
+          </div>
         </div>
-        <div class="d-flex flex-wrap align-items-start gap-2 mt-3">
-          <a href="{{ url_for('repair_work_orders.view_repair_order_pdf', repair_order_no=repair_work_order.RepairOrderNo) }}" 
-            target="_blank" 
-            class="btn btn-info">
-              <i class="fas fa-eye"></i> View PDF
-          </a>
-
-
-          {% if current_user.role != 'user' %}
-          <a href="{{ url_for('repair_work_orders.edit_repair_order', repair_order_no=repair_work_order.RepairOrderNo) }}" 
-            class="btn btn-warning">
-            <i class="fas fa-edit me-1"></i>Edit Order
-          </a>
-
-          <button type="button" 
-                  class="btn btn-danger" 
-                  onclick="confirmDelete('{{ repair_work_order.RepairOrderNo }}')">
-            <i class="fas fa-trash me-1"></i>Delete Order
-          </button>
-          {% endif %}
-
-          <a href="{{ url_for('repair_work_orders.list_repair_work_orders') }}" 
-            class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-1"></i> Back to List
-          </a>
-        </div>
-
       </div>
 
       <div class="row">
