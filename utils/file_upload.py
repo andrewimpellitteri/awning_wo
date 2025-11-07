@@ -1,5 +1,6 @@
 import os
 from werkzeug.utils import secure_filename
+from botocore.config import Config
 from models.work_order_file import WorkOrderFile
 from extensions import db
 import boto3
@@ -50,13 +51,20 @@ def is_running_on_aws():
     return any(aws_indicators)
 
 
+# Configure S3 client with timeout protection
+s3_config = Config(
+    connect_timeout=10,      # 10s to establish connection
+    read_timeout=30,         # 30s per read operation
+    retries={'max_attempts': 2, 'mode': 'adaptive'}
+)
+
 # Detect environment
 is_aws_environment = is_running_on_aws()
 
 if is_aws_environment:
     # Use IAM role (no credentials needed)
     print("Detected AWS environment - using IAM role for S3 access")
-    s3_client = boto3.client("s3", region_name=AWS_REGION)
+    s3_client = boto3.client("s3", config=s3_config, region_name=AWS_REGION)
 else:
     # Use explicit credentials for local development
     print("Detected local environment - using explicit AWS credentials")
@@ -78,8 +86,49 @@ else:
         "s3",
         aws_access_key_id=AWS_ACCESS_KEY_ID,
         aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        config=s3_config,
         region_name=AWS_REGION,
     )
+
+
+def validate_s3_connection():
+    """Validate S3 bucket exists and is accessible at startup
+    
+    This prevents silent failures where the app starts successfully
+    but crashes on first file upload due to S3 configuration issues.
+    
+    Returns:
+        bool: True if S3 bucket is accessible
+        
+    Raises:
+        ValueError: If S3 bucket doesn't exist or is inaccessible
+    """
+    try:
+        # Test that we can access the bucket (read operation)
+        response = s3_client.head_bucket(Bucket=AWS_S3_BUCKET)
+        print(f"✓ S3 bucket '{AWS_S3_BUCKET}' is accessible")
+        return True
+        
+    except s3_client.exceptions.NoSuchBucket:
+        error_msg = f"S3 bucket '{AWS_S3_BUCKET}' does not exist. Check AWS_S3_BUCKET environment variable."
+        print(f"FATAL: {error_msg}")
+        raise ValueError(error_msg)
+        
+    except s3_client.exceptions.ClientError as e:
+        error_code = e.response.get('Error', {}).get('Code', 'Unknown')
+        if error_code == '403':
+            error_msg = f"Access denied to S3 bucket '{AWS_S3_BUCKET}'. Check IAM permissions and AWS credentials."
+            print(f"FATAL: {error_msg}")
+            raise ValueError(error_msg)
+        else:
+            error_msg = f"S3 bucket error: {error_code}. Check AWS configuration."
+            print(f"FATAL: {error_msg}")
+            raise ValueError(error_msg)
+            
+    except Exception as e:
+        error_msg = f"S3 connection failed: {str(e)}"
+        print(f"FATAL: {error_msg}")
+        raise ValueError(error_msg)
 
 
 def save_order_file_generic(
@@ -126,6 +175,22 @@ def save_order_file_generic(
 
     # Validate file type
     if not allowed_file(filename):
+        return None
+
+    # Check file size before processing (prevents memory exhaustion)
+    file.seek(0, 2)  # Seek to end to get file size
+    file_size = file.tell()
+    file.seek(0)  # Reset to beginning
+
+    # Import config to get size limit
+    from config import Config
+    max_size = Config.MAX_UPLOAD_SIZE_BYTES
+
+    if file_size > max_size:
+        size_mb = file_size / (1024 * 1024)
+        max_mb = max_size / (1024 * 1024)
+        error_msg = f"File too large: {filename} is {size_mb:.1f}MB (max {max_mb:.0f}MB)"
+        print(f"ERROR: {error_msg}")
         return None
 
     # Always read file content (needed for deferred upload or thumbnails)

@@ -190,6 +190,19 @@ def create_app(config_class=Config):
         except Exception as e:
             print("[DEBUG] Database connection error:", e)
 
+        # Validate S3 connection at startup (prevents silent failures later)
+        # Skip during testing to avoid S3 dependency
+        if not app.config.get('TESTING'):
+            try:
+                from utils.file_upload import validate_s3_connection
+                validate_s3_connection()
+            except ValueError as e:
+                print(f"WARNING: S3 validation failed - {str(e)}")
+                print("File uploads will not work until S3 is configured correctly.")
+                # Don't exit - allow app to start for non-upload functionality
+            except Exception as e:
+                print(f"WARNING: Unexpected error validating S3 - {str(e)}")
+
     return app
 
 

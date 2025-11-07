@@ -9,7 +9,11 @@ class Config:
 
     UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "uploads")
     CSV_DATA_PATH = os.environ.get("CSV_DATA_PATH", "data")
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
+
+    # File upload size limits (matching client-side validation)
+    MAX_UPLOAD_SIZE_MB = 10
+    MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    MAX_CONTENT_LENGTH = MAX_UPLOAD_SIZE_BYTES  # 10MB
 
     PERMANENT_SESSION_LIFETIME = timedelta(hours=24)
     SESSION_COOKIE_SECURE = FLASK_ENV == "production"
