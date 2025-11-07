@@ -112,7 +112,17 @@ def save_order_file_generic(
             - _deferred_thumbnail_content: Optional thumbnail bytes
             - _deferred_thumbnail_key: Optional thumbnail S3 key
     """
-    filename = secure_filename(file.filename)
+    original_filename = secure_filename(file.filename)
+
+    # Generate unique filename by appending timestamp to avoid overwrites
+    # Split filename into name and extension
+    if '.' in original_filename:
+        name, ext = original_filename.rsplit('.', 1)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]  # milliseconds
+        filename = f"{name}_{timestamp}.{ext}"
+    else:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]
+        filename = f"{original_filename}_{timestamp}"
 
     # Validate file type
     if not allowed_file(filename):
