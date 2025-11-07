@@ -674,6 +674,39 @@ function clearFiles() {
 }
 
 /**
+ * Show upload progress indicator
+ */
+function showUploadProgress(fileCount) {
+    const progressContainer = document.getElementById('uploadProgressContainer');
+    const statusText = document.getElementById('uploadStatusText');
+    const fileListContainer = document.getElementById('fileListContainer');
+    const dropzone = document.getElementById('fileDropzone');
+
+    if (progressContainer && fileCount > 0) {
+        // Hide file list and dropzone
+        if (fileListContainer) fileListContainer.style.display = 'none';
+        if (dropzone) dropzone.style.pointerEvents = 'none'; // Disable interaction
+
+        // Update status text
+        if (statusText) {
+            statusText.textContent = fileCount === 1
+                ? 'Uploading 1 file...'
+                : `Uploading ${fileCount} files...`;
+        }
+
+        // Show progress
+        progressContainer.style.display = 'block';
+
+        // Disable submit button to prevent double submission
+        const submitBtn = document.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+        }
+    }
+}
+
+/**
  * Initialize file upload dropzone
  */
 function initializeFileUpload() {
@@ -773,6 +806,17 @@ function initializeFileUpload() {
 
         updateFileList();
     });
+
+    // Handle form submission to show progress
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', () => {
+            const fileInput = document.getElementById('files');
+            if (fileInput && fileInput.files.length > 0) {
+                showUploadProgress(fileInput.files.length);
+            }
+        });
+    }
 }
 
 // Export for Node.js/Jest (CommonJS) - browser ignores this

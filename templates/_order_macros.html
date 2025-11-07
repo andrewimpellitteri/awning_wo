@@ -66,6 +66,28 @@
                         <i class="fas fa-trash me-1"></i>Clear All
                     </button>
                 </div>
+
+                <!-- Upload progress indicator -->
+                <div class="mt-3" id="uploadProgressContainer" style="display: none;">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                            <span class="visually-hidden">Uploading...</span>
+                        </div>
+                        <strong id="uploadStatusText">Uploading files...</strong>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                             role="progressbar"
+                             id="uploadProgressBar"
+                             style="width: 100%"
+                             aria-valuenow="100"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            Please wait...
+                        </div>
+                    </div>
+                    <small class="text-muted mt-2 d-block">Do not close this page or navigate away</small>
+                </div>
             </div>
         </div>
     </div>

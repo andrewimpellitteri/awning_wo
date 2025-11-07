@@ -374,19 +374,19 @@ def test_rush_badge_on_customer_detail_page(admin_client, sample_customers):
         
         open_wo_item = next((item for item in wo_items if "1002" in item), None)
         assert open_wo_item is not None
-        assert '<span class="badge bg-danger me-2">RUSH</span>' in open_wo_item
+        assert '<span class="badge bg-danger">RUSH</span>' in open_wo_item
 
         closed_wo_item = next((item for item in wo_items if "1001" in item), None)
         assert closed_wo_item is not None
-        assert '<span class="badge bg-danger me-2">RUSH</span>' not in closed_wo_item
+        assert '<span class="badge bg-danger">RUSH</span>' not in closed_wo_item
 
         # Repair Orders
         ro_items = re.findall(r'<li class="list-group-item.*?">.*?</li>', response_data, re.DOTALL)
 
         open_ro_item = next((item for item in ro_items if "2002" in item), None)
         assert open_ro_item is not None
-        assert '<span class="badge bg-danger me-2">RUSH</span>' in open_ro_item
+        assert '<span class="badge bg-danger">RUSH</span>' in open_ro_item
 
         closed_ro_item = next((item for item in ro_items if "2001" in item), None)
         assert closed_ro_item is not None
-        assert '<span class="badge bg-danger me-2">RUSH</span>' not in closed_ro_item
+        assert '<span class="badge bg-danger">RUSH</span>' not in closed_ro_item
