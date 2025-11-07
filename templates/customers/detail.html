@@ -354,47 +354,49 @@
                 <h5 class="mb-3">Work Orders</h5>
                 <ul class="list-group">
                     {% for wo in work_orders %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center mb-2 rounded shadow-sm">
-                        <div class="d-flex align-items-center flex-grow-1">
-                            <div style="min-width: 120px;">
-                                <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo, return_url=request.url) }}" class="badge bg-primary me-2">
-                                    <i class="fas fa-hashtag me-1"></i>{{ wo.WorkOrderNo }}
+                    <li class="list-group-item mb-2 rounded shadow-sm">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+                            <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+                                <div>
+                                    <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo, return_url=request.url) }}" class="badge bg-primary">
+                                        <i class="fas fa-hashtag me-1"></i>{{ wo.WorkOrderNo }}
+                                    </a>
+                                </div>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% if not wo.DateCompleted %}
+                                    <span class="badge bg-success">OPEN</span>
+                                    {% endif %}
+                                    {% if (wo.RushOrder or wo.FirmRush) and not wo.DateCompleted %}
+                                    <span class="badge bg-danger">RUSH</span>
+                                    {% endif %}
+                                    {% if wo.Quote and not wo.DateCompleted %}
+                                    <span class="badge bg-info">Quote: {{ wo.Quote }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-muted small">
+                                    In: {{ (wo.DateIn | date_format) or "No Date" }}
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-1 w-100 w-md-auto">
+                                <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo, return_url=request.url) }}"
+                                   class="btn btn-sm btn-outline-primary flex-fill flex-md-grow-0"
+                                   title="View Details">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                {% if current_user.role != 'user' %}
+                                <a href="{{ url_for('work_orders.edit_work_order', work_order_no=wo.WorkOrderNo, return_url=request.url) }}"
+                                   class="btn btn-sm btn-outline-warning flex-fill flex-md-grow-0"
+                                   title="Edit Work Order">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                {% endif %}
+                                <a href="{{ url_for('work_orders.view_work_order_pdf', work_order_no=wo.WorkOrderNo) }}"
+                                   class="btn btn-sm btn-outline-secondary flex-fill flex-md-grow-0"
+                                   target="_blank"
+                                   title="Print PDF">
+                                    <i class="fas fa-print"></i> Print
                                 </a>
                             </div>
-                            <div style="min-width: 180px;">
-                                {% if not wo.DateCompleted %}
-                                <span class="badge bg-success me-2">OPEN</span>
-                                {% endif %}
-                                {% if (wo.RushOrder or wo.FirmRush) and not wo.DateCompleted %}
-                                <span class="badge bg-danger me-2">RUSH</span>
-                                {% endif %}
-                                {% if wo.Quote and not wo.DateCompleted %}
-                                <span class="badge bg-info me-2">Quote: {{ wo.Quote }}</span>
-                                {% endif %}
-                            </div>
-                            <div class="text-center flex-grow-1">
-                                <span class="text-muted">In: {{ (wo.DateIn | date_format) or "No Date" }}</span>
-                            </div>
-                        </div>
-                        <div class="btn-group" role="group">
-                            <a href="{{ url_for('work_orders.view_work_order', work_order_no=wo.WorkOrderNo, return_url=request.url) }}"
-                               class="btn btn-sm btn-outline-primary"
-                               title="View Details">
-                                <i class="fas fa-eye"></i> View
-                            </a>
-                            {% if current_user.role != 'user' %}
-                            <a href="{{ url_for('work_orders.edit_work_order', work_order_no=wo.WorkOrderNo, return_url=request.url) }}"
-                               class="btn btn-sm btn-outline-warning"
-                               title="Edit Work Order">
-                                <i class="fas fa-edit"></i> Edit
-                            </a>
-                            {% endif %}
-                            <a href="{{ url_for('work_orders.view_work_order_pdf', work_order_no=wo.WorkOrderNo) }}"
-                               class="btn btn-sm btn-outline-secondary"
-                               target="_blank"
-                               title="Print PDF">
-                                <i class="fas fa-print"></i> Print
-                            </a>
                         </div>
                     </li>
                     {% endfor %}
@@ -409,47 +411,49 @@
                 <h5 class="mb-3">Repair Orders</h5>
                 <ul class="list-group">
                     {% for ro in repair_work_orders %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center mb-2 rounded shadow-sm">
-                        <div class="d-flex align-items-center flex-grow-1">
-                            <div style="min-width: 120px;">
-                                <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=ro.RepairOrderNo) }}" class="badge bg-warning text-dark me-2">
-                                    <i class="fas fa-hashtag me-1"></i>R{{ ro.RepairOrderNo }}
+                    <li class="list-group-item mb-2 rounded shadow-sm">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+                            <div class="d-flex flex-wrap align-items-center gap-2 flex-grow-1">
+                                <div>
+                                    <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=ro.RepairOrderNo) }}" class="badge bg-warning text-dark">
+                                        <i class="fas fa-hashtag me-1"></i>R{{ ro.RepairOrderNo }}
+                                    </a>
+                                </div>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% if not ro.DateCompleted %}
+                                    <span class="badge bg-success">OPEN</span>
+                                    {% endif %}
+                                    {% if ro.RushOrder and not ro.DateCompleted %}
+                                    <span class="badge bg-danger">RUSH</span>
+                                    {% endif %}
+                                    {% if ro.QUOTE and not ro.DateCompleted %}
+                                    <span class="badge bg-info">Quote: {{ ro.QUOTE }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-muted small">
+                                    In: {{ (ro.DateIn | date_format) or "No Date" }}
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-1 w-100 w-md-auto">
+                                <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=ro.RepairOrderNo) }}"
+                                   class="btn btn-sm btn-outline-primary flex-fill flex-md-grow-0"
+                                   title="View Details">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                {% if current_user.role != 'user' %}
+                                <a href="{{ url_for('repair_work_orders.edit_repair_order', repair_order_no=ro.RepairOrderNo) }}"
+                                   class="btn btn-sm btn-outline-warning flex-fill flex-md-grow-0"
+                                   title="Edit Repair Order">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                                {% endif %}
+                                <a href="{{ url_for('repair_work_orders.view_repair_order_pdf', repair_order_no=ro.RepairOrderNo) }}"
+                                   class="btn btn-sm btn-outline-secondary flex-fill flex-md-grow-0"
+                                   target="_blank"
+                                   title="Print PDF">
+                                    <i class="fas fa-print"></i> Print
                                 </a>
                             </div>
-                            <div style="min-width: 180px;">
-                                {% if not ro.DateCompleted %}
-                                <span class="badge bg-success me-2">OPEN</span>
-                                {% endif %}
-                                {% if ro.RushOrder and not ro.DateCompleted %}
-                                <span class="badge bg-danger me-2">RUSH</span>
-                                {% endif %}
-                                {% if ro.QUOTE and not ro.DateCompleted %}
-                                <span class="badge bg-info me-2">Quote: {{ ro.QUOTE }}</span>
-                                {% endif %}
-                            </div>
-                            <div class="text-center flex-grow-1">
-                                <span class="text-muted">In: {{ (ro.DateIn | date_format) or "No Date" }}</span>
-                            </div>
-                        </div>
-                        <div class="btn-group" role="group">
-                            <a href="{{ url_for('repair_work_orders.view_repair_work_order', repair_order_no=ro.RepairOrderNo) }}"
-                               class="btn btn-sm btn-outline-primary"
-                               title="View Details">
-                                <i class="fas fa-eye"></i> View
-                            </a>
-                            {% if current_user.role != 'user' %}
-                            <a href="{{ url_for('repair_work_orders.edit_repair_order', repair_order_no=ro.RepairOrderNo) }}"
-                               class="btn btn-sm btn-outline-warning"
-                               title="Edit Repair Order">
-                                <i class="fas fa-edit"></i> Edit
-                            </a>
-                            {% endif %}
-                            <a href="{{ url_for('repair_work_orders.view_repair_order_pdf', repair_order_no=ro.RepairOrderNo) }}"
-                               class="btn btn-sm btn-outline-secondary"
-                               target="_blank"
-                               title="Print PDF">
-                                <i class="fas fa-print"></i> Print
-                            </a>
                         </div>
                     </li>
                     {% endfor %}
