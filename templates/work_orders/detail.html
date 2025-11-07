@@ -26,7 +26,7 @@
                         <p class="text-muted mb-0">{{ work_order.WOName or 'Unnamed Order' }}</p>
                     </div>
 
-                    <div class="d-flex flex-wrap gap-2 w-100 w-md-auto">
+                    <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end">
                         <a href="{{ url_for('work_orders.view_work_order_pdf', work_order_no=work_order.WorkOrderNo) }}"
                             target="_blank"
                             class="btn btn-info flex-fill flex-md-grow-0">
@@ -683,8 +683,27 @@ function confirmDeleteFile(fileId, fileName) {
         .then(res => res.json())
         .then(data => {
             if (data.success) {
+                // Remove the file element from DOM
                 const el = document.querySelector(`[data-file-id="${fileId}"]`);
-                if (el) el.remove();
+                if (el) {
+                    el.remove();
+
+                    // Update the file count badge
+                    const fileCountBadge = document.querySelector('.card-header .badge.bg-primary');
+                    if (fileCountBadge) {
+                        const currentCount = parseInt(fileCountBadge.textContent);
+                        const newCount = currentCount - 1;
+                        fileCountBadge.textContent = newCount;
+
+                        // If no files left, hide the entire files card
+                        if (newCount === 0) {
+                            const filesCard = document.querySelector('.card.mb-4.shadow-sm');
+                            if (filesCard && filesCard.querySelector('.card-header h5').textContent.includes('Uploaded Files')) {
+                                filesCard.style.display = 'none';
+                            }
+                        }
+                    }
+                }
             } else {
                 alert(data.error || 'Failed to delete file.');
             }

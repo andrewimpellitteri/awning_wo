@@ -159,6 +159,10 @@ form .card:hover,
     letter-spacing: 0.3px;
     position: relative;
     overflow: hidden;
+    white-space: nowrap; /* prevent multi-line buttons */
+    width: auto;         /* only as wide as the text */
+    max-width: 220px;    /* optional limit for longer labels */
+
 }
 
 .btn:hover {

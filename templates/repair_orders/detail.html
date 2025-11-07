@@ -26,7 +26,7 @@
             <p class="text-muted mb-0">{{ repair_work_order.ROName or 'Unnamed Order' }}</p>
           </div>
 
-          <div class="d-flex flex-wrap gap-2 w-100 w-md-auto">
+          <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-md-end">
             <a href="{{ url_for('repair_work_orders.view_repair_order_pdf', repair_order_no=repair_work_order.RepairOrderNo) }}"
               target="_blank"
               class="btn btn-info flex-fill flex-md-grow-0">
