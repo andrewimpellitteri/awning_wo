@@ -24,6 +24,7 @@ from models.user import User
 from models.invite_token import InviteToken
 from models.work_order_file import WorkOrderFile
 from models.repair_order_file import RepairOrderFile
+from models.checkin import CheckIn, CheckInItem
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

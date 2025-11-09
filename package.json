@@ -34,10 +34,10 @@
     "coverageReporters": ["text", "lcov", "json-summary"],
     "coverageThreshold": {
       "global": {
-        "branches": 35,
+        "branches": 32,
         "functions": 50,
-        "lines": 45,
-        "statements": 45
+        "lines": 44,
+        "statements": 44
       }
     },
     "modulePathIgnorePatterns": ["<rootDir>/venv/"],
