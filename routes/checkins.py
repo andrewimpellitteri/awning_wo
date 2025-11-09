@@ -54,6 +54,7 @@ def create_checkin():
             # Get form data
             cust_id = request.form.get("CustID")
             date_in = _parse_date_field(request.form.get("DateIn"))
+            date_required = _parse_date_field(request.form.get("DateRequired"))
 
             if not cust_id:
                 flash("Customer is required", "error")
@@ -66,7 +67,14 @@ def create_checkin():
             checkin = CheckIn(
                 CustID=cust_id,
                 DateIn=date_in,
-                Status="pending"
+                Status="pending",
+                DateRequired=date_required,
+                ReturnTo=request.form.get("ReturnTo"),
+                StorageTime=request.form.get("StorageTime"),
+                RackNo=request.form.get("RackNo"),
+                SpecialInstructions=request.form.get("SpecialInstructions"),
+                RepairsNeeded=bool(request.form.get("RepairsNeeded")),
+                RushOrder=bool(request.form.get("RushOrder"))
             )
 
             db.session.add(checkin)
@@ -188,8 +196,10 @@ def customer_search():
     results = [
         {
             "value": c.CustID,
-            "text": f"{c.Name} ({c.CustID})",
+            "name": c.Name or "",
             "contact": c.Contact or "",
+            "source": c.source_info.SSource if c.source_info else (c.Source or ""),
+            "text": f"{c.Name}{' - ' + c.Contact if c.Contact else ''}",
             "address": c.Address or "",
             "city": c.City or "",
             "state": c.State or "",

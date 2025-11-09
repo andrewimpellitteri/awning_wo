@@ -5,7 +5,7 @@
 {% block styles %}
 {{ super() }}
 <!-- Selectize.js CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/selectize@0.15.2/dist/css/selectize.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/selectize@0.12.6/dist/css/selectize.bootstrap5.css">
 <style>
     .item-row {
         background: #f8f9fa;
@@ -87,6 +87,71 @@
                             </div>
                         </div>
 
+                        <!-- Additional Details -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-clipboard-list me-2"></i>Additional Details
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="DateRequired" class="form-label">Date Required</label>
+                                        <input type="date" class="form-control" id="DateRequired" name="DateRequired">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="ReturnTo" class="form-label">Return To</label>
+                                        <input type="text" class="form-control" id="ReturnTo" name="ReturnTo"
+                                               placeholder="e.g., Marina, Customer Address">
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="StorageTime" class="form-label">Storage Type</label>
+                                        <select class="form-control" id="StorageTime" name="StorageTime">
+                                            <option value="">Select...</option>
+                                            <option value="Seasonal">Seasonal</option>
+                                            <option value="Temporary">Temporary</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="RackNo" class="form-label">Storage Location</label>
+                                        <input type="text" class="form-control" id="RackNo" name="RackNo"
+                                               placeholder="e.g., 5 B, bin 4 top">
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="SpecialInstructions" class="form-label">Special Instructions</label>
+                                        <textarea class="form-control" id="SpecialInstructions" name="SpecialInstructions"
+                                                  rows="3" placeholder="Enter any special instructions..."></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="RepairsNeeded" name="RepairsNeeded" value="1">
+                                            <label class="form-check-label" for="RepairsNeeded">
+                                                Repairs Needed
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="RushOrder" name="RushOrder" value="1">
+                                            <label class="form-check-label" for="RushOrder">
+                                                Rush Order
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Items Section -->
                         <div class="card mb-4 shadow-sm">
                             <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
@@ -139,43 +204,63 @@
 
 {% block scripts %}
 {{ super() }}
+<!-- jQuery (required for Selectize.js) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <!-- Selectize.js -->
-<script src="https://cdn.jsdelivr.net/npm/selectize@0.15.2/dist/js/selectize.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/selectize@0.12.6/dist/js/standalone/selectize.min.js"></script>
 
 <script>
 let itemCounter = 0;
 
 // Initialize Selectize for customer search
 $(document).ready(function() {
-    $('#CustID').selectize({
+    const $select = $('#CustID').selectize({
         valueField: 'value',
         labelField: 'text',
-        searchField: ['text', 'contact'],
+        searchField: ['name', 'contact', 'text'],
         create: false,
+        preload: false,
+        maxItems: 1,
+        closeAfterSelect: true,
+        hideSelected: true,
+        loadThrottle: 300,
+        onLoad: function() {
+            console.log('Selectize loaded');
+        },
         load: function(query, callback) {
-            if (!query.length || query.length < 2) return callback();
+            console.log('Load called with query:', query);
+            if (!query || query.length < 2) {
+                console.log('Query too short, skipping');
+                callback();
+                return;
+            }
+
             $.ajax({
                 url: '{{ url_for("checkins.customer_search") }}',
                 type: 'GET',
                 dataType: 'json',
                 data: { q: query },
-                error: function() {
+                error: function(xhr, status, error) {
+                    console.error('AJAX error:', status, error);
                     callback();
                 },
                 success: function(res) {
+                    console.log('AJAX success, results:', res.length);
                     callback(res);
                 }
             });
         },
         onChange: function(value) {
+            console.log('onChange called with value:', value);
             if (value) {
                 // Show customer info
                 const selectize = this;
                 const option = selectize.options[value];
                 if (option) {
                     $('#customer-details').html(`
-                        <div><strong>Name:</strong> ${option.text}</div>
+                        <div><strong>Name:</strong> ${option.name || option.text}</div>
                         ${option.contact ? `<div><strong>Contact:</strong> ${option.contact}</div>` : ''}
+                        ${option.source ? `<div><strong>Source:</strong> ${option.source}</div>` : ''}
                         ${option.address ? `<div><strong>Address:</strong> ${option.address}, ${option.city || ''} ${option.state || ''}</div>` : ''}
                     `);
                     $('#customer-info').slideDown();
@@ -184,16 +269,21 @@ $(document).ready(function() {
                 $('#customer-info').slideUp();
             }
         },
-        placeholder: 'Type to search customer...',
+        placeholder: 'Type at least 2 characters to search...',
         render: {
             option: function(item, escape) {
-                return '<div>' +
-                    '<strong>' + escape(item.text) + '</strong>' +
-                    (item.contact ? '<br><small class="text-muted">' + escape(item.contact) + '</small>' : '') +
+                return '<div style="padding: 8px 0;">' +
+                    '<div><strong>' + escape(item.text) + '</strong></div>' +
+                    (item.source ? '<div><small class="text-muted">Source: ' + escape(item.source) + '</small></div>' : '') +
                     '</div>';
+            },
+            item: function(item, escape) {
+                return '<div>' + escape(item.text) + '</div>';
             }
         }
     });
+
+    console.log('Selectize initialized');
 
     // Add first item row
     addItemRow();

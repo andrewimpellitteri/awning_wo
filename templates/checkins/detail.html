@@ -60,12 +60,24 @@
                                         <div>{{ checkin.customer.Contact }}</div>
                                     </div>
                                     {% endif %}
+                                    {% if checkin.customer.source_info %}
+                                    <div class="mb-3">
+                                        <label class="text-muted small">Source</label>
+                                        <div>{{ checkin.customer.source_info.SSource }}</div>
+                                    </div>
+                                    {% endif %}
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="text-muted small">Date In</label>
                                         <div>{{ checkin.DateIn|date_format }}</div>
                                     </div>
+                                    {% if checkin.DateRequired %}
+                                    <div class="mb-3">
+                                        <label class="text-muted small">Date Required</label>
+                                        <div>{{ checkin.DateRequired|date_format }}</div>
+                                    </div>
+                                    {% endif %}
                                     <div class="mb-3">
                                         <label class="text-muted small">Created</label>
                                         <div>{{ checkin.created_at|date_format(show_time=True) }}</div>
@@ -82,6 +94,47 @@
                                     {% endif %}
                                 </div>
                             </div>
+
+                            <!-- Additional Details -->
+                            {% if checkin.SpecialInstructions or checkin.ReturnTo or checkin.StorageTime or checkin.RackNo or checkin.RepairsNeeded or checkin.RushOrder %}
+                            <hr>
+                            <div class="row">
+                                {% if checkin.SpecialInstructions %}
+                                <div class="col-md-12 mb-3">
+                                    <label class="text-muted small">Special Instructions</label>
+                                    <div>{{ checkin.SpecialInstructions }}</div>
+                                </div>
+                                {% endif %}
+                                {% if checkin.ReturnTo %}
+                                <div class="col-md-6 mb-3">
+                                    <label class="text-muted small">Return To</label>
+                                    <div>{{ checkin.ReturnTo }}</div>
+                                </div>
+                                {% endif %}
+                                {% if checkin.StorageTime %}
+                                <div class="col-md-6 mb-3">
+                                    <label class="text-muted small">Storage Type</label>
+                                    <div>{{ checkin.StorageTime }}</div>
+                                </div>
+                                {% endif %}
+                                {% if checkin.RackNo %}
+                                <div class="col-md-6 mb-3">
+                                    <label class="text-muted small">Storage Location</label>
+                                    <div>{{ checkin.RackNo }}</div>
+                                </div>
+                                {% endif %}
+                                {% if checkin.RepairsNeeded or checkin.RushOrder %}
+                                <div class="col-md-12 mb-3">
+                                    {% if checkin.RepairsNeeded %}
+                                    <span class="badge bg-warning text-dark me-2">Repairs Needed</span>
+                                    {% endif %}
+                                    {% if checkin.RushOrder %}
+                                    <span class="badge bg-danger">Rush Order</span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
 

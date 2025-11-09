@@ -27,6 +27,15 @@ class CheckIn(db.Model):
         nullable=True
     )
 
+    # Additional fields to match work order
+    SpecialInstructions = db.Column("specialinstructions", db.Text, nullable=True)
+    StorageTime = db.Column("storagetime", db.String, nullable=True)
+    RackNo = db.Column("rack_number", db.String, nullable=True)
+    ReturnTo = db.Column("returnto", db.String, nullable=True)
+    DateRequired = db.Column("daterequired", db.Date, nullable=True)
+    RepairsNeeded = db.Column("repairsneeded", db.Boolean, default=False)
+    RushOrder = db.Column("rushorder", db.Boolean, default=False)
+
     # Timestamps
     created_at = db.Column(db.DateTime, server_default=func.now())
     updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
@@ -35,6 +44,9 @@ class CheckIn(db.Model):
     customer = db.relationship("Customer", backref="checkins")
     items = db.relationship(
         "CheckInItem", back_populates="checkin", cascade="all, delete-orphan"
+    )
+    files = db.relationship(
+        "CheckInFile", back_populates="checkin", cascade="all, delete-orphan", lazy="joined"
     )
     work_order = db.relationship("WorkOrder", foreign_keys=[WorkOrderNo])
 
