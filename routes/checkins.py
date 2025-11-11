@@ -9,6 +9,7 @@ from flask import (
 )
 from flask_login import login_required
 from models.checkin import CheckIn, CheckInItem
+from models.checkin_file import CheckInFile
 from models.customer import Customer
 from models.work_order import WorkOrder, WorkOrderItem
 from models.inventory import Inventory
@@ -17,6 +18,7 @@ from sqlalchemy.exc import IntegrityError
 from extensions import db
 from datetime import datetime, date
 from decorators import role_required
+from utils.file_upload import save_order_file_generic, allowed_file
 
 checkins_bp = Blueprint("checkins", __name__, url_prefix="/checkins")
 
@@ -102,6 +104,32 @@ def create_checkin():
                         Condition=conditions[i] if i < len(conditions) else None,
                     )
                     db.session.add(item)
+
+            # Handle file uploads
+            if 'files[]' in request.files:
+                uploaded_files = request.files.getlist('files[]')
+                if uploaded_files and uploaded_files[0].filename:  # Check if files were actually selected
+                    for file in uploaded_files:
+                        if file and file.filename and allowed_file(file.filename):
+                            try:
+                                # Use the generic save function for check-ins
+                                file_obj = save_order_file_generic(
+                                    order_no=str(checkin.CheckInID),
+                                    file=file,
+                                    order_type="checkin",
+                                    to_s3=True,
+                                    generate_thumbnails=False,  # Don't need thumbnails for check-ins
+                                    file_model_class=CheckInFile,
+                                    defer_s3_upload=False
+                                )
+
+                                if file_obj:
+                                    # Update the CheckInID since generic function doesn't know about it
+                                    file_obj.CheckInID = checkin.CheckInID
+                                    db.session.add(file_obj)
+                            except Exception as file_error:
+                                # Log the error but don't fail the whole check-in
+                                flash(f"Warning: Could not upload {file.filename}: {str(file_error)}", "warning")
 
             db.session.commit()
             flash(f"Check-in #{checkin.CheckInID} created successfully!", "success")
@@ -216,3 +244,21 @@ def get_pending_count():
     """Get count of pending check-ins for navigation badge"""
     count = CheckIn.query.filter_by(Status="pending").count()
     return jsonify({"count": count})
+
+
+@checkins_bp.route("/files/<int:file_id>/download")
+@login_required
+@role_required("admin", "manager")
+def download_checkin_file(file_id):
+    """Download a check-in file from S3"""
+    from utils.file_upload import generate_presigned_url
+
+    checkin_file = CheckInFile.query.get_or_404(file_id)
+
+    try:
+        # Generate presigned URL for download
+        download_url = generate_presigned_url(checkin_file.file_path, expiration=300)
+        return redirect(download_url)
+    except Exception as e:
+        flash(f"Error downloading file: {str(e)}", "error")
+        return redirect(url_for("checkins.view_checkin", checkin_id=checkin_file.CheckInID))

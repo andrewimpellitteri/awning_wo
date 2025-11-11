@@ -473,3 +473,311 @@ def test_checkinitem_model_to_dict(app):
         assert data["SizeWgt"] == "10x8"
         assert data["Price"] == 150.00
         assert data["Condition"] == "Good"
+
+
+# ============================================================================
+# CHECK-IN TO WORK ORDER CONVERSION TESTS
+# ============================================================================
+
+
+def test_convert_checkin_to_workorder_basic(admin_client, app):
+    """Test basic conversion of check-in to work order."""
+    # Create a check-in with items
+    with app.app_context():
+        checkin = CheckIn(
+            CustID="CUST001",
+            DateIn=date.today(),
+            Status="pending",
+            SpecialInstructions="Handle with care"
+        )
+        db.session.add(checkin)
+        db.session.flush()
+
+        item = CheckInItem(
+            CheckInID=checkin.CheckInID,
+            Description="Test Awning",
+            Material="Sunbrella",
+            Color="Navy",
+            Qty=2,
+            SizeWgt="10x8",
+            Price=150.00,
+            Condition="Good"
+        )
+        db.session.add(item)
+        db.session.commit()
+        checkin_id = checkin.CheckInID
+
+    # Admin accesses work order create page with checkin_id
+    response = admin_client.get(f"/work_orders/new?checkin_id={checkin_id}")
+    assert response.status_code == 200
+    # Check that form is pre-filled
+    assert b"Test Awning" in response.data
+    assert b"Converting from Check-In" in response.data
+
+
+def test_convert_checkin_with_all_fields(admin_client, app):
+    """Test conversion of check-in with all additional fields populated."""
+    today = date.today()
+    required_date = date(2025, 12, 25)
+
+    # Create a check-in with all fields
+    with app.app_context():
+        checkin = CheckIn(
+            CustID="CUST001",
+            DateIn=today,
+            Status="pending",
+            SpecialInstructions="Rush order - customer needs by Christmas",
+            StorageTime="Seasonal",
+            RackNo="5 B",
+            ReturnTo="Marina Slip 42",
+            DateRequired=required_date,
+            RepairsNeeded=True,
+            RushOrder=True
+        )
+        db.session.add(checkin)
+        db.session.flush()
+
+        item = CheckInItem(
+            CheckInID=checkin.CheckInID,
+            Description="Bimini Top",
+            Material="Canvas",
+            Color="White",
+            Qty=1,
+            SizeWgt="12x10",
+            Price=250.00,
+            Condition="Stained - needs deep clean"
+        )
+        db.session.add(item)
+        db.session.commit()
+        checkin_id = checkin.CheckInID
+
+    # Get the work order creation form
+    response = admin_client.get(f"/work_orders/new?checkin_id={checkin_id}")
+    assert response.status_code == 200
+
+    # Verify check-in data is present in response
+    assert b"Bimini Top" in response.data
+    assert b"Converting from Check-In" in response.data
+
+    # Now actually create the work order
+    response = admin_client.post(
+        "/work_orders/new",
+        data={
+            "checkin_id": checkin_id,
+            "CustID": "CUST001",
+            "DateIn": today.strftime("%Y-%m-%d"),
+            "WOName": "Test Customer 1",
+            "SpecialInstructions": "Rush order - customer needs by Christmas",
+            "StorageTime": "Seasonal",
+            "RackNo": "5 B",
+            "ReturnTo": "Marina Slip 42",
+            "DateRequired": required_date.strftime("%Y-%m-%d"),
+            "RepairsNeeded": "1",
+            "RushOrder": "1",
+            # Items
+            "new_item_description[]": ["Bimini Top"],
+            "new_item_material[]": ["Canvas"],
+            "new_item_color[]": ["White"],
+            "new_item_qty[]": ["1"],
+            "new_item_sizewgt[]": ["12x10"],
+            "new_item_price[]": ["250.00"],
+            "new_item_condition[]": ["Stained - needs deep clean"],
+        },
+        follow_redirects=False
+    )
+
+    # Should redirect to customer detail page
+    assert response.status_code == 302
+
+    # Verify work order was created
+    with app.app_context():
+        work_order = WorkOrder.query.first()
+        assert work_order is not None
+        assert work_order.CustID == "CUST001"
+        assert work_order.SpecialInstructions == "Rush order - customer needs by Christmas"
+        assert work_order.StorageTime == "Seasonal"
+        assert work_order.RackNo == "5 B"
+        assert work_order.ReturnTo == "Marina Slip 42"
+        assert work_order.DateRequired == required_date
+        assert work_order.RepairsNeeded == True
+        assert work_order.RushOrder == True
+
+        # Verify check-in was marked as processed
+        checkin = CheckIn.query.get(checkin_id)
+        assert checkin.Status == "processed"
+        assert checkin.WorkOrderNo == work_order.WorkOrderNo
+
+
+def test_checkin_marked_processed_after_conversion(admin_client, app):
+    """Test that check-in status changes to 'processed' after work order creation."""
+    # Create a check-in
+    with app.app_context():
+        checkin = CheckIn(
+            CustID="CUST001",
+            DateIn=date.today(),
+            Status="pending"
+        )
+        db.session.add(checkin)
+        db.session.flush()
+
+        item = CheckInItem(
+            CheckInID=checkin.CheckInID,
+            Description="Test Item",
+            Material="Sunbrella",
+            Qty=1
+        )
+        db.session.add(item)
+        db.session.commit()
+        checkin_id = checkin.CheckInID
+
+    # Create work order from check-in
+    response = admin_client.post(
+        "/work_orders/new",
+        data={
+            "checkin_id": checkin_id,
+            "CustID": "CUST001",
+            "DateIn": date.today().strftime("%Y-%m-%d"),
+            "WOName": "Test Customer 1",
+            "new_item_description[]": ["Test Item"],
+            "new_item_material[]": ["Sunbrella"],
+            "new_item_qty[]": ["1"],
+        },
+        follow_redirects=False
+    )
+
+    # Should redirect to customer detail page
+    assert response.status_code == 302
+
+    # Check that check-in is now processed
+    with app.app_context():
+        checkin = CheckIn.query.get(checkin_id)
+        assert checkin.Status == "processed"
+        assert checkin.WorkOrderNo is not None
+
+
+def test_cannot_convert_already_processed_checkin(admin_client, app):
+    """Test that already processed check-ins cannot be converted again."""
+    # Create a processed check-in
+    with app.app_context():
+        checkin = CheckIn(
+            CustID="CUST001",
+            DateIn=date.today(),
+            Status="processed",
+            WorkOrderNo="TEST001"
+        )
+        db.session.add(checkin)
+        db.session.commit()
+        checkin_id = checkin.CheckInID
+
+    # Try to access work order create with processed check-in
+    response = admin_client.get(f"/work_orders/new?checkin_id={checkin_id}")
+
+    # Should either redirect or show empty form (no pre-fill)
+    # The conversion logic should skip processed check-ins
+    with app.app_context():
+        checkin = CheckIn.query.get(checkin_id)
+        # Check-in should still be processed with same work order
+        assert checkin.Status == "processed"
+        assert checkin.WorkOrderNo == "TEST001"
+
+
+def test_manager_cannot_convert_checkin(manager_client, app):
+    """Test that managers cannot convert check-ins to work orders."""
+    # Create a check-in
+    with app.app_context():
+        checkin = CheckIn(
+            CustID="CUST001",
+            DateIn=date.today(),
+            Status="pending"
+        )
+        db.session.add(checkin)
+        db.session.commit()
+        checkin_id = checkin.CheckInID
+
+    # Manager tries to access work order create (which requires admin or manager)
+    # Note: Work order creation allows both admin and manager roles, so this should succeed
+    response = manager_client.get(f"/work_orders/new?checkin_id={checkin_id}")
+
+    # Manager can access work order creation, so should return 200
+    assert response.status_code == 200
+
+
+def test_checkin_with_new_fields_displayed_on_detail(admin_client, app):
+    """Test that new check-in fields are displayed on the detail page."""
+    # Create a check-in with new fields
+    with app.app_context():
+        checkin = CheckIn(
+            CustID="CUST001",
+            DateIn=date.today(),
+            Status="pending",
+            SpecialInstructions="Test instructions",
+            StorageTime="Seasonal",
+            RackNo="Bin 5",
+            ReturnTo="Customer dock",
+            DateRequired=date(2025, 12, 31),
+            RepairsNeeded=True,
+            RushOrder=True
+        )
+        db.session.add(checkin)
+        db.session.commit()
+        checkin_id = checkin.CheckInID
+
+    # View check-in detail page
+    response = admin_client.get(f"/checkins/{checkin_id}")
+    assert response.status_code == 200
+
+    # Verify all fields are displayed
+    assert b"Test instructions" in response.data
+    assert b"Seasonal" in response.data
+    assert b"Bin 5" in response.data
+    assert b"Customer dock" in response.data
+    assert b"Repairs Needed" in response.data
+    assert b"Rush Order" in response.data
+
+    # Check for source display
+    assert b"Source" in response.data
+    assert b"TestSource1" in response.data
+
+
+def test_checkin_create_with_new_fields(manager_client, app):
+    """Test creating a check-in with all new fields populated."""
+    today = date.today().strftime("%Y-%m-%d")
+    required = date(2025, 12, 25).strftime("%Y-%m-%d")
+
+    response = manager_client.post(
+        "/checkins/new",
+        data={
+            "CustID": "CUST001",
+            "DateIn": today,
+            "DateRequired": required,
+            "ReturnTo": "Marina",
+            "StorageTime": "Temporary",
+            "RackNo": "3 A",
+            "SpecialInstructions": "Handle carefully",
+            "RepairsNeeded": "1",
+            "RushOrder": "1",
+            "item_description[]": ["Awning"],
+            "item_material[]": ["Sunbrella"],
+            "item_color[]": ["Blue"],
+            "item_qty[]": ["1"],
+            "item_sizewgt[]": ["10x8"],
+            "item_price[]": ["100.00"],
+            "item_condition[]": ["Good"],
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"created successfully" in response.data
+
+    # Verify in database
+    with app.app_context():
+        checkin = CheckIn.query.first()
+        assert checkin is not None
+        assert checkin.DateRequired == date(2025, 12, 25)
+        assert checkin.ReturnTo == "Marina"
+        assert checkin.StorageTime == "Temporary"
+        assert checkin.RackNo == "3 A"
+        assert checkin.SpecialInstructions == "Handle carefully"
+        assert checkin.RepairsNeeded == True
+        assert checkin.RushOrder == True

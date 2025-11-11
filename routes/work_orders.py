@@ -802,6 +802,22 @@ def create_work_order(prefill_cust_id=None):
             if checkin.customer and checkin.customer.Source:
                 form_data["ShipTo"] = checkin.customer.Source
 
+            # Pre-fill new check-in fields
+            if checkin.SpecialInstructions:
+                form_data["SpecialInstructions"] = checkin.SpecialInstructions
+            if checkin.StorageTime:
+                form_data["StorageTime"] = checkin.StorageTime
+            if checkin.RackNo:
+                form_data["RackNo"] = checkin.RackNo
+            if checkin.ReturnTo:
+                form_data["ReturnTo"] = checkin.ReturnTo
+            if checkin.DateRequired:
+                form_data["DateRequired"] = checkin.DateRequired.strftime("%Y-%m-%d")
+            if checkin.RepairsNeeded:
+                form_data["RepairsNeeded"] = "1"
+            if checkin.RushOrder:
+                form_data["RushOrder"] = "1"
+
             # Convert check-in items to work order format for pre-filling
             checkin_items = [
                 {

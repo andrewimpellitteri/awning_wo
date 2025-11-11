@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_order_macros.html" import customer_inventory_section, file_upload_section %}
 
 {% block title %}New Check-In{% endblock %}
 
@@ -6,6 +7,7 @@
 {{ super() }}
 <!-- Selectize.js CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/selectize@0.12.6/dist/css/selectize.bootstrap5.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/order-form.css') }}">
 <style>
     .item-row {
         background: #f8f9fa;
@@ -47,7 +49,7 @@
                 </div>
             </div>
 
-            <form method="POST" id="checkinForm">
+            <form method="POST" id="checkinForm" enctype="multipart/form-data">
                 <div class="row">
                     <!-- Main Form -->
                     <div class="col-lg-8">
@@ -86,6 +88,9 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Customer Item History -->
+                        {{ customer_inventory_section() }}
 
                         <!-- Additional Details -->
                         <div class="card mb-4 shadow-sm">
@@ -166,6 +171,9 @@
                                 <!-- Items will be added here dynamically -->
                             </div>
                         </div>
+
+                        <!-- File Upload Section -->
+                        {{ file_upload_section() }}
                     </div>
 
                     <!-- Sidebar -->
@@ -208,8 +216,12 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <!-- Selectize.js -->
 <script src="https://cdn.jsdelivr.net/npm/selectize@0.12.6/dist/js/standalone/selectize.min.js"></script>
+<!-- Shared order form functionality -->
+<script src="{{ url_for('static', filename='js/order-form-shared.js') }}"></script>
 
 <script>
+// Set flag for shared JS (this is NOT a repair order)
+let isRepairOrder = false;
 let itemCounter = 0;
 
 // Initialize Selectize for customer search
@@ -242,6 +254,7 @@ $(document).ready(function() {
                 data: { q: query },
                 error: function(xhr, status, error) {
                     console.error('AJAX error:', status, error);
+                    alert('Error searching customers. Please try again or contact support.');
                     callback();
                 },
                 success: function(res) {
@@ -264,9 +277,14 @@ $(document).ready(function() {
                         ${option.address ? `<div><strong>Address:</strong> ${option.address}, ${option.city || ''} ${option.state || ''}</div>` : ''}
                     `);
                     $('#customer-info').slideDown();
+
+                    // Load customer item history
+                    loadCustomerInventory(value);
                 }
             } else {
                 $('#customer-info').slideUp();
+                // Clear inventory when no customer selected
+                loadCustomerInventory(null);
             }
         },
         placeholder: 'Type at least 2 characters to search...',
@@ -361,6 +379,102 @@ function renumberItems() {
         $(this).find('h6').text('Item #' + num);
         num++;
     });
+}
+
+// Handle adding inventory items to check-in
+function addInventoryItemToCheckin(inventoryKey) {
+    // Find the inventory item in the DOM
+    const inventoryItem = document.querySelector(`[data-inventory-key="${inventoryKey}"]`);
+    if (!inventoryItem) return;
+
+    // Get item data from data attributes
+    const description = inventoryItem.dataset.description || '';
+    const material = inventoryItem.dataset.material || '';
+    const color = inventoryItem.dataset.color || '';
+    const sizewgt = inventoryItem.dataset.sizewgt || '';
+    const price = inventoryItem.dataset.price || '';
+    const condition = inventoryItem.dataset.condition || '';
+    const qty = inventoryItem.dataset.qty || '1';
+
+    // Add a new item row with pre-filled data
+    itemCounter++;
+    const html = `
+        <div class="item-row" id="item-${itemCounter}">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">Item #${itemCounter}</h6>
+                <button type="button" class="btn btn-sm btn-danger remove-item-btn" onclick="removeItemRow(${itemCounter})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <label class="form-label small">Description <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-sm" name="item_description[]" required
+                           value="${escapeHtml(description)}" placeholder="e.g., Awning, Cushion, Bimini">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small">Material</label>
+                    <input type="text" class="form-control form-control-sm" name="item_material[]"
+                           value="${escapeHtml(material)}" placeholder="e.g., Sunbrella">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small">Color</label>
+                    <input type="text" class="form-control form-control-sm" name="item_color[]"
+                           value="${escapeHtml(color)}" placeholder="e.g., Navy Blue">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-2 mb-2">
+                    <label class="form-label small">Qty</label>
+                    <input type="number" class="form-control form-control-sm" name="item_qty[]"
+                           value="${escapeHtml(qty)}" min="0">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small">Size (W x D)</label>
+                    <input type="text" class="form-control form-control-sm" name="item_sizewgt[]"
+                           value="${escapeHtml(sizewgt)}" placeholder='e.g., 10\\'x8\\''>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small">Price Quote</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" name="item_price[]" step="0.01" min="0"
+                               value="${escapeHtml(price)}" placeholder="0.00">
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label class="form-label small">Condition</label>
+                    <input type="text" class="form-control form-control-sm" name="item_condition[]"
+                           value="${escapeHtml(condition)}" placeholder="e.g., Good, Stained, Torn">
+                </div>
+            </div>
+        </div>
+    `;
+    $('#items-container').append(html);
+    renumberItems();
+}
+
+// Override the toggleItem function from order-form-shared.js to add items directly to check-in
+function toggleItem(element, inventoryKey) {
+    const checkbox = element.querySelector('input[type="checkbox"]');
+    const isChecked = checkbox.checked;
+
+    // Toggle the checkbox
+    checkbox.checked = !isChecked;
+
+    if (!isChecked) {
+        // Item was just checked - add it to the check-in items
+        element.classList.add('selected');
+        addInventoryItemToCheckin(inventoryKey);
+        selectedItemsCount++;
+    } else {
+        // Item was unchecked - we don't auto-remove from items section
+        // User can manually delete from items if needed
+        element.classList.remove('selected');
+        selectedItemsCount--;
+    }
 }
 
 // Form validation
