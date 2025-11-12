@@ -51,6 +51,9 @@
                 </div>
 
                 <div>
+                    <button type="button" class="btn btn-outline-primary me-2" onclick="scrollToUpload()">
+                        <i class="fas fa-cloud-upload-alt me-1"></i>Upload Files
+                    </button>
                     <a href="{{ url_for('work_orders.view_work_order', work_order_no=work_order.WorkOrderNo, return_url=return_url) }}" class="btn btn-outline-secondary me-2">
                         <i class="fas fa-eye me-1"></i>View
                     </a>
@@ -444,6 +447,20 @@
 <!-- Work-order-edit-specific JavaScript -->
 <script>
 let existingItemsCount = {{ work_order_items | length if work_order_items else 0 }};
+
+// Smooth scroll to file upload section
+function scrollToUpload() {
+    const uploadSection = document.getElementById('file-upload-section');
+    if (uploadSection) {
+        uploadSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Add a subtle highlight effect
+        uploadSection.style.transition = 'box-shadow 0.3s ease';
+        uploadSection.style.boxShadow = '0 0 20px rgba(13, 110, 253, 0.5)';
+        setTimeout(() => {
+            uploadSection.style.boxShadow = '';
+        }, 2000);
+    }
+}
 
 // Toggle visual appearance of existing items when unchecked
 function toggleExistingItem(checkbox) {
