@@ -781,3 +781,243 @@ def test_checkin_create_with_new_fields(manager_client, app):
         assert checkin.SpecialInstructions == "Handle carefully"
         assert checkin.RepairsNeeded == True
         assert checkin.RushOrder == True
+
+
+def test_edit_checkin_get_request(manager_client, app):
+    """Test GET request to edit check-in page loads existing data."""
+    # Create a check-in with items
+    with app.app_context():
+        checkin = CheckIn(
+            CustID="CUST001",
+            DateIn=date.today(),
+            Status="pending",
+            SpecialInstructions="Original instructions",
+            StorageTime="Seasonal",
+            RackNo="Bin 5",
+        )
+        db.session.add(checkin)
+        db.session.flush()
+
+        item = CheckInItem(
+            CheckInID=checkin.CheckInID,
+            Description="Test Awning",
+            Material="Sunbrella",
+            Color="Blue",
+            Qty=2,
+            SizeWgt="10x8",
+            Price=150.00,
+            Condition="Good",
+        )
+        db.session.add(item)
+        db.session.commit()
+        checkin_id = checkin.CheckInID
+
+    # Load edit page
+    response = manager_client.get(f"/checkins/{checkin_id}/edit")
+    assert response.status_code == 200
+
+    # Verify form has existing data
+    assert b"Edit Check-In" in response.data
+    assert b"Original instructions" in response.data
+    assert b"Seasonal" in response.data
+    assert b"Bin 5" in response.data
+    assert b"Test Awning" in response.data
+
+
+def test_edit_checkin_post_success(manager_client, app):
+    """Test successfully editing a check-in."""
+    # Create a check-in
+    with app.app_context():
+        checkin = CheckIn(
+            CustID="CUST001",
+            DateIn=date.today(),
+            Status="pending",
+            SpecialInstructions="Original instructions",
+            RackNo="Bin 5",
+        )
+        db.session.add(checkin)
+        db.session.flush()
+
+        item = CheckInItem(
+            CheckInID=checkin.CheckInID,
+            Description="Test Awning",
+            Material="Sunbrella",
+            Qty=2,
+        )
+        db.session.add(item)
+        db.session.commit()
+        checkin_id = checkin.CheckInID
+
+    # Edit the check-in
+    today = date.today().strftime("%Y-%m-%d")
+    response = manager_client.post(
+        f"/checkins/{checkin_id}/edit",
+        data={
+            "CustID": "CUST002",  # Change customer
+            "DateIn": today,
+            "SpecialInstructions": "Updated instructions",
+            "RackNo": "Bin 7",  # Update rack
+            "StorageTime": "Temporary",  # Add storage time
+            "RepairsNeeded": "1",  # Add repairs needed
+            "item_description[]": ["Updated Awning", "New Item"],
+            "item_material[]": ["Acrylic", "Canvas"],
+            "item_color[]": ["Red", "Green"],
+            "item_qty[]": ["3", "1"],
+            "item_sizewgt[]": ["12x10", "8x6"],
+            "item_price[]": ["200.00", "75.00"],
+            "item_condition[]": ["Fair", "Excellent"],
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"updated successfully" in response.data
+
+    # Verify changes in database
+    with app.app_context():
+        checkin = CheckIn.query.get(checkin_id)
+        assert checkin is not None
+        assert checkin.CustID == "CUST002"  # Customer changed
+        assert checkin.SpecialInstructions == "Updated instructions"
+        assert checkin.RackNo == "Bin 7"
+        assert checkin.StorageTime == "Temporary"
+        assert checkin.RepairsNeeded == True
+
+        # Verify items were updated (old deleted, new added)
+        items = CheckInItem.query.filter_by(CheckInID=checkin_id).all()
+        assert len(items) == 2
+        assert items[0].Description == "Updated Awning"
+        assert items[0].Material == "Acrylic"
+        assert items[0].Qty == 3
+        assert items[1].Description == "New Item"
+        assert items[1].Material == "Canvas"
+
+
+def test_edit_checkin_cannot_edit_processed(manager_client, app):
+    """Test that processed check-ins cannot be edited."""
+    # Create a processed check-in
+    with app.app_context():
+        checkin = CheckIn(
+            CustID="CUST001",
+            DateIn=date.today(),
+            Status="processed",
+            WorkOrderNo="12345",
+        )
+        db.session.add(checkin)
+        db.session.commit()
+        checkin_id = checkin.CheckInID
+
+    # Try to edit
+    response = manager_client.get(f"/checkins/{checkin_id}/edit", follow_redirects=True)
+    assert response.status_code == 200
+    assert b"Cannot edit a processed check-in" in response.data
+
+
+def test_edit_checkin_updates_items(manager_client, app):
+    """Test that editing updates items correctly using delete-then-insert pattern."""
+    # Create a check-in with items
+    with app.app_context():
+        checkin = CheckIn(
+            CustID="CUST001",
+            DateIn=date.today(),
+            Status="pending",
+        )
+        db.session.add(checkin)
+        db.session.flush()
+
+        items = [
+            CheckInItem(
+                CheckInID=checkin.CheckInID,
+                Description="Item 1",
+                Material="Material 1",
+                Qty=1,
+            ),
+            CheckInItem(
+                CheckInID=checkin.CheckInID,
+                Description="Item 2",
+                Material="Material 2",
+                Qty=2,
+            ),
+        ]
+        db.session.add_all(items)
+        db.session.commit()
+        checkin_id = checkin.CheckInID
+
+    # Edit to remove one item and add a different one
+    today = date.today().strftime("%Y-%m-%d")
+    response = manager_client.post(
+        f"/checkins/{checkin_id}/edit",
+        data={
+            "CustID": "CUST001",
+            "DateIn": today,
+            "item_description[]": ["Item 3"],  # Only one item now
+            "item_material[]": ["Material 3"],
+            "item_qty[]": ["5"],
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"updated successfully" in response.data
+
+    # Verify items were replaced
+    with app.app_context():
+        items = CheckInItem.query.filter_by(CheckInID=checkin_id).all()
+        assert len(items) == 1
+        assert items[0].Description == "Item 3"
+        assert items[0].Material == "Material 3"
+        assert items[0].Qty == 5
+
+
+def test_admin_can_access_edit_checkin(admin_client, app):
+    """Test that admins can access edit check-in page."""
+    # Create a check-in
+    with app.app_context():
+        checkin = CheckIn(
+            CustID="CUST001",
+            DateIn=date.today(),
+            Status="pending",
+        )
+        db.session.add(checkin)
+        db.session.commit()
+        checkin_id = checkin.CheckInID
+
+    response = admin_client.get(f"/checkins/{checkin_id}/edit")
+    assert response.status_code == 200
+    assert b"Edit Check-In" in response.data
+
+
+def test_user_cannot_access_edit_checkin(client, app):
+    """Test that regular users cannot access edit check-in page."""
+    # Create user and check-in
+    with app.app_context():
+        user = User(
+            username="user",
+            email="user@example.com",
+            role="user",
+            password_hash=generate_password_hash("password"),
+        )
+        db.session.add(user)
+
+        # Need source for customer
+        source = Source(SSource="TestSource")
+        db.session.add(source)
+
+        customer = Customer(CustID="CUST001", Name="Test", Source="TestSource")
+        db.session.add(customer)
+
+        checkin = CheckIn(
+            CustID="CUST001",
+            DateIn=date.today(),
+            Status="pending",
+        )
+        db.session.add(checkin)
+        db.session.commit()
+        checkin_id = checkin.CheckInID
+
+    # Log in as user
+    client.post("/login", data={"username": "user", "password": "password"})
+
+    # Try to access edit page
+    response = client.get(f"/checkins/{checkin_id}/edit")
+    assert response.status_code == 403  # Forbidden

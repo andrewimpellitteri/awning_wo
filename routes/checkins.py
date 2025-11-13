@@ -176,6 +176,107 @@ def view_checkin(checkin_id):
     return render_template("checkins/detail.html", checkin=checkin)
 
 
+@checkins_bp.route("/<int:checkin_id>/edit", methods=["GET", "POST"])
+@login_required
+@role_required("admin", "manager")
+def edit_checkin(checkin_id):
+    """Edit an existing check-in"""
+    checkin = CheckIn.query.get_or_404(checkin_id)
+
+    # Prevent editing processed check-ins
+    if checkin.Status == "processed":
+        flash("Cannot edit a processed check-in", "error")
+        return redirect(url_for("checkins.view_checkin", checkin_id=checkin_id))
+
+    if request.method == "POST":
+        try:
+            # Update check-in fields
+            checkin.CustID = request.form.get("CustID")
+            checkin.DateIn = _parse_date_field(request.form.get("DateIn")) or date.today()
+            checkin.DateRequired = _parse_date_field(request.form.get("DateRequired"))
+            checkin.ReturnTo = request.form.get("ReturnTo")
+            checkin.StorageTime = request.form.get("StorageTime")
+            checkin.RackNo = request.form.get("RackNo")
+            checkin.SpecialInstructions = request.form.get("SpecialInstructions")
+            checkin.RepairsNeeded = bool(request.form.get("RepairsNeeded"))
+            checkin.RushOrder = bool(request.form.get("RushOrder"))
+
+            # Handle check-in items - delete all existing and recreate
+            # This follows the same pattern as repair order item updates (Issue #94)
+            CheckInItem.query.filter_by(CheckInID=checkin.CheckInID).delete()
+
+            # Process new items from form
+            descriptions = request.form.getlist("item_description[]")
+            materials = request.form.getlist("item_material[]")
+            colors = request.form.getlist("item_color[]")
+            qtys = request.form.getlist("item_qty[]")
+            sizewgts = request.form.getlist("item_sizewgt[]")
+            prices = request.form.getlist("item_price[]")
+            conditions = request.form.getlist("item_condition[]")
+
+            for i in range(len(descriptions)):
+                if descriptions[i]:  # Only add if description is not empty
+                    item = CheckInItem(
+                        CheckInID=checkin.CheckInID,
+                        Description=descriptions[i],
+                        Material=materials[i] if i < len(materials) else "Unknown",
+                        Color=colors[i] if i < len(colors) else None,
+                        Qty=int(qtys[i]) if i < len(qtys) and qtys[i] else 0,
+                        SizeWgt=sizewgts[i] if i < len(sizewgts) else None,
+                        Price=float(prices[i]) if i < len(prices) and prices[i] else None,
+                        Condition=conditions[i] if i < len(conditions) else None,
+                    )
+                    db.session.add(item)
+
+            # Handle file uploads (same as create)
+            if 'files[]' in request.files:
+                uploaded_files = request.files.getlist('files[]')
+                if uploaded_files and uploaded_files[0].filename:
+                    for file in uploaded_files:
+                        if file and file.filename and allowed_file(file.filename):
+                            try:
+                                file_obj = save_order_file_generic(
+                                    order_no=str(checkin.CheckInID),
+                                    file=file,
+                                    order_type="checkin",
+                                    to_s3=True,
+                                    generate_thumbnails=False,
+                                    file_model_class=CheckInFile,
+                                    defer_s3_upload=False
+                                )
+
+                                if file_obj:
+                                    file_obj.CheckInID = checkin.CheckInID
+                                    db.session.add(file_obj)
+                            except Exception as file_error:
+                                flash(f"Warning: Could not upload {file.filename}: {str(file_error)}", "warning")
+
+            db.session.commit()
+            flash(f"Check-in #{checkin.CheckInID} updated successfully!", "success")
+            return redirect(url_for("checkins.view_checkin", checkin_id=checkin.CheckInID))
+
+        except IntegrityError as e:
+            db.session.rollback()
+            flash(f"Database error: {str(e)}", "error")
+            return redirect(url_for("checkins.edit_checkin", checkin_id=checkin_id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error updating check-in: {str(e)}", "error")
+            return redirect(url_for("checkins.edit_checkin", checkin_id=checkin_id))
+
+    # GET request - show form with existing data
+    customers = Customer.query.order_by(Customer.Name).all()
+    # Convert items to dict for JSON serialization in template
+    items_data = [item.to_dict() for item in checkin.items]
+    return render_template(
+        "checkins/edit.html",
+        checkin=checkin,
+        customers=customers,
+        items_data=items_data,
+        today=date.today().strftime("%Y-%m-%d")
+    )
+
+
 @checkins_bp.route("/<int:checkin_id>/delete", methods=["POST"])
 @login_required
 @role_required("admin", "manager")
