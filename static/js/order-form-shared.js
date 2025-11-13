@@ -54,6 +54,70 @@ function getExistingItemInventoryKeys() {
 }
 
 /**
+ * Get existing items in the order by their attributes (for items without InventoryKey)
+ * Issue #177: Items without InventoryKey should still be filtered out from Customer History
+ * @returns {Array} Array of item attribute objects
+ */
+function getExistingItemsByAttributes() {
+    const items = [];
+    const existingItemsContainer = document.getElementById('existing-items');
+    if (!existingItemsContainer) return items;
+
+    // Get all checked existing items (both original and temp)
+    const checkboxes = existingItemsContainer.querySelectorAll('input[type="checkbox"]:checked');
+
+    checkboxes.forEach(checkbox => {
+        const card = checkbox.closest('.existing-item-card');
+        if (!card) return;
+
+        // Get the inventory key
+        const inventoryKey = checkbox.getAttribute('data-inventory-key') || checkbox.dataset.inventoryKey;
+
+        // Skip if it has an inventory key (already handled by getExistingItemInventoryKeys)
+        if (inventoryKey && inventoryKey.trim() !== '') return;
+
+        // Extract item attributes from the card HTML
+        // The card contains the item details in a specific structure
+        const descriptionEl = card.querySelector('.detail-label');
+        const materialEl = card.querySelector('.text-muted');
+        const conditionEl = card.querySelector('.badge');
+        const colorEl = card.querySelectorAll('.text-muted')[1]; // Second text-muted element
+        const sizeEl = card.querySelector('.col-md-2.text-center small:last-of-type, .col-md-3.text-center small:last-of-type');
+
+        if (descriptionEl) {
+            items.push({
+                description: (descriptionEl.textContent || '').trim(),
+                material: materialEl ? (materialEl.textContent || '').trim() : '',
+                condition: conditionEl ? (conditionEl.textContent || '').trim() : '',
+                color: colorEl ? (colorEl.textContent || '').trim() : '',
+                size: sizeEl ? (sizeEl.textContent || '').trim() : ''
+            });
+        }
+    });
+
+    return items;
+}
+
+/**
+ * Check if an inventory item matches any existing item by attributes
+ * Issue #177: Helper function to match items without InventoryKey
+ * @param {Object} inventoryItem - Inventory item to check
+ * @param {Array} existingItems - Array of existing item attribute objects
+ * @returns {boolean} True if item matches an existing item
+ */
+function matchesExistingItem(inventoryItem, existingItems) {
+    return existingItems.some(existing => {
+        return (
+            inventoryItem.description === existing.description &&
+            (inventoryItem.material || '') === (existing.material || 'No material specified') &&
+            (inventoryItem.condition || '') === existing.condition &&
+            (inventoryItem.color || '') === existing.color &&
+            (inventoryItem.size_wgt || '') === existing.size
+        );
+    });
+}
+
+/**
  * Escape HTML to prevent XSS attacks
  * @param {string} text - Text to escape
  * @returns {string} HTML-safe text
@@ -118,8 +182,24 @@ function loadCustomerInventory(custId) {
             // Get inventory keys of items currently in the order
             const existingItemKeys = getExistingItemInventoryKeys();
 
+            // Issue #177: Also get items by attributes (for items without InventoryKey)
+            const existingItemsByAttributes = getExistingItemsByAttributes();
+
             // Filter out items that are already in the order
-            const availableItems = data.filter(item => !existingItemKeys.has(item.id));
+            // Check both by InventoryKey AND by attributes
+            const availableItems = data.filter(item => {
+                // Filter by InventoryKey (if item has one)
+                if (existingItemKeys.has(item.id)) {
+                    return false;
+                }
+
+                // Filter by attributes (for items without InventoryKey)
+                if (matchesExistingItem(item, existingItemsByAttributes)) {
+                    return false;
+                }
+
+                return true;
+            });
 
             updateInventoryCount(availableItems.length);
 
@@ -826,6 +906,8 @@ if (typeof module !== 'undefined' && module.exports) {
         formatPrice,
         formatFileSize,
         getExistingItemInventoryKeys,
+        getExistingItemsByAttributes,
+        matchesExistingItem,
         loadCustomerInventory,
         toggleItem,
         moveItemToExistingItems,

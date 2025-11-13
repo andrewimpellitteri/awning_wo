@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}{% block admin_title %}Admin Panel{% endblock %}{% endblock %}
+
+{% block styles %}
+<style>
+.admin-sidebar {
+    min-height: calc(100vh - 100px);
+    background-color: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+}
+.admin-sidebar .nav-link {
+    color: var(--text-color);
+    padding: 0.75rem 1rem;
+    border-left: 3px solid transparent;
+}
+.admin-sidebar .nav-link:hover {
+    background-color: var(--hover-bg);
+}
+.admin-sidebar .nav-link.active {
+    background-color: var(--active-bg);
+    border-left-color: #007bff;
+    font-weight: 500;
+}
+.admin-content {
+    padding: 2rem;
+}
+</style>
+{% block admin_styles %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Admin Sidebar -->
+        <div class="col-md-2 admin-sidebar p-0">
+            <nav class="nav flex-column">
+                <a class="nav-link {% if active_page == 'users' %}active{% endif %}" href="{{ url_for('admin.manage_users') }}">
+                    <i class="fas fa-users me-2"></i>User Management
+                </a>
+                <a class="nav-link {% if active_page == 'ml' %}active{% endif %}" href="{{ url_for('ml.dashboard') }}">
+                    <i class="fas fa-brain me-2"></i>ML Dashboard
+                </a>
+                <a class="nav-link {% if active_page == 'emails' %}active{% endif %}" href="{{ url_for('email_reminders.dashboard') }}">
+                    <i class="fas fa-envelope me-2"></i>Email Reminders
+                </a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-10 admin-content">
+            {% block admin_content %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}

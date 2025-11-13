@@ -33,6 +33,13 @@
             </div>
 
             <form method="POST" id="workOrderForm" enctype="multipart/form-data">
+                {% if checkin_id %}
+                <input type="hidden" name="checkin_id" value="{{ checkin_id }}">
+                <div class="alert alert-info mb-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Converting from Check-In #{{ checkin_id }}</strong> - Items and customer info have been pre-filled.
+                </div>
+                {% endif %}
                 <div class="row">
                     <!-- Main Form -->
                     <div class="col-lg-8">
@@ -511,6 +518,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize counts
     updateCounts();
+
+    // Pre-fill items from check-in if converting
+    {% if checkin_items %}
+    const checkinItems = {{ checkin_items|tojson }};
+    if (checkinItems && checkinItems.length > 0) {
+        checkinItems.forEach((item, index) => {
+            // Add new item row
+            addNewItem();
+
+            // Get the last added item container
+            const itemCards = document.querySelectorAll('#new-items-container > .item-card-wrapper');
+            const lastCard = itemCards[itemCards.length - 1];
+
+            if (lastCard) {
+                // Fill in the fields
+                lastCard.querySelector('[name="new_item_description[]"]').value = item.description || '';
+                lastCard.querySelector('[name="new_item_material[]"]').value = item.material || '';
+                lastCard.querySelector('[name="new_item_color[]"]').value = item.color || '';
+                lastCard.querySelector('[name="new_item_qty[]"]').value = item.qty || '';
+                lastCard.querySelector('[name="new_item_sizewgt[]"]').value = item.sizewgt || '';
+                lastCard.querySelector('[name="new_item_price[]"]').value = item.price || '';
+                lastCard.querySelector('[name="new_item_condition[]"]').value = item.condition || '';
+            }
+        });
+
+        // Update counts after adding all items
+        setTimeout(() => updateCounts(), 100);
+    }
+    {% endif %}
 });
 </script>
 {% endblock %}

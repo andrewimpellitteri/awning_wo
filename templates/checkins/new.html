@@ -1,0 +1,497 @@
+{% extends "base.html" %}
+{% from "_order_macros.html" import customer_inventory_section, file_upload_section %}
+
+{% block title %}New Check-In{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<!-- Selectize.js CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/selectize@0.12.6/dist/css/selectize.bootstrap5.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/order-form.css') }}">
+<style>
+    .item-row {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    .item-row:hover {
+        background: #e9ecef;
+    }
+    .remove-item-btn {
+        opacity: 0.7;
+        transition: opacity 0.2s;
+    }
+    .remove-item-btn:hover {
+        opacity: 1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3">
+                        <i class="fas fa-clipboard-check me-2"></i>New Check-In
+                    </h1>
+                    <p class="text-muted mb-0">Record items received for cleaning/repair</p>
+                </div>
+
+                <div>
+                    <a href="{{ url_for('checkins.view_pending') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Pending
+                    </a>
+                </div>
+            </div>
+
+            <form method="POST" id="checkinForm" enctype="multipart/form-data">
+                <div class="row">
+                    <!-- Main Form -->
+                    <div class="col-lg-8">
+                        <!-- Check-In Details -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>Check-In Information
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="CustID" class="form-label">Customer <span class="text-danger">*</span></label>
+                                        <select id="CustID" name="CustID" required class="form-control">
+                                            <option value="">Type to search customer...</option>
+                                        </select>
+                                        <small class="form-text text-muted">Start typing customer name or ID</small>
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="DateIn" class="form-label">Date In <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="fas fa-calendar-alt"></i>
+                                            </span>
+                                            <input type="date" class="form-control" id="DateIn" name="DateIn"
+                                                   value="{{ today }}" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="customer-info" class="alert alert-info" style="display: none;">
+                                    <strong>Customer Info:</strong>
+                                    <div id="customer-details"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Customer Item History -->
+                        {{ customer_inventory_section() }}
+
+                        <!-- Additional Details -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header bg-secondary text-white">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-clipboard-list me-2"></i>Additional Details
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="DateRequired" class="form-label">Date Required</label>
+                                        <input type="date" class="form-control" id="DateRequired" name="DateRequired">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="ReturnTo" class="form-label">Return To</label>
+                                        <input type="text" class="form-control" id="ReturnTo" name="ReturnTo"
+                                               placeholder="e.g., Marina, Customer Address">
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="StorageTime" class="form-label">Storage Type</label>
+                                        <select class="form-control" id="StorageTime" name="StorageTime">
+                                            <option value="">Select...</option>
+                                            <option value="Seasonal">Seasonal</option>
+                                            <option value="Temporary">Temporary</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="RackNo" class="form-label">Storage Location</label>
+                                        <input type="text" class="form-control" id="RackNo" name="RackNo"
+                                               placeholder="e.g., 5 B, bin 4 top">
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="SpecialInstructions" class="form-label">Special Instructions</label>
+                                        <textarea class="form-control" id="SpecialInstructions" name="SpecialInstructions"
+                                                  rows="3" placeholder="Enter any special instructions..."></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="RepairsNeeded" name="RepairsNeeded" value="1">
+                                            <label class="form-check-label" for="RepairsNeeded">
+                                                Repairs Needed
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-2">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="RushOrder" name="RushOrder" value="1">
+                                            <label class="form-check-label" for="RushOrder">
+                                                Rush Order
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Items Section -->
+                        <div class="card mb-4 shadow-sm">
+                            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-boxes me-2"></i>Items
+                                </h5>
+                                <button type="button" class="btn btn-sm btn-light" onclick="addItemRow()">
+                                    <i class="fas fa-plus me-1"></i>Add Item
+                                </button>
+                            </div>
+                            <div class="card-body" id="items-container">
+                                <!-- Items will be added here dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- File Upload Section -->
+                        {{ file_upload_section() }}
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="col-lg-4">
+                        <div class="card shadow-sm sticky-top" style="top: 20px;">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-save me-2"></i>Actions
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-save me-2"></i>Save Check-In
+                                    </button>
+                                    <a href="{{ url_for('checkins.view_pending') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times me-2"></i>Cancel
+                                    </a>
+                                </div>
+
+                                <hr>
+
+                                <div class="alert alert-warning mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Note:</strong> Check-in will be saved as "Pending" and can be converted to a work order by the office manager.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<!-- jQuery (required for Selectize.js) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Selectize.js -->
+<script src="https://cdn.jsdelivr.net/npm/selectize@0.12.6/dist/js/standalone/selectize.min.js"></script>
+<!-- Shared order form functionality -->
+<script src="{{ url_for('static', filename='js/order-form-shared.js') }}"></script>
+
+<script>
+// Set flag for shared JS (this is NOT a repair order)
+let isRepairOrder = false;
+let itemCounter = 0;
+
+// Initialize Selectize for customer search
+$(document).ready(function() {
+    const $select = $('#CustID').selectize({
+        valueField: 'value',
+        labelField: 'text',
+        searchField: ['name', 'contact', 'text'],
+        create: false,
+        preload: false,
+        maxItems: 1,
+        closeAfterSelect: true,
+        hideSelected: true,
+        loadThrottle: 300,
+        onLoad: function() {
+            console.log('Selectize loaded');
+        },
+        load: function(query, callback) {
+            console.log('Load called with query:', query);
+            if (!query || query.length < 2) {
+                console.log('Query too short, skipping');
+                callback();
+                return;
+            }
+
+            $.ajax({
+                url: '{{ url_for("checkins.customer_search") }}',
+                type: 'GET',
+                dataType: 'json',
+                data: { q: query },
+                error: function(xhr, status, error) {
+                    console.error('AJAX error:', status, error);
+                    alert('Error searching customers. Please try again or contact support.');
+                    callback();
+                },
+                success: function(res) {
+                    console.log('AJAX success, results:', res.length);
+                    callback(res);
+                }
+            });
+        },
+        onChange: function(value) {
+            console.log('onChange called with value:', value);
+            if (value) {
+                // Show customer info
+                const selectize = this;
+                const option = selectize.options[value];
+                if (option) {
+                    $('#customer-details').html(`
+                        <div><strong>Name:</strong> ${option.name || option.text}</div>
+                        ${option.contact ? `<div><strong>Contact:</strong> ${option.contact}</div>` : ''}
+                        ${option.source ? `<div><strong>Source:</strong> ${option.source}</div>` : ''}
+                        ${option.address ? `<div><strong>Address:</strong> ${option.address}, ${option.city || ''} ${option.state || ''}</div>` : ''}
+                    `);
+                    $('#customer-info').slideDown();
+
+                    // Load customer item history
+                    loadCustomerInventory(value);
+                }
+            } else {
+                $('#customer-info').slideUp();
+                // Clear inventory when no customer selected
+                loadCustomerInventory(null);
+            }
+        },
+        placeholder: 'Type at least 2 characters to search...',
+        render: {
+            option: function(item, escape) {
+                return '<div style="padding: 8px 0;">' +
+                    '<div><strong>' + escape(item.text) + '</strong></div>' +
+                    (item.source ? '<div><small class="text-muted">Source: ' + escape(item.source) + '</small></div>' : '') +
+                    '</div>';
+            },
+            item: function(item, escape) {
+                return '<div>' + escape(item.text) + '</div>';
+            }
+        }
+    });
+
+    console.log('Selectize initialized');
+
+    // Add first item row
+    addItemRow();
+});
+
+function addItemRow() {
+    itemCounter++;
+    const html = `
+        <div class="item-row" id="item-${itemCounter}">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">Item #${itemCounter}</h6>
+                <button type="button" class="btn btn-sm btn-danger remove-item-btn" onclick="removeItemRow(${itemCounter})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <label class="form-label small">Description <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-sm" name="item_description[]" required
+                           placeholder="e.g., Awning, Cushion, Bimini">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small">Material</label>
+                    <input type="text" class="form-control form-control-sm" name="item_material[]"
+                           placeholder="e.g., Sunbrella">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small">Color</label>
+                    <input type="text" class="form-control form-control-sm" name="item_color[]"
+                           placeholder="e.g., Navy Blue">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-2 mb-2">
+                    <label class="form-label small">Qty</label>
+                    <input type="number" class="form-control form-control-sm" name="item_qty[]" value="1" min="0">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small">Size (W x D)</label>
+                    <input type="text" class="form-control form-control-sm" name="item_sizewgt[]"
+                           placeholder='e.g., 10\'x8\''>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small">Price Quote</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" name="item_price[]" step="0.01" min="0"
+                               placeholder="0.00">
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label class="form-label small">Condition</label>
+                    <input type="text" class="form-control form-control-sm" name="item_condition[]"
+                           placeholder="e.g., Good, Stained, Torn">
+                </div>
+            </div>
+        </div>
+    `;
+    $('#items-container').append(html);
+}
+
+function removeItemRow(id) {
+    $(`#item-${id}`).fadeOut(300, function() {
+        $(this).remove();
+        // Renumber remaining items
+        renumberItems();
+    });
+}
+
+function renumberItems() {
+    let num = 1;
+    $('.item-row').each(function() {
+        $(this).find('h6').text('Item #' + num);
+        num++;
+    });
+}
+
+// Handle adding inventory items to check-in
+function addInventoryItemToCheckin(inventoryKey) {
+    // Find the inventory item in the DOM
+    const inventoryItem = document.querySelector(`[data-inventory-key="${inventoryKey}"]`);
+    if (!inventoryItem) return;
+
+    // Get item data from data attributes
+    const description = inventoryItem.dataset.description || '';
+    const material = inventoryItem.dataset.material || '';
+    const color = inventoryItem.dataset.color || '';
+    const sizewgt = inventoryItem.dataset.sizewgt || '';
+    const price = inventoryItem.dataset.price || '';
+    const condition = inventoryItem.dataset.condition || '';
+    const qty = inventoryItem.dataset.qty || '1';
+
+    // Add a new item row with pre-filled data
+    itemCounter++;
+    const html = `
+        <div class="item-row" id="item-${itemCounter}">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">Item #${itemCounter}</h6>
+                <button type="button" class="btn btn-sm btn-danger remove-item-btn" onclick="removeItemRow(${itemCounter})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <label class="form-label small">Description <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control form-control-sm" name="item_description[]" required
+                           value="${escapeHtml(description)}" placeholder="e.g., Awning, Cushion, Bimini">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small">Material</label>
+                    <input type="text" class="form-control form-control-sm" name="item_material[]"
+                           value="${escapeHtml(material)}" placeholder="e.g., Sunbrella">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small">Color</label>
+                    <input type="text" class="form-control form-control-sm" name="item_color[]"
+                           value="${escapeHtml(color)}" placeholder="e.g., Navy Blue">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-2 mb-2">
+                    <label class="form-label small">Qty</label>
+                    <input type="number" class="form-control form-control-sm" name="item_qty[]"
+                           value="${escapeHtml(qty)}" min="0">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small">Size (W x D)</label>
+                    <input type="text" class="form-control form-control-sm" name="item_sizewgt[]"
+                           value="${escapeHtml(sizewgt)}" placeholder='e.g., 10\\'x8\\''>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label small">Price Quote</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" name="item_price[]" step="0.01" min="0"
+                               value="${escapeHtml(price)}" placeholder="0.00">
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <label class="form-label small">Condition</label>
+                    <input type="text" class="form-control form-control-sm" name="item_condition[]"
+                           value="${escapeHtml(condition)}" placeholder="e.g., Good, Stained, Torn">
+                </div>
+            </div>
+        </div>
+    `;
+    $('#items-container').append(html);
+    renumberItems();
+}
+
+// Override the toggleItem function from order-form-shared.js to add items directly to check-in
+function toggleItem(element, inventoryKey) {
+    const checkbox = element.querySelector('input[type="checkbox"]');
+    const isChecked = checkbox.checked;
+
+    // Toggle the checkbox
+    checkbox.checked = !isChecked;
+
+    if (!isChecked) {
+        // Item was just checked - add it to the check-in items
+        element.classList.add('selected');
+        addInventoryItemToCheckin(inventoryKey);
+        selectedItemsCount++;
+    } else {
+        // Item was unchecked - we don't auto-remove from items section
+        // User can manually delete from items if needed
+        element.classList.remove('selected');
+        selectedItemsCount--;
+    }
+}
+
+// Form validation
+$('#checkinForm').on('submit', function(e) {
+    const itemCount = $('.item-row').length;
+    if (itemCount === 0) {
+        e.preventDefault();
+        alert('Please add at least one item to the check-in.');
+        return false;
+    }
+
+    const custId = $('#CustID').val();
+    if (!custId) {
+        e.preventDefault();
+        alert('Please select a customer.');
+        return false;
+    }
+});
+</script>
+{% endblock %}

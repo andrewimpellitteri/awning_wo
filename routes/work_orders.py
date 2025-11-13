@@ -691,6 +691,16 @@ def create_work_order(prefill_cust_id=None):
                 # Commit DB transaction first
                 db.session.commit()
 
+                # Mark check-in as processed if converting from check-in
+                checkin_id = request.form.get("checkin_id")
+                if checkin_id:
+                    from models.checkin import CheckIn
+                    checkin = CheckIn.query.get(checkin_id)
+                    if checkin and checkin.Status == "pending":
+                        checkin.Status = "processed"
+                        checkin.WorkOrderNo = next_wo_no
+                        db.session.commit()
+
                 # AFTER successful DB commit, upload files to S3
                 # This prevents orphaned S3 files if DB commit fails
                 if uploaded_files:
@@ -777,7 +787,53 @@ def create_work_order(prefill_cust_id=None):
     sources = Source.query.order_by(Source.SSource).all()
 
     form_data = {}
-    if prefill_cust_id:
+    checkin_items = []
+    checkin_id = request.args.get("checkin_id")
+
+    # Handle check-in conversion
+    if checkin_id:
+        from models.checkin import CheckIn
+        checkin = CheckIn.query.get(checkin_id)
+        if checkin and checkin.Status == "pending":
+            # Pre-fill form with check-in data
+            form_data["CustID"] = checkin.CustID
+            form_data["DateIn"] = checkin.DateIn.strftime("%Y-%m-%d") if checkin.DateIn else ""
+            form_data["WOName"] = checkin.customer.Name if checkin.customer else ""
+            if checkin.customer and checkin.customer.Source:
+                form_data["ShipTo"] = checkin.customer.Source
+
+            # Pre-fill new check-in fields
+            if checkin.SpecialInstructions:
+                form_data["SpecialInstructions"] = checkin.SpecialInstructions
+            if checkin.StorageTime:
+                form_data["StorageTime"] = checkin.StorageTime
+            if checkin.RackNo:
+                form_data["RackNo"] = checkin.RackNo
+            if checkin.ReturnTo:
+                form_data["ReturnTo"] = checkin.ReturnTo
+            if checkin.DateRequired:
+                form_data["DateRequired"] = checkin.DateRequired.strftime("%Y-%m-%d")
+            if checkin.RepairsNeeded:
+                form_data["RepairsNeeded"] = "1"
+            if checkin.RushOrder:
+                form_data["RushOrder"] = "1"
+
+            # Convert check-in items to work order format for pre-filling
+            checkin_items = [
+                {
+                    "description": item.Description,
+                    "material": item.Material or "Unknown",
+                    "color": item.Color or "",
+                    "qty": item.Qty or 0,
+                    "sizewgt": item.SizeWgt or "",
+                    "price": float(item.Price) if item.Price else 0.00,
+                    "condition": item.Condition or "",
+                }
+                for item in checkin.items
+            ]
+
+    # Handle customer prefill (existing functionality)
+    elif prefill_cust_id:
         customer = Customer.query.get(str(prefill_cust_id))
         if customer:
             form_data["CustID"] = str(prefill_cust_id)
@@ -790,6 +846,8 @@ def create_work_order(prefill_cust_id=None):
         customers=customers,
         sources=sources,
         form_data=form_data,
+        checkin_items=checkin_items,
+        checkin_id=checkin_id,
     )
 
 

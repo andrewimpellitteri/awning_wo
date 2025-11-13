@@ -53,6 +53,9 @@ class Config:
     AWS_S3_BUCKET = os.environ.get("AWS_S3_BUCKET")
     AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
 
+    # Email configuration
+    FROM_EMAIL = os.environ.get("FROM_EMAIL", "reminders@yourdomain.com")
+
     SAIL_ORDER_SOURCES = [
         "Aaron's Canvas & Sails LLC",
         "ACE Sails",

@@ -141,6 +141,8 @@ def create_app(config_class=Config):
     from routes.dashboard import dashboard_bp
     from routes.in_progress import in_progress_bp
     from routes.quote import quote_bp
+    from routes.checkins import checkins_bp
+    from routes.email_reminders import email_reminders_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(source_bp, url_prefix="/sources")
@@ -155,6 +157,8 @@ def create_app(config_class=Config):
     app.register_blueprint(dashboard_bp, url_prefix="/")
     app.register_blueprint(in_progress_bp, url_prefix="/in_progress")
     app.register_blueprint(quote_bp, url_prefix="/quotes")
+    app.register_blueprint(checkins_bp, url_prefix="/checkins")
+    app.register_blueprint(email_reminders_bp)
 
     # Register routes
     @app.route("/")

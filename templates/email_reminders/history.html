@@ -1,0 +1,114 @@
+{% extends "admin/admin_base.html" %}
+{% set active_page = 'emails' %}
+
+{% block admin_title %}Email Reminder History{% endblock %}
+
+{% block admin_content %}
+<h2>📧 Email Reminder History</h2>
+<p class="text-muted">Complete history of all sent reminder emails</p>
+<a href="{{ url_for('email_reminders.dashboard') }}" class="btn btn-secondary mb-3">← Back to Dashboard</a>
+
+    <div class="card">
+        <div class="card-body">
+            {% if reminders.items %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date Sent</th>
+                            <th>Customer</th>
+                            <th>Email Address</th>
+                            <th>Last Work Order</th>
+                            <th>Status</th>
+                            <th>Message ID</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reminder in reminders.items %}
+                        <tr>
+                            <td>{{ reminder.date_sent.strftime('%m/%d/%Y %I:%M %p') }}</td>
+                            <td>
+                                {% if reminder.customer %}
+                                <a href="{{ url_for('customers.customer_detail', customer_id=reminder.custid) }}">
+                                    {{ reminder.customer.Name }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">Customer #{{ reminder.custid }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ reminder.email_address }}</td>
+                            <td>{{ reminder.last_work_order_date.strftime('%m/%d/%Y') if reminder.last_work_order_date else 'N/A' }}</td>
+                            <td>
+                                {% if reminder.status == 'sent' %}
+                                <span class="badge bg-success">✓ Sent</span>
+                                {% elif reminder.status == 'failed' %}
+                                <span class="badge bg-danger" title="{{ reminder.error_message }}">✗ Failed</span>
+                                {% elif reminder.status == 'bounced' %}
+                                <span class="badge bg-warning">⚠ Bounced</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ reminder.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ reminder.message_id[:20] if reminder.message_id else 'N/A' }}...</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if reminders.pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if reminders.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('email_reminders.history', page=reminders.prev_num) }}">Previous</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Previous</span>
+                    </li>
+                    {% endif %}
+
+                    {% for page_num in reminders.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                        {% if page_num %}
+                            {% if page_num == reminders.page %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('email_reminders.history', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                            {% endif %}
+                        {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if reminders.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('email_reminders.history', page=reminders.next_num) }}">Next</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Next</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="alert alert-info">
+                <strong>No reminders have been sent yet.</strong>
+                <p class="mb-0 mt-2">Visit the <a href="{{ url_for('email_reminders.dashboard') }}">dashboard</a> to send your first reminder emails.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
