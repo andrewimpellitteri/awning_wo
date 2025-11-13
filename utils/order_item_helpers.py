@@ -215,6 +215,21 @@ def process_new_items(form, order_no, cust_id, item_class, update_catalog=True):
             SizeWgt=size,
             Price=price,
         )
+
+        # Issue #177: Try to match with existing inventory item to populate InventoryKey
+        # This ensures items can be properly filtered in the edit page
+        existing_inventory = Inventory.query.filter_by(
+            CustID=cust_id,
+            Description=description.strip(),
+            Material=material,
+            Condition=condition,
+            Color=color,
+            SizeWgt=size,
+        ).first()
+
+        if existing_inventory:
+            item.InventoryKey = existing_inventory.InventoryKey
+
         items.append(item)
 
         # Update catalog if requested

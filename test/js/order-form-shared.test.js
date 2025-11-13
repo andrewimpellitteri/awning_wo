@@ -9,6 +9,8 @@ const {
     formatPrice,
     formatFileSize,
     getExistingItemInventoryKeys,
+    getExistingItemsByAttributes,
+    matchesExistingItem,
     loadCustomerInventory,
     updateInventoryCount,
     updateCounts,
@@ -321,6 +323,228 @@ describe('Inventory Item Management', () => {
             const items = document.querySelectorAll('.inventory-item');
             expect(items.length).toBe(1);
             expect(items[0].dataset.inventoryKey).toBe('INV002');
+        });
+
+        test('Issue #177: diagnostic - check getExistingItemInventoryKeys with real HTML', () => {
+            // Set up HTML exactly as it appears in the edit.html template
+            document.getElementById('existing-items').innerHTML = `
+                <div class="existing-item-card" data-inventory-key="INV001">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="existing_item_id[]"
+                               value="1"
+                               id="existing_item_1" checked
+                               onchange="toggleExistingItem(this)"
+                               data-inventory-key="INV001">
+                        <input type="hidden" name="existing_item_inventory_key_1" value="INV001">
+                    </div>
+                </div>
+                <div class="existing-item-card" data-inventory-key="INV002">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="existing_item_id[]"
+                               value="2"
+                               id="existing_item_2" checked
+                               onchange="toggleExistingItem(this)"
+                               data-inventory-key="INV002">
+                        <input type="hidden" name="existing_item_inventory_key_2" value="INV002">
+                    </div>
+                </div>
+            `;
+
+            const keys = getExistingItemInventoryKeys();
+
+            // Should find both INV001 and INV002
+            expect(keys.size).toBe(2);
+            expect(keys.has('INV001')).toBe(true);
+            expect(keys.has('INV002')).toBe(true);
+        });
+
+        test('Issue #177: items already in order should not appear in Customer History', async () => {
+            // This test reproduces the bug described in Issue #177:
+            // Items A and B are already in the work order (shown in "Existing Items" section)
+            // BUT they still appear in "Customer History" section as unselected
+            // Expected: They should NOT appear in Customer History at all
+
+            const mockInventory = [
+                { id: 'INV001', description: 'Awning A', material: 'Canvas', condition: 'Good', color: 'Blue', size_wgt: '10x12', price: 150, qty: 1 },
+                { id: 'INV002', description: 'Awning B', material: 'Vinyl', condition: 'Fair', color: 'Red', size_wgt: '8x10', price: 120, qty: 1 },
+                { id: 'INV003', description: 'Awning C', material: 'Sunbrella', condition: 'Excellent', color: 'Green', size_wgt: '12x14', price: 200, qty: 1 }
+            ];
+
+            fetch.mockResolvedValueOnce({
+                json: async () => mockInventory
+            });
+
+            // Simulate existing work order items A and B (already in the order with their InventoryKeys)
+            document.getElementById('existing-items').innerHTML = `
+                <div class="existing-item-card" data-inventory-key="INV001">
+                    <input type="checkbox" name="existing_item_id[]" value="1" checked data-inventory-key="INV001">
+                </div>
+                <div class="existing-item-card" data-inventory-key="INV002">
+                    <input type="checkbox" name="existing_item_id[]" value="2" checked data-inventory-key="INV002">
+                </div>
+            `;
+
+            loadCustomerInventory('123');
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // Only INV003 (Awning C) should appear in Customer History
+            // INV001 (A) and INV002 (B) should be filtered out since they're already in the order
+            const items = document.querySelectorAll('.inventory-item');
+
+            expect(items.length).toBe(1);
+            expect(items[0].dataset.inventoryKey).toBe('INV003');
+            expect(items[0].dataset.description).toBe('Awning C');
+        });
+
+        test('Issue #177: filter items WITHOUT InventoryKey by attributes', async () => {
+            // This is the main bug: items without InventoryKey should still be filtered
+            const mockInventory = [
+                { id: 'INV001', description: 'Patio Awning', material: 'Canvas', condition: 'Good', color: 'Blue', size_wgt: '10x12', price: 150, qty: 1 },
+                { id: 'INV002', description: 'Storage Bag', material: 'Nylon', condition: 'Fair', color: 'Black', size_wgt: 'Large', price: 25, qty: 1 },
+                { id: 'INV003', description: 'Window Awning', material: 'Sunbrella', condition: 'Excellent', color: 'Green', size_wgt: '8x10', price: 200, qty: 1 }
+            ];
+
+            fetch.mockResolvedValueOnce({
+                json: async () => mockInventory
+            });
+
+            // Simulate existing work order items WITHOUT InventoryKey (legacy or manually added)
+            // These items match INV001 and INV002 by attributes
+            document.getElementById('existing-items').innerHTML = `
+                <div class="existing-item-card" data-inventory-key="">
+                    <div class="form-check">
+                        <input type="checkbox" name="existing_item_id[]" value="1" checked data-inventory-key="">
+                        <label class="form-check-label w-100">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <div class="detail-label">Patio Awning</div>
+                                    <small class="text-muted">Canvas</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <span class="badge bg-secondary">Good</span>
+                                    <br><small class="text-muted">Blue</small>
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <small class="text-muted">Size:</small><br>
+                                    <small>10x12</small>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div class="existing-item-card" data-inventory-key="">
+                    <div class="form-check">
+                        <input type="checkbox" name="existing_item_id[]" value="2" checked data-inventory-key="">
+                        <label class="form-check-label w-100">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <div class="detail-label">Storage Bag</div>
+                                    <small class="text-muted">Nylon</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <span class="badge bg-secondary">Fair</span>
+                                    <br><small class="text-muted">Black</small>
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <small class="text-muted">Size:</small><br>
+                                    <small>Large</small>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            `;
+
+            loadCustomerInventory('123');
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            // Only INV003 (Window Awning) should appear
+            // INV001 (Patio Awning) and INV002 (Storage Bag) should be filtered by attributes
+            const items = document.querySelectorAll('.inventory-item');
+
+            expect(items.length).toBe(1);
+            expect(items[0].dataset.inventoryKey).toBe('INV003');
+            expect(items[0].dataset.description).toBe('Window Awning');
+        });
+
+        test('Issue #177: getExistingItemsByAttributes extracts items correctly', () => {
+            // Test the helper function that extracts items without InventoryKey
+            document.getElementById('existing-items').innerHTML = `
+                <div class="existing-item-card" data-inventory-key="">
+                    <div class="form-check">
+                        <input type="checkbox" name="existing_item_id[]" value="1" checked data-inventory-key="">
+                        <label class="form-check-label w-100">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <div class="detail-label">Test Item</div>
+                                    <small class="text-muted">Test Material</small>
+                                </div>
+                                <div class="col-md-3">
+                                    <span class="badge bg-secondary">Good</span>
+                                    <br><small class="text-muted">Red</small>
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    <small class="text-muted">Size:</small><br>
+                                    <small>10x10</small>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            `;
+
+            const items = getExistingItemsByAttributes();
+
+            expect(items.length).toBe(1);
+            expect(items[0].description).toBe('Test Item');
+            expect(items[0].material).toBe('Test Material');
+            expect(items[0].condition).toBe('Good');
+            expect(items[0].color).toBe('Red');
+            expect(items[0].size).toBe('10x10');
+        });
+
+        test('Issue #177: matchesExistingItem checks attributes correctly', () => {
+            const inventoryItem = {
+                description: 'Patio Awning',
+                material: 'Canvas',
+                condition: 'Good',
+                color: 'Blue',
+                size_wgt: '10x12'
+            };
+
+            const existingItems = [
+                {
+                    description: 'Patio Awning',
+                    material: 'Canvas',
+                    condition: 'Good',
+                    color: 'Blue',
+                    size: '10x12'
+                }
+            ];
+
+            expect(matchesExistingItem(inventoryItem, existingItems)).toBe(true);
+        });
+
+        test('Issue #177: matchesExistingItem returns false for non-matching items', () => {
+            const inventoryItem = {
+                description: 'Different Item',
+                material: 'Canvas',
+                condition: 'Good',
+                color: 'Blue',
+                size_wgt: '10x12'
+            };
+
+            const existingItems = [
+                {
+                    description: 'Patio Awning',
+                    material: 'Canvas',
+                    condition: 'Good',
+                    color: 'Blue',
+                    size: '10x12'
+                }
+            ];
+
+            expect(matchesExistingItem(inventoryItem, existingItems)).toBe(false);
         });
 
         test('should show empty state when no items available', async () => {
