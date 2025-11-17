@@ -63,11 +63,12 @@
                             <div class="card-body">
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="CustID" class="form-label">Customer <span class="text-danger">*</span></label>
-                                        <select id="CustID" name="CustID" required class="form-control">
-                                            <option value="{{ checkin.CustID }}" selected>{{ checkin.customer.Name }}</option>
-                                        </select>
-                                        <small class="form-text text-muted">Start typing customer name or ID to change</small>
+                                        <label for="CustID" class="form-label">Customer</label>
+                                        <input type="text" class="form-control"
+                                               value="{{ checkin.customer.Name }}"
+                                               disabled readonly>
+                                        <input type="hidden" name="CustID" value="{{ checkin.CustID }}">
+                                        <small class="form-text text-muted">Customer cannot be changed after check-in is created</small>
                                     </div>
 
                                     <div class="col-md-6 mb-3">
@@ -279,89 +280,12 @@ let itemCounter = 0;
 // Existing items data from server
 const existingItems = {{ items_data|tojson }};
 
-// Initialize Selectize for customer search
+// Initialize page for editing check-in
 $(document).ready(function() {
-    const $select = $('#CustID').selectize({
-        valueField: 'value',
-        labelField: 'text',
-        searchField: ['name', 'contact', 'text'],
-        create: false,
-        preload: false,
-        maxItems: 1,
-        closeAfterSelect: true,
-        hideSelected: true,
-        loadThrottle: 300,
-        onLoad: function() {
-            console.log('Selectize loaded');
-        },
-        load: function(query, callback) {
-            console.log('Load called with query:', query);
-            if (!query || query.length < 2) {
-                console.log('Query too short, skipping');
-                callback();
-                return;
-            }
-
-            $.ajax({
-                url: '{{ url_for("checkins.customer_search") }}',
-                type: 'GET',
-                dataType: 'json',
-                data: { q: query },
-                error: function(xhr, status, error) {
-                    console.error('AJAX error:', status, error);
-                    alert('Error searching customers. Please try again or contact support.');
-                    callback();
-                },
-                success: function(res) {
-                    console.log('AJAX success, results:', res.length);
-                    callback(res);
-                }
-            });
-        },
-        onChange: function(value) {
-            console.log('onChange called with value:', value);
-            if (value) {
-                // Show customer info
-                const selectize = this;
-                const option = selectize.options[value];
-                if (option) {
-                    $('#customer-details').html(`
-                        <div><strong>Name:</strong> ${option.name || option.text}</div>
-                        ${option.contact ? `<div><strong>Contact:</strong> ${option.contact}</div>` : ''}
-                        ${option.source ? `<div><strong>Source:</strong> ${option.source}</div>` : ''}
-                        ${option.address ? `<div><strong>Address:</strong> ${option.address}, ${option.city || ''} ${option.state || ''}</div>` : ''}
-                    `);
-                    $('#customer-info').slideDown();
-
-                    // Load customer item history
-                    loadCustomerInventory(value);
-                }
-            } else {
-                $('#customer-info').slideUp();
-                // Clear inventory when no customer selected
-                loadCustomerInventory(null);
-            }
-        },
-        placeholder: 'Type at least 2 characters to search...',
-        render: {
-            option: function(item, escape) {
-                return '<div style="padding: 8px 0;">' +
-                    '<div><strong>' + escape(item.text) + '</strong></div>' +
-                    (item.source ? '<div><small class="text-muted">Source: ' + escape(item.source) + '</small></div>' : '') +
-                    '</div>';
-            },
-            item: function(item, escape) {
-                return '<div>' + escape(item.text) + '</div>';
-            }
-        }
-    });
-
-    console.log('Selectize initialized');
-
     // Load existing items
     loadExistingItems();
 
-    // Load customer inventory for current customer
+    // Load customer inventory for current customer (customer is locked on edit page)
     loadCustomerInventory('{{ checkin.CustID }}');
 });
 

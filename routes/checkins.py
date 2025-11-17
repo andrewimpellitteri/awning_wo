@@ -303,15 +303,24 @@ def delete_checkin(checkin_id):
 @login_required
 @role_required("admin", "manager")
 def customer_search():
-    """Search customers for Selectize.js autocomplete"""
+    """
+    Search customers for Selectize.js autocomplete.
+
+    Optimized with database indexes on LOWER(name), LOWER(contact), LOWER(custid).
+    Uses joinedload to avoid N+1 queries on source_info relationship.
+    """
+    from sqlalchemy.orm import joinedload
+
     query = request.args.get("q", "").lower()
 
+    # Preserve exact original behavior: return empty array if query < 2 chars
     if not query or len(query) < 2:
         return jsonify([])
 
-    # Search by name, contact, or CustID
+    # Search by name, contact, or CustID (with optimized join)
     customers = (
         Customer.query
+        .options(joinedload(Customer.source_info))  # Avoid N+1 queries
         .filter(
             func.lower(Customer.Name).contains(query) |
             func.lower(Customer.Contact).contains(query) |
@@ -322,6 +331,7 @@ def customer_search():
         .all()
     )
 
+    # Exact same result format as before
     results = [
         {
             "value": c.CustID,
