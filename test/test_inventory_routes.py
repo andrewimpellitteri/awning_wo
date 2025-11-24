@@ -415,3 +415,90 @@ class TestInventoryAuthorization:
         response = regular_client.post('/inventory/delete_ajax/AUTH003')
         assert response.status_code == 403
 
+    def test_special_characters_in_sizewgt(self, admin_client, app, test_customer):
+        """Test that SizeWgt field preserves special characters like =, ', etc."""
+        # Test various special character combinations that might appear in size/weight
+        test_cases = [
+            "6x7=42'",           # equals sign and single quote
+            "10' x 12'",         # single quotes and spaces
+            "15#",               # pound sign
+            "8'6\" x 10'",       # feet and inches notation
+            "test=\"value\"",    # double quotes and equals
+            "size & weight",     # ampersand
+            "10<12>8",          # angle brackets
+        ]
+
+        for test_sizewgt in test_cases:
+            # Create inventory item with special characters
+            response = admin_client.post('/inventory/add_ajax', data={
+                'CustID': test_customer.CustID,
+                'Description': f'Test Item for {test_sizewgt}',
+                'Material': 'Canvas',
+                'Condition': 'Good',
+                'Color': 'Blue',
+                'SizeWgt': test_sizewgt,
+                'Price': '50.00',
+                'Qty': '1'
+            })
+
+            assert response.status_code == 200
+            json_data = response.get_json()
+            assert json_data['success'] is True
+
+            # Verify the SizeWgt value is preserved exactly as entered
+            item = json_data['item']
+            assert item['SizeWgt'] == test_sizewgt, \
+                f"SizeWgt was modified! Expected '{test_sizewgt}', got '{item['SizeWgt']}'"
+
+            # Clean up
+            with app.app_context():
+                db.session.query(Inventory).filter_by(
+                    InventoryKey=item['InventoryKey']
+                ).delete()
+                db.session.commit()
+
+    def test_edit_preserves_special_characters_in_sizewgt(self, admin_client, app, test_customer):
+        """Test that editing an item preserves special characters in SizeWgt"""
+        test_sizewgt = "6x7=42'"
+
+        # Create an inventory item
+        with app.app_context():
+            inventory = Inventory(
+                InventoryKey='SPECIAL_CHAR_TEST',
+                Description='Test Item',
+                Material='Canvas',
+                Condition='Good',
+                Color='Blue',
+                SizeWgt=test_sizewgt,
+                Price=Decimal('100.00'),
+                CustID=test_customer.CustID,
+                Qty=1
+            )
+            db.session.add(inventory)
+            db.session.commit()
+
+        # Edit the item (changing description but keeping SizeWgt)
+        response = admin_client.post('/inventory/edit_ajax/SPECIAL_CHAR_TEST', data={
+            'Description': 'Updated Description',
+            'Material': 'Canvas',
+            'Condition': 'Good',
+            'Color': 'Blue',
+            'SizeWgt': test_sizewgt,  # Same value
+            'Price': '100.00',
+            'Qty': '1'
+        })
+
+        assert response.status_code == 200
+        json_data = response.get_json()
+        assert json_data['success'] is True
+
+        # Verify SizeWgt is preserved exactly
+        item = json_data['item']
+        assert item['SizeWgt'] == test_sizewgt, \
+            f"SizeWgt was modified during edit! Expected '{test_sizewgt}', got '{item['SizeWgt']}'"
+
+        # Clean up
+        with app.app_context():
+            db.session.query(Inventory).filter_by(InventoryKey='SPECIAL_CHAR_TEST').delete()
+            db.session.commit()
+
