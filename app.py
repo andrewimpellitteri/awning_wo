@@ -1,7 +1,8 @@
 from flask import Flask, render_template, jsonify
-from flask_login import login_required, current_user
+from flask_login import login_required
 from config import Config
-from extensions import db, login_manager, cache
+from werkzeug.middleware.proxy_fix import ProxyFix
+from extensions import db, login_manager, cache, limiter  # Add limiter here
 from sqlalchemy import inspect
 from datetime import datetime, date
 import os
@@ -14,11 +15,16 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = "auth.login"
     cache.init_app(app)
+
+    # Initialize Limiter
+    limiter.init_app(app)
 
     @app.template_filter("nl2br")
     def nl2br_filter(s):
@@ -184,7 +190,7 @@ def create_app(config_class=Config):
         return User.query.get(int(user_id))
 
     with app.app_context():
-        db.create_all()
+        # db.create_all()  # Tables managed by Alembic migrations
         try:
             # Print the DB URI being used
             print(
@@ -196,9 +202,10 @@ def create_app(config_class=Config):
 
         # Validate S3 connection at startup (prevents silent failures later)
         # Skip during testing to avoid S3 dependency
-        if not app.config.get('TESTING'):
+        if not app.config.get("TESTING"):
             try:
                 from utils.file_upload import validate_s3_connection
+
                 validate_s3_connection()
             except ValueError as e:
                 print(f"WARNING: S3 validation failed - {str(e)}")

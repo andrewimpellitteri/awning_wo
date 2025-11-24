@@ -369,7 +369,7 @@
             <div class="card-header">
               <h5 class="card-title mb-0">
                 <i class="fas fa-list me-2"></i> Order Items
-                <span class="badge bg-secondary ms-2">{{ repair_work_order.items|sum(attribute='Qty')|int }}</span>
+                <span class="badge bg-secondary ms-2">{{ repair_work_order.items|map(attribute='Qty')|select|sum|int }}</span>
               </h5>
             </div>
             <div class="card-body p-0">

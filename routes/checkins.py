@@ -18,7 +18,12 @@ from sqlalchemy.exc import IntegrityError
 from extensions import db
 from datetime import datetime, date
 from decorators import role_required
-from utils.file_upload import save_order_file_generic, allowed_file
+from utils.file_upload import (
+    save_order_file_generic,
+    allowed_file,
+    commit_deferred_uploads,
+    cleanup_deferred_files
+)
 
 checkins_bp = Blueprint("checkins", __name__, url_prefix="/checkins")
 
@@ -90,9 +95,14 @@ def create_checkin():
             sizewgts = request.form.getlist("item_sizewgt[]")
             prices = request.form.getlist("item_price[]")
             conditions = request.form.getlist("item_condition[]")
+            inventory_keys = request.form.getlist("item_inventorykey[]")
 
             for i in range(len(descriptions)):
                 if descriptions[i]:  # Only add if description is not empty
+                    # Get inventory key if present (empty string means manually added item)
+                    inv_key = inventory_keys[i] if i < len(inventory_keys) and inventory_keys[i] else None
+                    inv_key = int(inv_key) if inv_key and inv_key.strip() else None
+
                     item = CheckInItem(
                         CheckInID=checkin.CheckInID,
                         Description=descriptions[i],
@@ -102,17 +112,19 @@ def create_checkin():
                         SizeWgt=sizewgts[i] if i < len(sizewgts) else None,
                         Price=float(prices[i]) if i < len(prices) and prices[i] else None,
                         Condition=conditions[i] if i < len(conditions) else None,
+                        InventoryKey=inv_key,  # Track if from inventory or NEW
                     )
                     db.session.add(item)
 
-            # Handle file uploads
+            # Handle file uploads with deferred S3 upload (prevents orphaned S3 files)
+            uploaded_file_objects = []
             if 'files[]' in request.files:
                 uploaded_files = request.files.getlist('files[]')
                 if uploaded_files and uploaded_files[0].filename:  # Check if files were actually selected
                     for file in uploaded_files:
                         if file and file.filename and allowed_file(file.filename):
                             try:
-                                # Use the generic save function for check-ins
+                                # Use deferred upload - files staged in memory, uploaded after DB commit
                                 file_obj = save_order_file_generic(
                                     order_no=str(checkin.CheckInID),
                                     file=file,
@@ -120,27 +132,47 @@ def create_checkin():
                                     to_s3=True,
                                     generate_thumbnails=False,  # Don't need thumbnails for check-ins
                                     file_model_class=CheckInFile,
-                                    defer_s3_upload=False
+                                    defer_s3_upload=True  # Changed to True for deferred upload
                                 )
 
                                 if file_obj:
                                     # Update the CheckInID since generic function doesn't know about it
                                     file_obj.CheckInID = checkin.CheckInID
                                     db.session.add(file_obj)
+                                    uploaded_file_objects.append(file_obj)
                             except Exception as file_error:
                                 # Log the error but don't fail the whole check-in
                                 flash(f"Warning: Could not upload {file.filename}: {str(file_error)}", "warning")
 
+            # Commit DB transaction first
             db.session.commit()
-            flash(f"Check-in #{checkin.CheckInID} created successfully!", "success")
+
+            # AFTER successful DB commit, upload files to S3
+            # This prevents orphaned S3 files if DB commit fails
+            if uploaded_file_objects:
+                success, uploaded, failed = commit_deferred_uploads(uploaded_file_objects)
+                if not success:
+                    # Log warning but don't fail - DB is already committed
+                    print(f"WARNING: {len(failed)} files failed to upload to S3 for check-in #{checkin.CheckInID}")
+                    for file_obj, error in failed:
+                        print(f"  - {file_obj.file_name}: {error}")
+                        flash(f"Warning: File '{file_obj.file_name}' failed to upload to S3", "warning")
+
+            flash(f"Check-in #{checkin.CheckInID} created successfully with {len(uploaded_file_objects)} files!", "success")
             return redirect(url_for("checkins.view_pending"))
 
         except IntegrityError as e:
             db.session.rollback()
+            # Clean up deferred file data on rollback
+            if 'uploaded_file_objects' in locals():
+                cleanup_deferred_files(uploaded_file_objects)
             flash(f"Database error: {str(e)}", "error")
             return redirect(url_for("checkins.create_checkin"))
         except Exception as e:
             db.session.rollback()
+            # Clean up deferred file data on rollback
+            if 'uploaded_file_objects' in locals():
+                cleanup_deferred_files(uploaded_file_objects)
             flash(f"Error creating check-in: {str(e)}", "error")
             return redirect(url_for("checkins.create_checkin"))
 
@@ -213,9 +245,14 @@ def edit_checkin(checkin_id):
             sizewgts = request.form.getlist("item_sizewgt[]")
             prices = request.form.getlist("item_price[]")
             conditions = request.form.getlist("item_condition[]")
+            inventory_keys = request.form.getlist("item_inventorykey[]")
 
             for i in range(len(descriptions)):
                 if descriptions[i]:  # Only add if description is not empty
+                    # Get inventory key if present (empty string means manually added item)
+                    inv_key = inventory_keys[i] if i < len(inventory_keys) and inventory_keys[i] else None
+                    inv_key = int(inv_key) if inv_key and inv_key.strip() else None
+
                     item = CheckInItem(
                         CheckInID=checkin.CheckInID,
                         Description=descriptions[i],
@@ -225,10 +262,12 @@ def edit_checkin(checkin_id):
                         SizeWgt=sizewgts[i] if i < len(sizewgts) else None,
                         Price=float(prices[i]) if i < len(prices) and prices[i] else None,
                         Condition=conditions[i] if i < len(conditions) else None,
+                        InventoryKey=inv_key,  # Track if from inventory or NEW
                     )
                     db.session.add(item)
 
-            # Handle file uploads (same as create)
+            # Handle file uploads with deferred S3 upload
+            uploaded_file_objects = []
             if 'files[]' in request.files:
                 uploaded_files = request.files.getlist('files[]')
                 if uploaded_files and uploaded_files[0].filename:
@@ -242,25 +281,44 @@ def edit_checkin(checkin_id):
                                     to_s3=True,
                                     generate_thumbnails=False,
                                     file_model_class=CheckInFile,
-                                    defer_s3_upload=False
+                                    defer_s3_upload=True  # Changed to True for deferred upload
                                 )
 
                                 if file_obj:
                                     file_obj.CheckInID = checkin.CheckInID
                                     db.session.add(file_obj)
+                                    uploaded_file_objects.append(file_obj)
                             except Exception as file_error:
                                 flash(f"Warning: Could not upload {file.filename}: {str(file_error)}", "warning")
 
+            # Commit DB transaction first
             db.session.commit()
-            flash(f"Check-in #{checkin.CheckInID} updated successfully!", "success")
+
+            # AFTER successful DB commit, upload files to S3
+            if uploaded_file_objects:
+                success, uploaded, failed = commit_deferred_uploads(uploaded_file_objects)
+                if not success:
+                    print(f"WARNING: {len(failed)} files failed to upload to S3 for check-in #{checkin.CheckInID}")
+                    for file_obj, error in failed:
+                        print(f"  - {file_obj.file_name}: {error}")
+                        flash(f"Warning: File '{file_obj.file_name}' failed to upload to S3", "warning")
+
+            file_msg = f" with {len(uploaded_file_objects)} files" if uploaded_file_objects else ""
+            flash(f"Check-in #{checkin.CheckInID} updated successfully{file_msg}!", "success")
             return redirect(url_for("checkins.view_checkin", checkin_id=checkin.CheckInID))
 
         except IntegrityError as e:
             db.session.rollback()
+            # Clean up deferred file data on rollback
+            if 'uploaded_file_objects' in locals():
+                cleanup_deferred_files(uploaded_file_objects)
             flash(f"Database error: {str(e)}", "error")
             return redirect(url_for("checkins.edit_checkin", checkin_id=checkin_id))
         except Exception as e:
             db.session.rollback()
+            # Clean up deferred file data on rollback
+            if 'uploaded_file_objects' in locals():
+                cleanup_deferred_files(uploaded_file_objects)
             flash(f"Error updating check-in: {str(e)}", "error")
             return redirect(url_for("checkins.edit_checkin", checkin_id=checkin_id))
 

@@ -4,11 +4,14 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from models.user import User
 from models.invite_token import InviteToken
 from extensions import db  # instead of from app import db
+from extensions import limiter  # Import the limiter
+
 
 auth_bp = Blueprint("auth", __name__)
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("dashboard"))
@@ -47,8 +50,13 @@ def register():
             print(f"[REGISTER] Token lookup result: {invite}")
 
             if not invite:
-                print(f"[REGISTER] Token validation failed - token not found or already used")
-                flash("Invalid or already used invitation token. Please check the token and try again.", "error")
+                print(
+                    f"[REGISTER] Token validation failed - token not found or already used"
+                )
+                flash(
+                    "Invalid or already used invitation token. Please check the token and try again.",
+                    "error",
+                )
                 return redirect(url_for("auth.register"))
 
             username = request.form.get("username")
@@ -80,7 +88,9 @@ def register():
             db.session.add(invite)
 
             db.session.commit()
-            print(f"[REGISTER] Successfully registered user: {username} with role: {user.role}")
+            print(
+                f"[REGISTER] Successfully registered user: {username} with role: {user.role}"
+            )
 
             flash("Registration successful! Please log in.", "success")
             return redirect(url_for("auth.login"))
@@ -89,13 +99,20 @@ def register():
             db.session.rollback()
             # Log the error for debugging
             import traceback
+
             error_msg = str(e)
             print(f"Registration error: {error_msg}")
             print(traceback.format_exc())
 
             # Provide user-friendly error message
-            if "duplicate key" in error_msg.lower() or "unique constraint" in error_msg.lower():
-                flash("Username or email already exists. Please try different credentials.", "error")
+            if (
+                "duplicate key" in error_msg.lower()
+                or "unique constraint" in error_msg.lower()
+            ):
+                flash(
+                    "Username or email already exists. Please try different credentials.",
+                    "error",
+                )
             else:
                 flash(f"Registration failed: {error_msg}", "error")
             return redirect(url_for("auth.register"))

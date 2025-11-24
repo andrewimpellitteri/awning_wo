@@ -819,18 +819,29 @@ def create_work_order(prefill_cust_id=None):
                 form_data["RushOrder"] = "1"
 
             # Convert check-in items to work order format for pre-filling
-            checkin_items = [
-                {
-                    "description": item.Description,
-                    "material": item.Material or "Unknown",
-                    "color": item.Color or "",
-                    "qty": item.Qty or 0,
-                    "sizewgt": item.SizeWgt or "",
-                    "price": float(item.Price) if item.Price else 0.00,
-                    "condition": item.Condition or "",
-                }
-                for item in checkin.items
-            ]
+            # Items WITH InventoryKey = from existing inventory (pre-select them)
+            # Items WITHOUT InventoryKey = NEW items (add as new items)
+            selected_inventory_keys = []
+            checkin_items = []
+
+            for item in checkin.items:
+                if item.InventoryKey:
+                    # Item from existing inventory - add to selected keys
+                    selected_inventory_keys.append(str(item.InventoryKey))
+                else:
+                    # NEW item - add to checkin_items for "new items" section
+                    checkin_items.append({
+                        "description": item.Description,
+                        "material": item.Material or "Unknown",
+                        "color": item.Color or "",
+                        "qty": item.Qty or 0,
+                        "sizewgt": item.SizeWgt or "",
+                        "price": float(item.Price) if item.Price else 0.00,
+                        "condition": item.Condition or "",
+                    })
+
+            # Store selected keys for JavaScript to pre-select in inventory section
+            form_data["selected_inventory_keys"] = selected_inventory_keys
 
     # Handle customer prefill (existing functionality)
     elif prefill_cust_id:

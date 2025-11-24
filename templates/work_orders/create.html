@@ -547,6 +547,29 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => updateCounts(), 100);
     }
     {% endif %}
+
+    // Pre-select inventory items from check-in (items that had InventoryKey)
+    {% if form_data.get('selected_inventory_keys') %}
+    const selectedKeys = {{ form_data.get('selected_inventory_keys')|tojson }};
+    if (selectedKeys && selectedKeys.length > 0) {
+        // Wait a bit for customer inventory to load
+        setTimeout(() => {
+            selectedKeys.forEach(key => {
+                const checkbox = document.querySelector(`input[name="selected_items[]"][value="${key}"]`);
+                if (checkbox && !checkbox.checked) {
+                    checkbox.checked = true;
+                    // Add visual selection
+                    const inventoryItem = checkbox.closest('.inventory-item');
+                    if (inventoryItem) {
+                        inventoryItem.classList.add('selected');
+                    }
+                }
+            });
+            // Update counts to reflect selected items
+            setTimeout(() => updateCounts(), 100);
+        }, 500);
+    }
+    {% endif %}
 });
 </script>
 {% endblock %}

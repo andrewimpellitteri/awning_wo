@@ -165,7 +165,12 @@
                                         {% for item in checkin.items %}
                                         <tr>
                                             <td>{{ loop.index }}</td>
-                                            <td><strong>{{ item.Description }}</strong></td>
+                                            <td>
+                                                <strong>{{ item.Description }}</strong>
+                                                {% if not item.InventoryKey %}
+                                                <span class="badge bg-success ms-2">NEW</span>
+                                                {% endif %}
+                                            </td>
                                             <td>{{ item.Material or '-' }}</td>
                                             <td>{{ item.Color or '-' }}</td>
                                             <td>{{ item.Qty or '-' }}</td>

@@ -345,13 +345,21 @@ class TestPredictionRoutes:
         """Test /ml/status uses get_current_model()"""
         from routes.ml import _model_cache
         from models.user import User
+        from werkzeug.security import generate_password_hash
+        from extensions import db
 
         # Create test user and login properly
         with app.test_client() as client:
             with app.app_context():
                 # Create a test user
-                test_user = User(username='testuser', email='test@example.com')
-                test_user.set_password('password')
+                test_user = User(
+                    username='testuser',
+                    email='test@example.com',
+                    password_hash=generate_password_hash('password'),
+                    role='user'
+                )
+                db.session.add(test_user)
+                db.session.commit()
 
                 # Login
                 with client.session_transaction() as sess:

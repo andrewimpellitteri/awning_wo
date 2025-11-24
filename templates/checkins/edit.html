@@ -307,6 +307,7 @@ function loadExistingItems() {
                         <label class="form-label small">Description <span class="text-danger">*</span></label>
                         <input type="text" class="form-control form-control-sm" name="item_description[]" required
                                value="${escapeHtml(item.Description || '')}" placeholder="e.g., Awning, Cushion, Bimini">
+                        <input type="hidden" name="item_inventorykey[]" value="${item.InventoryKey || ''}">
                     </div>
                     <div class="col-md-3 mb-2">
                         <label class="form-label small">Material</label>
@@ -367,6 +368,7 @@ function addItemRow() {
                     <label class="form-label small">Description <span class="text-danger">*</span></label>
                     <input type="text" class="form-control form-control-sm" name="item_description[]" required
                            placeholder="e.g., Awning, Cushion, Bimini">
+                    <input type="hidden" name="item_inventorykey[]" value="">
                 </div>
                 <div class="col-md-3 mb-2">
                     <label class="form-label small">Material</label>
@@ -407,6 +409,7 @@ function addItemRow() {
         </div>
     `;
     $('#items-container').append(html);
+    renumberItems();
 }
 
 function removeItemRow(id) {
@@ -456,6 +459,7 @@ function addInventoryItemToCheckin(inventoryKey) {
                     <label class="form-label small">Description <span class="text-danger">*</span></label>
                     <input type="text" class="form-control form-control-sm" name="item_description[]" required
                            value="${escapeHtml(description)}" placeholder="e.g., Awning, Cushion, Bimini">
+                    <input type="hidden" name="item_inventorykey[]" value="${escapeHtml(inventoryKey)}">
                 </div>
                 <div class="col-md-3 mb-2">
                     <label class="form-label small">Material</label>
@@ -500,42 +504,55 @@ function addInventoryItemToCheckin(inventoryKey) {
     renumberItems();
 }
 
-// Override the toggleItem function from order-form-shared.js to add items directly to check-in
+// Override the toggleItem function from order-form-shared.js
+// For check-ins, clicking an item immediately adds it to the check-in
 function toggleItem(element, inventoryKey) {
-    const checkbox = element.querySelector('input[type="checkbox"]');
-    const isChecked = checkbox.checked;
+    // Immediately add the item to the check-in
+    addInventoryItemToCheckin(inventoryKey);
 
-    // Toggle the checkbox
-    checkbox.checked = !isChecked;
+    // Hide the item from customer history (it's now in the check-in)
+    element.style.display = 'none';
+}
 
-    if (!isChecked) {
-        // Item was just checked - add it to the check-in items
-        element.classList.add('selected');
+// Override the moveItemToExistingItems function from order-form-shared.js
+// Check-ins don't use the "existing items" pattern, they just add to the items list
+function moveItemToExistingItems() {
+    const selectedCheckboxes = document.querySelectorAll('input[name="selected_items[]"]:checked');
+
+    selectedCheckboxes.forEach(checkbox => {
+        const inventoryKey = checkbox.value;
         addInventoryItemToCheckin(inventoryKey);
-        selectedItemsCount++;
-    } else {
-        // Item was unchecked - we don't auto-remove from items section
-        // User can manually delete from items if needed
-        element.classList.remove('selected');
-        selectedItemsCount--;
-    }
+
+        // Uncheck and hide the item from customer history
+        checkbox.checked = false;
+        const inventoryItem = checkbox.closest('.inventory-item');
+        if (inventoryItem) {
+            inventoryItem.classList.remove('selected');
+        }
+    });
 }
 
 // Form validation
-$('#checkinForm').on('submit', function(e) {
-    const itemCount = $('.item-row').length;
-    if (itemCount === 0) {
-        e.preventDefault();
-        alert('Please add at least one item to the check-in.');
-        return false;
-    }
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize file upload
+    initializeFileUpload();
 
-    const custId = $('#CustID').val();
-    if (!custId) {
-        e.preventDefault();
-        alert('Please select a customer.');
-        return false;
-    }
+    // Form submission validation
+    document.getElementById('checkinForm').addEventListener('submit', function(e) {
+        const itemCount = document.querySelectorAll('.item-row').length;
+        if (itemCount === 0) {
+            e.preventDefault();
+            alert('Please add at least one item to the check-in.');
+            return false;
+        }
+
+        const custId = document.querySelector('input[name="CustID"]').value;
+        if (!custId) {
+            e.preventDefault();
+            alert('Customer is required. This should not happen - please contact support.');
+            return false;
+        }
+    });
 });
 </script>
 {% endblock %}

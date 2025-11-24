@@ -50,3 +50,4 @@ mkdocs
 mkdocs-material
 hypothesis # For fuzzing tests. Consider moving to requirements-dev.txt for better dependency management.
 snakeviz
+Flask-Limiter==4.0.0

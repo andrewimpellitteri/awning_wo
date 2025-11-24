@@ -106,6 +106,10 @@ class CheckInItem(db.Model):
     # Condition notes
     Condition = db.Column("condition", db.String)
 
+    # InventoryKey to track if item came from customer's existing inventory
+    # NULL = manually added (NEW item), has value = selected from customer history
+    InventoryKey = db.Column("inventorykey", db.Integer, nullable=True)
+
     # Relationships
     checkin = db.relationship("CheckIn", back_populates="items")
 
@@ -121,6 +125,8 @@ class CheckInItem(db.Model):
             "SizeWgt": self.SizeWgt,
             "Price": float(self.Price) if self.Price else None,
             "Condition": self.Condition,
+            "InventoryKey": self.InventoryKey,
+            "is_new": self.InventoryKey is None,  # Helper flag for templates
         }
 
     def __repr__(self):
