@@ -946,8 +946,8 @@ addForm.addEventListener('submit', async function(e) {
                 </td>
                 <td>
                     <div class="btn-group" role="group">
-                        <button class="btn btn-sm btn-outline-primary edit-item" 
-                                data-bs-toggle="modal" 
+                        <button class="btn btn-sm btn-outline-primary edit-item"
+                                data-bs-toggle="modal"
                                 data-bs-target="#editInventoryModal"
                                 data-key="${item.InventoryKey}"
                                 data-description="${item.Description}"
@@ -956,6 +956,7 @@ addForm.addEventListener('submit', async function(e) {
                                 data-color="${item.Color || ''}"
                                 data-condition="${item.Condition || ''}"
                                 data-sizewgt="${item.SizeWgt || ''}"
+                                data-price="${item.Price || ''}"
                                 title="Edit item details">
                             <i class="fas fa-edit"></i>
                         </button>
