@@ -51,7 +51,7 @@ def test_customer(app):
     """Create a test customer"""
     with app.app_context():
         customer = Customer(
-            CustID="HTML_TEST",
+            CustID="99999",  # Use numeric string for compatibility with URL routing
             Name="HTML Test Customer",
             Address="123 Test St",
             City="Test City",
@@ -62,8 +62,8 @@ def test_customer(app):
         db.session.commit()
         yield customer
         # Cleanup
-        db.session.query(Inventory).filter_by(CustID="HTML_TEST").delete()
-        db.session.query(Customer).filter_by(CustID="HTML_TEST").delete()
+        db.session.query(Inventory).filter_by(CustID="99999").delete()
+        db.session.query(Customer).filter_by(CustID="99999").delete()
         db.session.commit()
 
 
@@ -197,7 +197,9 @@ class TestCustomerDetailHTMLRendering:
                     print(f"Extracted value: {extracted_value}")
                     print(f"Expected value: {test_sizewgt}")
 
-                    # The HTML entity &#x27; should be decoded by the parser to '
-                    # So we need to check if it's either the raw value or the escaped version
+                    # The HTML should contain escaped entities like &#x27; for '
+                    # Check that the base part is there and it contains the equals sign
                     assert '6x7' in extracted_value, \
                         f"data-sizewgt doesn't contain expected value"
+                    assert '=' in extracted_value or '&#' in extracted_value, \
+                        f"data-sizewgt should contain '=' or escaped version"
