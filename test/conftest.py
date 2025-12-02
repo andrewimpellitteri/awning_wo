@@ -160,13 +160,12 @@ def sample_customer():
 def sample_source():
     return Source(
         SSource="TEST_SOURCE",
-        Name="Test Source Company",
-        Address="456 Source Avenue",
-        City="Source City",
-        State="SC",
-        Zip="67890",
-        Phone="555-0456",
-        Email="source@example.com",
+        SourceAddress="456 Source Avenue",
+        SourceCity="Source City",
+        SourceState="SC",
+        SourceZip="67890",
+        SourcePhone="555-0456",
+        SourceEmail="source@example.com",
     )
 
 

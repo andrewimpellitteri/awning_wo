@@ -1,0 +1,168 @@
+{% extends "admin/admin_base.html" %}
+{% set active_page = 'ml' %}
+
+{% block admin_title %}ML Performance Tracking{% endblock %}
+
+{% block admin_content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-chart-line me-2"></i>Model Performance Tracking</h1>
+        <a href="{{ url_for('ml.dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i> Back to ML Dashboard
+        </a>
+    </div>
+
+    {% if not chart_json %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>No data available yet.</strong>
+        {% if get_flashed_messages() %}
+            {{ get_flashed_messages()[0] }}
+        {% else %}
+            Weekly predictions are generated automatically every Monday at 1:00 AM.
+            You can also manually generate a snapshot from the ML Dashboard.
+        {% endif %}
+    </div>
+    {% else %}
+
+    <!-- Summary Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-primary">{{ stats.latest_mae }}</h3>
+                    <p class="text-muted mb-0">Latest MAE (days)</p>
+                    <small class="text-muted">{{ stats.latest_ci }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-warning">{{ stats.latest_rmse }}</h3>
+                    <p class="text-muted mb-0">Latest RMSE (days)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-info">{{ stats.total_snapshots }}</h3>
+                    <p class="text-muted mb-0">Total Snapshots</p>
+                    <small class="text-muted">{{ stats.latest_n }} orders evaluated</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    {% if stats.convergence.trend_direction == 'improving' %}
+                    <h3 class="text-success"><i class="fas fa-arrow-down"></i></h3>
+                    <p class="text-muted mb-0">Improving</p>
+                    {% elif stats.convergence.trend_direction == 'degrading' %}
+                    <h3 class="text-danger"><i class="fas fa-arrow-up"></i></h3>
+                    <p class="text-muted mb-0">Degrading</p>
+                    {% else %}
+                    <h3 class="text-secondary"><i class="fas fa-minus"></i></h3>
+                    <p class="text-muted mb-0">{{ stats.convergence.trend_direction|title }}</p>
+                    {% endif %}
+                    <small class="text-muted">Trend</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Chart -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-chart-area me-2"></i>Realized Accuracy Over Time</h5>
+        </div>
+        <div class="card-body">
+            <div id="performanceChart"></div>
+        </div>
+    </div>
+
+    <!-- Statistical Analysis -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Statistical Analysis</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Convergence Analysis</h6>
+                    <p class="mb-2"><strong>Interpretation:</strong> {{ stats.convergence.interpretation }}</p>
+                    {% if stats.convergence.slope is defined %}
+                    <ul class="mb-0">
+                        <li>Trend slope: {{ stats.convergence.slope }} days/week</li>
+                        <li>R² value: {{ stats.convergence.r_squared }}</li>
+                        <li>P-value: {{ stats.convergence.p_value }}
+                            {% if stats.convergence.is_significant %}
+                            <span class="badge bg-success">Significant</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Not Significant</span>
+                            {% endif %}
+                        </li>
+                    </ul>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <h6>Overall Performance</h6>
+                    <ul class="mb-0">
+                        <li>Mean MAE: {{ stats.mean_mae }} days</li>
+                        <li>Std Dev MAE: {{ stats.std_mae }} days</li>
+                        <li>Coefficient of Variation: {{ "%.1f"|format((stats.std_mae / stats.mean_mae * 100) if stats.mean_mae > 0 else 0) }}%</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Methodology -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-book me-2"></i>Methodology & Interpretation</h5>
+        </div>
+        <div class="card-body">
+            <h6>How It Works</h6>
+            <ol>
+                <li><strong>Weekly Snapshots:</strong> Every Monday at 1:00 AM, the system generates predictions for all open work orders and saves them to S3.</li>
+                <li><strong>Realized Performance:</strong> Once work orders complete, the system compares predicted vs actual completion times.</li>
+                <li><strong>Error Metrics:</strong>
+                    <ul>
+                        <li><strong>MAE (Mean Absolute Error):</strong> Average prediction error in days. Lower is better.</li>
+                        <li><strong>RMSE (Root Mean Squared Error):</strong> Penalizes larger errors more heavily. Useful for detecting outliers.</li>
+                    </ul>
+                </li>
+                <li><strong>Confidence Intervals:</strong> 95% CI using t-distribution accounts for sample size variability (n shown above each point).</li>
+                <li><strong>Trend Analysis:</strong> Linear regression detects if model is improving, degrading, or stable over time.</li>
+            </ol>
+
+            <h6 class="mt-3">What to Watch For</h6>
+            <div class="alert alert-warning mb-2">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Model Drift:</strong> If MAE increases significantly or trend is degrading, the model may need retraining.
+            </div>
+            <div class="alert alert-success mb-2">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Convergence:</strong> Stable or improving MAE indicates the model is well-calibrated.
+            </div>
+            <div class="alert alert-info mb-0">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Sample Size:</strong> Larger n (shown above each point) means more reliable error estimates.
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+    {% if chart_json %}
+    // Render Plotly chart
+    const chartData = {{ chart_json|safe }};
+    Plotly.newPlot('performanceChart', chartData.data, chartData.layout, {responsive: true});
+    {% endif %}
+</script>
+{% endblock %}

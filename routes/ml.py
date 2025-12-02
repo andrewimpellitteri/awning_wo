@@ -306,6 +306,49 @@ class MLService:
         return augmented_df
 
     @staticmethod
+    def compute_recency_weights(df, scale=4.0):
+        """Compute sample weights based on recency to bias toward recent data
+
+        Args:
+            df: DataFrame with 'datecompleted' column
+            scale: Controls strength of recency bias (3-5 recommended)
+                   Higher = stronger bias toward recent data
+
+        Returns:
+            Array of weights (same length as df)
+        """
+        # Calculate days since earliest completion
+        df['datecompleted'] = pd.to_datetime(df['datecompleted'], errors='coerce')
+        min_date = df['datecompleted'].min()
+        max_date = df['datecompleted'].max()
+
+        # Calculate normalized recency (0 to 1, where 1 = most recent)
+        df['days_since_start'] = (df['datecompleted'] - min_date).dt.days
+        max_days = (max_date - min_date).days
+
+        if max_days == 0:
+            # All samples from same day - equal weights
+            return np.ones(len(df))
+
+        # Normalize to 0-1 range
+        recency_normalized = df['days_since_start'] / max_days
+
+        # Exponential weighting: exp(recency * scale)
+        # This gives stronger preference to recent data
+        weights = np.exp(recency_normalized * scale)
+
+        # Normalize so average weight = 1 (preserves scale of gradients)
+        weights = weights / weights.mean()
+
+        print(f"[RECENCY WEIGHTS] Scale: {scale}")
+        print(f"[RECENCY WEIGHTS] Date range: {min_date.date()} to {max_date.date()}")
+        print(f"[RECENCY WEIGHTS] Weight range: {weights.min():.3f} to {weights.max():.3f}")
+        print(f"[RECENCY WEIGHTS] Recent data (last 20%) avg weight: {weights[recency_normalized > 0.8].mean():.3f}")
+        print(f"[RECENCY WEIGHTS] Old data (first 20%) avg weight: {weights[recency_normalized < 0.2].mean():.3f}")
+
+        return weights.values
+
+    @staticmethod
     def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
         """Apply feature engineering to work order data"""
         from datetime import date
@@ -396,6 +439,45 @@ class MLService:
 
         return df
 
+    @staticmethod
+    def generate_weekly_predictions(model, metadata):
+        """Generate predictions for all open work orders and return DataFrame
+
+        Args:
+            model: Trained LightGBM model
+            metadata: Model metadata containing feature columns and config info
+
+        Returns:
+            DataFrame with columns: workorderid, prediction_date, predicted_days,
+                                   model_name, model_mae_at_train
+        """
+        df = MLService.load_work_orders()
+        if df is None or df.empty:
+            raise ValueError("No work orders found")
+
+        # Only open orders (datecompleted is NULL)
+        open_df = df[df["datecompleted"].isna()].copy()
+
+        if open_df.empty:
+            print("[WEEKLY PRED] No open work orders")
+            return pd.DataFrame()
+
+        # Prepare features
+        open_df = MLService.engineer_features(open_df)
+        feature_cols = metadata["feature_columns"]
+        X = open_df[feature_cols].fillna(0)
+
+        # Predict
+        open_df["predicted_days"] = model.predict(X)
+        open_df["prediction_date"] = datetime.now().strftime("%Y-%m-%d")
+        open_df["model_name"] = metadata["config_name"]
+        open_df["model_mae_at_train"] = metadata["mae"]
+
+        return open_df[[
+            "workorderid", "prediction_date", "predicted_days",
+            "model_name", "model_mae_at_train"
+        ]]
+
 
 @ml_bp.route("/")
 @login_required
@@ -414,8 +496,8 @@ def train_model():
     cache = _model_cache
 
     try:
-        config_name = request.json.get("config", "baseline")
-        config = MODEL_CONFIGS.get(config_name, MODEL_CONFIGS["baseline"])
+        config_name = request.json.get("config", "optuna_best")
+        config = MODEL_CONFIGS.get(config_name, MODEL_CONFIGS["optuna_best"])
         auto_save = request.json.get("auto_save", True)  # New parameter
 
         # Load data using the WorkOrder model
@@ -465,12 +547,15 @@ def train_model():
         if len(X) < 10:
             return jsonify({"error": "Insufficient training data"}), 400
 
-        # Train/test split
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42
+        # Compute recency weights (bias toward recent completion patterns)
+        sample_weights = MLService.compute_recency_weights(train_df, scale=4.0)
+
+        # Train/test split (stratified by weights to preserve recency distribution)
+        X_train, X_test, y_train, y_test, weights_train, weights_test = train_test_split(
+            X, y, sample_weights, test_size=0.2, random_state=42
         )
 
-        # Train model
+        # Train model with recency weighting
         start_time = time.time()
 
         model = lgb.LGBMRegressor(
@@ -490,7 +575,8 @@ def train_model():
             verbose=-1,
         )
 
-        model.fit(X_train, y_train)
+        # Fit with sample weights to emphasize recent data
+        model.fit(X_train, y_train, sample_weight=weights_train)
         training_time = time.time() - start_time
 
         # Evaluate
@@ -798,6 +884,388 @@ def status():
     )
 
 
+@ml_bp.route("/predict_weekly", methods=["POST"])
+@login_required
+def predict_weekly():
+    """Generate and save weekly predictions for all open work orders (requires login)"""
+    model, metadata = get_current_model()
+
+    if model is None:
+        return jsonify({"error": "No model loaded"}), 400
+
+    try:
+        df = MLService.generate_weekly_predictions(model, metadata)
+
+        if df.empty:
+            return jsonify({"message": "No open work orders to predict"}), 200
+
+        key = save_weekly_prediction_file(df)
+
+        return jsonify({
+            "message": "Weekly predictions saved",
+            "records": len(df),
+            "s3_key": key,
+            "timestamp": datetime.now().isoformat()
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@ml_bp.route("/cron/predict_weekly", methods=["POST"])
+def cron_predict_weekly():
+    """Cron endpoint for weekly predictions (uses secret token instead of login)"""
+    # Simple security: check for a secret key
+    secret = request.headers.get("X-Cron-Secret") or (request.json or {}).get("secret")
+    expected_secret = os.getenv("CRON_SECRET", "your-secret-key")
+
+    if secret != expected_secret:
+        return jsonify({"error": "Unauthorized - invalid cron secret"}), 401
+
+    model, metadata = get_current_model()
+
+    if model is None:
+        return jsonify({"error": "No model loaded"}), 400
+
+    try:
+        start_timestamp = datetime.now()
+        print(f"[CRON WEEKLY PRED] Starting at {start_timestamp}")
+
+        df = MLService.generate_weekly_predictions(model, metadata)
+
+        if df.empty:
+            print("[CRON WEEKLY PRED] No open work orders to predict")
+            return jsonify({
+                "message": "No open work orders to predict",
+                "timestamp": start_timestamp.isoformat()
+            }), 200
+
+        key = save_weekly_prediction_file(df)
+
+        end_timestamp = datetime.now()
+        total_time = (end_timestamp - start_timestamp).total_seconds()
+
+        print(f"[CRON WEEKLY PRED] Completed successfully in {total_time:.2f} seconds")
+        print(f"[CRON WEEKLY PRED] Generated predictions for {len(df)} work orders")
+        print(f"[CRON WEEKLY PRED] Saved to: {key}")
+
+        return jsonify({
+            "message": "Weekly predictions saved",
+            "records": len(df),
+            "s3_key": key,
+            "timestamp": end_timestamp.isoformat(),
+            "execution_time_seconds": total_time
+        })
+
+    except Exception as e:
+        error_timestamp = datetime.now()
+        error_msg = str(e)
+        print(f"[CRON WEEKLY PRED] ERROR at {error_timestamp}: {error_msg}")
+
+        return jsonify({
+            "error": error_msg,
+            "timestamp": error_timestamp.isoformat()
+        }), 500
+
+
+@ml_bp.route("/evaluate_snapshots", methods=["GET"])
+@login_required
+def evaluate_snapshots():
+    """Evaluate all weekly prediction snapshots against realized completion times"""
+    from utils.file_upload import s3_client, AWS_S3_BUCKET
+    from io import BytesIO
+
+    try:
+        # List all prediction snapshot files in S3
+        response = s3_client.list_objects_v2(
+            Bucket=AWS_S3_BUCKET,
+            Prefix="ml_predictions/weekly_"
+        )
+
+        if "Contents" not in response:
+            return jsonify({
+                "message": "No prediction snapshots found",
+                "evaluations": []
+            })
+
+        # Get all snapshot files, sorted by date
+        snapshot_files = sorted(
+            [obj for obj in response["Contents"] if obj["Key"].endswith(".csv")],
+            key=lambda x: x["LastModified"],
+            reverse=True
+        )
+
+        # Load current work order data
+        current_df = MLService.load_work_orders()
+        if current_df is None or current_df.empty:
+            return jsonify({"error": "No work order data available"}), 400
+
+        # Convert date columns
+        current_df["datein"] = pd.to_datetime(current_df["datein"], errors="coerce")
+        current_df["datecompleted"] = pd.to_datetime(current_df["datecompleted"], errors="coerce")
+
+        # Evaluate each snapshot
+        evaluations = []
+        for snapshot_obj in snapshot_files:
+            try:
+                # Download snapshot from S3
+                snapshot_key = snapshot_obj["Key"]
+                snapshot_buffer = BytesIO()
+                s3_client.download_fileobj(AWS_S3_BUCKET, snapshot_key, snapshot_buffer)
+                snapshot_buffer.seek(0)
+
+                # Read snapshot CSV
+                snapshot_df = pd.read_csv(snapshot_buffer)
+
+                # Evaluate this snapshot
+                eval_result = evaluate_snapshot(snapshot_df, current_df)
+
+                if eval_result:
+                    eval_result["snapshot_file"] = snapshot_key
+                    eval_result["snapshot_created"] = snapshot_obj["LastModified"].isoformat()
+                    evaluations.append(eval_result)
+
+            except Exception as e:
+                print(f"[EVAL] Error evaluating snapshot {snapshot_key}: {e}")
+                continue
+
+        return jsonify({
+            "message": f"Evaluated {len(evaluations)} snapshots",
+            "total_snapshots": len(snapshot_files),
+            "evaluations": evaluations
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@ml_bp.route("/performance_dashboard")
+@login_required
+def performance_dashboard():
+    """Dashboard showing model performance over time with statistical rigor"""
+    from utils.file_upload import s3_client, AWS_S3_BUCKET
+    from io import BytesIO
+    from scipy import stats
+    import plotly.graph_objs as go
+    import plotly.utils
+
+    try:
+        # List all prediction snapshot files in S3
+        response = s3_client.list_objects_v2(
+            Bucket=AWS_S3_BUCKET,
+            Prefix="ml_predictions/weekly_"
+        )
+
+        if "Contents" not in response:
+            flash("No prediction snapshots found yet. Weekly predictions will be generated automatically.", "info")
+            return render_template("ml/performance_dashboard.html", chart_json=None, stats=None)
+
+        # Get all snapshot files, sorted by date
+        snapshot_files = sorted(
+            [obj for obj in response["Contents"] if obj["Key"].endswith(".csv")],
+            key=lambda x: x["LastModified"]
+        )
+
+        # Load current work order data
+        current_df = MLService.load_work_orders()
+        if current_df is None or current_df.empty:
+            flash("No work order data available", "error")
+            return render_template("ml/performance_dashboard.html", chart_json=None, stats=None)
+
+        # Convert date columns
+        current_df["datein"] = pd.to_datetime(current_df["datein"], errors="coerce")
+        current_df["datecompleted"] = pd.to_datetime(current_df["datecompleted"], errors="coerce")
+
+        # Evaluate each snapshot and collect detailed error data
+        time_series_data = []
+        for snapshot_obj in snapshot_files:
+            try:
+                # Download snapshot from S3
+                snapshot_key = snapshot_obj["Key"]
+                snapshot_buffer = BytesIO()
+                s3_client.download_fileobj(AWS_S3_BUCKET, snapshot_key, snapshot_buffer)
+                snapshot_buffer.seek(0)
+
+                # Read snapshot CSV
+                snapshot_df = pd.read_csv(snapshot_buffer)
+
+                # Merge with current data to get actuals
+                merged = snapshot_df.merge(
+                    current_df[["workorderid", "datein", "datecompleted"]],
+                    on="workorderid",
+                    how="left"
+                )
+
+                # Calculate actual days to complete
+                merged["actual_days"] = (
+                    merged["datecompleted"] - pd.to_datetime(merged["datein"])
+                ).dt.days
+
+                # Only evaluate orders that now have completion data
+                eval_df = merged.dropna(subset=["actual_days"])
+
+                if eval_df.empty:
+                    continue
+
+                # Calculate errors for this snapshot
+                errors = eval_df["actual_days"] - eval_df["predicted_days"]
+                abs_errors = np.abs(errors)
+
+                # Statistical calculations
+                n = len(eval_df)
+                mae = abs_errors.mean()
+                rmse = np.sqrt((errors ** 2).mean())
+
+                # Standard error of the mean (SEM) for MAE
+                # Using bootstrap-based standard error estimation
+                std_error = abs_errors.std() / np.sqrt(n)
+
+                # 95% confidence interval for MAE (t-distribution for small samples)
+                if n > 1:
+                    confidence_level = 0.95
+                    t_critical = stats.t.ppf((1 + confidence_level) / 2, df=n-1)
+                    ci_lower = mae - t_critical * std_error
+                    ci_upper = mae + t_critical * std_error
+                else:
+                    ci_lower = mae
+                    ci_upper = mae
+
+                # Extract date from snapshot filename
+                date_str = snapshot_key.replace("ml_predictions/weekly_", "").replace(".csv", "")
+
+                time_series_data.append({
+                    "date": date_str,
+                    "mae": mae,
+                    "rmse": rmse,
+                    "n": n,
+                    "std_error": std_error,
+                    "ci_lower": max(0, ci_lower),  # MAE can't be negative
+                    "ci_upper": ci_upper,
+                    "model_name": snapshot_df["model_name"].iloc[0] if "model_name" in snapshot_df else "unknown"
+                })
+
+            except Exception as e:
+                print(f"[DASHBOARD] Error processing snapshot {snapshot_key}: {e}")
+                continue
+
+        if not time_series_data:
+            flash("No completed work orders found in snapshots yet. Check back after some orders finish.", "info")
+            return render_template("ml/performance_dashboard.html", chart_json=None, stats=None)
+
+        # Create DataFrame for plotting
+        ts_df = pd.DataFrame(time_series_data)
+        ts_df = ts_df.sort_values("date")
+
+        # Create Plotly figure with error bars
+        fig = go.Figure()
+
+        # Add MAE line with confidence intervals
+        fig.add_trace(go.Scatter(
+            x=ts_df["date"],
+            y=ts_df["mae"],
+            mode='lines+markers',
+            name='MAE (Mean Absolute Error)',
+            line=dict(color='rgb(31, 119, 180)', width=2),
+            marker=dict(size=8)
+        ))
+
+        # Add confidence interval shading
+        fig.add_trace(go.Scatter(
+            x=pd.concat([ts_df["date"], ts_df["date"][::-1]]),
+            y=pd.concat([ts_df["ci_upper"], ts_df["ci_lower"][::-1]]),
+            fill='toself',
+            fillcolor='rgba(31, 119, 180, 0.2)',
+            line=dict(color='rgba(255,255,255,0)'),
+            hoverinfo="skip",
+            showlegend=True,
+            name='95% Confidence Interval'
+        ))
+
+        # Add RMSE line
+        fig.add_trace(go.Scatter(
+            x=ts_df["date"],
+            y=ts_df["rmse"],
+            mode='lines+markers',
+            name='RMSE (Root Mean Squared Error)',
+            line=dict(color='rgb(255, 127, 14)', width=2, dash='dash'),
+            marker=dict(size=8)
+        ))
+
+        # Update layout
+        fig.update_layout(
+            title='Model Performance Over Time (Realized Prediction Accuracy)',
+            xaxis_title='Snapshot Date',
+            yaxis_title='Error (days)',
+            hovermode='x unified',
+            template='plotly_white',
+            height=500,
+            legend=dict(x=0.01, y=0.99, bgcolor='rgba(255,255,255,0.8)')
+        )
+
+        # Add annotations for sample sizes
+        for i, row in ts_df.iterrows():
+            fig.add_annotation(
+                x=row["date"],
+                y=row["mae"],
+                text=f"n={row['n']}",
+                showarrow=False,
+                yshift=15,
+                font=dict(size=9, color='gray')
+            )
+
+        # Calculate convergence statistics
+        if len(ts_df) >= 3:
+            # Linear regression to detect trend
+            x_numeric = np.arange(len(ts_df))
+            slope, intercept, r_value, p_value, std_err = stats.linregress(x_numeric, ts_df["mae"])
+
+            trend_direction = "improving" if slope < 0 else "degrading" if slope > 0 else "stable"
+            is_significant = p_value < 0.05
+
+            convergence_stats = {
+                "trend_direction": trend_direction,
+                "slope": round(slope, 4),
+                "p_value": round(p_value, 4),
+                "is_significant": is_significant,
+                "r_squared": round(r_value ** 2, 4),
+                "interpretation": f"MAE is {trend_direction} at {abs(slope):.3f} days per week" +
+                                 (f" (statistically significant, p={p_value:.3f})" if is_significant else
+                                  f" (not statistically significant, p={p_value:.3f})")
+            }
+        else:
+            convergence_stats = {
+                "trend_direction": "insufficient data",
+                "interpretation": "Need at least 3 snapshots to detect trends"
+            }
+
+        # Summary statistics
+        summary_stats = {
+            "total_snapshots": len(ts_df),
+            "latest_mae": round(ts_df.iloc[-1]["mae"], 3),
+            "latest_rmse": round(ts_df.iloc[-1]["rmse"], 3),
+            "latest_n": int(ts_df.iloc[-1]["n"]),
+            "latest_ci": f"[{ts_df.iloc[-1]['ci_lower']:.2f}, {ts_df.iloc[-1]['ci_upper']:.2f}]",
+            "mean_mae": round(ts_df["mae"].mean(), 3),
+            "std_mae": round(ts_df["mae"].std(), 3),
+            "convergence": convergence_stats
+        }
+
+        # Convert plot to JSON for template
+        chart_json = plotly.utils.PlotlyJSONEncoder().encode(fig)
+
+        return render_template("ml/performance_dashboard.html",
+                             chart_json=chart_json,
+                             stats=summary_stats,
+                             time_series=ts_df.to_dict('records'))
+
+    except Exception as e:
+        print(f"[DASHBOARD] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        flash(f"Error loading dashboard: {str(e)}", "error")
+        return render_template("ml/performance_dashboard.html", chart_json=None, stats=None)
+
+
 # Add this route to your ml_bp blueprint
 
 
@@ -817,8 +1285,8 @@ def cron_retrain():
     try:
         # Get configuration from request or use default
         request_data = request.json or {}
-        config_name = request_data.get("config", "baseline")
-        config = MODEL_CONFIGS.get(config_name, MODEL_CONFIGS["baseline"])
+        config_name = request_data.get("config", "optuna_best")
+        config = MODEL_CONFIGS.get(config_name, MODEL_CONFIGS["optuna_best"])
 
         # Log the start of training
         start_timestamp = datetime.now()
@@ -886,11 +1354,14 @@ def cron_retrain():
                 {"error": error_msg, "timestamp": start_timestamp.isoformat()}
             ), 400
 
+        # Compute recency weights (bias toward recent completion patterns)
+        sample_weights = MLService.compute_recency_weights(train_df, scale=4.0)
+
         print(
-            f"[CRON RETRAIN] Training on ALL {len(X)} samples with {len(feature_cols)} features"
+            f"[CRON RETRAIN] Training on ALL {len(X)} samples with {len(feature_cols)} features (recency-weighted)"
         )
 
-        # Train model on ALL available data
+        # Train model on ALL available data with recency weighting
         training_start_time = time.time()
 
         model = lgb.LGBMRegressor(
@@ -910,8 +1381,8 @@ def cron_retrain():
             verbose=-1,
         )
 
-        # Fit on ALL data
-        model.fit(X, y)
+        # Fit on ALL data with sample weights to emphasize recent patterns
+        model.fit(X, y, sample_weight=sample_weights)
         training_time = time.time() - training_start_time
 
         print(f"[CRON RETRAIN] Model training completed in {training_time:.2f} seconds")
@@ -1065,3 +1536,80 @@ def cleanup_old_s3_models(keep=5):
             print(f"[S3 CLEANUP] ERROR: Failed to delete some objects: {delete_response['Errors']}")
         else:
             print(f"[S3 CLEANUP] Successfully deleted {len(models_to_delete)} models and their metadata.")
+
+
+def save_weekly_prediction_file(df):
+    """Save weekly predictions to S3
+
+    Args:
+        df: DataFrame with prediction results
+
+    Returns:
+        str: S3 key where the file was saved
+    """
+    from utils.file_upload import s3_client, AWS_S3_BUCKET
+    import io
+
+    date_str = datetime.now().strftime("%Y-%m-%d")
+    key = f"ml_predictions/weekly_{date_str}.csv"
+
+    buffer = io.StringIO()
+    df.to_csv(buffer, index=False)
+    buffer.seek(0)
+
+    s3_client.put_object(
+        Bucket=AWS_S3_BUCKET,
+        Key=key,
+        Body=buffer.getvalue(),
+        ContentType="text/csv"
+    )
+
+    print(f"[WEEKLY PRED] Saved prediction file: {key}")
+    return key
+
+
+def evaluate_snapshot(snapshot_df, current_df):
+    """Evaluate predictions from a snapshot against realized completion times
+
+    Args:
+        snapshot_df: DataFrame with historical predictions (from a weekly snapshot)
+        current_df: DataFrame with current work order data (including completed orders)
+
+    Returns:
+        dict: Evaluation metrics or None if no completed orders to evaluate
+    """
+    # Merge snapshot predictions with current actual data
+    merged = snapshot_df.merge(
+        current_df[["workorderid", "datein", "datecompleted"]],
+        on="workorderid",
+        how="left"
+    )
+
+    # Calculate actual days to complete
+    merged["actual_days"] = (
+        merged["datecompleted"] - merged["datein"]
+    ).dt.days
+
+    # Only evaluate orders that now have completion data
+    eval_df = merged.dropna(subset=["actual_days"])
+
+    if eval_df.empty:
+        return None
+
+    mae = mean_absolute_error(eval_df["actual_days"], eval_df["predicted_days"])
+    rmse = np.sqrt(mean_squared_error(eval_df["actual_days"], eval_df["predicted_days"]))
+
+    # Calculate MAPE with protection against division by zero
+    mask = eval_df["actual_days"] != 0
+    if mask.sum() > 0:
+        mape = np.mean(np.abs((eval_df.loc[mask, "actual_days"] - eval_df.loc[mask, "predicted_days"]) / eval_df.loc[mask, "actual_days"])) * 100
+    else:
+        mape = 0.0
+
+    return {
+        "snapshot_date": eval_df["prediction_date"].iloc[0],
+        "records_evaluated": len(eval_df),
+        "mae": round(mae, 3),
+        "rmse": round(rmse, 3),
+        "mape": round(mape, 3),
+    }

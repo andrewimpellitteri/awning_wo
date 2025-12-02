@@ -285,6 +285,7 @@ class TestWorkOrderCreateWithDraft:
             'is_authenticated': True,
             'is_active': True,
             'is_anonymous': False,
+            'role': 'manager',
             'get_id': lambda: str(test_user.id)
         })()
 
@@ -332,6 +333,7 @@ class TestWorkOrderCreateWithDraft:
             'is_authenticated': True,
             'is_active': True,
             'is_anonymous': False,
+            'role': 'manager',
             'get_id': lambda: str(test_user.id)
         })()
 
@@ -358,6 +360,7 @@ class TestDraftIntegration:
             'is_authenticated': True,
             'is_active': True,
             'is_anonymous': False,
+            'role': 'manager',
             'get_id': lambda: str(test_user.id)
         })()
 
