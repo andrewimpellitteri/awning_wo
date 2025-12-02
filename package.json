@@ -28,7 +28,8 @@
       "!static/js/**/*.test.js",
       "!static/js/app.js",
       "!static/js/keyboard-shortcuts.js",
-      "!static/js/dropdown-data.js"
+      "!static/js/dropdown-data.js",
+      "!static/js/draft-autosave.js"
     ],
     "coverageDirectory": "coverage-js",
     "coverageReporters": ["text", "lcov", "json-summary"],
