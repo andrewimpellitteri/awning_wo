@@ -589,27 +589,37 @@ class WorkOrderPDF:
         if special_instr_text:
             special_instr_text = special_instr_text.replace("\n", "<br/>")
 
+        # Create a custom style for special instructions without extra spacing
+        special_instr_style = ParagraphStyle(
+            name="SpecialInstrValue",
+            parent=self.styles["SmallValue"],
+            spaceBefore=0,
+            spaceAfter=0,
+        )
+
         # Create a table for special instructions with a reasonable minimum height
         # If the text is longer, ReportLab will automatically flow to a second page
         special_instructions = [
             [
                 safe_paragraph("Special<br/>Instructions", self.styles["SmallLabel"]),
-                safe_paragraph(special_instr_text, self.styles["SmallValue"]),
+                safe_paragraph(special_instr_text, special_instr_style),
             ]
         ]
 
         special_instructions_table = Table(
             special_instructions,
             colWidths=[1.0 * inch, 5.5 * inch],
-            rowHeights=[1.0 * inch],  # Fixed reasonable height - will flow to page 2 if needed
+            rowHeights=[1.2 * inch],  # Increased height to accommodate padding
         )
         special_instructions_table.setStyle(
             TableStyle(
                 [
                     ("VALIGN", (0, 0), (-1, -1), "TOP"),
                     ("FONTSIZE", (0, 0), (-1, -1), 8),
-                    ("LEFTPADDING", (1, 0), (1, -1), 2),
-                    ("RIGHTPADDING", (1, 0), (1, -1), 2),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
                     ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
                 ]
             )
