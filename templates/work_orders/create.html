@@ -572,4 +572,27 @@ document.addEventListener('DOMContentLoaded', function() {
     {% endif %}
 });
 </script>
+
+<!-- Draft Auto-Save Integration -->
+<script src="{{ url_for('static', filename='js/draft-autosave.js') }}"></script>
+<script>
+    // Initialize auto-save for work order form
+    DraftAutoSave.init('work_order', '#workOrderForm');
+
+    // Disable auto-save when form is submitted successfully
+    document.getElementById('workOrderForm').addEventListener('submit', function() {
+        console.log('[AutoSave] Form submitted, cleaning up draft');
+        DraftAutoSave.cleanup();  // Deletes draft after successful submit
+    });
+
+    // If we're restoring from a draft (via URL parameter ?draft_id=123),
+    // the server has already pre-filled the form data in the template
+    const urlParams = new URLSearchParams(window.location.search);
+    const draftId = urlParams.get('draft_id');
+    if (draftId) {
+        console.log(`[AutoSave] Draft ${draftId} restored by server`);
+        // Track this draft ID for future auto-saves (updates to same draft)
+        DraftAutoSave.setDraftId(parseInt(draftId));
+    }
+</script>
 {% endblock %}

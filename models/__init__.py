@@ -2,10 +2,11 @@
 from .user import User
 from .checkin import CheckIn, CheckInItem
 from .checkin_file import CheckInFile
+from .work_order_draft import WorkOrderDraft
 
 # Optional: add the renamed files with spaces if needed
 # from .Name_AutoCorrect_Log import NameAutoCorrectLog
 # from .Paste_Errors import PasteErrors
 # from .Switchboard_Items import SwitchboardItems
 
-__all__ = ["User", "CheckIn", "CheckInItem", "CheckInFile"]
+__all__ = ["User", "CheckIn", "CheckInItem", "CheckInFile", "WorkOrderDraft"]

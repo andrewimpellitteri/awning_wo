@@ -286,6 +286,88 @@ def _generate_next_work_order_number():
     return str(latest_num + 1) if latest_num is not None else "1"
 
 
+def _restore_draft_data(draft_id, current_user):
+    """
+    Restore form data from a saved draft.
+
+    Args:
+        draft_id: The ID of the draft to restore
+        current_user: The current logged-in user
+
+    Returns:
+        tuple: (form_data dict, checkin_items list) if successful
+               (empty dict, empty list) if draft not found
+    """
+    from models.work_order_draft import WorkOrderDraft
+
+    draft = WorkOrderDraft.query.filter_by(
+        id=draft_id,
+        user_id=current_user.id
+    ).first()
+
+    if not draft or not draft.form_data:
+        flash("Draft not found or has been deleted.", "warning")
+        return {}, []
+
+    # Show success message to user
+    flash(f"Draft from {draft.updated_at.strftime('%b %d, %Y at %I:%M %p')} has been restored.", "success")
+
+    # Load all form data from the draft
+    form_data = draft.form_data.copy()
+    checkin_items = []
+
+    # Handle new items if they exist in the draft
+    # The draft stores new_item_description[], new_item_material[], etc.
+    # We need to reconstruct the checkin_items format for the template
+    new_item_descriptions = form_data.get("new_item_description[]", [])
+    if isinstance(new_item_descriptions, str):
+        new_item_descriptions = [new_item_descriptions]
+
+    if new_item_descriptions:
+        new_item_materials = form_data.get("new_item_material[]", [])
+        new_item_colors = form_data.get("new_item_color[]", [])
+        new_item_qtys = form_data.get("new_item_qty[]", [])
+        new_item_sizewgts = form_data.get("new_item_sizewgt[]", [])
+        new_item_prices = form_data.get("new_item_price[]", [])
+        new_item_conditions = form_data.get("new_item_condition[]", [])
+
+        # Ensure all are lists
+        if isinstance(new_item_materials, str):
+            new_item_materials = [new_item_materials]
+        if isinstance(new_item_colors, str):
+            new_item_colors = [new_item_colors]
+        if isinstance(new_item_qtys, str):
+            new_item_qtys = [new_item_qtys]
+        if isinstance(new_item_sizewgts, str):
+            new_item_sizewgts = [new_item_sizewgts]
+        if isinstance(new_item_prices, str):
+            new_item_prices = [new_item_prices]
+        if isinstance(new_item_conditions, str):
+            new_item_conditions = [new_item_conditions]
+
+        # Build checkin_items array for template
+        for i, description in enumerate(new_item_descriptions):
+            if description:  # Only add if description exists
+                checkin_items.append({
+                    "description": description,
+                    "material": new_item_materials[i] if i < len(new_item_materials) else "",
+                    "color": new_item_colors[i] if i < len(new_item_colors) else "",
+                    "qty": new_item_qtys[i] if i < len(new_item_qtys) else 0,
+                    "sizewgt": new_item_sizewgts[i] if i < len(new_item_sizewgts) else "",
+                    "price": float(new_item_prices[i]) if i < len(new_item_prices) and new_item_prices[i] else 0.00,
+                    "condition": new_item_conditions[i] if i < len(new_item_conditions) else "",
+                })
+
+    # Handle selected inventory items
+    selected_items = form_data.get("selected_items[]", [])
+    if isinstance(selected_items, str):
+        selected_items = [selected_items]
+    if selected_items:
+        form_data["selected_inventory_keys"] = selected_items
+
+    return form_data, checkin_items
+
+
 # ============================================================================
 # PUBLIC ROUTE HANDLERS
 # ============================================================================
@@ -789,9 +871,18 @@ def create_work_order(prefill_cust_id=None):
     form_data = {}
     checkin_items = []
     checkin_id = request.args.get("checkin_id")
+    draft_id = request.args.get("draft_id")
+
+    # Handle draft restoration
+    if draft_id:
+        from flask_login import current_user
+        draft_form_data, draft_checkin_items = _restore_draft_data(draft_id, current_user)
+        if draft_form_data:
+            form_data = draft_form_data
+            checkin_items = draft_checkin_items
 
     # Handle check-in conversion
-    if checkin_id:
+    elif checkin_id:
         from models.checkin import CheckIn
         checkin = CheckIn.query.get(checkin_id)
         if checkin and checkin.Status == "pending":

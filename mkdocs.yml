@@ -68,6 +68,11 @@ nav:
     - Performance Analysis: architecture/PERFORMANCE_ANALYSIS.md
     - Concurrency & Locking: architecture/CONCURRENCY_AUDIT.md
 
+  # UX & Features
+  - UX Enhancements:
+    - Draft Auto-Save: ux/DRAFT_AUTOSAVE_GUIDE.md
+    - Inline Priority Controls: ux/INLINE_PRIORITY_CONTROLS.md
+
   # Planning & Improvements
   - Planning:
     - Improvement Roadmap: planning/IMPROVEMENTS.md

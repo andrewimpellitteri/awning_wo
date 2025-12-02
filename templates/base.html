@@ -136,6 +136,13 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <li>
+                                <a class="dropdown-item" id="view-drafts-link" href="#" onclick="showDraftsModal(); return false;">
+                                    <i class="fas fa-file-alt"></i> My Drafts
+                                    <span id="draft-count-badge" class="badge bg-primary ms-2" style="display: none;">0</span>
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
                                 <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
                                     <i class="fas fa-sign-out-alt"></i> Logout
                                 </a>
@@ -227,7 +234,175 @@
         // Update count every 60 seconds
         setInterval(updatePendingCheckinsCount, 60000);
         {% endif %}
+
+        // Fetch draft count and update badge
+        {% if current_user.is_authenticated %}
+        function updateDraftCount() {
+            fetch('/api/drafts/list?limit=10')
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('draft-count-badge');
+                    if (badge && data.drafts && data.drafts.length > 0) {
+                        badge.textContent = data.drafts.length;
+                        badge.style.display = 'inline';
+                    } else if (badge) {
+                        badge.style.display = 'none';
+                    }
+                })
+                .catch(error => console.error('Error fetching draft count:', error));
+        }
+
+        // Update count on page load
+        document.addEventListener('DOMContentLoaded', updateDraftCount);
+        {% endif %}
     </script>
+
+    <!-- Drafts Modal -->
+    {% if current_user.is_authenticated %}
+    <div class="modal fade" id="draftsModal" tabindex="-1" aria-labelledby="draftsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="draftsModalLabel">
+                        <i class="fas fa-file-alt"></i> My Saved Drafts
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="drafts-list-container">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showDraftsModal() {
+            const modal = new bootstrap.Modal(document.getElementById('draftsModal'));
+            modal.show();
+            loadDraftsList();
+        }
+
+        function loadDraftsList() {
+            const container = document.getElementById('drafts-list-container');
+            container.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+
+            fetch('/api/drafts/list?limit=10')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.drafts && data.drafts.length > 0) {
+                        renderDraftsList(data.drafts);
+                    } else {
+                        container.innerHTML = '<p class="text-muted text-center">No saved drafts found.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading drafts:', error);
+                    container.innerHTML = '<div class="alert alert-danger">Failed to load drafts. Please try again.</div>';
+                });
+        }
+
+        function renderDraftsList(drafts) {
+            const container = document.getElementById('drafts-list-container');
+            const formTypeLabels = {
+                'work_order': 'Work Order',
+                'repair_order': 'Repair Order',
+                'quote': 'Quote'
+            };
+
+            const html = `
+                <div class="list-group">
+                    ${drafts.map(draft => {
+                        const formType = formTypeLabels[draft.form_type] || draft.form_type;
+                        const updatedDate = new Date(draft.updated_at);
+                        const timeAgo = getTimeAgo(updatedDate);
+                        const customerID = draft.form_data.CustID || 'Unknown';
+                        const woName = draft.form_data.WOName || 'Untitled';
+
+                        return `
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">
+                                            <span class="badge bg-info">${formType}</span>
+                                            ${woName}
+                                        </h6>
+                                        <p class="mb-1 text-muted small">
+                                            Customer ID: ${customerID}
+                                        </p>
+                                        <p class="mb-0 text-muted small">
+                                            <i class="fas fa-clock"></i> Last saved ${timeAgo}
+                                        </p>
+                                    </div>
+                                    <div class="btn-group-vertical btn-group-sm">
+                                        <button class="btn btn-primary" onclick="restoreDraftById(${draft.id}, '${draft.form_type}')">
+                                            <i class="fas fa-redo"></i> Restore
+                                        </button>
+                                        <button class="btn btn-danger" onclick="deleteDraftById(${draft.id})">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'just now';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+            return `${Math.floor(seconds / 86400)} days ago`;
+        }
+
+        function restoreDraftById(draftId, formType) {
+            // Navigate to create page with draft ID in URL
+            const routes = {
+                'work_order': '/work_orders/new',
+                'repair_order': '/repair_work_orders/new',
+                'quote': '/quotes/new'
+            };
+
+            const createUrl = routes[formType] || '/work_orders/new';
+            window.location.href = `${createUrl}?draft_id=${draftId}`;
+        }
+
+        function deleteDraftById(draftId) {
+            if (!confirm('Are you sure you want to delete this draft?')) {
+                return;
+            }
+
+            fetch(`/api/drafts/${draftId}`, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadDraftsList();
+                        updateDraftCount();
+                    } else {
+                        alert('Failed to delete draft: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting draft:', error);
+                    alert('Failed to delete draft.');
+                });
+        }
+    </script>
+    {% endif %}
+
     {% block scripts %}{% endblock %}
 
     <!-- Keyboard Shortcuts Help Panel (available on all pages) -->

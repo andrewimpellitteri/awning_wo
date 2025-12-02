@@ -178,3 +178,6 @@ templates_archive/
 *.prof
 
 profiles/
+
+results_*/
+rev_model/

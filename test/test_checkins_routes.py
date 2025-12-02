@@ -172,7 +172,7 @@ def test_create_checkin_success(manager_client, app):
     )
 
     assert response.status_code == 200
-    assert b"Check-in #1 created successfully!" in response.data
+    assert b"Check-in #1 created successfully with 0 files!" in response.data
 
     # Verify in database
     with app.app_context():
