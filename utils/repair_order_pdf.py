@@ -192,63 +192,6 @@ class RepairOrderPDF:
             )
         )
 
-    def _calculate_available_space_for_instructions(self, items_count):
-        """
-        Calculate available vertical space for special instructions dynamically.
-
-        This ensures the footer always stays at the bottom of the page, regardless
-        of the number of items in the order.
-
-        Args:
-            items_count: Number of items in the order
-
-        Returns:
-            float: Height in inches available for special instructions
-        """
-        # Page dimensions (letter size: 8.5" x 11")
-        page_height = letter[1]
-
-        # Fixed margins (set in generate_pdf)
-        top_margin = 0.4 * inch
-        bottom_margin = 0.4 * inch
-
-        # Approximate heights of fixed components (empirically measured)
-        header_height = 0.7 * inch  # Header with RO number and company name
-        rush_table_height = 0.7 * inch  # Rush order info
-        customer_info_height = 3.5 * inch  # Customer and RO info (slightly taller than WO)
-
-        # Items table: header + rows
-        # Header is ~0.3", each item row is ~0.25"
-        items_table_height = 0.5 * inch + (items_count * 0.25 * inch)
-
-        # Footer components (fixed heights) - repair orders have more footer sections
-        footer_spacer_top = 0.2 * inch
-        special_instr_label = 0.3 * inch  # Just the label row
-        clean_section = 0.3 * inch  # Clean/See Clean/Clean First
-        status_section = 0.3 * inch  # Repairs Done By / Return Status
-        completion_section = 0.3 * inch  # Date Completed / Return Date / Date Out
-        material_list_section = 0.3 * inch  # Material List
-        checkbox_section = 0.35 * inch
-        footer_spacers = 0.3 * inch  # Combined small spacers
-
-        # Calculate total used space (excluding special instructions content)
-        used_space = (
-            top_margin + bottom_margin +
-            header_height + rush_table_height + customer_info_height +
-            items_table_height + footer_spacer_top + special_instr_label +
-            clean_section + status_section + completion_section +
-            material_list_section + checkbox_section + footer_spacers
-        )
-
-        # Available space for special instructions content
-        available = page_height - used_space
-
-        # Ensure minimum of 0.5" and maximum of 2.5" for instructions
-        # (slightly less max than work orders due to more footer sections)
-        min_height = 0.5 * inch
-        max_height = 2.5 * inch
-
-        return max(min_height, min(available, max_height))
 
     def _format_date(self, date_str):
         if not date_str:
@@ -657,20 +600,17 @@ class RepairOrderPDF:
         return [items_table, Spacer(1, 0.2 * inch)]
 
     def _build_footer(self):
-        """Build footer with dynamic special instructions based on available space"""
+        """Build footer with special instructions"""
         ro = self.repair_order
-        items_count = len(ro.get("items", []))
 
-        # Calculate available height for special instructions
-        available_height = self._calculate_available_space_for_instructions(items_count)
-
-        # --- Special Instructions with dynamic height ---
+        # --- Special Instructions with reasonable fixed height ---
         # Replace newlines with <br/> tags to preserve formatting in PDF
         special_instr_text = ro.get("SPECIALINSTRUCTIONS", "")
         if special_instr_text:
             special_instr_text = special_instr_text.replace("\n", "<br/>")
 
-        # Create a single-row table with fixed height for instructions
+        # Create a table for special instructions with a reasonable minimum height
+        # If the text is longer, ReportLab will automatically flow to a second page
         special_instructions = [
             [
                 safe_paragraph("Special<br/>Instructions", self.styles["SmallLabel"]),
@@ -681,7 +621,7 @@ class RepairOrderPDF:
         special_instructions_table = Table(
             special_instructions,
             colWidths=[1.0 * inch, 5.5 * inch],
-            rowHeights=[available_height],  # Use calculated height
+            rowHeights=[1.0 * inch],  # Fixed reasonable height - will flow to page 2 if needed
         )
         special_instructions_table.setStyle(
             TableStyle(
@@ -690,7 +630,7 @@ class RepairOrderPDF:
                     ("FONTSIZE", (0, 0), (-1, -1), 8),
                     ("LEFTPADDING", (1, 0), (1, -1), 2),
                     ("RIGHTPADDING", (1, 0), (1, -1), 2),
-                    ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),  # Add border for visibility
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
                 ]
             )
         )

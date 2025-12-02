@@ -212,61 +212,6 @@ class WorkOrderPDF:
             )
         )
 
-    def _calculate_available_space_for_instructions(self, items_count):
-        """
-        Calculate available vertical space for special instructions dynamically.
-
-        This ensures the footer always stays at the bottom of the page, regardless
-        of the number of items in the order.
-
-        Args:
-            items_count: Number of items in the order
-
-        Returns:
-            float: Height in inches available for special instructions
-        """
-        # Page dimensions (letter size: 8.5" x 11")
-        page_height = letter[1]
-
-        # Fixed margins (set in generate_pdf)
-        top_margin = 0.4 * inch
-        bottom_margin = 0.4 * inch
-
-        # Approximate heights of fixed components (empirically measured)
-        header_height = 0.7 * inch  # Header with WO number and company name
-        rush_table_height = 0.7 * inch  # Rush order info
-        customer_info_height = 3.2 * inch  # Customer and WO info two-column section
-
-        # Items table: header + rows
-        # Header is ~0.3", each item row is ~0.25"
-        items_table_height = 0.5 * inch + (items_count * 0.25 * inch)
-
-        # Footer components (fixed heights)
-        footer_spacer_top = 0.2 * inch
-        special_instr_label = 0.3 * inch  # Just the label row
-        repairs_section = 0.3 * inch
-        status_section = 0.3 * inch
-        completion_section = 0.3 * inch
-        checkbox_section = 0.35 * inch
-        footer_spacers = 0.25 * inch  # Combined small spacers
-
-        # Calculate total used space (excluding special instructions content)
-        used_space = (
-            top_margin + bottom_margin +
-            header_height + rush_table_height + customer_info_height +
-            items_table_height + footer_spacer_top + special_instr_label +
-            repairs_section + status_section + completion_section +
-            checkbox_section + footer_spacers
-        )
-
-        # Available space for special instructions content
-        available = page_height - used_space
-
-        # Ensure minimum of 0.5" and maximum of 3" for instructions
-        min_height = 0.5 * inch
-        max_height = 3.0 * inch
-
-        return max(min_height, min(available, max_height))
 
     def _format_date(self, date_str):
         if not date_str:
@@ -635,24 +580,17 @@ class WorkOrderPDF:
         return [items_table, Spacer(1, 0.2 * inch)]
 
     def _build_footer(self):
-        """Build footer with dynamic special instructions based on available space"""
+        """Build footer with special instructions"""
         wo = self.work_order
-        items_count = len(wo.get("items", []))
 
-        # Calculate available height for special instructions
-        available_height = self._calculate_available_space_for_instructions(items_count)
-
-        # Check if we're likely to overflow to multiple pages
-        # If available_height hits the minimum, we're probably multi-page
-        is_likely_multipage = available_height <= (0.5 * inch + 0.01 * inch)
-
-        # --- Special Instructions with dynamic height ---
+        # --- Special Instructions with reasonable fixed height ---
         # Replace newlines with <br/> tags to preserve formatting in PDF
         special_instr_text = wo.get("SpecialInstructions", "")
         if special_instr_text:
             special_instr_text = special_instr_text.replace("\n", "<br/>")
 
-        # Create a single-row table with fixed height for instructions
+        # Create a table for special instructions with a reasonable minimum height
+        # If the text is longer, ReportLab will automatically flow to a second page
         special_instructions = [
             [
                 safe_paragraph("Special<br/>Instructions", self.styles["SmallLabel"]),
@@ -663,7 +601,7 @@ class WorkOrderPDF:
         special_instructions_table = Table(
             special_instructions,
             colWidths=[1.0 * inch, 5.5 * inch],
-            rowHeights=[available_height],  # Use calculated height
+            rowHeights=[1.0 * inch],  # Fixed reasonable height - will flow to page 2 if needed
         )
         special_instructions_table.setStyle(
             TableStyle(
@@ -672,7 +610,7 @@ class WorkOrderPDF:
                     ("FONTSIZE", (0, 0), (-1, -1), 8),
                     ("LEFTPADDING", (1, 0), (1, -1), 2),
                     ("RIGHTPADDING", (1, 0), (1, -1), 2),
-                    ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),  # Add border for visibility
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
                 ]
             )
         )
