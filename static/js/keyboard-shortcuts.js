@@ -2,6 +2,60 @@
 // Global variables
 let helpVisible = false;
 
+// Mobile detection - detect mobile devices to hide keyboard shortcuts
+// Uses multiple signals to minimize false positives
+function isMobileDevice() {
+    // Check 1: User agent patterns for mobile devices
+    const mobilePatterns = [
+        /Android/i,
+        /webOS/i,
+        /iPhone/i,
+        /iPad/i,
+        /iPod/i,
+        /BlackBerry/i,
+        /Windows Phone/i
+    ];
+
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    const hasMobileUA = mobilePatterns.some(pattern => pattern.test(userAgent));
+
+    // Check 2: Touch capability (not sufficient alone - many laptops have touch)
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    // Check 3: Screen size (phones and small tablets)
+    const isSmallScreen = window.innerWidth <= 768;
+
+    // Check 4: Pointer type (coarse = touch-based primary input)
+    const hasCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+
+    // Decision logic to minimize false positives:
+    // - If user agent clearly indicates mobile, it's mobile
+    // - If small screen AND (touch OR coarse pointer), it's probably mobile
+    // - Otherwise, assume desktop to avoid hiding for desktop users
+    if (hasMobileUA) {
+        return true;
+    }
+
+    if (isSmallScreen && (hasTouch || hasCoarsePointer)) {
+        return true;
+    }
+
+    return false;
+}
+
+// Apply mobile detection on page load
+function applyMobileDetection() {
+    if (isMobileDevice()) {
+        document.documentElement.classList.add('is-mobile-device');
+        console.log('Mobile device detected - hiding keyboard shortcuts');
+    } else {
+        console.log('Desktop device detected - showing keyboard shortcuts');
+    }
+}
+
+// Run detection as early as possible
+applyMobileDetection();
+
 function toggleHelp() {
     const helpPanel = document.getElementById('floating-help');
     if (!helpPanel) {

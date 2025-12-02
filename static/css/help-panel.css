@@ -163,3 +163,13 @@
     border-color: #495057;
     color: #adb5bd;
 }
+
+/* Mobile detection - hide keyboard shortcuts on mobile devices */
+.hide-on-mobile {
+    display: block;
+}
+
+/* This class is added by JavaScript when mobile is detected */
+.is-mobile-device .hide-on-mobile {
+    display: none !important;
+}
