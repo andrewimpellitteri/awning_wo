@@ -51,3 +51,9 @@ mkdocs-material
 hypothesis # For fuzzing tests. Consider moving to requirements-dev.txt for better dependency management.
 snakeviz
 Flask-Limiter==4.0.0
+
+# RAG Chatbot dependencies
+requests>=2.28.0         # For Ollama API communication
+# Note: Ollama must be installed separately (https://ollama.ai)
+# Required models: ollama pull nomic-embed-text && ollama pull llama3.2
+# PostgreSQL pgvector extension required for embeddings storage

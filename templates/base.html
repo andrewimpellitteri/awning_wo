@@ -25,6 +25,7 @@
     <script src="https://cdn.jsdelivr.net/npm/hotkeys-js@3.10.1/dist/hotkeys.min.js"></script>
 
     <link href="{{ url_for('static', filename='css/help-panel.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/chat-widget.css') }}" rel="stylesheet">
     <script src="{{ url_for('static', filename='js/keyboard-shortcuts.js') }}"></script>
     <script src="{{ url_for('static', filename='js/dropdown-data.js') }}"></script>
 
@@ -407,5 +408,10 @@
 
     <!-- Keyboard Shortcuts Help Panel (available on all pages) -->
     {% include "_help_panel.html" %}
+
+    <!-- Chat Widget (available on all authenticated pages) -->
+    {% if current_user.is_authenticated %}
+    <script src="{{ url_for('static', filename='js/chat-widget.js') }}"></script>
+    {% endif %}
 </body>
 </html>
