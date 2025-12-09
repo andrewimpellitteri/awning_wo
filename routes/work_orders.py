@@ -44,6 +44,7 @@ from utils.order_item_helpers import (
     safe_int_conversion,
     safe_price_conversion,
 )
+from utils.cache_helpers import invalidate_analytics_cache
 from io import BytesIO
 import fitz  # PyMuPDF
 
@@ -773,6 +774,9 @@ def create_work_order(prefill_cust_id=None):
                 # Commit DB transaction first
                 db.session.commit()
 
+                # Invalidate analytics cache since new work order was created
+                invalidate_analytics_cache()
+
                 # Mark check-in as processed if converting from check-in
                 checkin_id = request.form.get("checkin_id")
                 if checkin_id:
@@ -1049,6 +1053,9 @@ def edit_work_order(work_order_no):
                 work_order.QueuePosition = None
 
             db.session.commit()
+
+            # Invalidate analytics cache since work order was updated
+            invalidate_analytics_cache()
 
             # AFTER successful DB commit, upload files to S3
             if uploaded_files:

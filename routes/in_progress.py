@@ -7,6 +7,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 from extensions import db
 from datetime import datetime
+from utils.cache_helpers import invalidate_analytics_cache
 
 in_progress_bp = Blueprint("in_progress", __name__)
 
@@ -264,4 +265,8 @@ def complete_work_order(work_order_no):
         work_order.QueuePosition = None
 
     db.session.commit()
+
+    # Invalidate analytics cache since work order was completed
+    invalidate_analytics_cache()
+
     return jsonify({"success": True})
