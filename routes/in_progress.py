@@ -22,15 +22,22 @@ def in_progress_home():
 @login_required
 def list_in_progress():
     page = request.args.get("page", 1, type=int)
-    per_page = 10
+    per_page = request.args.get("per_page", 10, type=int)
+    sort_by = request.args.get("sort_by", "recent")
 
     query = WorkOrder.query.options(
         joinedload(WorkOrder.customer).joinedload(Customer.source_info)
     ).filter(WorkOrder.ProcessingStatus == True)
 
-    pagination = query.order_by(WorkOrder.updated_at.desc()).paginate(
-        page=page, per_page=per_page
-    )
+    # Apply sorting
+    if sort_by == "source":
+        query = query.join(Customer, WorkOrder.CustID == Customer.CustID, isouter=True)
+        query = query.join(Source, Customer.Source == Source.Source, isouter=True)
+        query = query.order_by(Source.SSource.asc(), WorkOrder.updated_at.desc())
+    else:  # Default to 'recent'
+        query = query.order_by(WorkOrder.updated_at.desc())
+
+    pagination = query.paginate(page=page, per_page=per_page)
     work_orders = pagination.items
 
     return render_template(
@@ -38,6 +45,8 @@ def list_in_progress():
         work_orders=work_orders,
         pagination=pagination,
         tab="in_progress",
+        sort_by=sort_by,
+        per_page=per_page,
     )
 
 
@@ -46,7 +55,8 @@ def list_in_progress():
 @login_required
 def list_recently_cleaned():
     page = request.args.get("page", 1, type=int)
-    per_page = 10
+    per_page = request.args.get("per_page", 10, type=int)
+    sort_by = request.args.get("sort_by", "recent")
 
     query = WorkOrder.query.options(
         joinedload(WorkOrder.customer).joinedload(Customer.source_info)
@@ -55,9 +65,15 @@ def list_recently_cleaned():
         WorkOrder.DateCompleted.is_(None),
     )
 
-    pagination = query.order_by(WorkOrder.updated_at.desc()).paginate(
-        page=page, per_page=per_page
-    )
+    # Apply sorting
+    if sort_by == "source":
+        query = query.join(Customer, WorkOrder.CustID == Customer.CustID, isouter=True)
+        query = query.join(Source, Customer.Source == Source.Source, isouter=True)
+        query = query.order_by(Source.SSource.asc(), WorkOrder.updated_at.desc())
+    else:  # Default to 'recent'
+        query = query.order_by(WorkOrder.updated_at.desc())
+
+    pagination = query.paginate(page=page, per_page=per_page)
     work_orders = pagination.items
 
     return render_template(
@@ -65,6 +81,8 @@ def list_recently_cleaned():
         work_orders=work_orders,
         pagination=pagination,
         tab="recently_cleaned",
+        sort_by=sort_by,
+        per_page=per_page,
     )
 
 
@@ -73,7 +91,8 @@ def list_recently_cleaned():
 @login_required
 def list_cleaned():
     page = request.args.get("page", 1, type=int)
-    per_page = 10
+    per_page = request.args.get("per_page", 10, type=int)
+    sort_by = request.args.get("sort_by", "recent")
 
     query = WorkOrder.query.options(
         joinedload(WorkOrder.customer).joinedload(Customer.source_info)
@@ -83,9 +102,15 @@ def list_cleaned():
         WorkOrder.Treat.is_(None),
     )
 
-    pagination = query.order_by(WorkOrder.updated_at.desc()).paginate(
-        page=page, per_page=per_page
-    )
+    # Apply sorting
+    if sort_by == "source":
+        query = query.join(Customer, WorkOrder.CustID == Customer.CustID, isouter=True)
+        query = query.join(Source, Customer.Source == Source.Source, isouter=True)
+        query = query.order_by(Source.SSource.asc(), WorkOrder.updated_at.desc())
+    else:  # Default to 'recent'
+        query = query.order_by(WorkOrder.updated_at.desc())
+
+    pagination = query.paginate(page=page, per_page=per_page)
     work_orders = pagination.items
 
     return render_template(
@@ -93,6 +118,8 @@ def list_cleaned():
         work_orders=work_orders,
         pagination=pagination,
         tab="cleaned",
+        sort_by=sort_by,
+        per_page=per_page,
     )
 
 
@@ -101,7 +128,8 @@ def list_cleaned():
 @login_required
 def list_treated():
     page = request.args.get("page", 1, type=int)
-    per_page = 10
+    per_page = request.args.get("per_page", 10, type=int)
+    sort_by = request.args.get("sort_by", "recent")
 
     query = WorkOrder.query.options(
         joinedload(WorkOrder.customer).joinedload(Customer.source_info)
@@ -111,9 +139,15 @@ def list_treated():
         or_(WorkOrder.final_location.is_(None), WorkOrder.final_location == ""),
     )
 
-    pagination = query.order_by(WorkOrder.updated_at.desc()).paginate(
-        page=page, per_page=per_page
-    )
+    # Apply sorting
+    if sort_by == "source":
+        query = query.join(Customer, WorkOrder.CustID == Customer.CustID, isouter=True)
+        query = query.join(Source, Customer.Source == Source.Source, isouter=True)
+        query = query.order_by(Source.SSource.asc(), WorkOrder.updated_at.desc())
+    else:  # Default to 'recent'
+        query = query.order_by(WorkOrder.updated_at.desc())
+
+    pagination = query.paginate(page=page, per_page=per_page)
     work_orders = pagination.items
 
     return render_template(
@@ -121,6 +155,8 @@ def list_treated():
         work_orders=work_orders,
         pagination=pagination,
         tab="treated",
+        sort_by=sort_by,
+        per_page=per_page,
     )
 
 
@@ -129,7 +165,8 @@ def list_treated():
 @login_required
 def list_packaged():
     page = request.args.get("page", 1, type=int)
-    per_page = 10
+    per_page = request.args.get("per_page", 10, type=int)
+    sort_by = request.args.get("sort_by", "recent")
 
     query = WorkOrder.query.options(
         joinedload(WorkOrder.customer).joinedload(Customer.source_info)
@@ -139,9 +176,15 @@ def list_packaged():
         WorkOrder.DateCompleted.is_(None),
     )
 
-    pagination = query.order_by(WorkOrder.updated_at.desc()).paginate(
-        page=page, per_page=per_page
-    )
+    # Apply sorting
+    if sort_by == "source":
+        query = query.join(Customer, WorkOrder.CustID == Customer.CustID, isouter=True)
+        query = query.join(Source, Customer.Source == Source.Source, isouter=True)
+        query = query.order_by(Source.SSource.asc(), WorkOrder.updated_at.desc())
+    else:  # Default to 'recent'
+        query = query.order_by(WorkOrder.updated_at.desc())
+
+    pagination = query.paginate(page=page, per_page=per_page)
     work_orders = pagination.items
 
     return render_template(
@@ -149,6 +192,8 @@ def list_packaged():
         work_orders=work_orders,
         pagination=pagination,
         tab="packaged",
+        sort_by=sort_by,
+        per_page=per_page,
     )
 
 
@@ -157,7 +202,8 @@ def list_packaged():
 @login_required
 def all_recent():
     page = request.args.get("page", 1, type=int)
-    per_page = 10
+    per_page = request.args.get("per_page", 10, type=int)
+    sort_by = request.args.get("sort_by", "recent")
 
     query = WorkOrder.query.options(
         joinedload(WorkOrder.customer).joinedload(Customer.source_info)
@@ -171,9 +217,15 @@ def all_recent():
         WorkOrder.DateCompleted.is_(None),
     )
 
-    pagination = query.order_by(WorkOrder.updated_at.desc()).paginate(
-        page=page, per_page=per_page
-    )
+    # Apply sorting
+    if sort_by == "source":
+        query = query.join(Customer, WorkOrder.CustID == Customer.CustID, isouter=True)
+        query = query.join(Source, Customer.Source == Source.Source, isouter=True)
+        query = query.order_by(Source.SSource.asc(), WorkOrder.updated_at.desc())
+    else:  # Default to 'recent'
+        query = query.order_by(WorkOrder.updated_at.desc())
+
+    pagination = query.paginate(page=page, per_page=per_page)
     work_orders = pagination.items
 
     return render_template(
@@ -181,6 +233,8 @@ def all_recent():
         work_orders=work_orders,
         pagination=pagination,
         tab="all_recent",
+        sort_by=sort_by,
+        per_page=per_page,
     )
 
 
