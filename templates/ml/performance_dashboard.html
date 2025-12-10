@@ -1,5 +1,5 @@
 {% extends "admin/admin_base.html" %}
-{% set active_page = 'ml' %}
+{% set active_page = 'ml_performance' %}
 
 {% block admin_title %}ML Performance Tracking{% endblock %}
 
@@ -19,7 +19,7 @@
         {% if get_flashed_messages() %}
             {{ get_flashed_messages()[0] }}
         {% else %}
-            Weekly predictions are generated automatically every Monday at 1:00 AM.
+            Daily predictions are generated automatically every day at 1:00 AM.
             You can also manually generate a snapshot from the ML Dashboard.
         {% endif %}
     </div>
@@ -126,7 +126,7 @@
         <div class="card-body">
             <h6>How It Works</h6>
             <ol>
-                <li><strong>Weekly Snapshots:</strong> Every Monday at 1:00 AM, the system generates predictions for all open work orders and saves them to S3.</li>
+                <li><strong>Daily Snapshots:</strong> Every day at 1:00 AM, the system generates predictions for all open work orders and saves them to S3.</li>
                 <li><strong>Realized Performance:</strong> Once work orders complete, the system compares predicted vs actual completion times.</li>
                 <li><strong>Error Metrics:</strong>
                     <ul>

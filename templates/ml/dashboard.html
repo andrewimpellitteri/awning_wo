@@ -72,7 +72,7 @@
                 </div>
                 <div class="col-md-6 col-lg-4">
                     <button class="btn btn-secondary w-100" onclick="generateWeeklyPredictions()">
-                        <i class="fas fa-calendar-week me-1"></i> Generate Weekly Snapshot
+                        <i class="fas fa-calendar-day me-1"></i> Generate Daily Snapshot
                     </button>
                 </div>
             </div>
@@ -241,11 +241,11 @@
         }
     }
 
-    // Generate weekly predictions
+    // Generate daily predictions
     async function generateWeeklyPredictions() {
         try {
             showLoading(true);
-            log('Generating weekly prediction snapshot...');
+            log('Generating daily prediction snapshot...');
 
             const response = await fetch('/ml/predict_weekly', {
                 method: 'POST',
@@ -256,15 +256,15 @@
             showLoading(false);
 
             if (response.ok) {
-                log(`Weekly snapshot saved: ${data.records} predictions generated`, 'success');
+                log(`Daily snapshot saved: ${data.records} predictions generated`, 'success');
                 log(`S3 Key: ${data.s3_key}`, 'info');
             } else {
-                log(`Weekly snapshot failed: ${data.error}`, 'error');
+                log(`Daily snapshot failed: ${data.error}`, 'error');
             }
 
         } catch (error) {
             showLoading(false);
-            log(`Weekly snapshot error: ${error.message}`, 'error');
+            log(`Daily snapshot error: ${error.message}`, 'error');
         }
     }
 

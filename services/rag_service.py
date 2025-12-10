@@ -19,13 +19,47 @@ from models.work_order import WorkOrder, WorkOrderItem
 # Configuration
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_EMBED_MODEL = os.environ.get("OLLAMA_EMBED_MODEL", "nomic-embed-text")
-OLLAMA_CHAT_MODEL = os.environ.get("OLLAMA_CHAT_MODEL", "llama3.2")
+# Default to small 1B model for EB deployment, fallback options in order of preference
+OLLAMA_CHAT_MODEL = os.environ.get("OLLAMA_CHAT_MODEL", "qwen2.5:0.5b")
+OLLAMA_CHAT_FALLBACK_MODELS = ["qwen2.5:0.5b", "tinyllama:1.1b", "llama3.2:1b", "llama3.2"]
 EMBEDDING_DIMENSION = 768  # nomic-embed-text dimension
+
+# Cache for Ollama status to avoid repeated health checks
+_ollama_status_cache = {"last_check": 0, "is_available": False}
 
 
 class OllamaError(Exception):
     """Exception raised when Ollama API calls fail."""
     pass
+
+
+def is_ollama_available() -> bool:
+    """
+    Check if Ollama is available with caching (1 minute cache).
+
+    Returns:
+        True if Ollama is responding, False otherwise
+    """
+    import time
+
+    current_time = time.time()
+
+    # Use cached result if less than 60 seconds old
+    if current_time - _ollama_status_cache["last_check"] < 60:
+        return _ollama_status_cache["is_available"]
+
+    # Check Ollama status
+    try:
+        response = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=2)
+        is_available = response.status_code == 200
+    except:
+        is_available = False
+
+    # Update cache
+    _ollama_status_cache["last_check"] = current_time
+    _ollama_status_cache["is_available"] = is_available
+
+    return is_available
 
 
 def get_embedding(text: str) -> List[float]:
@@ -268,31 +302,43 @@ If you don't have enough information to answer, say so clearly."""
     ollama_messages = [{"role": "system", "content": system}]
     ollama_messages.extend(messages)
 
-    try:
-        response = requests.post(
-            f"{OLLAMA_BASE_URL}/api/chat",
-            json={
-                "model": OLLAMA_CHAT_MODEL,
-                "messages": ollama_messages,
-                "stream": False
-            },
-            timeout=120
-        )
-        response.raise_for_status()
-        data = response.json()
+    # Try primary model first, then fallbacks
+    models_to_try = [OLLAMA_CHAT_MODEL] + [m for m in OLLAMA_CHAT_FALLBACK_MODELS if m != OLLAMA_CHAT_MODEL]
+    last_error = None
 
-        response_text = data.get("message", {}).get("content", "")
-        metadata = {
-            "model": OLLAMA_CHAT_MODEL,
-            "context_provided": bool(context),
-            "total_duration": data.get("total_duration"),
-            "eval_count": data.get("eval_count"),
-        }
+    for model in models_to_try:
+        try:
+            response = requests.post(
+                f"{OLLAMA_BASE_URL}/api/chat",
+                json={
+                    "model": model,
+                    "messages": ollama_messages,
+                    "stream": False
+                },
+                timeout=120
+            )
+            response.raise_for_status()
+            data = response.json()
 
-        return response_text, metadata
+            response_text = data.get("message", {}).get("content", "")
+            metadata = {
+                "model": model,
+                "attempted_model": OLLAMA_CHAT_MODEL,
+                "used_fallback": model != OLLAMA_CHAT_MODEL,
+                "context_provided": bool(context),
+                "total_duration": data.get("total_duration"),
+                "eval_count": data.get("eval_count"),
+            }
 
-    except requests.exceptions.RequestException as e:
-        raise OllamaError(f"Failed to get chat completion: {str(e)}")
+            return response_text, metadata
+
+        except requests.exceptions.RequestException as e:
+            last_error = e
+            # Try next model
+            continue
+
+    # All models failed
+    raise OllamaError(f"Failed to get chat completion (tried {len(models_to_try)} models): {str(last_error)}")
 
 
 def chat_with_rag(
