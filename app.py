@@ -150,6 +150,7 @@ def create_app(config_class=Config):
     from routes.checkins import checkins_bp
     from routes.email_reminders import email_reminders_bp
     from routes.drafts import drafts_bp
+    from routes.chatbot import chatbot_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(source_bp, url_prefix="/sources")
@@ -167,6 +168,7 @@ def create_app(config_class=Config):
     app.register_blueprint(checkins_bp, url_prefix="/checkins")
     app.register_blueprint(email_reminders_bp)
     app.register_blueprint(drafts_bp)  # API routes for draft auto-save
+    app.register_blueprint(chatbot_bp)  # RAG chatbot API routes
 
     # Register routes
     @app.route("/")
