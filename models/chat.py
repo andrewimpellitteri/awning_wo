@@ -64,7 +64,7 @@ class ChatMessage(db.Model):
     )
     role = db.Column(db.String(20), nullable=False)  # 'user' or 'assistant'
     content = db.Column(db.Text, nullable=False)
-    metadata = db.Column(JSON, nullable=True)  # Store retrieved sources, context, etc.
+    message_metadata = db.Column(JSON, nullable=True)  # Store retrieved sources, context, etc.
 
     created_at = db.Column(db.DateTime, server_default=func.now(), nullable=False)
 
@@ -78,7 +78,7 @@ class ChatMessage(db.Model):
             "session_id": self.session_id,
             "role": self.role,
             "content": self.content,
-            "metadata": self.metadata,
+            "metadata": self.message_metadata,  # Keep 'metadata' key in JSON for API compatibility
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 

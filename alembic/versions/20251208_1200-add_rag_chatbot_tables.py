@@ -47,7 +47,7 @@ def upgrade() -> None:
         sa.Column('session_id', sa.Integer(), sa.ForeignKey('chat_sessions.id', ondelete='CASCADE'), nullable=False),
         sa.Column('role', sa.String(length=20), nullable=False),  # 'user' or 'assistant'
         sa.Column('content', sa.Text(), nullable=False),
-        sa.Column('metadata', postgresql.JSON(astext_type=sa.Text()), nullable=True),  # Retrieved sources, etc.
+        sa.Column('message_metadata', postgresql.JSON(astext_type=sa.Text()), nullable=True),  # Retrieved sources, etc.
         sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
         sa.PrimaryKeyConstraint('id'),
     )

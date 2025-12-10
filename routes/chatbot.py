@@ -182,7 +182,7 @@ def send_message(session_id):
             session_id=session_id,
             role="assistant",
             content=response_text,
-            metadata=metadata
+            message_metadata=metadata
         )
         db.session.add(assistant_message)
 

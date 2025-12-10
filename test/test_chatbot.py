@@ -201,13 +201,13 @@ class TestChatModels:
                 session_id=session.id,
                 role="assistant",
                 content="Here is the information...",
-                metadata=metadata
+                message_metadata=metadata
             )
             db.session.add(message)
             db.session.commit()
 
-            assert message.metadata == metadata
-            assert message.metadata["model"] == "llama3.2"
+            assert message.message_metadata == metadata
+            assert message.message_metadata["model"] == "llama3.2"
 
     def test_session_message_relationship(self, app, test_user):
         """Test the relationship between sessions and messages."""
