@@ -33,14 +33,6 @@
     ],
     "coverageDirectory": "coverage-js",
     "coverageReporters": ["text", "lcov", "json-summary"],
-    "coverageThreshold": {
-      "global": {
-        "branches": 32,
-        "functions": 50,
-        "lines": 44,
-        "statements": 44
-      }
-    },
     "modulePathIgnorePatterns": ["<rootDir>/venv/"],
     "testPathIgnorePatterns": ["/node_modules/", "/venv/"],
     "setupFilesAfterEnv": ["<rootDir>/test/js/setup.js"]

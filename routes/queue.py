@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, jsonify, url_for
-from flask_login import login_required
+from flask_login import login_required, current_user
 from models.work_order import WorkOrder
 from models.repair_order import RepairWorkOrder
 from models.customer import Customer
