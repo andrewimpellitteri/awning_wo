@@ -181,3 +181,4 @@ profiles/
 
 results_*/
 rev_model/
+*.tgz
