@@ -18,9 +18,9 @@ else
     TEMP_DIR=$(mktemp -d)
     cd $TEMP_DIR
 
-    # Download Ollama binary from S3 (replace with your bucket name and path)
-    S3_BUCKET="awning-cleaning-data"  # REPLACE WITH YOUR ACTUAL BUCKET NAME
-    S3_KEY="ollama/ollama-linux-amd64.tgz"  # REPLACE WITH YOUR ACTUAL PATH
+    # Download Ollama binary from S3
+    S3_BUCKET="awning-cleaning-data"
+    S3_KEY="ollama/ollama-linux-amd64.tgz"
     
     echo "Downloading Ollama binary from s3://$S3_BUCKET/$S3_KEY"
     aws s3 cp "s3://$S3_BUCKET/$S3_KEY" "ollama-linux-amd64.tgz" --region us-east-1
@@ -57,27 +57,24 @@ fi
 # Start Ollama service in background if not already running
 if ! pgrep -x "ollama" > /dev/null; then
     echo "Starting Ollama service..."
-    sudo systemctl start ollama 2>/dev/null || {
-        echo "Systemd service not available, starting manually..."
-        nohup ollama serve > /var/log/ollama.log 2>&1 &
-        OLLAMA_PID=$!
-        echo "Ollama started with PID: $OLLAMA_PID"
-    }
-    
+    nohup ollama serve > /var/log/ollama.log 2>&1 &
+    OLLAMA_PID=$!
+    echo "Ollama started with PID: $OLLAMA_PID"
+
     # Wait for Ollama to be ready
     echo "Waiting for Ollama to be ready..."
-    for i in {1..60}; do  # Increased timeout to 60 seconds
+    for i in {1..30}; do
+        sleep 1
         if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
             echo "Ollama is ready!"
             break
         fi
-        if [ $i -eq 60 ]; then
-            echo "ERROR: Ollama failed to start within 60 seconds"
+        if [ $i -eq 30 ]; then
+            echo "ERROR: Ollama failed to start within 30 seconds"
             echo "Last 20 lines of ollama log:"
             tail -20 /var/log/ollama.log 2>/dev/null || echo "No log file found"
             exit 1
         fi
-        sleep 1
     done
 else
     echo "Ollama is already running"
@@ -94,27 +91,16 @@ MODEL_EXISTS=$(ollama list 2>/dev/null | grep -c "${CHAT_MODEL%:*}" || echo "0")
 
 if [ "$MODEL_EXISTS" -eq "0" ]; then
     echo "Pulling chat model: $CHAT_MODEL (this may take a few minutes)..."
-    
-    # Add retry logic for model pulling
-    MAX_RETRIES=3
-    RETRY_DELAY=10
-    
-    for attempt in $(seq 1 $MAX_RETRIES); do
-        if ollama pull "$CHAT_MODEL"; then
-            echo "Chat model $CHAT_MODEL pulled successfully on attempt $attempt"
-            break
-        else
-            if [ $attempt -eq $MAX_RETRIES ]; then
-                echo "WARNING: Failed to pull chat model $CHAT_MODEL after $MAX_RETRIES attempts"
-                # Try fallback to tinyllama
-                echo "Attempting fallback to tinyllama:1.1b..."
-                ollama pull tinyllama:1.1b
-            else
-                echo "Attempt $attempt failed, retrying in $RETRY_DELAY seconds..."
-                sleep $RETRY_DELAY
-            fi
-        fi
-    done
+    ollama pull "$CHAT_MODEL"
+
+    if [ $? -eq 0 ]; then
+        echo "Chat model $CHAT_MODEL pulled successfully"
+    else
+        echo "WARNING: Failed to pull chat model $CHAT_MODEL"
+        # Try fallback to tinyllama
+        echo "Attempting fallback to tinyllama:1.1b..."
+        ollama pull tinyllama:1.1b
+    fi
 else
     echo "Chat model $CHAT_MODEL is already available"
 fi
@@ -126,31 +112,20 @@ EMBED_EXISTS=$(ollama list 2>/dev/null | grep -c "${EMBED_MODEL%:*}" || echo "0"
 
 if [ "$EMBED_EXISTS" -eq "0" ]; then
     echo "Pulling embedding model: $EMBED_MODEL..."
-    
-    # Add retry logic for model pulling
-    MAX_RETRIES=3
-    RETRY_DELAY=10
-    
-    for attempt in $(seq 1 $MAX_RETRIES); do
-        if ollama pull "$EMBED_MODEL"; then
-            echo "Embedding model $EMBED_MODEL pulled successfully on attempt $attempt"
-            break
-        else
-            if [ $attempt -eq $MAX_RETRIES ]; then
-                echo "WARNING: Failed to pull embedding model $EMBED_MODEL after $MAX_RETRIES attempts"
-            else
-                echo "Attempt $attempt failed, retrying in $RETRY_DELAY seconds..."
-                sleep $RETRY_DELAY
-            fi
-        fi
-    done
+    ollama pull "$EMBED_MODEL"
+
+    if [ $? -eq 0 ]; then
+        echo "Embedding model $EMBED_MODEL pulled successfully"
+    else
+        echo "WARNING: Failed to pull embedding model $EMBED_MODEL"
+    fi
 else
     echo "Embedding model $EMBED_MODEL is already available"
 fi
 
 # List all available models
 echo "Available Ollama models:"
-ollama list 2>/dev/null || echo "No models available or ollama not responding"
+ollama list
 
 echo "Ollama setup complete!"
 echo "Chat model: $CHAT_MODEL"
