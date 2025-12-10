@@ -422,16 +422,22 @@ def cleaning_queue():
 def reorder_cleaning_queue():
     """Allow manual reordering of work orders in cleaning queue with concurrency control"""
     from sqlalchemy.exc import OperationalError, DBAPIError
+    from flask_login import current_user
 
     try:
+        # Log request details for debugging
+        logger.info(f"Reorder request from user: {current_user.username} (role: {current_user.role})")
+
         data = request.get_json()
         if not data:
-            return jsonify({"success": False, "message": "No JSON data received"})
+            logger.error("No JSON data received in reorder request")
+            return jsonify({"success": False, "message": "No JSON data received"}), 400
 
         work_order_ids = data.get("work_order_ids", [])
 
         if not work_order_ids:
-            return jsonify({"success": False, "message": "No work orders provided"})
+            logger.error("No work order IDs provided in reorder request")
+            return jsonify({"success": False, "message": "No work orders provided"}), 400
 
         logger.info(f"Reorder request received: {len(work_order_ids)} work orders")
         logger.debug(f"Work order IDs: {work_order_ids}")
