@@ -7,10 +7,11 @@ from models.source import Source
 from sqlalchemy.orm import joinedload
 from .work_orders import format_date_from_str
 from sqlalchemy import or_, func, and_
-from extensions import db
+from extensions import db, limiter
 from decorators import role_required
 from flask import current_app
 import logging
+import traceback
 
 logger = logging.getLogger(__name__)
 queue_bp = Blueprint("cleaning_queue", __name__)
@@ -419,6 +420,7 @@ def cleaning_queue():
 @queue_bp.route("/api/cleaning-queue/reorder", methods=["POST"])
 @login_required
 @role_required("admin", "manager")
+@limiter.exempt
 def reorder_cleaning_queue():
     """Allow manual reordering of work orders in cleaning queue with concurrency control"""
     from sqlalchemy.exc import OperationalError, DBAPIError
@@ -503,6 +505,7 @@ def reorder_cleaning_queue():
         # Handle database locking/concurrency errors
         db.session.rollback()
         error_str = str(e)
+        logger.error(f"Database error during reorder:\n{traceback.format_exc()}")
 
         # Check if this is a lock timeout or deadlock
         if "lock" in error_str.lower() or "deadlock" in error_str.lower() or "timeout" in error_str.lower():
@@ -515,20 +518,18 @@ def reorder_cleaning_queue():
             }), 409  # 409 Conflict
         else:
             # Other database errors
-            logger.error(f"Database error during reorder: {error_str}")
             return jsonify({
                 "success": False,
-                "message": "A database error occurred. Please try again.",
+                "message": f"Database error: {error_str}",
                 "retry": True
             }), 500
 
     except Exception as e:
         db.session.rollback()
-        error_msg = f"Error updating queue: {str(e)}"
-        logger.error(f"Reorder error: {error_msg}")
+        logger.error(f"Unexpected error during queue reorder:\n{traceback.format_exc()}")
         return jsonify({
             "success": False,
-            "message": "An unexpected error occurred. Please try again.",
+            "message": f"Error: {str(e)}",
             "retry": True
         }), 500
 
