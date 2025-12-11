@@ -2,69 +2,119 @@
 RAG (Retrieval-Augmented Generation) Service for the Awning Management chatbot.
 
 This service provides:
-- Embedding generation using Ollama
+- Embedding generation using local sentence-transformers (no API needed)
 - Semantic search over customers, work orders, and items
-- Chat completion with context-aware responses
+- Chat completion with context-aware responses using DeepSeek V3
+- Function calling / tool use for read-only database queries
 """
 import os
 import json
-import requests
-from typing import List, Dict, Optional, Tuple
+import time
+from typing import List, Dict, Optional, Tuple, Callable
 import numpy as np
+from openai import OpenAI
 from extensions import db
 from models.embeddings import CustomerEmbedding, WorkOrderEmbedding, ItemEmbedding
 from models.customer import Customer
 from models.work_order import WorkOrder, WorkOrderItem
 
 # Configuration
-OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_EMBED_MODEL = os.environ.get("OLLAMA_EMBED_MODEL", "nomic-embed-text")
-# Default to small 1B model for EB deployment, fallback options in order of preference
-OLLAMA_CHAT_MODEL = os.environ.get("OLLAMA_CHAT_MODEL", "qwen2.5:0.5b")
-OLLAMA_CHAT_FALLBACK_MODELS = ["qwen2.5:0.5b", "tinyllama:1.1b", "llama3.2:1b", "llama3.2"]
-EMBEDDING_DIMENSION = 768  # nomic-embed-text dimension
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
+DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+DEEPSEEK_CHAT_MODEL = os.environ.get("DEEPSEEK_CHAT_MODEL", "deepseek-chat")
 
-# Cache for Ollama status to avoid repeated health checks
-_ollama_status_cache = {"last_check": 0, "is_available": False}
+# Local embedding model configuration (sentence-transformers)
+# all-MiniLM-L6-v2: Fast, 384 dimensions, ~80MB
+# all-mpnet-base-v2: Better quality, 768 dimensions, ~420MB
+LOCAL_EMBED_MODEL = os.environ.get("LOCAL_EMBED_MODEL", "all-MiniLM-L6-v2")
+EMBEDDING_DIMENSION = 384  # all-MiniLM-L6-v2 dimension
+
+# Initialize clients
+_deepseek_client = None
+_embedding_model = None
 
 
-class OllamaError(Exception):
-    """Exception raised when Ollama API calls fail."""
+def get_deepseek_client() -> OpenAI:
+    """Get or create the DeepSeek client."""
+    global _deepseek_client
+    if _deepseek_client is None:
+        if not DEEPSEEK_API_KEY:
+            raise DeepSeekError("DEEPSEEK_API_KEY environment variable is not set")
+        _deepseek_client = OpenAI(
+            api_key=DEEPSEEK_API_KEY,
+            base_url=DEEPSEEK_BASE_URL,
+        )
+    return _deepseek_client
+
+
+def get_embedding_model():
+    """Get or create the local embedding model (lazy loading)."""
+    global _embedding_model
+    if _embedding_model is None:
+        from sentence_transformers import SentenceTransformer
+        _embedding_model = SentenceTransformer(LOCAL_EMBED_MODEL)
+    return _embedding_model
+
+
+# Cache for API status to avoid repeated health checks
+_api_status_cache = {"last_check": 0, "is_available": False}
+
+
+class DeepSeekError(Exception):
+    """Exception raised when DeepSeek API calls fail."""
     pass
+
+
+# Keep OllamaError as alias for backwards compatibility
+OllamaError = DeepSeekError
 
 
 def is_ollama_available() -> bool:
     """
-    Check if Ollama is available with caching (1 minute cache).
+    Check if DeepSeek API is available with caching (1 minute cache).
+    Named for backwards compatibility with existing code.
 
     Returns:
-        True if Ollama is responding, False otherwise
+        True if DeepSeek API is responding, False otherwise
     """
-    import time
+    return is_deepseek_available()
 
+
+def is_deepseek_available() -> bool:
+    """
+    Check if DeepSeek API is available with caching (1 minute cache).
+
+    Returns:
+        True if DeepSeek API is responding, False otherwise
+    """
     current_time = time.time()
 
     # Use cached result if less than 60 seconds old
-    if current_time - _ollama_status_cache["last_check"] < 60:
-        return _ollama_status_cache["is_available"]
+    if current_time - _api_status_cache["last_check"] < 60:
+        return _api_status_cache["is_available"]
 
-    # Check Ollama status
+    # Check DeepSeek API status by making a simple models list call
     try:
-        response = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=2)
-        is_available = response.status_code == 200
-    except:
+        if not DEEPSEEK_API_KEY:
+            is_available = False
+        else:
+            client = get_deepseek_client()
+            # Try to list models as a health check
+            client.models.list()
+            is_available = True
+    except Exception:
         is_available = False
 
     # Update cache
-    _ollama_status_cache["last_check"] = current_time
-    _ollama_status_cache["is_available"] = is_available
+    _api_status_cache["last_check"] = current_time
+    _api_status_cache["is_available"] = is_available
 
     return is_available
 
 
 def get_embedding(text: str) -> List[float]:
     """
-    Generate embedding for text using Ollama.
+    Generate embedding for text using local sentence-transformers model.
 
     Args:
         text: The text to embed
@@ -73,27 +123,19 @@ def get_embedding(text: str) -> List[float]:
         List of floats representing the embedding vector
 
     Raises:
-        OllamaError: If the API call fails
+        DeepSeekError: If embedding generation fails
     """
     try:
-        response = requests.post(
-            f"{OLLAMA_BASE_URL}/api/embeddings",
-            json={
-                "model": OLLAMA_EMBED_MODEL,
-                "prompt": text
-            },
-            timeout=30
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data.get("embedding", [])
-    except requests.exceptions.RequestException as e:
-        raise OllamaError(f"Failed to generate embedding: {str(e)}")
+        model = get_embedding_model()
+        embedding = model.encode(text, convert_to_numpy=True)
+        return embedding.tolist()
+    except Exception as e:
+        raise DeepSeekError(f"Failed to generate embedding: {str(e)}")
 
 
 def get_embeddings_batch(texts: List[str]) -> List[List[float]]:
     """
-    Generate embeddings for multiple texts.
+    Generate embeddings for multiple texts (batch processing).
 
     Args:
         texts: List of texts to embed
@@ -101,15 +143,21 @@ def get_embeddings_batch(texts: List[str]) -> List[List[float]]:
     Returns:
         List of embedding vectors
     """
-    embeddings = []
-    for text in texts:
-        try:
-            embedding = get_embedding(text)
-            embeddings.append(embedding)
-        except OllamaError:
-            # Return empty embedding on error
-            embeddings.append([])
-    return embeddings
+    try:
+        model = get_embedding_model()
+        # sentence-transformers can batch encode efficiently
+        embeddings = model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
+        return [emb.tolist() for emb in embeddings]
+    except Exception as e:
+        # Fallback to individual encoding on error
+        embeddings = []
+        for text in texts:
+            try:
+                embedding = get_embedding(text)
+                embeddings.append(embedding)
+            except DeepSeekError:
+                embeddings.append([])
+        return embeddings
 
 
 def cosine_similarity(a: List[float], b: List[float]) -> float:
@@ -274,7 +322,7 @@ def chat_completion(
     system_prompt: str = None
 ) -> Tuple[str, Dict]:
     """
-    Generate a chat completion using Ollama with optional RAG context.
+    Generate a chat completion using DeepSeek V3 with optional RAG context.
 
     Args:
         messages: List of message dicts with 'role' and 'content'
@@ -285,7 +333,7 @@ def chat_completion(
         Tuple of (response_text, metadata)
 
     Raises:
-        OllamaError: If the API call fails
+        DeepSeekError: If the API call fails
     """
     default_system = """You are a helpful assistant for the Awning Management System.
 You help users with questions about customers, work orders, items, and general operations.
@@ -298,47 +346,32 @@ If you don't have enough information to answer, say so clearly."""
     if context:
         system += f"\n\nHere is relevant information from the database:\n{context}"
 
-    # Build messages for Ollama
-    ollama_messages = [{"role": "system", "content": system}]
-    ollama_messages.extend(messages)
+    # Build messages for DeepSeek (OpenAI-compatible format)
+    api_messages = [{"role": "system", "content": system}]
+    api_messages.extend(messages)
 
-    # Try primary model first, then fallbacks
-    models_to_try = [OLLAMA_CHAT_MODEL] + [m for m in OLLAMA_CHAT_FALLBACK_MODELS if m != OLLAMA_CHAT_MODEL]
-    last_error = None
+    try:
+        client = get_deepseek_client()
+        response = client.chat.completions.create(
+            model=DEEPSEEK_CHAT_MODEL,
+            messages=api_messages,
+            temperature=0.7,
+            max_tokens=2048,
+        )
 
-    for model in models_to_try:
-        try:
-            response = requests.post(
-                f"{OLLAMA_BASE_URL}/api/chat",
-                json={
-                    "model": model,
-                    "messages": ollama_messages,
-                    "stream": False
-                },
-                timeout=120
-            )
-            response.raise_for_status()
-            data = response.json()
+        response_text = response.choices[0].message.content or ""
+        metadata = {
+            "model": DEEPSEEK_CHAT_MODEL,
+            "context_provided": bool(context),
+            "prompt_tokens": response.usage.prompt_tokens if response.usage else None,
+            "completion_tokens": response.usage.completion_tokens if response.usage else None,
+            "total_tokens": response.usage.total_tokens if response.usage else None,
+        }
 
-            response_text = data.get("message", {}).get("content", "")
-            metadata = {
-                "model": model,
-                "attempted_model": OLLAMA_CHAT_MODEL,
-                "used_fallback": model != OLLAMA_CHAT_MODEL,
-                "context_provided": bool(context),
-                "total_duration": data.get("total_duration"),
-                "eval_count": data.get("eval_count"),
-            }
+        return response_text, metadata
 
-            return response_text, metadata
-
-        except requests.exceptions.RequestException as e:
-            last_error = e
-            # Try next model
-            continue
-
-    # All models failed
-    raise OllamaError(f"Failed to get chat completion (tried {len(models_to_try)} models): {str(last_error)}")
+    except Exception as e:
+        raise DeepSeekError(f"Failed to get chat completion: {str(e)}")
 
 
 def chat_with_rag(
@@ -635,35 +668,593 @@ def sync_all_embeddings(batch_size: int = 100) -> Dict[str, int]:
 
 def check_ollama_status() -> Dict:
     """
-    Check if Ollama is running and the required models are available.
+    Check if DeepSeek API is available and configured.
+    Named for backwards compatibility with existing code.
+
+    Returns:
+        Dictionary with status information
+    """
+    return check_deepseek_status()
+
+
+def check_deepseek_status() -> Dict:
+    """
+    Check if DeepSeek API and local embedding model are available.
 
     Returns:
         Dictionary with status information
     """
     status = {
+        "api_available": False,
+        "api_configured": bool(DEEPSEEK_API_KEY),
+        "embed_model": LOCAL_EMBED_MODEL,
+        "embed_model_local": True,
+        "chat_model": DEEPSEEK_CHAT_MODEL,
+        "base_url": DEEPSEEK_BASE_URL,
+        # Keep old keys for backwards compatibility
         "ollama_running": False,
         "embed_model_available": False,
         "chat_model_available": False,
-        "base_url": OLLAMA_BASE_URL,
-        "embed_model": OLLAMA_EMBED_MODEL,
-        "chat_model": OLLAMA_CHAT_MODEL,
     }
 
+    # Check local embedding model
     try:
-        # Check if Ollama is running
-        response = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=5)
-        response.raise_for_status()
-        status["ollama_running"] = True
+        model = get_embedding_model()
+        status["embed_model_available"] = True
+        status["embed_dimension"] = EMBEDDING_DIMENSION
+    except Exception as e:
+        status["embed_error"] = str(e)
 
-        # Check available models
-        models = response.json().get("models", [])
-        model_names = [m.get("name", "").split(":")[0] for m in models]
+    if not DEEPSEEK_API_KEY:
+        status["error"] = "DEEPSEEK_API_KEY environment variable is not set"
+        return status
 
-        status["embed_model_available"] = OLLAMA_EMBED_MODEL.split(":")[0] in model_names
-        status["chat_model_available"] = OLLAMA_CHAT_MODEL.split(":")[0] in model_names
-        status["available_models"] = model_names
+    try:
+        client = get_deepseek_client()
+        # Try to list models as a health check
+        models_response = client.models.list()
+        status["api_available"] = True
+        status["ollama_running"] = True  # Backwards compatibility
 
-    except requests.exceptions.RequestException as e:
+        # Get available models
+        available_models = [m.id for m in models_response.data] if models_response.data else []
+        status["available_models"] = available_models
+
+        # Check if our chat model is available
+        status["chat_model_available"] = DEEPSEEK_CHAT_MODEL in available_models or "deepseek" in DEEPSEEK_CHAT_MODEL
+
+    except Exception as e:
         status["error"] = str(e)
 
     return status
+
+
+# ============================================================================
+# Tool Definitions for Function Calling
+# ============================================================================
+
+AVAILABLE_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "search_customers",
+            "description": "Search for customers by name, ID, contact person, or any text. Returns matching customers with their details.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query - can be customer name, ID, contact name, email, or any keyword"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return (default 5)",
+                        "default": 5
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_customer_details",
+            "description": "Get full details for a specific customer by their ID, including contact info and work order history.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The customer ID (e.g., 'CUST001' or 'ABC123')"
+                    }
+                },
+                "required": ["customer_id"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_work_orders",
+            "description": "Search for work orders by number, customer, status, or any text. Returns matching work orders.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query - can be work order number, customer ID, status, or keyword"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Filter by return status (optional)",
+                        "enum": ["In", "Out", "Pending", "Complete"]
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results (default 10)",
+                        "default": 10
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_work_order_details",
+            "description": "Get full details for a specific work order including all items, customer info, and special instructions.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "work_order_no": {
+                        "type": "string",
+                        "description": "The work order number (e.g., 'WO001' or '12345')"
+                    }
+                },
+                "required": ["work_order_no"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_customer_work_orders",
+            "description": "Get all work orders for a specific customer.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The customer ID"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of work orders to return (default 20)",
+                        "default": 20
+                    }
+                },
+                "required": ["customer_id"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_items",
+            "description": "Search for items by description, material, color, or condition.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query - can be item description, material, color, etc."
+                    },
+                    "material": {
+                        "type": "string",
+                        "description": "Filter by material type (optional)"
+                    },
+                    "color": {
+                        "type": "string",
+                        "description": "Filter by color (optional)"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results (default 10)",
+                        "default": 10
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_work_order_stats",
+            "description": "Get statistics about work orders - counts by status, recent activity, etc.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "type": "string",
+                        "description": "Optional: filter stats by customer ID"
+                    }
+                },
+                "required": []
+            }
+        }
+    }
+]
+
+
+# ============================================================================
+# Tool Implementation Functions
+# ============================================================================
+
+def tool_search_customers(query: str, limit: int = 5) -> Dict:
+    """Search customers by query text."""
+    query_lower = query.lower()
+
+    # Search in database
+    customers = Customer.query.filter(
+        db.or_(
+            Customer.CustID.ilike(f"%{query}%"),
+            Customer.Name.ilike(f"%{query}%"),
+            Customer.Contact.ilike(f"%{query}%"),
+            Customer.Email.ilike(f"%{query}%"),
+        )
+    ).limit(limit).all()
+
+    results = []
+    for c in customers:
+        results.append({
+            "customer_id": c.CustID,
+            "name": c.Name,
+            "contact": c.Contact,
+            "phone": c.get_primary_phone(),
+            "email": c.clean_email(),
+            "address": c.get_full_address(),
+        })
+
+    return {
+        "query": query,
+        "count": len(results),
+        "customers": results
+    }
+
+
+def tool_get_customer_details(customer_id: str) -> Dict:
+    """Get full details for a customer."""
+    customer = Customer.query.get(customer_id)
+
+    if not customer:
+        return {"error": f"Customer '{customer_id}' not found"}
+
+    # Get work order count
+    work_orders = WorkOrder.query.filter_by(CustID=customer_id).all()
+
+    return {
+        "customer_id": customer.CustID,
+        "name": customer.Name,
+        "contact": customer.Contact,
+        "phone": customer.get_primary_phone(),
+        "email": customer.clean_email(),
+        "address": customer.get_full_address(),
+        "source": customer.Source,
+        "work_order_count": len(work_orders),
+        "recent_work_orders": [
+            {"work_order_no": wo.WorkOrderNo, "name": wo.WOName, "status": wo.ReturnStatus}
+            for wo in work_orders[:5]
+        ]
+    }
+
+
+def tool_search_work_orders(query: str, status: str = None, limit: int = 10) -> Dict:
+    """Search work orders by query text."""
+    filters = [
+        db.or_(
+            WorkOrder.WorkOrderNo.ilike(f"%{query}%"),
+            WorkOrder.WOName.ilike(f"%{query}%"),
+            WorkOrder.CustID.ilike(f"%{query}%"),
+            WorkOrder.SpecialInstructions.ilike(f"%{query}%"),
+        )
+    ]
+
+    if status:
+        filters.append(WorkOrder.ReturnStatus == status)
+
+    work_orders = WorkOrder.query.filter(*filters).limit(limit).all()
+
+    results = []
+    for wo in work_orders:
+        results.append({
+            "work_order_no": wo.WorkOrderNo,
+            "name": wo.WOName,
+            "customer_id": wo.CustID,
+            "status": wo.ReturnStatus,
+            "rack_location": wo.RackNo,
+            "special_instructions": wo.SpecialInstructions[:100] if wo.SpecialInstructions else None,
+        })
+
+    return {
+        "query": query,
+        "status_filter": status,
+        "count": len(results),
+        "work_orders": results
+    }
+
+
+def tool_get_work_order_details(work_order_no: str) -> Dict:
+    """Get full details for a work order."""
+    wo = WorkOrder.query.get(work_order_no)
+
+    if not wo:
+        return {"error": f"Work order '{work_order_no}' not found"}
+
+    # Get items
+    items = WorkOrderItem.query.filter_by(WorkOrderNo=work_order_no).all()
+
+    # Get customer
+    customer = Customer.query.get(wo.CustID) if wo.CustID else None
+
+    return {
+        "work_order_no": wo.WorkOrderNo,
+        "name": wo.WOName,
+        "customer": {
+            "id": wo.CustID,
+            "name": customer.Name if customer else None,
+        },
+        "status": wo.ReturnStatus,
+        "rack_location": wo.RackNo,
+        "storage_time": wo.StorageTime,
+        "special_instructions": wo.SpecialInstructions,
+        "ship_to": wo.ShipTo,
+        "item_count": len(items),
+        "items": [
+            {
+                "id": item.id,
+                "description": item.Description,
+                "material": item.Material,
+                "color": item.Color,
+                "condition": item.Condition,
+                "quantity": item.Qty,
+            }
+            for item in items
+        ]
+    }
+
+
+def tool_get_customer_work_orders(customer_id: str, limit: int = 20) -> Dict:
+    """Get all work orders for a customer."""
+    customer = Customer.query.get(customer_id)
+
+    if not customer:
+        return {"error": f"Customer '{customer_id}' not found"}
+
+    work_orders = WorkOrder.query.filter_by(CustID=customer_id).limit(limit).all()
+
+    return {
+        "customer_id": customer_id,
+        "customer_name": customer.Name,
+        "count": len(work_orders),
+        "work_orders": [
+            {
+                "work_order_no": wo.WorkOrderNo,
+                "name": wo.WOName,
+                "status": wo.ReturnStatus,
+                "rack_location": wo.RackNo,
+            }
+            for wo in work_orders
+        ]
+    }
+
+
+def tool_search_items(query: str, material: str = None, color: str = None, limit: int = 10) -> Dict:
+    """Search items by query text."""
+    filters = [
+        db.or_(
+            WorkOrderItem.Description.ilike(f"%{query}%"),
+            WorkOrderItem.Material.ilike(f"%{query}%"),
+            WorkOrderItem.Color.ilike(f"%{query}%"),
+        )
+    ]
+
+    if material:
+        filters.append(WorkOrderItem.Material.ilike(f"%{material}%"))
+    if color:
+        filters.append(WorkOrderItem.Color.ilike(f"%{color}%"))
+
+    items = WorkOrderItem.query.filter(*filters).limit(limit).all()
+
+    results = []
+    for item in items:
+        results.append({
+            "id": item.id,
+            "work_order_no": item.WorkOrderNo,
+            "description": item.Description,
+            "material": item.Material,
+            "color": item.Color,
+            "condition": item.Condition,
+            "quantity": item.Qty,
+        })
+
+    return {
+        "query": query,
+        "material_filter": material,
+        "color_filter": color,
+        "count": len(results),
+        "items": results
+    }
+
+
+def tool_get_work_order_stats(customer_id: str = None) -> Dict:
+    """Get work order statistics."""
+    query = WorkOrder.query
+
+    if customer_id:
+        query = query.filter_by(CustID=customer_id)
+
+    work_orders = query.all()
+
+    # Count by status
+    status_counts = {}
+    for wo in work_orders:
+        status = wo.ReturnStatus or "Unknown"
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    # Count items
+    total_items = 0
+    if customer_id:
+        for wo in work_orders:
+            total_items += WorkOrderItem.query.filter_by(WorkOrderNo=wo.WorkOrderNo).count()
+    else:
+        total_items = WorkOrderItem.query.count()
+
+    return {
+        "customer_id": customer_id,
+        "total_work_orders": len(work_orders),
+        "total_items": total_items,
+        "by_status": status_counts,
+    }
+
+
+# Map tool names to functions
+TOOL_FUNCTIONS: Dict[str, Callable] = {
+    "search_customers": tool_search_customers,
+    "get_customer_details": tool_get_customer_details,
+    "search_work_orders": tool_search_work_orders,
+    "get_work_order_details": tool_get_work_order_details,
+    "get_customer_work_orders": tool_get_customer_work_orders,
+    "search_items": tool_search_items,
+    "get_work_order_stats": tool_get_work_order_stats,
+}
+
+
+def execute_tool(tool_name: str, arguments: Dict) -> str:
+    """Execute a tool and return the result as JSON string."""
+    if tool_name not in TOOL_FUNCTIONS:
+        return json.dumps({"error": f"Unknown tool: {tool_name}"})
+
+    try:
+        result = TOOL_FUNCTIONS[tool_name](**arguments)
+        return json.dumps(result, default=str)
+    except Exception as e:
+        return json.dumps({"error": f"Tool execution failed: {str(e)}"})
+
+
+# ============================================================================
+# Chat with Tools (Function Calling)
+# ============================================================================
+
+def chat_with_tools(
+    user_message: str,
+    conversation_history: List[Dict[str, str]] = None,
+    max_tool_calls: int = 5
+) -> Tuple[str, Dict]:
+    """
+    Chat with the LLM using function calling for database queries.
+
+    Args:
+        user_message: The user's message
+        conversation_history: Previous messages in the conversation
+        max_tool_calls: Maximum number of tool calls to allow
+
+    Returns:
+        Tuple of (response_text, metadata)
+    """
+    system_prompt = """You are a helpful assistant for the Awning Management System.
+You help users with questions about customers, work orders, items, and general operations.
+
+You have access to tools that can search and retrieve data from the database.
+Use these tools to answer user questions accurately. When you need specific data,
+call the appropriate tool rather than guessing.
+
+Be concise and helpful. When referencing records, include their IDs.
+If a search returns no results, let the user know and suggest alternatives."""
+
+    messages = [{"role": "system", "content": system_prompt}]
+    if conversation_history:
+        messages.extend(conversation_history)
+    messages.append({"role": "user", "content": user_message})
+
+    client = get_deepseek_client()
+    tool_calls_made = []
+
+    for _ in range(max_tool_calls):
+        # Call the API with tools
+        response = client.chat.completions.create(
+            model=DEEPSEEK_CHAT_MODEL,
+            messages=messages,
+            tools=AVAILABLE_TOOLS,
+            tool_choice="auto",
+            temperature=0.7,
+            max_tokens=2048,
+        )
+
+        assistant_message = response.choices[0].message
+
+        # Check if we need to call tools
+        if assistant_message.tool_calls:
+            # Add assistant message to conversation
+            messages.append({
+                "role": "assistant",
+                "content": assistant_message.content,
+                "tool_calls": [
+                    {
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments
+                        }
+                    }
+                    for tc in assistant_message.tool_calls
+                ]
+            })
+
+            # Execute each tool call
+            for tool_call in assistant_message.tool_calls:
+                tool_name = tool_call.function.name
+                try:
+                    arguments = json.loads(tool_call.function.arguments)
+                except json.JSONDecodeError:
+                    arguments = {}
+
+                # Execute the tool
+                result = execute_tool(tool_name, arguments)
+                tool_calls_made.append({
+                    "tool": tool_name,
+                    "arguments": arguments,
+                    "result_preview": result[:200] + "..." if len(result) > 200 else result
+                })
+
+                # Add tool result to messages
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": result
+                })
+        else:
+            # No more tool calls, return the response
+            response_text = assistant_message.content or ""
+            metadata = {
+                "model": DEEPSEEK_CHAT_MODEL,
+                "tool_calls": tool_calls_made,
+                "tool_calls_count": len(tool_calls_made),
+                "prompt_tokens": response.usage.prompt_tokens if response.usage else None,
+                "completion_tokens": response.usage.completion_tokens if response.usage else None,
+                "total_tokens": response.usage.total_tokens if response.usage else None,
+            }
+            return response_text, metadata
+
+    # Max tool calls reached, return last response
+    response_text = assistant_message.content or "I've gathered some information but reached the limit of queries I can make. Please try a more specific question."
+    metadata = {
+        "model": DEEPSEEK_CHAT_MODEL,
+        "tool_calls": tool_calls_made,
+        "tool_calls_count": len(tool_calls_made),
+        "max_calls_reached": True,
+    }
+    return response_text, metadata

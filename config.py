@@ -101,6 +101,15 @@ class Config:
     CACHE_DEFAULT_TIMEOUT = 300  # 5 minutes
     CACHE_KEY_PREFIX = "awning_"
 
+    # DeepSeek API configuration (for RAG chatbot)
+    DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
+    DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+    DEEPSEEK_CHAT_MODEL = os.environ.get("DEEPSEEK_CHAT_MODEL", "deepseek-chat")
+
+    # Local embedding model (sentence-transformers, no API needed)
+    # Options: all-MiniLM-L6-v2 (384d, fast), all-mpnet-base-v2 (768d, better quality)
+    LOCAL_EMBED_MODEL = os.environ.get("LOCAL_EMBED_MODEL", "all-MiniLM-L6-v2")
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

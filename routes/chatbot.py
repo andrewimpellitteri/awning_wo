@@ -3,9 +3,9 @@ Chatbot routes for the RAG-enhanced AI assistant.
 
 Provides API endpoints for:
 - Chat sessions management
-- Message handling
+- Message handling with function calling
 - Embedding sync operations
-- Ollama status checking
+- API status checking
 """
 from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
@@ -14,13 +14,15 @@ from models.chat import ChatSession, ChatMessage
 from models.embeddings import CustomerEmbedding, WorkOrderEmbedding, ItemEmbedding
 from services.rag_service import (
     chat_with_rag,
+    chat_with_tools,
     search_all,
     sync_all_embeddings,
     sync_customer_embedding,
     sync_work_order_embedding,
     sync_item_embedding,
     check_ollama_status,
-    OllamaError
+    OllamaError,
+    DeepSeekError
 )
 from decorators import role_required
 
@@ -169,13 +171,23 @@ def send_message(session_id):
     db.session.add(user_message)
 
     try:
-        # Get AI response with RAG
-        response_text, metadata = chat_with_rag(
-            user_message=user_content,
-            conversation_history=conversation_history,
-            work_order_context=data.get("work_order_context") or session.work_order_no,
-            customer_context=data.get("customer_context") or session.customer_id
-        )
+        # Choose chat mode: "tools" (default) or "rag"
+        mode = data.get("mode", "tools")
+
+        if mode == "rag":
+            # RAG mode: semantic search + context injection
+            response_text, metadata = chat_with_rag(
+                user_message=user_content,
+                conversation_history=conversation_history,
+                work_order_context=data.get("work_order_context") or session.work_order_no,
+                customer_context=data.get("customer_context") or session.customer_id
+            )
+        else:
+            # Tools mode: function calling for database queries (default)
+            response_text, metadata = chat_with_tools(
+                user_message=user_content,
+                conversation_history=conversation_history
+            )
 
         # Save assistant message
         assistant_message = ChatMessage(
@@ -199,11 +211,11 @@ def send_message(session_id):
             "assistant_message": assistant_message.to_dict()
         })
 
-    except OllamaError as e:
+    except (OllamaError, DeepSeekError) as e:
         db.session.rollback()
         return jsonify({
             "error": f"AI service unavailable: {str(e)}",
-            "hint": "Make sure Ollama is running with the required models"
+            "hint": "Make sure DEEPSEEK_API_KEY is set"
         }), 503
 
 
@@ -233,11 +245,19 @@ def quick_chat():
         return jsonify({"error": "Message cannot be empty"}), 400
 
     try:
-        response_text, metadata = chat_with_rag(
-            user_message=user_content,
-            work_order_context=data.get("work_order_context"),
-            customer_context=data.get("customer_context")
-        )
+        # Choose chat mode: "tools" (default) or "rag"
+        mode = data.get("mode", "tools")
+
+        if mode == "rag":
+            response_text, metadata = chat_with_rag(
+                user_message=user_content,
+                work_order_context=data.get("work_order_context"),
+                customer_context=data.get("customer_context")
+            )
+        else:
+            response_text, metadata = chat_with_tools(
+                user_message=user_content
+            )
 
         return jsonify({
             "success": True,
@@ -245,10 +265,10 @@ def quick_chat():
             "metadata": metadata
         })
 
-    except OllamaError as e:
+    except (OllamaError, DeepSeekError) as e:
         return jsonify({
             "error": f"AI service unavailable: {str(e)}",
-            "hint": "Make sure Ollama is running with the required models"
+            "hint": "Make sure DEEPSEEK_API_KEY is set"
         }), 503
 
 
