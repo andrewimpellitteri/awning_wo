@@ -921,7 +921,7 @@ def tool_search_customers(query: str, limit: int = 5) -> Dict:
             Customer.CustID.ilike(f"%{query}%"),
             Customer.Name.ilike(f"%{query}%"),
             Customer.Contact.ilike(f"%{query}%"),
-            Customer.Email.ilike(f"%{query}%"),
+            Customer.EmailAddress.ilike(f"%{query}%"),
         )
     ).limit(limit).all()
 

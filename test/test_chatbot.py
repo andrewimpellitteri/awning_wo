@@ -21,20 +21,26 @@ from models.user import User
 # =============================================================================
 
 @pytest.fixture
-def mock_sentence_transformer():
-    """Mock sentence-transformers for local embeddings."""
-    with patch('services.rag_service.SentenceTransformer') as mock_st:
-        mock_model = MagicMock()
-        # all-MiniLM-L6-v2 produces 384-dimensional embeddings
-        mock_model.encode.return_value = [[0.1] * 384]
-        mock_st.return_value = mock_model
-        yield mock_model
+def mock_openai_embeddings():
+    """Mock OpenAI API for embeddings."""
+    with patch('services.rag_service.get_openai_client') as mock_client_getter:
+        mock_client = MagicMock()
+
+        # Mock embeddings.create() response
+        mock_response = MagicMock()
+        mock_response.data = [
+            MagicMock(embedding=[0.1] * 1536)  # text-embedding-3-small is 1536 dimensions
+        ]
+        mock_client.embeddings.create.return_value = mock_response
+
+        mock_client_getter.return_value = mock_client
+        yield mock_client
 
 
 @pytest.fixture
 def mock_deepseek_client():
-    """Mock DeepSeek OpenAI client."""
-    with patch('services.rag_service.OpenAI') as mock_openai:
+    """Mock DeepSeek API client for chat."""
+    with patch('services.rag_service.get_deepseek_client') as mock_client_getter:
         mock_client = MagicMock()
 
         # Mock models.list() for health checks
@@ -62,7 +68,7 @@ def mock_deepseek_client():
         )
         mock_client.chat.completions.create.return_value = mock_completion
 
-        mock_openai.return_value = mock_client
+        mock_client_getter.return_value = mock_client
         yield mock_client
 
 
@@ -319,15 +325,15 @@ class TestEmbeddingModels:
 class TestRAGService:
     """Tests for the RAG service functions."""
 
-    def test_get_embedding(self, app, mock_sentence_transformer):
+    def test_get_embedding(self, app, mock_openai_embeddings):
         """Test generating an embedding."""
         with app.app_context():
             from services.rag_service import get_embedding
 
             embedding = get_embedding("Test text")
 
-            assert len(embedding) == 384  # all-MiniLM-L6-v2 dimension
-            mock_sentence_transformer.encode.assert_called()
+            assert len(embedding) == 1536  # text-embedding-3-small dimension
+            mock_openai_embeddings.embeddings.create.assert_called()
 
     def test_cosine_similarity(self, app):
         """Test cosine similarity calculation."""
@@ -370,7 +376,7 @@ class TestRAGService:
             assert "Test Awning Work" in text
             assert "Handle with care" in text
 
-    def test_check_deepseek_status(self, app, mock_deepseek_client, mock_sentence_transformer):
+    def test_check_deepseek_status(self, app, mock_deepseek_client, mock_openai_embeddings):
         """Test DeepSeek status check."""
         with app.app_context():
             from services.rag_service import check_deepseek_status
@@ -381,7 +387,7 @@ class TestRAGService:
             assert status["embed_model_available"] is True
             assert status["chat_model_available"] is True
 
-    def test_sync_customer_embedding(self, app, sample_customer_data, mock_sentence_transformer):
+    def test_sync_customer_embedding(self, app, sample_customer_data, mock_openai_embeddings):
         """Test syncing a customer embedding."""
         with app.app_context():
             from services.rag_service import sync_customer_embedding
@@ -395,7 +401,7 @@ class TestRAGService:
             assert embedding is not None
             assert "Test Customer LLC" in embedding.content
 
-    def test_sync_work_order_embedding(self, app, sample_work_order_data, mock_sentence_transformer):
+    def test_sync_work_order_embedding(self, app, sample_work_order_data, mock_openai_embeddings):
         """Test syncing a work order embedding."""
         with app.app_context():
             from services.rag_service import sync_work_order_embedding
@@ -407,7 +413,7 @@ class TestRAGService:
             embedding = WorkOrderEmbedding.query.filter_by(work_order_no="WO001").first()
             assert embedding is not None
 
-    def test_chat_with_rag(self, app, mock_deepseek_client, mock_sentence_transformer):
+    def test_chat_with_rag(self, app, mock_deepseek_client, mock_openai_embeddings):
         """Test chat completion with RAG."""
         with app.app_context():
             from services.rag_service import chat_with_rag
@@ -433,7 +439,7 @@ class TestChatbotRoutes:
         assert response.status_code in [302, 401]
 
     def test_get_status_authenticated(self, authenticated_client, mock_deepseek_client,
-                                       mock_sentence_transformer, app):
+                                       mock_openai_embeddings, app):
         """Test status endpoint for authenticated users."""
         with app.app_context():
             response = authenticated_client.get("/api/chat/status")
@@ -505,7 +511,7 @@ class TestChatbotRoutes:
             assert ChatSession.query.get(session_id) is None
 
     def test_send_message(self, authenticated_client, app, test_user, mock_deepseek_client,
-                          mock_sentence_transformer):
+                          mock_openai_embeddings):
         """Test sending a message to a session."""
         with app.app_context():
             session = ChatSession(user_id=test_user.id)
@@ -540,7 +546,7 @@ class TestChatbotRoutes:
             assert response.status_code == 400
 
     def test_quick_chat(self, authenticated_client, app, mock_deepseek_client,
-                        mock_sentence_transformer):
+                        mock_openai_embeddings):
         """Test quick chat endpoint."""
         with app.app_context():
             response = authenticated_client.post(
@@ -553,7 +559,7 @@ class TestChatbotRoutes:
             assert data["success"] is True
             assert "response" in data
 
-    def test_semantic_search(self, authenticated_client, app, mock_sentence_transformer):
+    def test_semantic_search(self, authenticated_client, app, mock_openai_embeddings):
         """Test semantic search endpoint."""
         with app.app_context():
             response = authenticated_client.post(
@@ -585,7 +591,7 @@ class TestChatbotIntegration:
     """Integration tests for the chatbot functionality."""
 
     def test_full_conversation_flow(self, authenticated_client, app, test_user,
-                                     mock_deepseek_client, mock_sentence_transformer):
+                                     mock_deepseek_client, mock_openai_embeddings):
         """Test a complete conversation flow."""
         with app.app_context():
             # 1. Create a session
@@ -621,7 +627,7 @@ class TestChatbotIntegration:
 
     def test_session_with_context(self, authenticated_client, app, test_user,
                                    sample_work_order_data, mock_deepseek_client,
-                                   mock_sentence_transformer):
+                                   mock_openai_embeddings):
         """Test session with work order context."""
         with app.app_context():
             # Create session with work order context

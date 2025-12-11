@@ -75,7 +75,18 @@ def app():
     # Establish an application context before creating the database tables
     with app.app_context():
         # Create the database tables
-        db.create_all()
+        # Skip embedding tables for SQLite (they use PostgreSQL ARRAY type)
+        from sqlalchemy import inspect
+        tables_to_create = []
+        for table in db.metadata.sorted_tables:
+            # Skip embedding tables in SQLite
+            if "sqlite" in app.config["SQLALCHEMY_DATABASE_URI"].lower():
+                if "embedding" not in table.name:
+                    tables_to_create.append(table)
+            else:
+                tables_to_create.append(table)
+
+        db.metadata.create_all(bind=db.engine, tables=tables_to_create)
 
         # Yield the app to the test
         yield app
