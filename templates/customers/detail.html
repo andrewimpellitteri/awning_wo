@@ -548,7 +548,7 @@
                                         data-color="{{ item.Color | e }}"
                                         data-condition="{{ (item.Condition or '') | e }}"
                                         data-sizewgt="{{ (item.SizeWgt or '') | e }}"
-                                        data-price="{{ item.Price if item.Price is not none else '' }}"
+                                        data-price="{{ (item.Price if item.Price is not none else '') | e }}"
                                         title="Edit item details">
                                     <i class="fas fa-edit"></i>
                                 </button>
@@ -904,6 +904,14 @@ function createDatalists() {
     }
 
 
+// HTML escape function to prevent XSS and attribute parsing issues
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 
 // --- Add Inventory ---
@@ -949,22 +957,22 @@ addForm.addEventListener('submit', async function(e) {
                         <button class="btn btn-sm btn-outline-primary edit-item"
                                 data-bs-toggle="modal"
                                 data-bs-target="#editInventoryModal"
-                                data-key="${item.InventoryKey}"
-                                data-description="${item.Description}"
+                                data-key="${escapeHtml(item.InventoryKey)}"
+                                data-description="${escapeHtml(item.Description)}"
                                 data-qty="${item.Qty}"
-                                data-material="${item.Material || ''}"
-                                data-color="${item.Color || ''}"
-                                data-condition="${item.Condition || ''}"
-                                data-sizewgt="${item.SizeWgt || ''}"
-                                data-price="${item.Price || ''}"
+                                data-material="${escapeHtml(item.Material || '')}"
+                                data-color="${escapeHtml(item.Color || '')}"
+                                data-condition="${escapeHtml(item.Condition || '')}"
+                                data-sizewgt="${escapeHtml(item.SizeWgt || '')}"
+                                data-price="${escapeHtml(item.Price || '')}"
                                 title="Edit item details">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger delete-item" 
-                                data-bs-toggle="modal" 
+                        <button class="btn btn-sm btn-outline-danger delete-item"
+                                data-bs-toggle="modal"
                                 data-bs-target="#deleteInventoryModal"
-                                data-key="${item.InventoryKey}"
-                                data-description="${item.Description}"
+                                data-key="${escapeHtml(item.InventoryKey)}"
+                                data-description="${escapeHtml(item.Description)}"
                                 title="Delete item">
                             <i class="fas fa-trash"></i>
                         </button>
