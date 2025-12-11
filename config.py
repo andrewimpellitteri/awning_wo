@@ -105,7 +105,11 @@ class Config:
     DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
     DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
     DEEPSEEK_CHAT_MODEL = os.environ.get("DEEPSEEK_CHAT_MODEL", "deepseek-chat")
-    DEEPSEEK_EMBED_MODEL = os.environ.get("DEEPSEEK_EMBED_MODEL", "deepseek-embedding")
+
+    # OpenAI API for embeddings (more reliable than DeepSeek embeddings)
+    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+    OPENAI_EMBED_MODEL = os.environ.get("OPENAI_EMBED_MODEL", "text-embedding-3-small")
+    USE_OPENAI_EMBEDDINGS = os.environ.get("USE_OPENAI_EMBEDDINGS", "true").lower() == "true"
 
 
 class DevelopmentConfig(Config):

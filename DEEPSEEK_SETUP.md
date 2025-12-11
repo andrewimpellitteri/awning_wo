@@ -4,59 +4,69 @@ This document describes the DeepSeek API integration for the RAG chatbot.
 
 ## Overview
 
-The chatbot uses **DeepSeek V3** via their OpenAI-compatible API for:
-- **Chat completions**: Answering user questions with RAG context
-- **Embeddings**: Generating vector embeddings for semantic search
+The chatbot uses a **hybrid architecture**:
+- **DeepSeek V3** for chat completions and function calling
+- **OpenAI** for embeddings (more reliable than DeepSeek's embedding API)
+
+### Two Chat Modes
+
+| Mode | Function | Use Case |
+|------|----------|----------|
+| `chat_with_rag()` | Semantic search + context injection | General questions, fuzzy matching |
+| `chat_with_tools()` | Function calling with database queries | Specific lookups, precise queries |
 
 ## Configuration
 
 ### Environment Variables
 
-Set the following environment variables:
-
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `DEEPSEEK_API_KEY` | Yes | - | Your DeepSeek API key |
-| `DEEPSEEK_BASE_URL` | No | `https://api.deepseek.com` | API base URL |
+| `DEEPSEEK_API_KEY` | **Yes** | - | Your DeepSeek API key (for chat) |
+| `OPENAI_API_KEY` | **Yes** | - | Your OpenAI API key (for embeddings) |
+| `DEEPSEEK_BASE_URL` | No | `https://api.deepseek.com` | DeepSeek API base URL |
 | `DEEPSEEK_CHAT_MODEL` | No | `deepseek-chat` | Chat model to use |
-| `DEEPSEEK_EMBED_MODEL` | No | `deepseek-embedding` | Embedding model |
+| `OPENAI_EMBED_MODEL` | No | `text-embedding-3-small` | Embedding model |
+| `USE_OPENAI_EMBEDDINGS` | No | `true` | Use OpenAI for embeddings |
 
-### Getting an API Key
+### Getting API Keys
 
+**DeepSeek:**
 1. Visit [DeepSeek Platform](https://platform.deepseek.com/)
-2. Create an account or sign in
-3. Navigate to API Keys section
-4. Create a new API key
-5. Copy the key (it won't be shown again)
+2. Create an account and navigate to API Keys
+3. Create and copy your API key
+
+**OpenAI:**
+1. Visit [OpenAI Platform](https://platform.openai.com/)
+2. Go to API Keys section
+3. Create and copy your API key
 
 ## Local Development Setup
 
 ### Option 1: Export in Terminal
 ```bash
-export DEEPSEEK_API_KEY="your-api-key-here"
+export DEEPSEEK_API_KEY="sk-your-deepseek-key"
+export OPENAI_API_KEY="sk-your-openai-key"
 python app.py
 ```
 
 ### Option 2: Create a .env File
 ```bash
 # Create .env file (don't commit this!)
-echo 'DEEPSEEK_API_KEY=your-api-key-here' > .env
-```
-
-Then load it in your shell:
-```bash
-source .env
-# or use python-dotenv in the app
+cat > .env << 'EOF'
+DEEPSEEK_API_KEY=sk-your-deepseek-key
+OPENAI_API_KEY=sk-your-openai-key
+EOF
 ```
 
 ### Option 3: Use direnv (Recommended)
 ```bash
-# Install direnv: brew install direnv (Mac) or apt install direnv (Linux)
-
 # Create .envrc file
-echo 'export DEEPSEEK_API_KEY="your-api-key-here"' > .envrc
+cat > .envrc << 'EOF'
+export DEEPSEEK_API_KEY="sk-your-deepseek-key"
+export OPENAI_API_KEY="sk-your-openai-key"
+EOF
 
-# Allow direnv for this directory
+# Allow direnv
 direnv allow
 ```
 
@@ -66,60 +76,49 @@ direnv allow
 
 Using EB CLI:
 ```bash
-eb setenv DEEPSEEK_API_KEY="your-api-key-here"
+eb setenv DEEPSEEK_API_KEY="sk-your-deepseek-key" OPENAI_API_KEY="sk-your-openai-key"
 ```
 
 Or via AWS Console:
-1. Go to Elastic Beanstalk Console
-2. Select your environment
-3. Click "Configuration" in the left menu
-4. Under "Software", click "Edit"
-5. Scroll to "Environment properties"
-6. Add `DEEPSEEK_API_KEY` with your key value
-7. Click "Apply"
+1. Go to Elastic Beanstalk → your environment
+2. Configuration → Software → Edit
+3. Add both API keys under Environment properties
+4. Click Apply
 
-### Verify Configuration
-```bash
-# SSH into instance
-eb ssh
+## Available Tools (Function Calling)
 
-# Check environment variable is set
-echo $DEEPSEEK_API_KEY
+The chatbot has these read-only tools for database queries:
 
-# Test API access
-curl -X POST https://api.deepseek.com/v1/chat/completions \
-  -H "Authorization: Bearer $DEEPSEEK_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"model": "deepseek-chat", "messages": [{"role": "user", "content": "Hi"}]}'
-```
+| Tool | Description |
+|------|-------------|
+| `search_customers` | Search customers by name, ID, contact, email |
+| `get_customer_details` | Get full customer info + work order history |
+| `search_work_orders` | Search work orders by number, status, customer |
+| `get_work_order_details` | Get work order with all items |
+| `get_customer_work_orders` | List all work orders for a customer |
+| `search_items` | Search items by description, material, color |
+| `get_work_order_stats` | Get counts and statistics |
 
-## Models
+### Example Queries
 
-### Chat Model: `deepseek-chat`
-- **DeepSeek V3** - Latest generation model
-- High-quality reasoning and context understanding
-- Supports function calling/tools
-- Fast inference speeds
-
-### Embedding Model: `deepseek-embedding`
-- 768-dimensional vectors
-- Optimized for semantic search
-- Compatible with existing pgvector storage
+The chatbot will automatically use tools for questions like:
+- "Find customer John Smith" → `search_customers`
+- "Show me work order WO12345" → `get_work_order_details`
+- "How many work orders does ABC Corp have?" → `get_customer_work_orders`
+- "Find all blue canvas items" → `search_items`
 
 ## Pricing (as of Dec 2024)
 
-DeepSeek offers very competitive pricing:
+| Service | Model | Cost |
+|---------|-------|------|
+| DeepSeek | deepseek-chat | $0.14/M input, $0.28/M output |
+| OpenAI | text-embedding-3-small | $0.02/M tokens |
 
-| Model | Input | Output |
-|-------|-------|--------|
-| deepseek-chat | $0.14/M tokens | $0.28/M tokens |
-| deepseek-embedding | ~$0.01/M tokens | - |
-
-*Prices may vary. Check [DeepSeek Pricing](https://platform.deepseek.com/pricing) for current rates.*
+**Estimated monthly cost** (moderate usage): $5-20
 
 ## Syncing Embeddings
 
-After setting up the API key, re-sync your embeddings:
+**Important:** Embedding dimension changed from 768 → 1536. You must re-sync!
 
 ```bash
 # Sync all embeddings
@@ -127,16 +126,24 @@ python scripts/sync_embeddings.py --type all --verbose
 
 # Check status
 python scripts/sync_embeddings.py --status
+```
 
-# Sync specific types
-python scripts/sync_embeddings.py --type customers --verbose
-python scripts/sync_embeddings.py --type work_orders --verbose
-python scripts/sync_embeddings.py --type items --verbose
+## Database Schema Update
+
+If your `embedding` columns are still 768-dimensional, you may need to update them:
+
+```sql
+-- Check current dimension
+SELECT array_length(embedding, 1) FROM customer_embeddings LIMIT 1;
+
+-- If 768, the sync script will handle it automatically
+-- Just clear old embeddings and re-sync
+TRUNCATE customer_embeddings, work_order_embeddings, item_embeddings;
 ```
 
 ## Health Monitoring
 
-Check chatbot status via the API:
+Check chatbot status:
 ```bash
 curl http://localhost:5000/api/chat/status
 ```
@@ -147,7 +154,7 @@ Returns:
   "api_available": true,
   "api_configured": true,
   "chat_model": "deepseek-chat",
-  "embed_model": "deepseek-embedding"
+  "embed_model": "text-embedding-3-small"
 }
 ```
 
@@ -155,43 +162,75 @@ Returns:
 
 ### "DEEPSEEK_API_KEY environment variable is not set"
 - Ensure the environment variable is exported
-- Check for typos in the variable name
 - On EB, verify via `eb printenv`
 
+### "OPENAI_API_KEY environment variable is not set"
+- OpenAI key is required for embeddings
+- Set it alongside the DeepSeek key
+
 ### "Failed to generate embedding"
-- Verify API key is valid
-- Check DeepSeek service status
-- Review rate limits on your account
+- Check OpenAI API key is valid
+- Verify OpenAI API status
+- Check rate limits
 
-### "Authentication failed"
-- API key may be invalid or expired
-- Generate a new key on the DeepSeek platform
-- Check you're using the correct base URL
+### Tool calls not working
+- Ensure DeepSeek API key is valid
+- `deepseek-chat` model supports function calling
+- Check the response metadata for tool call info
 
-### Slow Responses
-- DeepSeek V3 is fast, but network latency varies
-- Consider caching frequent queries
-- Monitor token usage for cost optimization
+## Architecture Diagram
 
-## Migration from Ollama
+```
+User Question
+      │
+      ▼
+┌─────────────────────────────────────────┐
+│           chat_with_tools()             │
+│  (Function calling mode - preferred)    │
+└────────────────┬────────────────────────┘
+                 │
+      ┌──────────┴──────────┐
+      ▼                     ▼
+┌──────────┐         ┌──────────────┐
+│ DeepSeek │         │   Database   │
+│   Chat   │◄───────►│   Queries    │
+│   API    │  tools  │  (read-only) │
+└──────────┘         └──────────────┘
+      │
+      ▼
+   Response
 
-If you're migrating from the previous Ollama setup:
+--- OR ---
 
-1. **No local installation needed** - DeepSeek is cloud-based
-2. **Remove Ollama hooks** - Delete `.platform/hooks/postdeploy/02_setup_ollama.sh` etc.
-3. **Re-sync embeddings** - Embedding dimensions may differ
-4. **Update environment** - Remove `OLLAMA_*` variables, add `DEEPSEEK_*`
-
-## Security Best Practices
-
-- **Never commit API keys** to version control
-- Use environment variables or secrets management
-- Rotate API keys periodically
-- Monitor usage for unexpected spikes
-- Use IAM roles on AWS when possible
+User Question
+      │
+      ▼
+┌─────────────────────────────────────────┐
+│            chat_with_rag()              │
+│     (Semantic search mode - legacy)     │
+└────────────────┬────────────────────────┘
+                 │
+      ┌──────────┴──────────┐
+      ▼                     ▼
+┌──────────┐         ┌──────────────┐
+│  OpenAI  │         │   pgvector   │
+│ Embeddings│        │    Search    │
+└──────────┘         └──────────────┘
+      │                     │
+      └──────────┬──────────┘
+                 ▼
+          ┌──────────┐
+          │ DeepSeek │
+          │   Chat   │
+          │   API    │
+          └──────────┘
+                 │
+                 ▼
+             Response
+```
 
 ## Further Reading
 
 - [DeepSeek API Documentation](https://api-docs.deepseek.com/)
-- [DeepSeek Platform](https://platform.deepseek.com/)
-- [OpenAI SDK Compatibility](https://api-docs.deepseek.com/guides/openai-compatibility)
+- [DeepSeek Function Calling](https://api-docs.deepseek.com/guides/function_calling)
+- [OpenAI Embeddings](https://platform.openai.com/docs/guides/embeddings)

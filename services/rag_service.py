@@ -2,14 +2,15 @@
 RAG (Retrieval-Augmented Generation) Service for the Awning Management chatbot.
 
 This service provides:
-- Embedding generation using DeepSeek API
+- Embedding generation using DeepSeek API (with OpenAI fallback)
 - Semantic search over customers, work orders, and items
 - Chat completion with context-aware responses using DeepSeek V3
+- Function calling / tool use for read-only database queries
 """
 import os
 import json
 import time
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, Callable
 import numpy as np
 from openai import OpenAI
 from extensions import db
@@ -22,10 +23,18 @@ DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
 DEEPSEEK_CHAT_MODEL = os.environ.get("DEEPSEEK_CHAT_MODEL", "deepseek-chat")
 DEEPSEEK_EMBED_MODEL = os.environ.get("DEEPSEEK_EMBED_MODEL", "deepseek-embedding")
-EMBEDDING_DIMENSION = 768  # DeepSeek embedding dimension
 
-# Initialize DeepSeek client (OpenAI-compatible)
+# OpenAI fallback for embeddings (if DeepSeek embeddings unavailable)
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_EMBED_MODEL = os.environ.get("OPENAI_EMBED_MODEL", "text-embedding-3-small")
+
+# Embedding configuration
+EMBEDDING_DIMENSION = 1536  # text-embedding-3-small default (can be reduced)
+USE_OPENAI_EMBEDDINGS = os.environ.get("USE_OPENAI_EMBEDDINGS", "true").lower() == "true"
+
+# Initialize clients
 _deepseek_client = None
+_openai_client = None
 
 
 def get_deepseek_client() -> OpenAI:
@@ -39,6 +48,16 @@ def get_deepseek_client() -> OpenAI:
             base_url=DEEPSEEK_BASE_URL,
         )
     return _deepseek_client
+
+
+def get_openai_client() -> OpenAI:
+    """Get or create the OpenAI client for embeddings."""
+    global _openai_client
+    if _openai_client is None:
+        if not OPENAI_API_KEY:
+            raise DeepSeekError("OPENAI_API_KEY environment variable is not set (needed for embeddings)")
+        _openai_client = OpenAI(api_key=OPENAI_API_KEY)
+    return _openai_client
 
 
 # Cache for API status to avoid repeated health checks
@@ -99,7 +118,7 @@ def is_deepseek_available() -> bool:
 
 def get_embedding(text: str) -> List[float]:
     """
-    Generate embedding for text using DeepSeek API.
+    Generate embedding for text using OpenAI (default) or DeepSeek API.
 
     Args:
         text: The text to embed
@@ -110,6 +129,27 @@ def get_embedding(text: str) -> List[float]:
     Raises:
         DeepSeekError: If the API call fails
     """
+    if USE_OPENAI_EMBEDDINGS:
+        return get_embedding_openai(text)
+    else:
+        return get_embedding_deepseek(text)
+
+
+def get_embedding_openai(text: str) -> List[float]:
+    """Generate embedding using OpenAI's text-embedding-3-small."""
+    try:
+        client = get_openai_client()
+        response = client.embeddings.create(
+            model=OPENAI_EMBED_MODEL,
+            input=text,
+        )
+        return response.data[0].embedding
+    except Exception as e:
+        raise DeepSeekError(f"Failed to generate embedding (OpenAI): {str(e)}")
+
+
+def get_embedding_deepseek(text: str) -> List[float]:
+    """Generate embedding using DeepSeek API."""
     try:
         client = get_deepseek_client()
         response = client.embeddings.create(
@@ -118,7 +158,7 @@ def get_embedding(text: str) -> List[float]:
         )
         return response.data[0].embedding
     except Exception as e:
-        raise DeepSeekError(f"Failed to generate embedding: {str(e)}")
+        raise DeepSeekError(f"Failed to generate embedding (DeepSeek): {str(e)}")
 
 
 def get_embeddings_batch(texts: List[str]) -> List[List[float]]:
@@ -701,3 +741,534 @@ def check_deepseek_status() -> Dict:
         status["error"] = str(e)
 
     return status
+
+
+# ============================================================================
+# Tool Definitions for Function Calling
+# ============================================================================
+
+AVAILABLE_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "search_customers",
+            "description": "Search for customers by name, ID, contact person, or any text. Returns matching customers with their details.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query - can be customer name, ID, contact name, email, or any keyword"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results to return (default 5)",
+                        "default": 5
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_customer_details",
+            "description": "Get full details for a specific customer by their ID, including contact info and work order history.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The customer ID (e.g., 'CUST001' or 'ABC123')"
+                    }
+                },
+                "required": ["customer_id"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_work_orders",
+            "description": "Search for work orders by number, customer, status, or any text. Returns matching work orders.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query - can be work order number, customer ID, status, or keyword"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Filter by return status (optional)",
+                        "enum": ["In", "Out", "Pending", "Complete"]
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results (default 10)",
+                        "default": 10
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_work_order_details",
+            "description": "Get full details for a specific work order including all items, customer info, and special instructions.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "work_order_no": {
+                        "type": "string",
+                        "description": "The work order number (e.g., 'WO001' or '12345')"
+                    }
+                },
+                "required": ["work_order_no"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_customer_work_orders",
+            "description": "Get all work orders for a specific customer.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "type": "string",
+                        "description": "The customer ID"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of work orders to return (default 20)",
+                        "default": 20
+                    }
+                },
+                "required": ["customer_id"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_items",
+            "description": "Search for items by description, material, color, or condition.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query - can be item description, material, color, etc."
+                    },
+                    "material": {
+                        "type": "string",
+                        "description": "Filter by material type (optional)"
+                    },
+                    "color": {
+                        "type": "string",
+                        "description": "Filter by color (optional)"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results (default 10)",
+                        "default": 10
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_work_order_stats",
+            "description": "Get statistics about work orders - counts by status, recent activity, etc.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "customer_id": {
+                        "type": "string",
+                        "description": "Optional: filter stats by customer ID"
+                    }
+                },
+                "required": []
+            }
+        }
+    }
+]
+
+
+# ============================================================================
+# Tool Implementation Functions
+# ============================================================================
+
+def tool_search_customers(query: str, limit: int = 5) -> Dict:
+    """Search customers by query text."""
+    query_lower = query.lower()
+
+    # Search in database
+    customers = Customer.query.filter(
+        db.or_(
+            Customer.CustID.ilike(f"%{query}%"),
+            Customer.Name.ilike(f"%{query}%"),
+            Customer.Contact.ilike(f"%{query}%"),
+            Customer.Email.ilike(f"%{query}%"),
+        )
+    ).limit(limit).all()
+
+    results = []
+    for c in customers:
+        results.append({
+            "customer_id": c.CustID,
+            "name": c.Name,
+            "contact": c.Contact,
+            "phone": c.get_primary_phone(),
+            "email": c.clean_email(),
+            "address": c.get_full_address(),
+        })
+
+    return {
+        "query": query,
+        "count": len(results),
+        "customers": results
+    }
+
+
+def tool_get_customer_details(customer_id: str) -> Dict:
+    """Get full details for a customer."""
+    customer = Customer.query.get(customer_id)
+
+    if not customer:
+        return {"error": f"Customer '{customer_id}' not found"}
+
+    # Get work order count
+    work_orders = WorkOrder.query.filter_by(CustID=customer_id).all()
+
+    return {
+        "customer_id": customer.CustID,
+        "name": customer.Name,
+        "contact": customer.Contact,
+        "phone": customer.get_primary_phone(),
+        "email": customer.clean_email(),
+        "address": customer.get_full_address(),
+        "source": customer.Source,
+        "work_order_count": len(work_orders),
+        "recent_work_orders": [
+            {"work_order_no": wo.WorkOrderNo, "name": wo.WOName, "status": wo.ReturnStatus}
+            for wo in work_orders[:5]
+        ]
+    }
+
+
+def tool_search_work_orders(query: str, status: str = None, limit: int = 10) -> Dict:
+    """Search work orders by query text."""
+    filters = [
+        db.or_(
+            WorkOrder.WorkOrderNo.ilike(f"%{query}%"),
+            WorkOrder.WOName.ilike(f"%{query}%"),
+            WorkOrder.CustID.ilike(f"%{query}%"),
+            WorkOrder.SpecialInstructions.ilike(f"%{query}%"),
+        )
+    ]
+
+    if status:
+        filters.append(WorkOrder.ReturnStatus == status)
+
+    work_orders = WorkOrder.query.filter(*filters).limit(limit).all()
+
+    results = []
+    for wo in work_orders:
+        results.append({
+            "work_order_no": wo.WorkOrderNo,
+            "name": wo.WOName,
+            "customer_id": wo.CustID,
+            "status": wo.ReturnStatus,
+            "rack_location": wo.RackNo,
+            "special_instructions": wo.SpecialInstructions[:100] if wo.SpecialInstructions else None,
+        })
+
+    return {
+        "query": query,
+        "status_filter": status,
+        "count": len(results),
+        "work_orders": results
+    }
+
+
+def tool_get_work_order_details(work_order_no: str) -> Dict:
+    """Get full details for a work order."""
+    wo = WorkOrder.query.get(work_order_no)
+
+    if not wo:
+        return {"error": f"Work order '{work_order_no}' not found"}
+
+    # Get items
+    items = WorkOrderItem.query.filter_by(WorkOrderNo=work_order_no).all()
+
+    # Get customer
+    customer = Customer.query.get(wo.CustID) if wo.CustID else None
+
+    return {
+        "work_order_no": wo.WorkOrderNo,
+        "name": wo.WOName,
+        "customer": {
+            "id": wo.CustID,
+            "name": customer.Name if customer else None,
+        },
+        "status": wo.ReturnStatus,
+        "rack_location": wo.RackNo,
+        "storage_time": wo.StorageTime,
+        "special_instructions": wo.SpecialInstructions,
+        "ship_to": wo.ShipTo,
+        "item_count": len(items),
+        "items": [
+            {
+                "id": item.id,
+                "description": item.Description,
+                "material": item.Material,
+                "color": item.Color,
+                "condition": item.Condition,
+                "quantity": item.Qty,
+            }
+            for item in items
+        ]
+    }
+
+
+def tool_get_customer_work_orders(customer_id: str, limit: int = 20) -> Dict:
+    """Get all work orders for a customer."""
+    customer = Customer.query.get(customer_id)
+
+    if not customer:
+        return {"error": f"Customer '{customer_id}' not found"}
+
+    work_orders = WorkOrder.query.filter_by(CustID=customer_id).limit(limit).all()
+
+    return {
+        "customer_id": customer_id,
+        "customer_name": customer.Name,
+        "count": len(work_orders),
+        "work_orders": [
+            {
+                "work_order_no": wo.WorkOrderNo,
+                "name": wo.WOName,
+                "status": wo.ReturnStatus,
+                "rack_location": wo.RackNo,
+            }
+            for wo in work_orders
+        ]
+    }
+
+
+def tool_search_items(query: str, material: str = None, color: str = None, limit: int = 10) -> Dict:
+    """Search items by query text."""
+    filters = [
+        db.or_(
+            WorkOrderItem.Description.ilike(f"%{query}%"),
+            WorkOrderItem.Material.ilike(f"%{query}%"),
+            WorkOrderItem.Color.ilike(f"%{query}%"),
+        )
+    ]
+
+    if material:
+        filters.append(WorkOrderItem.Material.ilike(f"%{material}%"))
+    if color:
+        filters.append(WorkOrderItem.Color.ilike(f"%{color}%"))
+
+    items = WorkOrderItem.query.filter(*filters).limit(limit).all()
+
+    results = []
+    for item in items:
+        results.append({
+            "id": item.id,
+            "work_order_no": item.WorkOrderNo,
+            "description": item.Description,
+            "material": item.Material,
+            "color": item.Color,
+            "condition": item.Condition,
+            "quantity": item.Qty,
+        })
+
+    return {
+        "query": query,
+        "material_filter": material,
+        "color_filter": color,
+        "count": len(results),
+        "items": results
+    }
+
+
+def tool_get_work_order_stats(customer_id: str = None) -> Dict:
+    """Get work order statistics."""
+    query = WorkOrder.query
+
+    if customer_id:
+        query = query.filter_by(CustID=customer_id)
+
+    work_orders = query.all()
+
+    # Count by status
+    status_counts = {}
+    for wo in work_orders:
+        status = wo.ReturnStatus or "Unknown"
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    # Count items
+    total_items = 0
+    if customer_id:
+        for wo in work_orders:
+            total_items += WorkOrderItem.query.filter_by(WorkOrderNo=wo.WorkOrderNo).count()
+    else:
+        total_items = WorkOrderItem.query.count()
+
+    return {
+        "customer_id": customer_id,
+        "total_work_orders": len(work_orders),
+        "total_items": total_items,
+        "by_status": status_counts,
+    }
+
+
+# Map tool names to functions
+TOOL_FUNCTIONS: Dict[str, Callable] = {
+    "search_customers": tool_search_customers,
+    "get_customer_details": tool_get_customer_details,
+    "search_work_orders": tool_search_work_orders,
+    "get_work_order_details": tool_get_work_order_details,
+    "get_customer_work_orders": tool_get_customer_work_orders,
+    "search_items": tool_search_items,
+    "get_work_order_stats": tool_get_work_order_stats,
+}
+
+
+def execute_tool(tool_name: str, arguments: Dict) -> str:
+    """Execute a tool and return the result as JSON string."""
+    if tool_name not in TOOL_FUNCTIONS:
+        return json.dumps({"error": f"Unknown tool: {tool_name}"})
+
+    try:
+        result = TOOL_FUNCTIONS[tool_name](**arguments)
+        return json.dumps(result, default=str)
+    except Exception as e:
+        return json.dumps({"error": f"Tool execution failed: {str(e)}"})
+
+
+# ============================================================================
+# Chat with Tools (Function Calling)
+# ============================================================================
+
+def chat_with_tools(
+    user_message: str,
+    conversation_history: List[Dict[str, str]] = None,
+    max_tool_calls: int = 5
+) -> Tuple[str, Dict]:
+    """
+    Chat with the LLM using function calling for database queries.
+
+    Args:
+        user_message: The user's message
+        conversation_history: Previous messages in the conversation
+        max_tool_calls: Maximum number of tool calls to allow
+
+    Returns:
+        Tuple of (response_text, metadata)
+    """
+    system_prompt = """You are a helpful assistant for the Awning Management System.
+You help users with questions about customers, work orders, items, and general operations.
+
+You have access to tools that can search and retrieve data from the database.
+Use these tools to answer user questions accurately. When you need specific data,
+call the appropriate tool rather than guessing.
+
+Be concise and helpful. When referencing records, include their IDs.
+If a search returns no results, let the user know and suggest alternatives."""
+
+    messages = [{"role": "system", "content": system_prompt}]
+    if conversation_history:
+        messages.extend(conversation_history)
+    messages.append({"role": "user", "content": user_message})
+
+    client = get_deepseek_client()
+    tool_calls_made = []
+
+    for _ in range(max_tool_calls):
+        # Call the API with tools
+        response = client.chat.completions.create(
+            model=DEEPSEEK_CHAT_MODEL,
+            messages=messages,
+            tools=AVAILABLE_TOOLS,
+            tool_choice="auto",
+            temperature=0.7,
+            max_tokens=2048,
+        )
+
+        assistant_message = response.choices[0].message
+
+        # Check if we need to call tools
+        if assistant_message.tool_calls:
+            # Add assistant message to conversation
+            messages.append({
+                "role": "assistant",
+                "content": assistant_message.content,
+                "tool_calls": [
+                    {
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments
+                        }
+                    }
+                    for tc in assistant_message.tool_calls
+                ]
+            })
+
+            # Execute each tool call
+            for tool_call in assistant_message.tool_calls:
+                tool_name = tool_call.function.name
+                try:
+                    arguments = json.loads(tool_call.function.arguments)
+                except json.JSONDecodeError:
+                    arguments = {}
+
+                # Execute the tool
+                result = execute_tool(tool_name, arguments)
+                tool_calls_made.append({
+                    "tool": tool_name,
+                    "arguments": arguments,
+                    "result_preview": result[:200] + "..." if len(result) > 200 else result
+                })
+
+                # Add tool result to messages
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": result
+                })
+        else:
+            # No more tool calls, return the response
+            response_text = assistant_message.content or ""
+            metadata = {
+                "model": DEEPSEEK_CHAT_MODEL,
+                "tool_calls": tool_calls_made,
+                "tool_calls_count": len(tool_calls_made),
+                "prompt_tokens": response.usage.prompt_tokens if response.usage else None,
+                "completion_tokens": response.usage.completion_tokens if response.usage else None,
+                "total_tokens": response.usage.total_tokens if response.usage else None,
+            }
+            return response_text, metadata
+
+    # Max tool calls reached, return last response
+    response_text = assistant_message.content or "I've gathered some information but reached the limit of queries I can make. Please try a more specific question."
+    metadata = {
+        "model": DEEPSEEK_CHAT_MODEL,
+        "tool_calls": tool_calls_made,
+        "tool_calls_count": len(tool_calls_made),
+        "max_calls_reached": True,
+    }
+    return response_text, metadata
