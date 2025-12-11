@@ -76,12 +76,14 @@ def mock_deepseek_client():
 def test_user(app):
     """Create a test user."""
     with app.app_context():
+        from werkzeug.security import generate_password_hash
+
         user = User(
             username="testuser",
             email="test@example.com",
-            role="admin"
+            role="admin",
+            password_hash=generate_password_hash("testpass123")
         )
-        user.set_password("testpass123")
         db.session.add(user)
         db.session.commit()
         yield user
