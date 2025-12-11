@@ -2,7 +2,7 @@
 RAG (Retrieval-Augmented Generation) Service for the Awning Management chatbot.
 
 This service provides:
-- Embedding generation using DeepSeek API (with OpenAI fallback)
+- Embedding generation using local sentence-transformers (no API needed)
 - Semantic search over customers, work orders, and items
 - Chat completion with context-aware responses using DeepSeek V3
 - Function calling / tool use for read-only database queries
@@ -22,19 +22,16 @@ from models.work_order import WorkOrder, WorkOrderItem
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
 DEEPSEEK_CHAT_MODEL = os.environ.get("DEEPSEEK_CHAT_MODEL", "deepseek-chat")
-DEEPSEEK_EMBED_MODEL = os.environ.get("DEEPSEEK_EMBED_MODEL", "deepseek-embedding")
 
-# OpenAI fallback for embeddings (if DeepSeek embeddings unavailable)
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPENAI_EMBED_MODEL = os.environ.get("OPENAI_EMBED_MODEL", "text-embedding-3-small")
-
-# Embedding configuration
-EMBEDDING_DIMENSION = 1536  # text-embedding-3-small default (can be reduced)
-USE_OPENAI_EMBEDDINGS = os.environ.get("USE_OPENAI_EMBEDDINGS", "true").lower() == "true"
+# Local embedding model configuration (sentence-transformers)
+# all-MiniLM-L6-v2: Fast, 384 dimensions, ~80MB
+# all-mpnet-base-v2: Better quality, 768 dimensions, ~420MB
+LOCAL_EMBED_MODEL = os.environ.get("LOCAL_EMBED_MODEL", "all-MiniLM-L6-v2")
+EMBEDDING_DIMENSION = 384  # all-MiniLM-L6-v2 dimension
 
 # Initialize clients
 _deepseek_client = None
-_openai_client = None
+_embedding_model = None
 
 
 def get_deepseek_client() -> OpenAI:
@@ -50,14 +47,13 @@ def get_deepseek_client() -> OpenAI:
     return _deepseek_client
 
 
-def get_openai_client() -> OpenAI:
-    """Get or create the OpenAI client for embeddings."""
-    global _openai_client
-    if _openai_client is None:
-        if not OPENAI_API_KEY:
-            raise DeepSeekError("OPENAI_API_KEY environment variable is not set (needed for embeddings)")
-        _openai_client = OpenAI(api_key=OPENAI_API_KEY)
-    return _openai_client
+def get_embedding_model():
+    """Get or create the local embedding model (lazy loading)."""
+    global _embedding_model
+    if _embedding_model is None:
+        from sentence_transformers import SentenceTransformer
+        _embedding_model = SentenceTransformer(LOCAL_EMBED_MODEL)
+    return _embedding_model
 
 
 # Cache for API status to avoid repeated health checks
@@ -118,7 +114,7 @@ def is_deepseek_available() -> bool:
 
 def get_embedding(text: str) -> List[float]:
     """
-    Generate embedding for text using OpenAI (default) or DeepSeek API.
+    Generate embedding for text using local sentence-transformers model.
 
     Args:
         text: The text to embed
@@ -127,43 +123,19 @@ def get_embedding(text: str) -> List[float]:
         List of floats representing the embedding vector
 
     Raises:
-        DeepSeekError: If the API call fails
+        DeepSeekError: If embedding generation fails
     """
-    if USE_OPENAI_EMBEDDINGS:
-        return get_embedding_openai(text)
-    else:
-        return get_embedding_deepseek(text)
-
-
-def get_embedding_openai(text: str) -> List[float]:
-    """Generate embedding using OpenAI's text-embedding-3-small."""
     try:
-        client = get_openai_client()
-        response = client.embeddings.create(
-            model=OPENAI_EMBED_MODEL,
-            input=text,
-        )
-        return response.data[0].embedding
+        model = get_embedding_model()
+        embedding = model.encode(text, convert_to_numpy=True)
+        return embedding.tolist()
     except Exception as e:
-        raise DeepSeekError(f"Failed to generate embedding (OpenAI): {str(e)}")
-
-
-def get_embedding_deepseek(text: str) -> List[float]:
-    """Generate embedding using DeepSeek API."""
-    try:
-        client = get_deepseek_client()
-        response = client.embeddings.create(
-            model=DEEPSEEK_EMBED_MODEL,
-            input=text,
-        )
-        return response.data[0].embedding
-    except Exception as e:
-        raise DeepSeekError(f"Failed to generate embedding (DeepSeek): {str(e)}")
+        raise DeepSeekError(f"Failed to generate embedding: {str(e)}")
 
 
 def get_embeddings_batch(texts: List[str]) -> List[List[float]]:
     """
-    Generate embeddings for multiple texts.
+    Generate embeddings for multiple texts (batch processing).
 
     Args:
         texts: List of texts to embed
@@ -171,15 +143,21 @@ def get_embeddings_batch(texts: List[str]) -> List[List[float]]:
     Returns:
         List of embedding vectors
     """
-    embeddings = []
-    for text in texts:
-        try:
-            embedding = get_embedding(text)
-            embeddings.append(embedding)
-        except OllamaError:
-            # Return empty embedding on error
-            embeddings.append([])
-    return embeddings
+    try:
+        model = get_embedding_model()
+        # sentence-transformers can batch encode efficiently
+        embeddings = model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
+        return [emb.tolist() for emb in embeddings]
+    except Exception as e:
+        # Fallback to individual encoding on error
+        embeddings = []
+        for text in texts:
+            try:
+                embedding = get_embedding(text)
+                embeddings.append(embedding)
+            except DeepSeekError:
+                embeddings.append([])
+        return embeddings
 
 
 def cosine_similarity(a: List[float], b: List[float]) -> float:
@@ -701,7 +679,7 @@ def check_ollama_status() -> Dict:
 
 def check_deepseek_status() -> Dict:
     """
-    Check if DeepSeek API is available and configured.
+    Check if DeepSeek API and local embedding model are available.
 
     Returns:
         Dictionary with status information
@@ -709,7 +687,8 @@ def check_deepseek_status() -> Dict:
     status = {
         "api_available": False,
         "api_configured": bool(DEEPSEEK_API_KEY),
-        "embed_model": DEEPSEEK_EMBED_MODEL,
+        "embed_model": LOCAL_EMBED_MODEL,
+        "embed_model_local": True,
         "chat_model": DEEPSEEK_CHAT_MODEL,
         "base_url": DEEPSEEK_BASE_URL,
         # Keep old keys for backwards compatibility
@@ -717,6 +696,14 @@ def check_deepseek_status() -> Dict:
         "embed_model_available": False,
         "chat_model_available": False,
     }
+
+    # Check local embedding model
+    try:
+        model = get_embedding_model()
+        status["embed_model_available"] = True
+        status["embed_dimension"] = EMBEDDING_DIMENSION
+    except Exception as e:
+        status["embed_error"] = str(e)
 
     if not DEEPSEEK_API_KEY:
         status["error"] = "DEEPSEEK_API_KEY environment variable is not set"
@@ -733,8 +720,7 @@ def check_deepseek_status() -> Dict:
         available_models = [m.id for m in models_response.data] if models_response.data else []
         status["available_models"] = available_models
 
-        # Check if our models are available (DeepSeek models are usually available)
-        status["embed_model_available"] = True  # Assume available
+        # Check if our chat model is available
         status["chat_model_available"] = DEEPSEEK_CHAT_MODEL in available_models or "deepseek" in DEEPSEEK_CHAT_MODEL
 
     except Exception as e:

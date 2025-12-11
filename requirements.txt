@@ -55,6 +55,7 @@ Flask-Limiter==4.0.0
 # RAG Chatbot dependencies
 requests>=2.28.0         # For HTTP requests
 openai>=1.0.0            # For DeepSeek API (OpenAI-compatible)
+sentence-transformers>=2.2.0  # For local embeddings (no API needed)
 # Note: Set DEEPSEEK_API_KEY environment variable
 # Get API key from https://platform.deepseek.com/
 # PostgreSQL pgvector extension required for embeddings storage

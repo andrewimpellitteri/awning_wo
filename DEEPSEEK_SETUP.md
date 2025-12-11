@@ -5,8 +5,8 @@ This document describes the DeepSeek API integration for the RAG chatbot.
 ## Overview
 
 The chatbot uses a **hybrid architecture**:
-- **DeepSeek V3** for chat completions and function calling
-- **OpenAI** for embeddings (more reliable than DeepSeek's embedding API)
+- **DeepSeek V3** for chat completions and function calling (paid API)
+- **Local embeddings** via sentence-transformers (free, no API needed)
 
 ### Two Chat Modes
 
@@ -22,49 +22,51 @@ The chatbot uses a **hybrid architecture**:
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `DEEPSEEK_API_KEY` | **Yes** | - | Your DeepSeek API key (for chat) |
-| `OPENAI_API_KEY` | **Yes** | - | Your OpenAI API key (for embeddings) |
 | `DEEPSEEK_BASE_URL` | No | `https://api.deepseek.com` | DeepSeek API base URL |
 | `DEEPSEEK_CHAT_MODEL` | No | `deepseek-chat` | Chat model to use |
-| `OPENAI_EMBED_MODEL` | No | `text-embedding-3-small` | Embedding model |
-| `USE_OPENAI_EMBEDDINGS` | No | `true` | Use OpenAI for embeddings |
+| `LOCAL_EMBED_MODEL` | No | `all-MiniLM-L6-v2` | Local embedding model |
 
-### Getting API Keys
+### Getting a DeepSeek API Key
 
-**DeepSeek:**
 1. Visit [DeepSeek Platform](https://platform.deepseek.com/)
 2. Create an account and navigate to API Keys
 3. Create and copy your API key
 
-**OpenAI:**
-1. Visit [OpenAI Platform](https://platform.openai.com/)
-2. Go to API Keys section
-3. Create and copy your API key
+## Local Embedding Models
+
+Embeddings run **locally** using sentence-transformers - no API or payment needed!
+
+| Model | Dimensions | Size | Quality | Speed |
+|-------|------------|------|---------|-------|
+| `all-MiniLM-L6-v2` (default) | 384 | ~80MB | Good | Very Fast |
+| `all-mpnet-base-v2` | 768 | ~420MB | Better | Fast |
+| `all-MiniLM-L12-v2` | 384 | ~120MB | Good | Fast |
+
+The model downloads automatically on first use and is cached locally.
+
+To change the model:
+```bash
+export LOCAL_EMBED_MODEL="all-mpnet-base-v2"
+```
 
 ## Local Development Setup
 
 ### Option 1: Export in Terminal
 ```bash
 export DEEPSEEK_API_KEY="sk-your-deepseek-key"
-export OPENAI_API_KEY="sk-your-openai-key"
 python app.py
 ```
 
 ### Option 2: Create a .env File
 ```bash
 # Create .env file (don't commit this!)
-cat > .env << 'EOF'
-DEEPSEEK_API_KEY=sk-your-deepseek-key
-OPENAI_API_KEY=sk-your-openai-key
-EOF
+echo 'DEEPSEEK_API_KEY=sk-your-deepseek-key' > .env
 ```
 
 ### Option 3: Use direnv (Recommended)
 ```bash
 # Create .envrc file
-cat > .envrc << 'EOF'
-export DEEPSEEK_API_KEY="sk-your-deepseek-key"
-export OPENAI_API_KEY="sk-your-openai-key"
-EOF
+echo 'export DEEPSEEK_API_KEY="sk-your-deepseek-key"' > .envrc
 
 # Allow direnv
 direnv allow
@@ -76,14 +78,16 @@ direnv allow
 
 Using EB CLI:
 ```bash
-eb setenv DEEPSEEK_API_KEY="sk-your-deepseek-key" OPENAI_API_KEY="sk-your-openai-key"
+eb setenv DEEPSEEK_API_KEY="sk-your-deepseek-key"
 ```
 
 Or via AWS Console:
 1. Go to Elastic Beanstalk → your environment
 2. Configuration → Software → Edit
-3. Add both API keys under Environment properties
+3. Add `DEEPSEEK_API_KEY` under Environment properties
 4. Click Apply
+
+**Note:** The embedding model (~80MB) will be downloaded on first request. Consider using a larger instance type if memory is constrained.
 
 ## Available Tools (Function Calling)
 
@@ -107,18 +111,18 @@ The chatbot will automatically use tools for questions like:
 - "How many work orders does ABC Corp have?" → `get_customer_work_orders`
 - "Find all blue canvas items" → `search_items`
 
-## Pricing (as of Dec 2024)
+## Pricing
 
-| Service | Model | Cost |
-|---------|-------|------|
-| DeepSeek | deepseek-chat | $0.14/M input, $0.28/M output |
-| OpenAI | text-embedding-3-small | $0.02/M tokens |
+| Service | Cost |
+|---------|------|
+| DeepSeek chat | $0.14/M input, $0.28/M output |
+| Local embeddings | **Free** |
 
-**Estimated monthly cost** (moderate usage): $5-20
+**Estimated monthly cost** (moderate usage): $2-10
 
 ## Syncing Embeddings
 
-**Important:** Embedding dimension changed from 768 → 1536. You must re-sync!
+**Important:** Embedding dimension is now 384 (was 768/1536). You must re-sync!
 
 ```bash
 # Sync all embeddings
@@ -130,16 +134,17 @@ python scripts/sync_embeddings.py --status
 
 ## Database Schema Update
 
-If your `embedding` columns are still 768-dimensional, you may need to update them:
+If your `embedding` columns were sized for a different dimension:
 
 ```sql
 -- Check current dimension
 SELECT array_length(embedding, 1) FROM customer_embeddings LIMIT 1;
 
--- If 768, the sync script will handle it automatically
--- Just clear old embeddings and re-sync
+-- If not 384, clear and re-sync
 TRUNCATE customer_embeddings, work_order_embeddings, item_embeddings;
 ```
+
+Then run the sync script.
 
 ## Health Monitoring
 
@@ -154,7 +159,9 @@ Returns:
   "api_available": true,
   "api_configured": true,
   "chat_model": "deepseek-chat",
-  "embed_model": "text-embedding-3-small"
+  "embed_model": "all-MiniLM-L6-v2",
+  "embed_model_local": true,
+  "embed_dimension": 384
 }
 ```
 
@@ -164,19 +171,19 @@ Returns:
 - Ensure the environment variable is exported
 - On EB, verify via `eb printenv`
 
-### "OPENAI_API_KEY environment variable is not set"
-- OpenAI key is required for embeddings
-- Set it alongside the DeepSeek key
-
 ### "Failed to generate embedding"
-- Check OpenAI API key is valid
-- Verify OpenAI API status
-- Check rate limits
+- The sentence-transformers model may need to download (~80MB)
+- Check disk space and network connectivity
+- Verify PyTorch/sentence-transformers are installed
 
 ### Tool calls not working
 - Ensure DeepSeek API key is valid
 - `deepseek-chat` model supports function calling
 - Check the response metadata for tool call info
+
+### Slow first request
+- The embedding model downloads on first use
+- Subsequent requests will be fast (model is cached)
 
 ## Architecture Diagram
 
@@ -207,15 +214,16 @@ User Question
       ▼
 ┌─────────────────────────────────────────┐
 │            chat_with_rag()              │
-│     (Semantic search mode - legacy)     │
+│     (Semantic search mode)              │
 └────────────────┬────────────────────────┘
                  │
       ┌──────────┴──────────┐
       ▼                     ▼
-┌──────────┐         ┌──────────────┐
-│  OpenAI  │         │   pgvector   │
-│ Embeddings│        │    Search    │
-└──────────┘         └──────────────┘
+┌──────────────┐     ┌──────────────┐
+│    Local     │     │   pgvector   │
+│  Embeddings  │     │    Search    │
+│ (free, fast) │     └──────────────┘
+└──────────────┘            │
       │                     │
       └──────────┬──────────┘
                  ▼
@@ -233,4 +241,5 @@ User Question
 
 - [DeepSeek API Documentation](https://api-docs.deepseek.com/)
 - [DeepSeek Function Calling](https://api-docs.deepseek.com/guides/function_calling)
-- [OpenAI Embeddings](https://platform.openai.com/docs/guides/embeddings)
+- [Sentence Transformers](https://www.sbert.net/)
+- [Hugging Face Model Hub](https://huggingface.co/sentence-transformers)

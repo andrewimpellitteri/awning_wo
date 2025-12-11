@@ -106,10 +106,9 @@ class Config:
     DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
     DEEPSEEK_CHAT_MODEL = os.environ.get("DEEPSEEK_CHAT_MODEL", "deepseek-chat")
 
-    # OpenAI API for embeddings (more reliable than DeepSeek embeddings)
-    OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-    OPENAI_EMBED_MODEL = os.environ.get("OPENAI_EMBED_MODEL", "text-embedding-3-small")
-    USE_OPENAI_EMBEDDINGS = os.environ.get("USE_OPENAI_EMBEDDINGS", "true").lower() == "true"
+    # Local embedding model (sentence-transformers, no API needed)
+    # Options: all-MiniLM-L6-v2 (384d, fast), all-mpnet-base-v2 (768d, better quality)
+    LOCAL_EMBED_MODEL = os.environ.get("LOCAL_EMBED_MODEL", "all-MiniLM-L6-v2")
 
 
 class DevelopmentConfig(Config):
