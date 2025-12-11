@@ -101,6 +101,12 @@ class Config:
     CACHE_DEFAULT_TIMEOUT = 300  # 5 minutes
     CACHE_KEY_PREFIX = "awning_"
 
+    # DeepSeek API configuration (for RAG chatbot)
+    DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
+    DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+    DEEPSEEK_CHAT_MODEL = os.environ.get("DEEPSEEK_CHAT_MODEL", "deepseek-chat")
+    DEEPSEEK_EMBED_MODEL = os.environ.get("DEEPSEEK_EMBED_MODEL", "deepseek-embedding")
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

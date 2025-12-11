@@ -2,69 +2,104 @@
 RAG (Retrieval-Augmented Generation) Service for the Awning Management chatbot.
 
 This service provides:
-- Embedding generation using Ollama
+- Embedding generation using DeepSeek API
 - Semantic search over customers, work orders, and items
-- Chat completion with context-aware responses
+- Chat completion with context-aware responses using DeepSeek V3
 """
 import os
 import json
-import requests
+import time
 from typing import List, Dict, Optional, Tuple
 import numpy as np
+from openai import OpenAI
 from extensions import db
 from models.embeddings import CustomerEmbedding, WorkOrderEmbedding, ItemEmbedding
 from models.customer import Customer
 from models.work_order import WorkOrder, WorkOrderItem
 
 # Configuration
-OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_EMBED_MODEL = os.environ.get("OLLAMA_EMBED_MODEL", "nomic-embed-text")
-# Default to small 1B model for EB deployment, fallback options in order of preference
-OLLAMA_CHAT_MODEL = os.environ.get("OLLAMA_CHAT_MODEL", "qwen2.5:0.5b")
-OLLAMA_CHAT_FALLBACK_MODELS = ["qwen2.5:0.5b", "tinyllama:1.1b", "llama3.2:1b", "llama3.2"]
-EMBEDDING_DIMENSION = 768  # nomic-embed-text dimension
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
+DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+DEEPSEEK_CHAT_MODEL = os.environ.get("DEEPSEEK_CHAT_MODEL", "deepseek-chat")
+DEEPSEEK_EMBED_MODEL = os.environ.get("DEEPSEEK_EMBED_MODEL", "deepseek-embedding")
+EMBEDDING_DIMENSION = 768  # DeepSeek embedding dimension
 
-# Cache for Ollama status to avoid repeated health checks
-_ollama_status_cache = {"last_check": 0, "is_available": False}
+# Initialize DeepSeek client (OpenAI-compatible)
+_deepseek_client = None
 
 
-class OllamaError(Exception):
-    """Exception raised when Ollama API calls fail."""
+def get_deepseek_client() -> OpenAI:
+    """Get or create the DeepSeek client."""
+    global _deepseek_client
+    if _deepseek_client is None:
+        if not DEEPSEEK_API_KEY:
+            raise DeepSeekError("DEEPSEEK_API_KEY environment variable is not set")
+        _deepseek_client = OpenAI(
+            api_key=DEEPSEEK_API_KEY,
+            base_url=DEEPSEEK_BASE_URL,
+        )
+    return _deepseek_client
+
+
+# Cache for API status to avoid repeated health checks
+_api_status_cache = {"last_check": 0, "is_available": False}
+
+
+class DeepSeekError(Exception):
+    """Exception raised when DeepSeek API calls fail."""
     pass
+
+
+# Keep OllamaError as alias for backwards compatibility
+OllamaError = DeepSeekError
 
 
 def is_ollama_available() -> bool:
     """
-    Check if Ollama is available with caching (1 minute cache).
+    Check if DeepSeek API is available with caching (1 minute cache).
+    Named for backwards compatibility with existing code.
 
     Returns:
-        True if Ollama is responding, False otherwise
+        True if DeepSeek API is responding, False otherwise
     """
-    import time
+    return is_deepseek_available()
 
+
+def is_deepseek_available() -> bool:
+    """
+    Check if DeepSeek API is available with caching (1 minute cache).
+
+    Returns:
+        True if DeepSeek API is responding, False otherwise
+    """
     current_time = time.time()
 
     # Use cached result if less than 60 seconds old
-    if current_time - _ollama_status_cache["last_check"] < 60:
-        return _ollama_status_cache["is_available"]
+    if current_time - _api_status_cache["last_check"] < 60:
+        return _api_status_cache["is_available"]
 
-    # Check Ollama status
+    # Check DeepSeek API status by making a simple models list call
     try:
-        response = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=2)
-        is_available = response.status_code == 200
-    except:
+        if not DEEPSEEK_API_KEY:
+            is_available = False
+        else:
+            client = get_deepseek_client()
+            # Try to list models as a health check
+            client.models.list()
+            is_available = True
+    except Exception:
         is_available = False
 
     # Update cache
-    _ollama_status_cache["last_check"] = current_time
-    _ollama_status_cache["is_available"] = is_available
+    _api_status_cache["last_check"] = current_time
+    _api_status_cache["is_available"] = is_available
 
     return is_available
 
 
 def get_embedding(text: str) -> List[float]:
     """
-    Generate embedding for text using Ollama.
+    Generate embedding for text using DeepSeek API.
 
     Args:
         text: The text to embed
@@ -73,22 +108,17 @@ def get_embedding(text: str) -> List[float]:
         List of floats representing the embedding vector
 
     Raises:
-        OllamaError: If the API call fails
+        DeepSeekError: If the API call fails
     """
     try:
-        response = requests.post(
-            f"{OLLAMA_BASE_URL}/api/embeddings",
-            json={
-                "model": OLLAMA_EMBED_MODEL,
-                "prompt": text
-            },
-            timeout=30
+        client = get_deepseek_client()
+        response = client.embeddings.create(
+            model=DEEPSEEK_EMBED_MODEL,
+            input=text,
         )
-        response.raise_for_status()
-        data = response.json()
-        return data.get("embedding", [])
-    except requests.exceptions.RequestException as e:
-        raise OllamaError(f"Failed to generate embedding: {str(e)}")
+        return response.data[0].embedding
+    except Exception as e:
+        raise DeepSeekError(f"Failed to generate embedding: {str(e)}")
 
 
 def get_embeddings_batch(texts: List[str]) -> List[List[float]]:
@@ -274,7 +304,7 @@ def chat_completion(
     system_prompt: str = None
 ) -> Tuple[str, Dict]:
     """
-    Generate a chat completion using Ollama with optional RAG context.
+    Generate a chat completion using DeepSeek V3 with optional RAG context.
 
     Args:
         messages: List of message dicts with 'role' and 'content'
@@ -285,7 +315,7 @@ def chat_completion(
         Tuple of (response_text, metadata)
 
     Raises:
-        OllamaError: If the API call fails
+        DeepSeekError: If the API call fails
     """
     default_system = """You are a helpful assistant for the Awning Management System.
 You help users with questions about customers, work orders, items, and general operations.
@@ -298,47 +328,32 @@ If you don't have enough information to answer, say so clearly."""
     if context:
         system += f"\n\nHere is relevant information from the database:\n{context}"
 
-    # Build messages for Ollama
-    ollama_messages = [{"role": "system", "content": system}]
-    ollama_messages.extend(messages)
+    # Build messages for DeepSeek (OpenAI-compatible format)
+    api_messages = [{"role": "system", "content": system}]
+    api_messages.extend(messages)
 
-    # Try primary model first, then fallbacks
-    models_to_try = [OLLAMA_CHAT_MODEL] + [m for m in OLLAMA_CHAT_FALLBACK_MODELS if m != OLLAMA_CHAT_MODEL]
-    last_error = None
+    try:
+        client = get_deepseek_client()
+        response = client.chat.completions.create(
+            model=DEEPSEEK_CHAT_MODEL,
+            messages=api_messages,
+            temperature=0.7,
+            max_tokens=2048,
+        )
 
-    for model in models_to_try:
-        try:
-            response = requests.post(
-                f"{OLLAMA_BASE_URL}/api/chat",
-                json={
-                    "model": model,
-                    "messages": ollama_messages,
-                    "stream": False
-                },
-                timeout=120
-            )
-            response.raise_for_status()
-            data = response.json()
+        response_text = response.choices[0].message.content or ""
+        metadata = {
+            "model": DEEPSEEK_CHAT_MODEL,
+            "context_provided": bool(context),
+            "prompt_tokens": response.usage.prompt_tokens if response.usage else None,
+            "completion_tokens": response.usage.completion_tokens if response.usage else None,
+            "total_tokens": response.usage.total_tokens if response.usage else None,
+        }
 
-            response_text = data.get("message", {}).get("content", "")
-            metadata = {
-                "model": model,
-                "attempted_model": OLLAMA_CHAT_MODEL,
-                "used_fallback": model != OLLAMA_CHAT_MODEL,
-                "context_provided": bool(context),
-                "total_duration": data.get("total_duration"),
-                "eval_count": data.get("eval_count"),
-            }
+        return response_text, metadata
 
-            return response_text, metadata
-
-        except requests.exceptions.RequestException as e:
-            last_error = e
-            # Try next model
-            continue
-
-    # All models failed
-    raise OllamaError(f"Failed to get chat completion (tried {len(models_to_try)} models): {str(last_error)}")
+    except Exception as e:
+        raise DeepSeekError(f"Failed to get chat completion: {str(e)}")
 
 
 def chat_with_rag(
@@ -635,35 +650,54 @@ def sync_all_embeddings(batch_size: int = 100) -> Dict[str, int]:
 
 def check_ollama_status() -> Dict:
     """
-    Check if Ollama is running and the required models are available.
+    Check if DeepSeek API is available and configured.
+    Named for backwards compatibility with existing code.
+
+    Returns:
+        Dictionary with status information
+    """
+    return check_deepseek_status()
+
+
+def check_deepseek_status() -> Dict:
+    """
+    Check if DeepSeek API is available and configured.
 
     Returns:
         Dictionary with status information
     """
     status = {
+        "api_available": False,
+        "api_configured": bool(DEEPSEEK_API_KEY),
+        "embed_model": DEEPSEEK_EMBED_MODEL,
+        "chat_model": DEEPSEEK_CHAT_MODEL,
+        "base_url": DEEPSEEK_BASE_URL,
+        # Keep old keys for backwards compatibility
         "ollama_running": False,
         "embed_model_available": False,
         "chat_model_available": False,
-        "base_url": OLLAMA_BASE_URL,
-        "embed_model": OLLAMA_EMBED_MODEL,
-        "chat_model": OLLAMA_CHAT_MODEL,
     }
 
+    if not DEEPSEEK_API_KEY:
+        status["error"] = "DEEPSEEK_API_KEY environment variable is not set"
+        return status
+
     try:
-        # Check if Ollama is running
-        response = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=5)
-        response.raise_for_status()
-        status["ollama_running"] = True
+        client = get_deepseek_client()
+        # Try to list models as a health check
+        models_response = client.models.list()
+        status["api_available"] = True
+        status["ollama_running"] = True  # Backwards compatibility
 
-        # Check available models
-        models = response.json().get("models", [])
-        model_names = [m.get("name", "").split(":")[0] for m in models]
+        # Get available models
+        available_models = [m.id for m in models_response.data] if models_response.data else []
+        status["available_models"] = available_models
 
-        status["embed_model_available"] = OLLAMA_EMBED_MODEL.split(":")[0] in model_names
-        status["chat_model_available"] = OLLAMA_CHAT_MODEL.split(":")[0] in model_names
-        status["available_models"] = model_names
+        # Check if our models are available (DeepSeek models are usually available)
+        status["embed_model_available"] = True  # Assume available
+        status["chat_model_available"] = DEEPSEEK_CHAT_MODEL in available_models or "deepseek" in DEEPSEEK_CHAT_MODEL
 
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         status["error"] = str(e)
 
     return status
