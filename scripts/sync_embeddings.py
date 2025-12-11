@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Embedding Sync Script
+Embedding Sync Script for DeepSeek + Local Embeddings
 
 This script synchronizes embeddings for all customers, work orders, and items
-in the database. It can be run manually or as a cron job.
+in the database using local sentence-transformers embeddings.
 
 Usage:
     python scripts/sync_embeddings.py [--type TYPE] [--batch-size N]
@@ -15,13 +15,14 @@ Options:
 
 Environment Variables:
     TEST_DB           PostgreSQL connection string for the database
-    OLLAMA_BASE_URL   Ollama API URL (default: http://localhost:11434)
-    OLLAMA_EMBED_MODEL  Embedding model to use (default: nomic-embed-text)
+    DEEPSEEK_API_KEY  DeepSeek API key (for chat, not embeddings)
+    LOCAL_EMBED_MODEL Local embedding model (default: all-MiniLM-L6-v2)
 
 Example:
     export TEST_DB="postgresql://user:pass@localhost:5432/dbname"
     python scripts/sync_embeddings.py --type customers --verbose
 """
+
 import os
 import sys
 import argparse
@@ -37,8 +38,8 @@ from services.rag_service import (
     sync_customer_embedding,
     sync_work_order_embedding,
     sync_item_embedding,
-    check_ollama_status,
-    OllamaError
+    check_deepseek_status,  # Changed from check_ollama_status
+    DeepSeekError,  # Changed from OllamaError
 )
 from models.customer import Customer
 from models.work_order import WorkOrder, WorkOrderItem
@@ -134,17 +135,20 @@ def sync_items(verbose=False):
 
 
 def print_status():
-    """Print current Ollama and embedding status."""
-    status = check_ollama_status()
+    """Print current DeepSeek and embedding status."""
+    status = check_deepseek_status()  # Changed from check_ollama_status
 
-    print("\n=== Ollama Status ===")
-    print(f"Base URL: {status['base_url']}")
-    print(f"Running: {'Yes' if status['ollama_running'] else 'No'}")
-    print(f"Embed Model ({status['embed_model']}): {'Available' if status['embed_model_available'] else 'Missing'}")
-    print(f"Chat Model ({status['chat_model']}): {'Available' if status['chat_model_available'] else 'Missing'}")
+    print("\n=== DeepSeek Status ===")
+    print(f"API Available: {'Yes' if status['api_available'] else 'No'}")
+    print(f"API Configured: {'Yes' if status['api_configured'] else 'No'}")
+    print(
+        f"Chat Model ({status['chat_model']}): {'Available' if status.get('chat_model_available') else 'Unknown'}"
+    )
 
-    if status.get('available_models'):
-        print(f"Available models: {', '.join(status['available_models'])}")
+    print("\n=== Local Embedding Status ===")
+    print(f"Embed Model: {status['embed_model']}")
+    print(f"Embed Model Local: {'Yes' if status['embed_model_local'] else 'No'}")
+    print(f"Embed Dimension: {status['embed_dimension']}")
 
     print("\n=== Embedding Counts ===")
     print(f"Customers: {CustomerEmbedding.query.count()}")
@@ -163,22 +167,16 @@ def main():
         "--type",
         choices=["customers", "work_orders", "items", "all"],
         default="all",
-        help="Type of records to sync (default: all)"
+        help="Type of records to sync (default: all)",
     )
     parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Print detailed progress"
+        "--verbose", "-v", action="store_true", help="Print detailed progress"
     )
     parser.add_argument(
-        "--status",
-        action="store_true",
-        help="Print current status and exit"
+        "--status", action="store_true", help="Print current status and exit"
     )
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Check status without syncing"
+        "--dry-run", action="store_true", help="Check status without syncing"
     )
 
     args = parser.parse_args()
@@ -187,8 +185,8 @@ def main():
     app = create_app()
 
     with app.app_context():
-        # Check Ollama status first
-        status = check_ollama_status()
+        # Check DeepSeek status first
+        status = check_deepseek_status()  # Changed from check_ollama_status
 
         if args.status or args.dry_run:
             print_status()
@@ -196,15 +194,16 @@ def main():
                 print("\nDry run complete. No embeddings were synced.")
             return
 
-        if not status['ollama_running']:
-            print(f"ERROR: Ollama is not running at {status['base_url']}")
-            print("Please start Ollama first: ollama serve")
-            sys.exit(1)
-
-        if not status['embed_model_available']:
-            print(f"ERROR: Embedding model '{status['embed_model']}' is not available")
-            print(f"Please pull the model: ollama pull {status['embed_model']}")
-            sys.exit(1)
+        # For local embeddings, we don't need to check if a service is running
+        # But we should check if the API key is configured for chat functionality
+        if not status["api_configured"]:
+            print("WARNING: DEEPSEEK_API_KEY is not configured")
+            print(
+                "Chat functionality will not work, but embeddings will still be synced"
+            )
+            response = input("Continue with embedding sync? (y/n): ")
+            if response.lower() != "y":
+                sys.exit(1)
 
         log("Starting embedding sync...", args.verbose)
         start_time = time.time()
@@ -241,15 +240,4 @@ def main():
         elapsed = time.time() - start_time
 
         print("\n=== Sync Complete ===")
-        print(f"Time elapsed: {elapsed:.2f} seconds")
-        print(f"Customers: {stats['customers_synced']} synced, {stats['customers_failed']} failed")
-        print(f"Work Orders: {stats['work_orders_synced']} synced, {stats['work_orders_failed']} failed")
-        print(f"Items: {stats['items_synced']} synced, {stats['items_failed']} failed")
-
-        total_failed = stats['customers_failed'] + stats['work_orders_failed'] + stats['items_failed']
-        if total_failed > 0:
-            sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
+        print(f"Time elapsed: {elapsed}")
