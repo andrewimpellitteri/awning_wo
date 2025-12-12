@@ -299,7 +299,7 @@ def semantic_search():
     if "error" in results:
         return jsonify({
             "error": results["error"],
-            "hint": "Make sure Ollama is running"
+            "hint": "Check DEEPSEEK_API_KEY configuration"
         }), 503
 
     return jsonify({
@@ -315,8 +315,8 @@ def semantic_search():
 @chatbot_bp.route("/status", methods=["GET"])
 @login_required
 def get_status():
-    """Get chatbot and Ollama status."""
-    ollama_status = check_ollama_status()
+    """Get chatbot and AI service status."""
+    ollama_status = check_ollama_status()  # Named for backwards compatibility
 
     # Get embedding counts
     embedding_counts = {
@@ -345,18 +345,18 @@ def sync_embeddings():
     data = request.get_json() or {}
     sync_type = data.get("type", "all")
 
-    # Check Ollama status first
-    status = check_ollama_status()
-    if not status["ollama_running"]:
+    # Check AI service status first
+    status = check_ollama_status()  # Named for backwards compatibility
+    if not status["ollama_running"] and not status.get("api_available"):
         return jsonify({
-            "error": "Ollama is not running",
-            "hint": f"Start Ollama at {status['base_url']}"
+            "error": "AI service is not available",
+            "hint": "Check DEEPSEEK_API_KEY environment variable"
         }), 503
 
     if not status["embed_model_available"]:
         return jsonify({
             "error": f"Embedding model '{status['embed_model']}' not available",
-            "hint": f"Run: ollama pull {status['embed_model']}"
+            "hint": "The embedding model should auto-download on first use"
         }), 503
 
     try:
@@ -436,8 +436,8 @@ def sync_single_embedding():
         else:
             return jsonify({"error": "Failed to sync embedding"}), 500
 
-    except OllamaError as e:
+    except (OllamaError, DeepSeekError) as e:
         return jsonify({
-            "error": f"Ollama error: {str(e)}",
-            "hint": "Make sure Ollama is running"
+            "error": f"AI service error: {str(e)}",
+            "hint": "Check DEEPSEEK_API_KEY configuration"
         }), 503

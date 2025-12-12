@@ -181,7 +181,7 @@
     }
 
     /**
-     * Check Ollama/backend status
+     * Check AI backend status (DeepSeek API)
      */
     async function checkStatus() {
         const statusBar = document.getElementById('chat-status-bar');
@@ -192,17 +192,21 @@
             const data = await response.json();
             ollamaStatus = data;
 
-            if (!data.ollama.ollama_running) {
+            // Check API availability (backwards compatible with ollama field)
+            const aiStatus = data.ollama || {};
+
+            if (!aiStatus.ollama_running && !aiStatus.api_available) {
                 statusBar.style.display = 'flex';
                 statusBar.className = 'chat-status error';
-                statusText.textContent = 'AI service unavailable. Please start Ollama.';
-            } else if (!data.ollama.chat_model_available || !data.ollama.embed_model_available) {
+                statusText.textContent = 'AI service unavailable. Check DEEPSEEK_API_KEY.';
+            } else if (!aiStatus.chat_model_available) {
+                statusBar.style.display = 'flex';
+                statusBar.className = 'chat-status error';
+                statusText.textContent = 'Chat model not available';
+            } else if (!aiStatus.embed_model_available) {
                 statusBar.style.display = 'flex';
                 statusBar.className = 'chat-status';
-                const missing = [];
-                if (!data.ollama.chat_model_available) missing.push(data.ollama.chat_model);
-                if (!data.ollama.embed_model_available) missing.push(data.ollama.embed_model);
-                statusText.textContent = `Missing models: ${missing.join(', ')}`;
+                statusText.textContent = 'Embedding model loading...';
             } else {
                 statusBar.style.display = 'none';
             }
