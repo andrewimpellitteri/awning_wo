@@ -299,7 +299,7 @@ def semantic_search():
     if "error" in results:
         return jsonify({
             "error": results["error"],
-            "hint": "Make sure Ollama is running"
+            "hint": "Make sure DEEPSEEK_API_KEY and OPENAI_API_KEY are set"
         }), 503
 
     return jsonify({
@@ -315,8 +315,8 @@ def semantic_search():
 @chatbot_bp.route("/status", methods=["GET"])
 @login_required
 def get_status():
-    """Get chatbot and Ollama status."""
-    ollama_status = check_ollama_status()
+    """Get chatbot and AI service status."""
+    ollama_status = check_ollama_status()  # Calls check_deepseek_status() internally
 
     # Get embedding counts
     embedding_counts = {
@@ -345,18 +345,18 @@ def sync_embeddings():
     data = request.get_json() or {}
     sync_type = data.get("type", "all")
 
-    # Check Ollama status first
+    # Check AI service status first
     status = check_ollama_status()
-    if not status["ollama_running"]:
+    if not status["api_available"]:
         return jsonify({
-            "error": "Ollama is not running",
-            "hint": f"Start Ollama at {status['base_url']}"
+            "error": "AI service is not available",
+            "hint": "Make sure DEEPSEEK_API_KEY is set"
         }), 503
 
     if not status["embed_model_available"]:
         return jsonify({
-            "error": f"Embedding model '{status['embed_model']}' not available",
-            "hint": f"Run: ollama pull {status['embed_model']}"
+            "error": f"Embedding API '{status['embed_model']}' not available",
+            "hint": "Make sure OPENAI_API_KEY is set"
         }), 503
 
     try:
@@ -438,6 +438,6 @@ def sync_single_embedding():
 
     except OllamaError as e:
         return jsonify({
-            "error": f"Ollama error: {str(e)}",
-            "hint": "Make sure Ollama is running"
+            "error": f"AI service error: {str(e)}",
+            "hint": "Make sure DEEPSEEK_API_KEY and OPENAI_API_KEY are set"
         }), 503

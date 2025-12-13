@@ -415,3 +415,108 @@
 .chat-message-content li {
     margin: 4px 0;
 }
+
+/* Sources display */
+.chat-sources {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(13, 110, 253, 0.05);
+    border-left: 3px solid var(--bs-primary, #0d6efd);
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.sources-title, .tools-title {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--bs-body-color, #212529);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sources-list, .tools-used {
+    margin-bottom: 8px;
+}
+
+.sources-list:last-child, .tools-used:last-child {
+    margin-bottom: 0;
+}
+
+.source-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    margin: 3px 4px 3px 0;
+    background: white;
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: 12px;
+    text-decoration: none;
+    font-size: 11px;
+    transition: all 0.2s;
+    color: var(--bs-body-color, #212529);
+}
+
+.source-link:hover {
+    background: var(--bs-primary-bg-subtle, #cfe2ff);
+    border-color: var(--bs-primary, #0d6efd);
+    color: var(--bs-primary, #0d6efd);
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.source-link.customer {
+    border-left: 3px solid #198754;
+}
+
+.source-link.work-order {
+    border-left: 3px solid #0d6efd;
+}
+
+.source-link.item {
+    border-left: 3px solid #fd7e14;
+}
+
+.source-link i {
+    font-size: 10px;
+}
+
+/* Tool badges */
+.tools-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.tool-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    background: var(--bs-primary-bg-subtle, #cfe2ff);
+    color: var(--bs-primary, #0d6efd);
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 500;
+    cursor: help;
+}
+
+.tool-badge:hover {
+    background: var(--bs-primary, #0d6efd);
+    color: white;
+}
+
+/* Dark theme adjustments for sources */
+[data-theme="dark"] .chat-sources {
+    background: rgba(13, 110, 253, 0.1);
+}
+
+[data-theme="dark"] .source-link {
+    background: var(--bs-secondary-bg, #343a40);
+    border-color: var(--bs-border-color, #495057);
+    color: var(--bs-body-color, #dee2e6);
+}
+
+[data-theme="dark"] .source-link:hover {
+    background: var(--bs-primary-bg-subtle, #052c65);
+}

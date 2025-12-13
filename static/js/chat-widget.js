@@ -2,7 +2,7 @@
  * Chat Widget for RAG-enhanced AI Assistant
  *
  * Provides a floating chat interface that communicates with the
- * Ollama-powered RAG backend.
+ * DeepSeek/OpenAI-powered RAG backend.
  */
 
 (function() {
@@ -181,7 +181,7 @@
     }
 
     /**
-     * Check Ollama/backend status
+     * Check AI service/backend status
      */
     async function checkStatus() {
         const statusBar = document.getElementById('chat-status-bar');
@@ -192,17 +192,17 @@
             const data = await response.json();
             ollamaStatus = data;
 
-            if (!data.ollama.ollama_running) {
+            if (!data.ollama.api_available && !data.ollama.ollama_running) {
                 statusBar.style.display = 'flex';
                 statusBar.className = 'chat-status error';
-                statusText.textContent = 'AI service unavailable. Please start Ollama.';
+                statusText.textContent = 'AI service unavailable. Check API keys.';
             } else if (!data.ollama.chat_model_available || !data.ollama.embed_model_available) {
                 statusBar.style.display = 'flex';
                 statusBar.className = 'chat-status';
                 const missing = [];
-                if (!data.ollama.chat_model_available) missing.push(data.ollama.chat_model);
-                if (!data.ollama.embed_model_available) missing.push(data.ollama.embed_model);
-                statusText.textContent = `Missing models: ${missing.join(', ')}`;
+                if (!data.ollama.chat_model_available) missing.push('Chat API');
+                if (!data.ollama.embed_model_available) missing.push('Embedding API');
+                statusText.textContent = `Missing: ${missing.join(', ')}`;
             } else {
                 statusBar.style.display = 'none';
             }
@@ -337,11 +337,20 @@
         contentDiv.className = 'chat-message-content';
         contentDiv.innerHTML = formatMessage(content);
 
+        messageDiv.appendChild(contentDiv);
+
+        // Add sources if available (for RAG responses)
+        if (role === 'assistant' && metadata.sources) {
+            const sourcesDiv = createSourcesDisplay(metadata.sources, metadata.tool_calls);
+            if (sourcesDiv) {
+                messageDiv.appendChild(sourcesDiv);
+            }
+        }
+
         const timeDiv = document.createElement('div');
         timeDiv.className = 'chat-message-time';
         timeDiv.textContent = formatTime(new Date());
 
-        messageDiv.appendChild(contentDiv);
         messageDiv.appendChild(timeDiv);
 
         messagesContainer.appendChild(messageDiv);
@@ -378,6 +387,80 @@
         formatted = formatted.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
 
         return formatted;
+    }
+
+    /**
+     * Create a pretty display of sources used for RAG responses
+     */
+    function createSourcesDisplay(sources, toolCalls) {
+        if (!sources && !toolCalls) return null;
+
+        const sourcesDiv = document.createElement('div');
+        sourcesDiv.className = 'chat-sources';
+
+        // Display RAG sources (from semantic search)
+        if (sources && (sources.customers?.length || sources.work_orders?.length || sources.items?.length)) {
+            const sourcesList = document.createElement('div');
+            sourcesList.className = 'sources-list';
+            sourcesList.innerHTML = '<div class="sources-title"><i class="fas fa-book"></i> Sources:</div>';
+
+            if (sources.customers?.length) {
+                sources.customers.forEach(custId => {
+                    const link = document.createElement('a');
+                    link.href = `/customers/${custId}`;
+                    link.className = 'source-link customer';
+                    link.innerHTML = `<i class="fas fa-user"></i> Customer ${custId}`;
+                    link.target = '_blank';
+                    sourcesList.appendChild(link);
+                });
+            }
+
+            if (sources.work_orders?.length) {
+                sources.work_orders.forEach(woNo => {
+                    const link = document.createElement('a');
+                    link.href = `/work_orders/${woNo}`;
+                    link.className = 'source-link work-order';
+                    link.innerHTML = `<i class="fas fa-clipboard-list"></i> WO ${woNo}`;
+                    link.target = '_blank';
+                    sourcesList.appendChild(link);
+                });
+            }
+
+            if (sources.items?.length) {
+                sources.items.forEach(itemId => {
+                    const link = document.createElement('a');
+                    link.href = `#item-${itemId}`;
+                    link.className = 'source-link item';
+                    link.innerHTML = `<i class="fas fa-box"></i> Item ${itemId}`;
+                    sourcesList.appendChild(link);
+                });
+            }
+
+            sourcesDiv.appendChild(sourcesList);
+        }
+
+        // Display tool calls (from function calling)
+        if (toolCalls && toolCalls.length > 0) {
+            const toolsDiv = document.createElement('div');
+            toolsDiv.className = 'tools-used';
+            toolsDiv.innerHTML = `<div class="tools-title"><i class="fas fa-tools"></i> Tools used: ${toolCalls.length}</div>`;
+
+            const toolsList = document.createElement('div');
+            toolsList.className = 'tools-list';
+
+            toolCalls.forEach((call, idx) => {
+                const toolBadge = document.createElement('span');
+                toolBadge.className = 'tool-badge';
+                toolBadge.textContent = call.tool || `Tool ${idx + 1}`;
+                toolBadge.title = JSON.stringify(call.arguments || {}, null, 2);
+                toolsList.appendChild(toolBadge);
+            });
+
+            toolsDiv.appendChild(toolsList);
+            sourcesDiv.appendChild(toolsDiv);
+        }
+
+        return sourcesDiv.children.length > 0 ? sourcesDiv : null;
     }
 
     /**
