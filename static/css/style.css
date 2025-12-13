@@ -54,7 +54,7 @@
 }
 
 /* Dark theme logo */
-html[data-theme="light"] .navbar-brand img {
+html[data-theme="dark"] .navbar-brand img {
     filter: invert(1) hue-rotate(180deg);
 }
 

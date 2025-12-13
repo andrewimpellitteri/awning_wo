@@ -182,3 +182,6 @@ profiles/
 results_*/
 rev_model/
 *.tgz
+
+check_completed_predictions.py
+create_mock_ml_data.py

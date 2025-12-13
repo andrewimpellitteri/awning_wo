@@ -468,14 +468,23 @@ class MLService:
         X = open_df[feature_cols].fillna(0)
 
         # Predict
+        prediction_timestamp = datetime.now()
         open_df["predicted_days"] = model.predict(X)
-        open_df["prediction_date"] = datetime.now().strftime("%Y-%m-%d")
+        open_df["prediction_date"] = prediction_timestamp.strftime("%Y-%m-%d")
         open_df["model_name"] = metadata["config_name"]
         open_df["model_mae_at_train"] = metadata["mae"]
 
+        # Track model training date to measure staleness
+        open_df["model_trained_at"] = metadata.get("trained_at", prediction_timestamp.strftime("%Y-%m-%d %H:%M:%S"))
+
+        # Calculate model age in days (for staleness tracking)
+        model_trained_dt = pd.to_datetime(metadata.get("trained_at", prediction_timestamp))
+        model_age_days = (prediction_timestamp - model_trained_dt).days
+        open_df["model_age_days"] = model_age_days
+
         return open_df[[
             "workorderid", "prediction_date", "predicted_days",
-            "model_name", "model_mae_at_train"
+            "model_name", "model_mae_at_train", "model_trained_at", "model_age_days"
         ]]
 
 
@@ -1072,6 +1081,9 @@ def performance_dashboard():
             flash("No work order data available", "error")
             return render_template("ml/performance_dashboard.html", chart_json=None, stats=None)
 
+        # Convert workorderid to string for merge compatibility (database uses VARCHAR)
+        current_df["workorderid"] = current_df["workorderid"].astype(str)
+
         # Convert date columns
         current_df["datein"] = pd.to_datetime(current_df["datein"], errors="coerce")
         current_df["datecompleted"] = pd.to_datetime(current_df["datecompleted"], errors="coerce")
@@ -1088,6 +1100,9 @@ def performance_dashboard():
 
                 # Read snapshot CSV
                 snapshot_df = pd.read_csv(snapshot_buffer)
+
+                # Convert workorderid to string for merge compatibility (CSV files have integers)
+                snapshot_df["workorderid"] = snapshot_df["workorderid"].astype(str)
 
                 # Merge with current data to get actuals
                 merged = snapshot_df.merge(
@@ -1156,6 +1171,11 @@ def performance_dashboard():
         ts_df = pd.DataFrame(time_series_data)
         ts_df = ts_df.sort_values("date")
 
+        # DEBUG: Print what's going to the chart
+        print(f"[DASHBOARD] Chart data:")
+        print(ts_df[["date", "mae", "rmse", "n"]].to_string())
+        print(f"[DASHBOARD] MAE range: {ts_df['mae'].min():.2f} - {ts_df['mae'].max():.2f}")
+
         # Create Plotly figure with error bars
         fig = go.Figure()
 
@@ -1212,6 +1232,100 @@ def performance_dashboard():
                 yshift=15,
                 font=dict(size=9, color='gray')
             )
+
+        # === ENHANCED METRICS FOR NIGHTLY RETRAINED MODELS ===
+
+        # 1. Performance by Model Training Date (are newer models better?)
+        model_performance = {}
+        all_evaluated_predictions = []
+
+        for snapshot_obj in snapshot_files:
+            try:
+                snapshot_key = snapshot_obj["Key"]
+                snapshot_buffer = BytesIO()
+                s3_client.download_fileobj(AWS_S3_BUCKET, snapshot_key, snapshot_buffer)
+                snapshot_buffer.seek(0)
+                snapshot_df = pd.read_csv(snapshot_buffer)
+                snapshot_df["workorderid"] = snapshot_df["workorderid"].astype(str)
+
+                # Merge with current data
+                merged = snapshot_df.merge(
+                    current_df[["workorderid", "datein", "datecompleted"]],
+                    on="workorderid",
+                    how="left"
+                )
+                merged["actual_days"] = (merged["datecompleted"] - pd.to_datetime(merged["datein"])).dt.days
+                eval_df = merged.dropna(subset=["actual_days"])
+
+                if not eval_df.empty:
+                    all_evaluated_predictions.append(eval_df)
+
+                    # Track by model training date
+                    if "model_trained_at" in eval_df.columns:
+                        model_date = eval_df["model_trained_at"].iloc[0]
+                        if model_date not in model_performance:
+                            model_performance[model_date] = []
+                        errors = np.abs(eval_df["actual_days"] - eval_df["predicted_days"])
+                        model_performance[model_date].extend(errors.tolist())
+            except Exception as e:
+                continue
+
+        # Aggregate model performance
+        model_stats = []
+        for model_date, errors in sorted(model_performance.items()):
+            model_stats.append({
+                "model_trained_at": model_date,
+                "mae": round(np.mean(errors), 3),
+                "n_predictions": len(errors),
+                "std": round(np.std(errors), 3)
+            })
+
+        # 2. Calibration Metrics (coverage analysis)
+        calibration_stats = None
+        if all_evaluated_predictions:
+            all_eval = pd.concat(all_evaluated_predictions, ignore_index=True)
+
+            # Assuming ±1.5 days confidence interval (from /predict route)
+            ci_width = 1.5
+            all_eval["within_ci"] = np.abs(all_eval["actual_days"] - all_eval["predicted_days"]) <= ci_width
+
+            coverage_rate = all_eval["within_ci"].mean() * 100
+            mean_abs_error = np.abs(all_eval["actual_days"] - all_eval["predicted_days"]).mean()
+
+            calibration_stats = {
+                "coverage_rate_pct": round(coverage_rate, 1),
+                "expected_coverage_pct": 68.0,  # ±1.5 days ~1 std dev
+                "is_well_calibrated": abs(coverage_rate - 68.0) < 10,  # Within 10% of expected
+                "mean_abs_error": round(mean_abs_error, 2),
+                "total_predictions_evaluated": len(all_eval)
+            }
+
+        # 3. Model Staleness Analysis (if model_age_days available)
+        staleness_stats = None
+        if all_evaluated_predictions and any("model_age_days" in df.columns for df in all_evaluated_predictions):
+            all_eval = pd.concat(all_evaluated_predictions, ignore_index=True)
+            if "model_age_days" in all_eval.columns:
+                all_eval["abs_error"] = np.abs(all_eval["actual_days"] - all_eval["predicted_days"])
+
+                # Group by model age
+                staleness_by_age = all_eval.groupby("model_age_days")["abs_error"].agg(["mean", "count"]).reset_index()
+                staleness_by_age.columns = ["model_age_days", "mae", "n"]
+
+                staleness_stats = {
+                    "by_age": staleness_by_age.to_dict("records"),
+                    "correlation": None
+                }
+
+                # Calculate correlation between model age and error
+                if len(staleness_by_age) > 1:
+                    from scipy.stats import pearsonr
+                    corr, p_val = pearsonr(staleness_by_age["model_age_days"], staleness_by_age["mae"])
+                    staleness_stats["correlation"] = {
+                        "coefficient": round(corr, 3),
+                        "p_value": round(p_val, 3),
+                        "interpretation": "Performance degrades as model ages" if corr > 0.3 and p_val < 0.05
+                                         else "No significant degradation with age"
+                    }
 
         # Calculate convergence statistics
         if len(ts_df) >= 3:
@@ -1613,3 +1727,160 @@ def evaluate_snapshot(snapshot_df, current_df):
         "rmse": round(rmse, 3),
         "mape": round(mape, 3),
     }
+
+
+@ml_bp.route("/check_predictions_status")
+@login_required
+def check_predictions_status():
+    """Check if any predicted work orders have completed"""
+    from utils.file_upload import s3_client, AWS_S3_BUCKET
+    from io import BytesIO
+
+    try:
+        # Load prediction snapshots
+        response = s3_client.list_objects_v2(
+            Bucket=AWS_S3_BUCKET,
+            Prefix="ml_predictions/weekly_"
+        )
+
+        if "Contents" not in response:
+            return jsonify({
+                "status": "no_snapshots",
+                "message": "No prediction snapshots found",
+                "snapshots": 0
+            })
+
+        # Get all snapshots
+        snapshot_files = [obj for obj in response["Contents"] if obj["Key"].endswith(".csv")]
+
+        # Load all predictions
+        all_predictions = []
+        snapshot_info = []
+
+        for obj in snapshot_files:
+            buffer = BytesIO()
+            s3_client.download_fileobj(AWS_S3_BUCKET, obj["Key"], buffer)
+            buffer.seek(0)
+            df = pd.read_csv(buffer)
+
+            snapshot_date = obj["Key"].replace("ml_predictions/weekly_", "").replace(".csv", "")
+            df['snapshot_date'] = snapshot_date
+
+            all_predictions.append(df)
+            snapshot_info.append({
+                "date": snapshot_date,
+                "predictions": len(df),
+                "unique_orders": df['workorderid'].nunique()
+            })
+
+        combined_predictions = pd.concat(all_predictions, ignore_index=True)
+
+        # Ensure workorderid is string for consistency
+        combined_predictions['workorderid'] = combined_predictions['workorderid'].astype(str)
+
+        # Get unique work order IDs
+        predicted_wo_ids = combined_predictions['workorderid'].unique().tolist()
+
+        # Load current work order data
+        current_df = MLService.load_work_orders()
+        if current_df is None or current_df.empty:
+            return jsonify({
+                "status": "error",
+                "message": "Could not load work order data"
+            }), 500
+
+        # Ensure workorderid is string in current_df too
+        current_df['workorderid'] = current_df['workorderid'].astype(str)
+
+        # Filter to only the predicted work orders
+        current_df = current_df[current_df['workorderid'].isin(predicted_wo_ids)].copy()
+
+        # Convert dates
+        current_df['datein'] = pd.to_datetime(current_df['datein'], errors='coerce')
+        current_df['datecompleted'] = pd.to_datetime(current_df['datecompleted'], errors='coerce')
+
+        # Calculate actual completion time
+        current_df['actual_days'] = (current_df['datecompleted'] - current_df['datein']).dt.days
+
+        # Split into completed and open
+        completed = current_df[current_df['datecompleted'].notna()].copy()
+        still_open = current_df[current_df['datecompleted'].isna()].copy()
+
+        # Merge predictions with completion status
+        merged = combined_predictions.merge(
+            current_df[['workorderid', 'datein', 'datecompleted', 'actual_days']],
+            on='workorderid',
+            how='left'
+        )
+
+        completed_merged = merged[merged['datecompleted'].notna()].copy()
+
+        # Build response
+        result = {
+            "status": "success",
+            "snapshots": {
+                "total": len(snapshot_files),
+                "details": snapshot_info
+            },
+            "predictions": {
+                "total": len(combined_predictions),
+                "unique_orders": len(predicted_wo_ids)
+            },
+            "completion_status": {
+                "completed_orders": len(completed),
+                "still_open_orders": len(still_open),
+                "completion_rate": round(len(completed) / len(predicted_wo_ids) * 100, 1) if predicted_wo_ids else 0
+            }
+        }
+
+        if not completed.empty:
+            # Calculate statistics for completed orders
+            completed_merged['error'] = abs(completed_merged['actual_days'] - completed_merged['predicted_days'])
+
+            # Group by snapshot
+            by_snapshot = completed_merged.groupby('snapshot_date').agg({
+                'error': 'mean',
+                'workorderid': 'count'
+            }).reset_index()
+            by_snapshot.columns = ['snapshot_date', 'mae', 'n_predictions']
+
+            # Get examples
+            examples = []
+            for wo_id in completed['workorderid'].unique()[:5]:
+                wo_preds = completed_merged[completed_merged['workorderid'] == wo_id].sort_values('snapshot_date')
+                examples.append({
+                    "work_order": str(wo_id),
+                    "actual_days": float(wo_preds.iloc[0]['actual_days']),
+                    "completed_date": wo_preds.iloc[0]['datecompleted'].strftime('%Y-%m-%d'),
+                    "predictions": [
+                        {
+                            "date": row['snapshot_date'],
+                            "predicted_days": float(row['predicted_days']),
+                            "error": abs(float(row['actual_days']) - float(row['predicted_days']))
+                        }
+                        for _, row in wo_preds.iterrows()
+                    ]
+                })
+
+            result["dashboard_ready"] = True
+            result["metrics"] = {
+                "overall_mae": round(completed_merged['error'].mean(), 2),
+                "total_evaluations": len(completed_merged),
+                "by_snapshot": by_snapshot.to_dict('records')
+            }
+            result["examples"] = examples
+
+        else:
+            result["dashboard_ready"] = False
+            result["message"] = "No predicted orders have completed yet. Dashboard will show data once they finish."
+
+            # Show when predictions were made
+            result["waiting_since"] = snapshot_info[0]['date'] if snapshot_info else None
+
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
