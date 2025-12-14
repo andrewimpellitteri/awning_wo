@@ -60,6 +60,8 @@ def app():
     # Import the factory and config here to avoid circular dependencies
     from app import create_app
     from config import TestingConfig
+    from sqlalchemy import LargeBinary
+    from models.embeddings import CustomerEmbedding, WorkOrderEmbedding, ItemEmbedding
 
     # Create the app with test config
     app = create_app(config_class=TestingConfig)
@@ -72,21 +74,31 @@ def app():
         }
     )
 
-    # Establish an application context before creating the database tables
     with app.app_context():
-        # Create the database tables
-        # Skip embedding tables for SQLite (they use PostgreSQL ARRAY type)
-        from sqlalchemy import inspect
-        tables_to_create = []
-        for table in db.metadata.sorted_tables:
-            # Skip embedding tables in SQLite
-            if "sqlite" in app.config["SQLALCHEMY_DATABASE_URI"].lower():
-                if "embedding" not in table.name:
-                    tables_to_create.append(table)
-            else:
-                tables_to_create.append(table)
+        is_sqlite = "sqlite" in app.config["SQLALCHEMY_DATABASE_URI"].lower()
 
-        db.metadata.create_all(bind=db.engine, tables=tables_to_create)
+        if is_sqlite:
+            # Store original column types to restore later
+            original_types = {}
+
+            # Temporarily replace PostgreSQL ARRAY type with SQLite-compatible LargeBinary
+            for model in [CustomerEmbedding, WorkOrderEmbedding, ItemEmbedding]:
+                table = model.__table__
+                # Find the embedding column and store/change its type
+                if "embedding" in table.columns:
+                    column = table.columns["embedding"]
+                    original_types[column] = column.type
+                    column.type = LargeBinary()
+
+            # Create all tables with modified types
+            db.create_all()
+
+            # Restore original types for other tests (optional but recommended)
+            for column, original_type in original_types.items():
+                column.type = original_type
+        else:
+            # For PostgreSQL create all tables normally
+            db.create_all()
 
         # Yield the app to the test
         yield app

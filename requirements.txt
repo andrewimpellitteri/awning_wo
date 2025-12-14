@@ -58,5 +58,6 @@ typing_extensions==4.14.1
 
 # RAG Chatbot dependencies
 openai==1.12.0
+pgvector>=0.2.0
 # Note: Using OpenAI text-embedding-3-small for embeddings (~$0.02/1M tokens)
 # Set DEEPSEEK_API_KEY (for chat) and OPENAI_API_KEY (for embeddings) environment variables

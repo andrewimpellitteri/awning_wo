@@ -1113,7 +1113,7 @@ def performance_dashboard():
 
                 # Calculate actual days to complete
                 merged["actual_days"] = (
-                    merged["datecompleted"] - pd.to_datetime(merged["datein"])
+                    merged["datecompleted"] - merged["datein"]
                 ).dt.days
 
                 # Only evaluate orders that now have completion data
@@ -1169,12 +1169,14 @@ def performance_dashboard():
 
         # Create DataFrame for plotting
         ts_df = pd.DataFrame(time_series_data)
+        ts_df["date"] = pd.to_datetime(ts_df["date"])
         ts_df = ts_df.sort_values("date")
 
-        # DEBUG: Print what's going to the chart
-        print(f"[DASHBOARD] Chart data:")
-        print(ts_df[["date", "mae", "rmse", "n"]].to_string())
-        print(f"[DASHBOARD] MAE range: {ts_df['mae'].min():.2f} - {ts_df['mae'].max():.2f}")
+        # Log dataframe for debugging
+        from flask import current_app
+        current_app.logger.info("--- DataFrame for Charting ---")
+        current_app.logger.info(ts_df[["date", "mae", "rmse", "n"]].to_string())
+        current_app.logger.info("------------------------------")
 
         # Create Plotly figure with error bars
         fig = go.Figure()

@@ -169,23 +169,9 @@ def get_embeddings_batch(texts: List[str]) -> List[List[float]]:
         return embeddings
 
 
-def cosine_similarity(a: List[float], b: List[float]) -> float:
-    """Calculate cosine similarity between two vectors."""
-    if not a or not b:
-        return 0.0
-    a_arr = np.array(a)
-    b_arr = np.array(b)
-    dot_product = np.dot(a_arr, b_arr)
-    norm_a = np.linalg.norm(a_arr)
-    norm_b = np.linalg.norm(b_arr)
-    if norm_a == 0 or norm_b == 0:
-        return 0.0
-    return float(dot_product / (norm_a * norm_b))
-
-
 def search_similar_customers(query_embedding: List[float], limit: int = 5) -> List[Dict]:
     """
-    Search for customers similar to the query embedding.
+    Search for customers similar to the query embedding using pgvector.
 
     Args:
         query_embedding: The query vector
@@ -194,26 +180,28 @@ def search_similar_customers(query_embedding: List[float], limit: int = 5) -> Li
     Returns:
         List of customer results with similarity scores
     """
-    embeddings = CustomerEmbedding.query.all()
-    results = []
+    # The <=> operator in pgvector is cosine distance. 1 - distance = similarity.
+    results = db.session.query(
+        CustomerEmbedding,
+        CustomerEmbedding.embedding.cosine_distance(query_embedding).label('distance')
+    ).order_by(
+        CustomerEmbedding.embedding.cosine_distance(query_embedding)
+    ).limit(limit).all()
 
-    for emb in embeddings:
-        similarity = cosine_similarity(query_embedding, emb.embedding)
-        results.append({
+    return [
+        {
             "type": "customer",
             "id": emb.customer_id,
             "content": emb.content,
-            "similarity": similarity
-        })
-
-    # Sort by similarity (highest first)
-    results.sort(key=lambda x: x["similarity"], reverse=True)
-    return results[:limit]
+            "similarity": 1 - distance
+        }
+        for emb, distance in results
+    ]
 
 
 def search_similar_work_orders(query_embedding: List[float], limit: int = 5) -> List[Dict]:
     """
-    Search for work orders similar to the query embedding.
+    Search for work orders similar to the query embedding using pgvector.
 
     Args:
         query_embedding: The query vector
@@ -222,25 +210,27 @@ def search_similar_work_orders(query_embedding: List[float], limit: int = 5) -> 
     Returns:
         List of work order results with similarity scores
     """
-    embeddings = WorkOrderEmbedding.query.all()
-    results = []
+    results = db.session.query(
+        WorkOrderEmbedding,
+        WorkOrderEmbedding.embedding.cosine_distance(query_embedding).label('distance')
+    ).order_by(
+        WorkOrderEmbedding.embedding.cosine_distance(query_embedding)
+    ).limit(limit).all()
 
-    for emb in embeddings:
-        similarity = cosine_similarity(query_embedding, emb.embedding)
-        results.append({
+    return [
+        {
             "type": "work_order",
             "id": emb.work_order_no,
             "content": emb.content,
-            "similarity": similarity
-        })
-
-    results.sort(key=lambda x: x["similarity"], reverse=True)
-    return results[:limit]
+            "similarity": 1 - distance
+        }
+        for emb, distance in results
+    ]
 
 
 def search_similar_items(query_embedding: List[float], limit: int = 5) -> List[Dict]:
     """
-    Search for items similar to the query embedding.
+    Search for items similar to the query embedding using pgvector.
 
     Args:
         query_embedding: The query vector
@@ -249,20 +239,22 @@ def search_similar_items(query_embedding: List[float], limit: int = 5) -> List[D
     Returns:
         List of item results with similarity scores
     """
-    embeddings = ItemEmbedding.query.all()
-    results = []
+    results = db.session.query(
+        ItemEmbedding,
+        ItemEmbedding.embedding.cosine_distance(query_embedding).label('distance')
+    ).order_by(
+        ItemEmbedding.embedding.cosine_distance(query_embedding)
+    ).limit(limit).all()
 
-    for emb in embeddings:
-        similarity = cosine_similarity(query_embedding, emb.embedding)
-        results.append({
+    return [
+        {
             "type": "item",
             "id": emb.item_id,
             "content": emb.content,
-            "similarity": similarity
-        })
-
-    results.sort(key=lambda x: x["similarity"], reverse=True)
-    return results[:limit]
+            "similarity": 1 - distance
+        }
+        for emb, distance in results
+    ]
 
 
 def search_all(query: str, limit_per_type: int = 3) -> Dict[str, List[Dict]]:
@@ -344,10 +336,16 @@ def chat_completion(
     Raises:
         DeepSeekError: If the API call fails
     """
-    default_system = """You are a helpful assistant for the Awning Management System.
-You help users with questions about customers, work orders, items, and general operations.
-Be concise and helpful. If you reference specific records, mention their IDs.
-If you don't have enough information to answer, say so clearly."""
+    default_system = """You are 'AwningBot', a helpful AI assistant for the Awning Management System.
+Your goal is to answer user questions based *only* on the information provided in the 'RELEVANT INFORMATION' section.
+
+**Core Instructions:**
+1.  **Strictly Grounded:** Your answers MUST be based exclusively on the text provided in the 'RELEVANT INFORMATION' context. Do not use any external knowledge or make assumptions.
+2.  **Cite Your Sources:** When you pull information from a specific record, mention its ID (e.g., "Customer ID: CUST123", "Work Order: WO5678").
+3.  **Handle Missing Information:** If the answer to the user's question is not present in the 'RELEVANT INFORMATION', you MUST state that you do not have enough information to answer. Do not try to guess.
+4.  **Be Concise and Factual:** Provide clear, factual answers. Use lists or tables to format structured data.
+5.  **Professional Tone:** Maintain a professional and helpful tone.
+"""
 
     system = system_prompt or default_system
 
@@ -1182,15 +1180,25 @@ def chat_with_tools(
     Returns:
         Tuple of (response_text, metadata)
     """
-    system_prompt = """You are a helpful assistant for the Awning Management System.
-You help users with questions about customers, work orders, items, and general operations.
+    system_prompt = """You are 'AwningBot', an expert AI assistant for an awning cleaning and repair business. Your primary goal is to help staff by providing accurate and timely information from the company's database.
 
-You have access to tools that can search and retrieve data from the database.
-Use these tools to answer user questions accurately. When you need specific data,
-call the appropriate tool rather than guessing.
+**Your Persona:**
+- You are professional, efficient, and precise.
+- You are here to provide data-driven answers, not to chat conversationally.
+- Your responses should be clear, concise, and directly address the user's question.
 
-Be concise and helpful. When referencing records, include their IDs.
-If a search returns no results, let the user know and suggest alternatives."""
+**Core Instructions:**
+1.  **Tool First:** Your first instinct should ALWAYS be to use a tool. The database contains the most accurate information. Do not try to answer from memory or general knowledge.
+2.  **Analyze the User's Need:** Understand what the user is asking for. Is it a search for a specific record (`get_work_order_details`), a broad search (`search_customers`), or an aggregation (`get_work_order_stats`)? Choose the best tool for the job.
+3.  **Execute and Synthesize:** After you receive the data from a tool, present it to the user in a clean, easy-to-read format. Use markdown tables, lists, and bold text to structure your answer.
+4.  **Cite Your Sources:** When you provide details about a specific record (like a work order or customer), always mention its ID (e.g., "Work Order #56471").
+5.  **Handle No Results:** If a tool returns no results, state that clearly. For example, "I could not find any work orders matching 'XYZ'." Do not apologize. Suggest a different search or broader criteria.
+6.  **Handle Errors:** If a tool call fails, inform the user that you encountered an error trying to retrieve the data and suggest they try again.
+7.  **Be Data-Driven:** Do not make assumptions beyond the data returned by the tools. If the user asks a question that the tools cannot answer, state that you do not have the ability to answer that question.
+8.  **Clarify Ambiguity:** If the user's request is ambiguous (e.g., "look up Smith's order"), and a tool returns multiple customers named Smith, ask the user for clarification (e.g., "I found multiple customers named Smith. Can you provide a customer ID or a more specific name?").
+
+Your goal is to be a reliable interface to the database. Think of yourself as a database query engine with a natural language interface.
+"""
 
     messages = [{"role": "system", "content": system_prompt}]
     if conversation_history:
