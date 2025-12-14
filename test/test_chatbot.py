@@ -266,13 +266,13 @@ class TestEmbeddingModels:
             embedding = CustomerEmbedding(
                 customer_id="CUST001",
                 content="Customer: Test Customer LLC",
-                embedding=[0.1] * 768
+                embedding=[0.1] * 1536
             )
             db.session.add(embedding)
             db.session.commit()
 
             assert embedding.id is not None
-            assert len(embedding.embedding) == 768
+            assert len(embedding.embedding) == 1536
 
     def test_create_work_order_embedding(self, app):
         """Test creating a work order embedding."""
@@ -280,7 +280,7 @@ class TestEmbeddingModels:
             embedding = WorkOrderEmbedding(
                 work_order_no="WO001",
                 content="Work Order: WO001 - Test Awning",
-                embedding=[0.2] * 768
+                embedding=[0.2] * 1536
             )
             db.session.add(embedding)
             db.session.commit()
@@ -294,7 +294,7 @@ class TestEmbeddingModels:
             embedding = ItemEmbedding(
                 item_id=1,
                 content="Item: Canvas Awning",
-                embedding=[0.3] * 768
+                embedding=[0.3] * 1536
             )
             db.session.add(embedding)
             db.session.commit()
@@ -308,7 +308,7 @@ class TestEmbeddingModels:
             embedding = CustomerEmbedding(
                 customer_id="CUST001",
                 content="Test content",
-                embedding=[0.1] * 768
+                embedding=[0.1] * 1536
             )
             db.session.add(embedding)
             db.session.commit()
