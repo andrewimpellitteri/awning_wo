@@ -46,6 +46,21 @@ os.environ["AWS_S3_BUCKET"] = "testing"
 # --------------------
 
 
+@pytest.fixture(scope="session")
+def using_sqlite():
+    """Check if tests are using SQLite database."""
+    from config import TestingConfig
+    config = TestingConfig()
+    return "sqlite" in config.SQLALCHEMY_DATABASE_URI.lower()
+
+
+# Pytest marker for tests that require PostgreSQL with pgvector
+requires_postgres = pytest.mark.skipif(
+    "sqlite" in os.environ.get("SQLALCHEMY_DATABASE_URI", "sqlite").lower(),
+    reason="Test requires PostgreSQL with pgvector extension (not supported in SQLite)"
+)
+
+
 @pytest.fixture(autouse=True)
 def mock_s3_client(mocker):
     """Automatically mock boto3 S3 client for all tests."""

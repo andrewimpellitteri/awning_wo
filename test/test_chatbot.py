@@ -5,6 +5,7 @@ Tests the chat session management, message handling, and embedding sync
 without requiring actual Ollama to be running.
 """
 import pytest
+import os
 from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime
 
@@ -14,6 +15,12 @@ from models.embeddings import CustomerEmbedding, WorkOrderEmbedding, ItemEmbeddi
 from models.customer import Customer
 from models.work_order import WorkOrder, WorkOrderItem
 from models.user import User
+
+# Skip tests that require pgvector when using SQLite
+requires_postgres = pytest.mark.skipif(
+    "sqlite" in os.environ.get("SQLALCHEMY_DATABASE_URI", "sqlite").lower(),
+    reason="Test requires PostgreSQL with pgvector extension (not supported in SQLite)"
+)
 
 
 # =============================================================================
@@ -415,6 +422,7 @@ class TestRAGService:
             embedding = WorkOrderEmbedding.query.filter_by(work_order_no="WO001").first()
             assert embedding is not None
 
+    @requires_postgres
     def test_chat_with_rag(self, app, mock_deepseek_client, mock_openai_embeddings):
         """Test chat completion with RAG."""
         with app.app_context():
@@ -561,6 +569,7 @@ class TestChatbotRoutes:
             assert data["success"] is True
             assert "response" in data
 
+    @requires_postgres
     def test_semantic_search(self, authenticated_client, app, mock_openai_embeddings):
         """Test semantic search endpoint."""
         with app.app_context():
