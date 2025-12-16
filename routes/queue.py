@@ -471,7 +471,7 @@ def reorder_cleaning_queue():
         work_orders_locked = (
             db.session.query(WorkOrder)
             .filter(WorkOrder.WorkOrderNo.in_(work_order_ids))
-            .with_for_update()
+            .with_for_update(of=WorkOrder)
             .all()
         )
 

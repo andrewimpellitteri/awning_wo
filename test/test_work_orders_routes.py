@@ -870,3 +870,89 @@ class TestWorkOrderBusinessLogic:
             # 10002 is completed (has DateCompleted)
             wo_completed = WorkOrder.query.get("10002")
             assert wo_completed.DateCompleted is not None and wo_completed.DateCompleted != ""
+class TestCushionWorkOrderRoutes:
+    """Test cushion work order specific routes."""
+
+    def test_cushion_work_orders_page_renders(self, admin_client, sample_data):
+        """GET /work_orders/cushion should render the list page."""
+        response = admin_client.get("/work_orders/cushion")
+        assert response.status_code == 200
+        assert b"Open Cushion Work Orders" in response.data
+
+    def test_cushion_work_orders_only_shows_cushion(self, admin_client, sample_data, app):
+        """GET /work_orders/cushion should only show work orders where isCushion is True."""
+        with app.app_context():
+            # Create a cushion work order
+            cushion_wo = WorkOrder(
+                WorkOrderNo="10003",
+                CustID="100",
+                WOName="Cushion Work Order",
+                DateIn=date(2025, 2, 1),
+                isCushion=True,
+            )
+            db.session.add(cushion_wo)
+            db.session.commit()
+
+        response = admin_client.get("/work_orders/cushion")
+        assert response.status_code == 200
+        # The API is used to fetch data, so we check the API response
+        api_response = admin_client.get("/work_orders/api/work_orders?is_cushion_view=True")
+        assert api_response.status_code == 200
+        data = api_response.get_json()
+        wo_numbers = [wo.get("WorkOrderNo") for wo in data["data"]]
+        assert "10003" in wo_numbers
+        assert "10001" not in wo_numbers
+        assert "10002" not in wo_numbers
+
+    def test_create_work_order_with_cushion(self, admin_client, sample_data, app):
+        """POST /work_orders/new with isCushion checked should create a cushion work order."""
+        with app.app_context():
+            response = admin_client.post(
+                "/work_orders/new",
+                data={
+                    "CustID": "100",
+                    "WOName": "New Cushion Order",
+                    "DateIn": "2025-02-01",
+                    "isCushion": "on",
+                },
+                follow_redirects=True,
+            )
+            assert response.status_code == 200
+            new_wo = WorkOrder.query.filter_by(WOName="New Cushion Order").first()
+            assert new_wo is not None
+            assert new_wo.isCushion is True
+
+    def test_edit_work_order_with_cushion(self, admin_client, sample_data, app):
+        """POST /work_orders/edit/<no> with isCushion achecked should update the work order."""
+        with app.app_context():
+            response = admin_client.post(
+                "/work_orders/edit/10001",
+                data={
+                    "CustID": "100",
+                    "WOName": "Updated to Cushion",
+                    "DateIn": "2025-01-15",
+                    "isCushion": "on",
+                },
+                follow_redirects=True,
+            )
+            assert response.status_code == 200
+            updated_wo = WorkOrder.query.get("10001")
+            assert updated_wo.WOName == "Updated to Cushion"
+            assert updated_wo.isCushion is True
+
+    def test_work_order_detail_shows_cushion_status(self, admin_client, sample_data, app):
+        """Work order detail page should show cushion status."""
+        with app.app_context():
+            cushion_wo = WorkOrder(
+                WorkOrderNo="10004",
+                CustID="100",
+                WOName="Cushion WO",
+                isCushion=True,
+            )
+            db.session.add(cushion_wo)
+            db.session.commit()
+
+        response = admin_client.get("/work_orders/10004")
+        assert response.status_code == 200
+        assert b"Cushion" in response.data
+        assert b"Yes" in response.data

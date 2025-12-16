@@ -117,7 +117,10 @@ document.addEventListener("DOMContentLoaded", function() {
     const table = window.workOrdersTable = new Tabulator("#work-orders-table", {
         ajaxURL: "{{ url_for('work_orders.api_work_orders') | safe }}",
         ajaxParams: function() {
-            const params = { status: currentStatus };
+            const params = {
+                status: currentStatus,
+                is_cushion_view: {{ is_cushion_view|tojson if is_cushion_view is defined else 'false' }}
+            };
 
             // Add column header filters
             table.getHeaderFilters().forEach(filter => {

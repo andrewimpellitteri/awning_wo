@@ -145,7 +145,15 @@
                                                 {{ work_order.WorkOrderNo }}
                                             </a>
                                         </div>
-                                        <div class="col-6 col-md-2 work-order-name small">{{ work_order.WOName or 'Untitled' }}</div>
+                                        <div class="col-6 col-md-2 work-order-name small">
+                                            {{ work_order.WOName or 'Untitled' }}
+                                            {% if work_order.is_sail_order %}
+                                            <i class="fas fa-sailboat text-primary ms-1" title="Sail Order"></i>
+                                            {% endif %}
+                                            {% if work_order.isCushion %}
+                                            <i class="fas fa-couch text-info ms-1" title="Cushion Order"></i>
+                                            {% endif %}
+                                        </div>
                                         <div class="col-6 col-md-2">
                                             {% if work_order.customer_url %}
                                               <a href="{{ work_order.customer_url }}" class="badge bg-info">{{ work_order.CustID }}</a>
@@ -156,12 +164,6 @@
                                         <div class="col-6 col-md-2">
                                             {% if work_order.customer and work_order.customer.source_info %}
                                                 <span class="badge bg-secondary">{{ work_order.customer.source_info.SSource }}</span>
-                                                {% if work_order.is_sail_order %}
-                                                <i class="fas fa-sailboat text-primary ms-1" title="Sail Order"></i>
-                                                {% endif %}
-                                                {% if work_order.isCushion %}
-                                                <i class="fas fa-couch text-info ms-1" title="Cushion Order"></i>
-                                                {% endif %}
                                             {% else %}
                                                 <span class="text-muted">—</span>
                                             {% endif %}

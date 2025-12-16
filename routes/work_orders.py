@@ -88,6 +88,7 @@ def _update_work_order_fields(work_order, form_data):
     work_order.Quote = form_data.get("Quote")
     work_order.RushOrder = "RushOrder" in form_data
     work_order.FirmRush = "FirmRush" in form_data
+    work_order.isCushion = "isCushion" in form_data
 
     # Parse date fields
     work_order.DateRequired = _parse_date_field(form_data.get("DateRequired"))
@@ -301,17 +302,17 @@ def _restore_draft_data(draft_id, current_user):
     """
     from models.work_order_draft import WorkOrderDraft
 
-    draft = WorkOrderDraft.query.filter_by(
-        id=draft_id,
-        user_id=current_user.id
-    ).first()
+    draft = WorkOrderDraft.query.filter_by(id=draft_id, user_id=current_user.id).first()
 
     if not draft or not draft.form_data:
         flash("Draft not found or has been deleted.", "warning")
         return {}, []
 
     # Show success message to user
-    flash(f"Draft from {draft.updated_at.strftime('%b %d, %Y at %I:%M %p')} has been restored.", "success")
+    flash(
+        f"Draft from {draft.updated_at.strftime('%b %d, %Y at %I:%M %p')} has been restored.",
+        "success",
+    )
 
     # Load all form data from the draft
     form_data = draft.form_data.copy()
@@ -349,15 +350,25 @@ def _restore_draft_data(draft_id, current_user):
         # Build checkin_items array for template
         for i, description in enumerate(new_item_descriptions):
             if description:  # Only add if description exists
-                checkin_items.append({
-                    "description": description,
-                    "material": new_item_materials[i] if i < len(new_item_materials) else "",
-                    "color": new_item_colors[i] if i < len(new_item_colors) else "",
-                    "qty": new_item_qtys[i] if i < len(new_item_qtys) else 0,
-                    "sizewgt": new_item_sizewgts[i] if i < len(new_item_sizewgts) else "",
-                    "price": float(new_item_prices[i]) if i < len(new_item_prices) and new_item_prices[i] else 0.00,
-                    "condition": new_item_conditions[i] if i < len(new_item_conditions) else "",
-                })
+                checkin_items.append(
+                    {
+                        "description": description,
+                        "material": new_item_materials[i]
+                        if i < len(new_item_materials)
+                        else "",
+                        "color": new_item_colors[i] if i < len(new_item_colors) else "",
+                        "qty": new_item_qtys[i] if i < len(new_item_qtys) else 0,
+                        "sizewgt": new_item_sizewgts[i]
+                        if i < len(new_item_sizewgts)
+                        else "",
+                        "price": float(new_item_prices[i])
+                        if i < len(new_item_prices) and new_item_prices[i]
+                        else 0.00,
+                        "condition": new_item_conditions[i]
+                        if i < len(new_item_conditions)
+                        else "",
+                    }
+                )
 
     # Handle selected inventory items
     selected_items = form_data.get("selected_items[]", [])
@@ -409,7 +420,7 @@ def upload_work_order_file(work_order_no):
             file,
             to_s3=True,
             generate_thumbnails=True,
-            defer_s3_upload=True
+            defer_s3_upload=True,
         )
 
         if not saved_file:
@@ -437,7 +448,7 @@ def upload_work_order_file(work_order_no):
 
     except Exception as e:
         db.session.rollback()
-        if 'saved_file' in locals():
+        if "saved_file" in locals():
             cleanup_deferred_files([saved_file])
         print(f"Error uploading file: {str(e)}")
         return jsonify({"error": f"Error uploading file: {str(e)}"}), 500
@@ -690,7 +701,7 @@ def rush_work_orders():
 
 @work_orders_bp.route("/cushion")
 @login_required
-@role_required("admin", "manager")
+@role_required("admin", "manager", "user")
 def cushion_work_orders():
     """Show open cushion work orders"""
     search = request.args.get("search", "")
@@ -818,6 +829,7 @@ def create_work_order(prefill_cust_id=None):
                 checkin_id = request.form.get("checkin_id")
                 if checkin_id:
                     from models.checkin import CheckIn
+
                     checkin = CheckIn.query.get(checkin_id)
                     if checkin and checkin.Status == "pending":
                         checkin.Status = "processed"
@@ -917,7 +929,10 @@ def create_work_order(prefill_cust_id=None):
     # Handle draft restoration
     if draft_id:
         from flask_login import current_user
-        draft_form_data, draft_checkin_items = _restore_draft_data(draft_id, current_user)
+
+        draft_form_data, draft_checkin_items = _restore_draft_data(
+            draft_id, current_user
+        )
         if draft_form_data:
             form_data = draft_form_data
             checkin_items = draft_checkin_items
@@ -925,11 +940,14 @@ def create_work_order(prefill_cust_id=None):
     # Handle check-in conversion
     elif checkin_id:
         from models.checkin import CheckIn
+
         checkin = CheckIn.query.get(checkin_id)
         if checkin and checkin.Status == "pending":
             # Pre-fill form with check-in data
             form_data["CustID"] = checkin.CustID
-            form_data["DateIn"] = checkin.DateIn.strftime("%Y-%m-%d") if checkin.DateIn else ""
+            form_data["DateIn"] = (
+                checkin.DateIn.strftime("%Y-%m-%d") if checkin.DateIn else ""
+            )
             form_data["WOName"] = checkin.customer.Name if checkin.customer else ""
             if checkin.customer and checkin.customer.Source:
                 form_data["ShipTo"] = checkin.customer.Source
@@ -962,15 +980,17 @@ def create_work_order(prefill_cust_id=None):
                     selected_inventory_keys.append(str(item.InventoryKey))
                 else:
                     # NEW item - add to checkin_items for "new items" section
-                    checkin_items.append({
-                        "description": item.Description,
-                        "material": item.Material or "Unknown",
-                        "color": item.Color or "",
-                        "qty": item.Qty or 0,
-                        "sizewgt": item.SizeWgt or "",
-                        "price": float(item.Price) if item.Price else 0.00,
-                        "condition": item.Condition or "",
-                    })
+                    checkin_items.append(
+                        {
+                            "description": item.Description,
+                            "material": item.Material or "Unknown",
+                            "color": item.Color or "",
+                            "qty": item.Qty or 0,
+                            "sizewgt": item.SizeWgt or "",
+                            "price": float(item.Price) if item.Price else 0.00,
+                            "condition": item.Condition or "",
+                        }
+                    )
 
             # Store selected keys for JavaScript to pre-select in inventory section
             form_data["selected_inventory_keys"] = selected_inventory_keys
@@ -1086,7 +1106,9 @@ def edit_work_order(work_order_no):
             )
 
             if queue_fields_changed and work_order.QueuePosition is not None:
-                print(f"Queue-relevant fields changed for WO {work_order_no}, clearing QueuePosition")
+                print(
+                    f"Queue-relevant fields changed for WO {work_order_no}, clearing QueuePosition"
+                )
                 work_order.QueuePosition = None
 
             db.session.commit()
@@ -1209,7 +1231,9 @@ def cleaning_room_edit_work_order(work_order_no):
             )
 
             if queue_fields_changed and work_order.QueuePosition is not None:
-                print(f"Clean/Treat date changed for WO {work_order_no}, clearing QueuePosition")
+                print(
+                    f"Clean/Treat date changed for WO {work_order_no}, clearing QueuePosition"
+                )
                 work_order.QueuePosition = None
 
             # Commit DB transaction first
@@ -1297,11 +1321,15 @@ def api_work_orders():
     page = request.args.get("page", 1, type=int)
     size = request.args.get("size", 25, type=int)
     status = request.args.get("status", "").lower()
+    is_cushion_view = request.args.get("is_cushion_view", "false").lower() == "true"
 
     query = WorkOrder.query
 
     # Optimize relationship loading - Source is denormalized, so just load customer
     query = query.options(joinedload(WorkOrder.customer))
+
+    if is_cushion_view:
+        query = query.filter(WorkOrder.isCushion == True)
 
     # Apply status quick filters
     if status == "pending":
