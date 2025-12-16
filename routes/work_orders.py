@@ -688,6 +688,43 @@ def rush_work_orders():
     )
 
 
+@work_orders_bp.route("/cushion")
+@login_required
+@role_required("admin", "manager")
+def cushion_work_orders():
+    """Show open cushion work orders"""
+    search = request.args.get("search", "")
+    page = request.args.get("page", 1, type=int)
+    per_page = 10
+
+    query = WorkOrder.query.filter(
+        WorkOrder.isCushion == True,
+        WorkOrder.DateCompleted.is_(None),
+    )
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                WorkOrder.WorkOrderNo.like(search_term),
+                WorkOrder.CustID.like(search_term),
+                WorkOrder.WOName.like(search_term),
+            )
+        )
+
+    pagination = query.order_by(
+        WorkOrder.DateIn.desc().nullslast(),
+    ).paginate(page=page, per_page=per_page)
+
+    return render_template(
+        "work_orders/list.html",
+        work_orders=pagination.items,
+        pagination=pagination,
+        search=search,
+        is_cushion_view=True,
+    )
+
+
 # Corrected work order routes - Inventory as static catalog only:
 
 

@@ -76,7 +76,7 @@
                         <div class="col-md-3">
                             <div class="d-flex align-items-center gap-3">
                                 <label class="toggle-switch">
-                                    <input type="checkbox" id="showSailOrders" name="show_sail_orders" value="true" 
+                                    <input type="checkbox" id="showSailOrders" name="show_sail_orders" value="true"
                                            {% if show_sail_orders %}checked{% endif %}>
                                     <span class="toggle-slider"></span>
                                 </label>
@@ -85,12 +85,24 @@
                                 </label>
                             </div>
                         </div>
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="showCushionOrders" name="show_cushion_orders" value="true"
+                                           {% if show_cushion_orders %}checked{% endif %}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <label for="showCushionOrders" class="form-label mb-0 fw-medium">
+                                    <i class="fas fa-couch text-info me-2"></i>Show Cushion Orders
+                                </label>
+                            </div>
+                        </div>
                         <div class="col-md-3 d-flex">
                             <button type="submit" class="btn btn-primary me-2">
                                 <i class="fas fa-search"></i> Search
                             </button>
                             {% if search %}
-                                <a href="{{ url_for('cleaning_queue.cleaning_queue', show_sail_orders=show_sail_orders) }}" class="btn btn-outline-secondary">
+                                <a href="{{ url_for('cleaning_queue.cleaning_queue', show_sail_orders=show_sail_orders, show_cushion_orders=show_cushion_orders) }}" class="btn btn-outline-secondary">
                                     <i class="fas fa-times"></i> Clear
                                 </a>
                             {% endif %}
@@ -144,6 +156,12 @@
                                         <div class="col-6 col-md-2">
                                             {% if work_order.customer and work_order.customer.source_info %}
                                                 <span class="badge bg-secondary">{{ work_order.customer.source_info.SSource }}</span>
+                                                {% if work_order.is_sail_order %}
+                                                <i class="fas fa-sailboat text-primary ms-1" title="Sail Order"></i>
+                                                {% endif %}
+                                                {% if work_order.isCushion %}
+                                                <i class="fas fa-couch text-info ms-1" title="Cushion Order"></i>
+                                                {% endif %}
                                             {% else %}
                                                 <span class="text-muted">—</span>
                                             {% endif %}
@@ -192,7 +210,7 @@
                 <ul class="pagination justify-content-center">
                     {% if pagination.has_prev %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('cleaning_queue.cleaning_queue', page=pagination.prev_num, search=search, per_page=per_page, show_sail_orders=show_sail_orders) }}">
+                            <a class="page-link" href="{{ url_for('cleaning_queue.cleaning_queue', page=pagination.prev_num, search=search, per_page=per_page, show_sail_orders=show_sail_orders, show_cushion_orders=show_cushion_orders) }}">
                                 Previous
                             </a>
                         </li>
@@ -203,7 +221,7 @@
                             <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
                         {% else %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for('cleaning_queue.cleaning_queue', page=page_num, search=search, per_page=per_page, show_sail_orders=show_sail_orders) }}">
+                                <a class="page-link" href="{{ url_for('cleaning_queue.cleaning_queue', page=page_num, search=search, per_page=per_page, show_sail_orders=show_sail_orders, show_cushion_orders=show_cushion_orders) }}">
                                     {{ page_num }}
                                 </a>
                             </li>
@@ -212,7 +230,7 @@
 
                     {% if pagination.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('cleaning_queue.cleaning_queue', page=pagination.next_num, search=search, per_page=per_page, show_sail_orders=show_sail_orders) }}">
+                            <a class="page-link" href="{{ url_for('cleaning_queue.cleaning_queue', page=pagination.next_num, search=search, per_page=per_page, show_sail_orders=show_sail_orders, show_cushion_orders=show_cushion_orders) }}">
                                 Next
                             </a>
                         </li>
@@ -506,6 +524,16 @@ document.getElementById('showSailOrders').addEventListener('change', function() 
     // Get current URL and update the parameter
     const url = new URL(window.location);
     url.searchParams.set('show_sail_orders', this.checked ? 'true' : 'false');
+
+    // Preserve other parameters like search, page, etc.
+    window.location.href = url.toString();
+});
+
+// Cushion orders toggle switch functionality
+document.getElementById('showCushionOrders').addEventListener('change', function() {
+    // Get current URL and update the parameter
+    const url = new URL(window.location);
+    url.searchParams.set('show_cushion_orders', this.checked ? 'true' : 'false');
 
     // Preserve other parameters like search, page, etc.
     window.location.href = url.toString();

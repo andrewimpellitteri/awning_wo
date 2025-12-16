@@ -7,11 +7,17 @@ Provides API endpoints for:
 - Embedding sync operations
 - API status checking
 """
+
 from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 from extensions import db, limiter
 from models.chat import ChatSession, ChatMessage
-from models.embeddings import CustomerEmbedding, WorkOrderEmbedding, ItemEmbedding
+from models.embeddings import (
+    CustomerEmbedding,
+    WorkOrderEmbedding,
+    ItemEmbedding,
+    DocumentationEmbedding,
+)
 from services.rag_service import (
     chat_with_rag,
     chat_with_tools,
@@ -20,9 +26,11 @@ from services.rag_service import (
     sync_customer_embedding,
     sync_work_order_embedding,
     sync_item_embedding,
+    sync_documentation_embedding,
+    sync_all_documentation_embeddings,
     check_ollama_status,
     OllamaError,
-    DeepSeekError
+    DeepSeekError,
 )
 from decorators import role_required
 
@@ -34,6 +42,7 @@ chatbot_bp = Blueprint("chatbot", __name__, url_prefix="/api/chat")
 # Chat Session Endpoints
 # ============================================================================
 
+
 @chatbot_bp.route("/sessions", methods=["GET"])
 @login_required
 def list_sessions():
@@ -42,8 +51,7 @@ def list_sessions():
     offset = request.args.get("offset", 0, type=int)
 
     sessions = (
-        ChatSession.query
-        .filter_by(user_id=current_user.id)
+        ChatSession.query.filter_by(user_id=current_user.id)
         .order_by(ChatSession.updated_at.desc())
         .limit(limit)
         .offset(offset)
@@ -52,12 +60,14 @@ def list_sessions():
 
     total = ChatSession.query.filter_by(user_id=current_user.id).count()
 
-    return jsonify({
-        "sessions": [s.to_dict() for s in sessions],
-        "total": total,
-        "limit": limit,
-        "offset": offset
-    })
+    return jsonify(
+        {
+            "sessions": [s.to_dict() for s in sessions],
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+        }
+    )
 
 
 @chatbot_bp.route("/sessions", methods=["POST"])
@@ -70,15 +80,12 @@ def create_session():
         user_id=current_user.id,
         title=data.get("title"),
         work_order_no=data.get("work_order_no"),
-        customer_id=data.get("customer_id")
+        customer_id=data.get("customer_id"),
     )
     db.session.add(session)
     db.session.commit()
 
-    return jsonify({
-        "success": True,
-        "session": session.to_dict()
-    }), 201
+    return jsonify({"success": True, "session": session.to_dict()}), 201
 
 
 @chatbot_bp.route("/sessions/<int:session_id>", methods=["GET"])
@@ -86,16 +93,13 @@ def create_session():
 def get_session(session_id):
     """Get a chat session with its messages."""
     session = ChatSession.query.filter_by(
-        id=session_id,
-        user_id=current_user.id
+        id=session_id, user_id=current_user.id
     ).first()
 
     if not session:
         return jsonify({"error": "Session not found"}), 404
 
-    return jsonify({
-        "session": session.to_dict(include_messages=True)
-    })
+    return jsonify({"session": session.to_dict(include_messages=True)})
 
 
 @chatbot_bp.route("/sessions/<int:session_id>", methods=["DELETE"])
@@ -103,8 +107,7 @@ def get_session(session_id):
 def delete_session(session_id):
     """Delete a chat session."""
     session = ChatSession.query.filter_by(
-        id=session_id,
-        user_id=current_user.id
+        id=session_id, user_id=current_user.id
     ).first()
 
     if not session:
@@ -119,6 +122,7 @@ def delete_session(session_id):
 # ============================================================================
 # Chat Message Endpoints
 # ============================================================================
+
 
 @chatbot_bp.route("/sessions/<int:session_id>/messages", methods=["POST"])
 @login_required
@@ -137,8 +141,7 @@ def send_message(session_id):
         assistant_message: The AI response
     """
     session = ChatSession.query.filter_by(
-        id=session_id,
-        user_id=current_user.id
+        id=session_id, user_id=current_user.id
     ).first()
 
     if not session:
@@ -153,21 +156,19 @@ def send_message(session_id):
         return jsonify({"error": "Message cannot be empty"}), 400
 
     # Get conversation history
-    history_messages = ChatMessage.query.filter_by(
-        session_id=session_id
-    ).order_by(ChatMessage.created_at).limit(20).all()
+    history_messages = (
+        ChatMessage.query.filter_by(session_id=session_id)
+        .order_by(ChatMessage.created_at)
+        .limit(20)
+        .all()
+    )
 
     conversation_history = [
-        {"role": msg.role, "content": msg.content}
-        for msg in history_messages
+        {"role": msg.role, "content": msg.content} for msg in history_messages
     ]
 
     # Save user message
-    user_message = ChatMessage(
-        session_id=session_id,
-        role="user",
-        content=user_content
-    )
+    user_message = ChatMessage(session_id=session_id, role="user", content=user_content)
     db.session.add(user_message)
 
     try:
@@ -179,14 +180,14 @@ def send_message(session_id):
             response_text, metadata = chat_with_rag(
                 user_message=user_content,
                 conversation_history=conversation_history,
-                work_order_context=data.get("work_order_context") or session.work_order_no,
-                customer_context=data.get("customer_context") or session.customer_id
+                work_order_context=data.get("work_order_context")
+                or session.work_order_no,
+                customer_context=data.get("customer_context") or session.customer_id,
             )
         else:
             # Tools mode: function calling for database queries (default)
             response_text, metadata = chat_with_tools(
-                user_message=user_content,
-                conversation_history=conversation_history
+                user_message=user_content, conversation_history=conversation_history
             )
 
         # Save assistant message
@@ -194,29 +195,39 @@ def send_message(session_id):
             session_id=session_id,
             role="assistant",
             content=response_text,
-            message_metadata=metadata
+            message_metadata=metadata,
         )
         db.session.add(assistant_message)
 
         # Update session title if this is the first message
         if not session.title and len(conversation_history) == 0:
             # Use first 50 chars of user message as title
-            session.title = user_content[:50] + ("..." if len(user_content) > 50 else "")
+            session.title = user_content[:50] + (
+                "..." if len(user_content) > 50 else ""
+            )
 
         db.session.commit()
 
-        return jsonify({
-            "success": True,
-            "user_message": user_message.to_dict(),
-            "assistant_message": assistant_message.to_dict()
-        })
+        return jsonify(
+            {
+                "success": True,
+                "user_message": user_message.to_dict(),
+                "assistant_message": assistant_message.to_dict(),
+            }
+        )
 
     except (OllamaError, DeepSeekError) as e:
         db.session.rollback()
-        return jsonify({
-            "error": f"AI service unavailable: {str(e)}",
-            "hint": "Make sure DEEPSEEK_API_KEY is set"
-        }), 503
+        return jsonify(
+            {
+                "error": f"AI service unavailable: {str(e)}",
+                "hint": "Make sure DEEPSEEK_API_KEY is set",
+            }
+        ), 503
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 
 @chatbot_bp.route("/quick", methods=["POST"])
@@ -252,29 +263,28 @@ def quick_chat():
             response_text, metadata = chat_with_rag(
                 user_message=user_content,
                 work_order_context=data.get("work_order_context"),
-                customer_context=data.get("customer_context")
+                customer_context=data.get("customer_context"),
             )
         else:
-            response_text, metadata = chat_with_tools(
-                user_message=user_content
-            )
+            response_text, metadata = chat_with_tools(user_message=user_content)
 
-        return jsonify({
-            "success": True,
-            "response": response_text,
-            "metadata": metadata
-        })
+        return jsonify(
+            {"success": True, "response": response_text, "metadata": metadata}
+        )
 
     except (OllamaError, DeepSeekError) as e:
-        return jsonify({
-            "error": f"AI service unavailable: {str(e)}",
-            "hint": "Make sure DEEPSEEK_API_KEY is set"
-        }), 503
+        return jsonify(
+            {
+                "error": f"AI service unavailable: {str(e)}",
+                "hint": "Make sure DEEPSEEK_API_KEY is set",
+            }
+        ), 503
 
 
 # ============================================================================
 # Search Endpoint
 # ============================================================================
+
 
 @chatbot_bp.route("/search", methods=["POST"])
 @login_required
@@ -297,20 +307,20 @@ def semantic_search():
     results = search_all(data["query"], limit_per_type=limit)
 
     if "error" in results:
-        return jsonify({
-            "error": results["error"],
-            "hint": "Make sure DEEPSEEK_API_KEY and OPENAI_API_KEY are set"
-        }), 503
+        return jsonify(
+            {
+                "error": results["error"],
+                "hint": "Make sure DEEPSEEK_API_KEY and OPENAI_API_KEY are set",
+            }
+        ), 503
 
-    return jsonify({
-        "success": True,
-        "results": results
-    })
+    return jsonify({"success": True, "results": results})
 
 
 # ============================================================================
 # Admin Endpoints (Embedding Management)
 # ============================================================================
+
 
 @chatbot_bp.route("/status", methods=["GET"])
 @login_required
@@ -323,12 +333,10 @@ def get_status():
         "customers": CustomerEmbedding.query.count(),
         "work_orders": WorkOrderEmbedding.query.count(),
         "items": ItemEmbedding.query.count(),
+        "documentation": DocumentationEmbedding.query.count(),
     }
 
-    return jsonify({
-        "ollama": ollama_status,
-        "embeddings": embedding_counts
-    })
+    return jsonify({"ollama": ollama_status, "embeddings": embedding_counts})
 
 
 @chatbot_bp.route("/embeddings/sync", methods=["POST"])
@@ -340,7 +348,7 @@ def sync_embeddings():
     This is a long-running operation.
 
     Request body:
-        type: str (optional) - "customers", "work_orders", "items", or "all"
+        type: str (optional) - "customers", "work_orders", "items", "documentation", or "all"
     """
     data = request.get_json() or {}
     sync_type = data.get("type", "all")
@@ -348,16 +356,20 @@ def sync_embeddings():
     # Check AI service status first
     status = check_ollama_status()
     if not status["api_available"]:
-        return jsonify({
-            "error": "AI service is not available",
-            "hint": "Make sure DEEPSEEK_API_KEY is set"
-        }), 503
+        return jsonify(
+            {
+                "error": "AI service is not available",
+                "hint": "Make sure DEEPSEEK_API_KEY is set",
+            }
+        ), 503
 
     if not status["embed_model_available"]:
-        return jsonify({
-            "error": f"Embedding API '{status['embed_model']}' not available",
-            "hint": "Make sure OPENAI_API_KEY is set"
-        }), 503
+        return jsonify(
+            {
+                "error": f"Embedding API '{status['embed_model']}' not available",
+                "hint": "Make sure OPENAI_API_KEY is set",
+            }
+        ), 503
 
     try:
         if sync_type == "all":
@@ -367,6 +379,7 @@ def sync_embeddings():
             stats = {"synced": 0, "failed": 0}
             if sync_type == "customers":
                 from models.customer import Customer
+
                 for customer in Customer.query.all():
                     if sync_customer_embedding(customer.CustID):
                         stats["synced"] += 1
@@ -374,6 +387,7 @@ def sync_embeddings():
                         stats["failed"] += 1
             elif sync_type == "work_orders":
                 from models.work_order import WorkOrder
+
                 for wo in WorkOrder.query.all():
                     if sync_work_order_embedding(wo.WorkOrderNo):
                         stats["synced"] += 1
@@ -381,23 +395,21 @@ def sync_embeddings():
                         stats["failed"] += 1
             elif sync_type == "items":
                 from models.work_order import WorkOrderItem
+
                 for item in WorkOrderItem.query.all():
                     if sync_item_embedding(item.id):
                         stats["synced"] += 1
                     else:
                         stats["failed"] += 1
+            elif sync_type == "documentation":
+                stats = sync_all_documentation_embeddings()
             else:
                 return jsonify({"error": f"Unknown sync type: {sync_type}"}), 400
 
-        return jsonify({
-            "success": True,
-            "stats": stats
-        })
+        return jsonify({"success": True, "stats": stats})
 
     except Exception as e:
-        return jsonify({
-            "error": f"Sync failed: {str(e)}"
-        }), 500
+        return jsonify({"error": f"Sync failed: {str(e)}"}), 500
 
 
 @chatbot_bp.route("/embeddings/sync/single", methods=["POST"])
@@ -408,8 +420,8 @@ def sync_single_embedding():
     Useful for keeping embeddings up-to-date after edits.
 
     Request body:
-        type: str - "customer", "work_order", or "item"
-        id: str - The record ID
+        type: str - "customer", "work_order", "item", or "documentation"
+        id: str - The record ID (for documentation, this is the file path)
     """
     data = request.get_json()
     if not data:
@@ -428,6 +440,8 @@ def sync_single_embedding():
             success = sync_work_order_embedding(record_id)
         elif record_type == "item":
             success = sync_item_embedding(int(record_id))
+        elif record_type == "documentation":
+            success = sync_documentation_embedding(record_id)
         else:
             return jsonify({"error": f"Unknown type: {record_type}"}), 400
 
@@ -437,7 +451,9 @@ def sync_single_embedding():
             return jsonify({"error": "Failed to sync embedding"}), 500
 
     except OllamaError as e:
-        return jsonify({
-            "error": f"AI service error: {str(e)}",
-            "hint": "Make sure DEEPSEEK_API_KEY and OPENAI_API_KEY are set"
-        }), 503
+        return jsonify(
+            {
+                "error": f"AI service error: {str(e)}",
+                "hint": "Make sure DEEPSEEK_API_KEY and OPENAI_API_KEY are set",
+            }
+        ), 503

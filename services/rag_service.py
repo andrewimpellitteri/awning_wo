@@ -7,6 +7,7 @@ This service provides:
 - Chat completion with context-aware responses using DeepSeek V3
 - Function calling / tool use for read-only database queries
 """
+
 import os
 import json
 import time
@@ -14,13 +15,18 @@ from typing import List, Dict, Optional, Tuple, Callable
 import numpy as np
 from openai import OpenAI
 from extensions import db
-from models.embeddings import CustomerEmbedding, WorkOrderEmbedding, ItemEmbedding
+from models.embeddings import (
+    CustomerEmbedding,
+    WorkOrderEmbedding,
+    ItemEmbedding,
+    DocumentationEmbedding,
+)
 from models.customer import Customer
 from models.work_order import WorkOrder, WorkOrderItem
 
 # Configuration
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
-DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com/")
 DEEPSEEK_CHAT_MODEL = os.environ.get("DEEPSEEK_CHAT_MODEL", "deepseek-chat")
 
 # OpenAI API for embeddings
@@ -34,15 +40,17 @@ _openai_client = None
 
 
 def get_deepseek_client() -> OpenAI:
-    """Get or create the DeepSeek client."""
     global _deepseek_client
     if _deepseek_client is None:
         if not DEEPSEEK_API_KEY:
             raise DeepSeekError("DEEPSEEK_API_KEY environment variable is not set")
-        _deepseek_client = OpenAI(
-            api_key=DEEPSEEK_API_KEY,
-            base_url=DEEPSEEK_BASE_URL,
-        )
+        try:
+            _deepseek_client = OpenAI(
+                api_key=DEEPSEEK_API_KEY,
+                base_url=DEEPSEEK_BASE_URL,  # make sure this is exactly https://api.deepseek.com/v1
+            )
+        except Exception as e:
+            raise DeepSeekError(f"Failed to initialize DeepSeek client: {e}") from e
     return _deepseek_client
 
 
@@ -62,6 +70,7 @@ _api_status_cache = {"last_check": 0, "is_available": False}
 
 class DeepSeekError(Exception):
     """Exception raised when DeepSeek API calls fail."""
+
     pass
 
 
@@ -127,10 +136,7 @@ def get_embedding(text: str) -> List[float]:
     """
     try:
         client = get_openai_client()
-        response = client.embeddings.create(
-            model=OPENAI_EMBED_MODEL,
-            input=text
-        )
+        response = client.embeddings.create(model=OPENAI_EMBED_MODEL, input=text)
         return response.data[0].embedding
     except Exception as e:
         raise DeepSeekError(f"Failed to generate embedding: {str(e)}")
@@ -152,10 +158,7 @@ def get_embeddings_batch(texts: List[str]) -> List[List[float]]:
     try:
         client = get_openai_client()
         # OpenAI API supports batch embedding (up to 2048 inputs)
-        response = client.embeddings.create(
-            model=OPENAI_EMBED_MODEL,
-            input=texts
-        )
+        response = client.embeddings.create(model=OPENAI_EMBED_MODEL, input=texts)
         return [data.embedding for data in response.data]
     except Exception as e:
         # Fallback to individual encoding on error
@@ -169,7 +172,9 @@ def get_embeddings_batch(texts: List[str]) -> List[List[float]]:
         return embeddings
 
 
-def search_similar_customers(query_embedding: List[float], limit: int = 5) -> List[Dict]:
+def search_similar_customers(
+    query_embedding: List[float], limit: int = 5
+) -> List[Dict]:
     """
     Search for customers similar to the query embedding using pgvector.
 
@@ -181,25 +186,32 @@ def search_similar_customers(query_embedding: List[float], limit: int = 5) -> Li
         List of customer results with similarity scores
     """
     # The <=> operator in pgvector is cosine distance. 1 - distance = similarity.
-    results = db.session.query(
-        CustomerEmbedding,
-        CustomerEmbedding.embedding.cosine_distance(query_embedding).label('distance')
-    ).order_by(
-        CustomerEmbedding.embedding.cosine_distance(query_embedding)
-    ).limit(limit).all()
+    results = (
+        db.session.query(
+            CustomerEmbedding,
+            CustomerEmbedding.embedding.cosine_distance(query_embedding).label(
+                "distance"
+            ),
+        )
+        .order_by(CustomerEmbedding.embedding.cosine_distance(query_embedding))
+        .limit(limit)
+        .all()
+    )
 
     return [
         {
             "type": "customer",
             "id": emb.customer_id,
             "content": emb.content,
-            "similarity": 1 - distance
+            "similarity": 1 - distance,
         }
         for emb, distance in results
     ]
 
 
-def search_similar_work_orders(query_embedding: List[float], limit: int = 5) -> List[Dict]:
+def search_similar_work_orders(
+    query_embedding: List[float], limit: int = 5
+) -> List[Dict]:
     """
     Search for work orders similar to the query embedding using pgvector.
 
@@ -210,19 +222,24 @@ def search_similar_work_orders(query_embedding: List[float], limit: int = 5) -> 
     Returns:
         List of work order results with similarity scores
     """
-    results = db.session.query(
-        WorkOrderEmbedding,
-        WorkOrderEmbedding.embedding.cosine_distance(query_embedding).label('distance')
-    ).order_by(
-        WorkOrderEmbedding.embedding.cosine_distance(query_embedding)
-    ).limit(limit).all()
+    results = (
+        db.session.query(
+            WorkOrderEmbedding,
+            WorkOrderEmbedding.embedding.cosine_distance(query_embedding).label(
+                "distance"
+            ),
+        )
+        .order_by(WorkOrderEmbedding.embedding.cosine_distance(query_embedding))
+        .limit(limit)
+        .all()
+    )
 
     return [
         {
             "type": "work_order",
             "id": emb.work_order_no,
             "content": emb.content,
-            "similarity": 1 - distance
+            "similarity": 1 - distance,
         }
         for emb, distance in results
     ]
@@ -239,19 +256,59 @@ def search_similar_items(query_embedding: List[float], limit: int = 5) -> List[D
     Returns:
         List of item results with similarity scores
     """
-    results = db.session.query(
-        ItemEmbedding,
-        ItemEmbedding.embedding.cosine_distance(query_embedding).label('distance')
-    ).order_by(
-        ItemEmbedding.embedding.cosine_distance(query_embedding)
-    ).limit(limit).all()
+    results = (
+        db.session.query(
+            ItemEmbedding,
+            ItemEmbedding.embedding.cosine_distance(query_embedding).label("distance"),
+        )
+        .order_by(ItemEmbedding.embedding.cosine_distance(query_embedding))
+        .limit(limit)
+        .all()
+    )
 
     return [
         {
             "type": "item",
             "id": emb.item_id,
             "content": emb.content,
-            "similarity": 1 - distance
+            "similarity": 1 - distance,
+        }
+        for emb, distance in results
+    ]
+
+
+def search_similar_documentation(
+    query_embedding: List[float], limit: int = 5
+) -> List[Dict]:
+    """Search for documentation similar to the query embedding using pgvector.
+
+    Args:
+        query_embedding: The query vector
+        limit: Maximum number of results
+
+    Returns:
+        List of documentation results with similarity scores
+    """
+    results = (
+        db.session.query(
+            DocumentationEmbedding,
+            DocumentationEmbedding.embedding.cosine_distance(query_embedding).label(
+                "distance"
+            ),
+        )
+        .order_by(DocumentationEmbedding.embedding.cosine_distance(query_embedding))
+        .limit(limit)
+        .all()
+    )
+
+    return [
+        {
+            "type": "documentation",
+            "id": emb.file_path,
+            "title": emb.title,
+            "category": emb.category,
+            "content": emb.content,
+            "similarity": 1 - distance,
         }
         for emb, distance in results
     ]
@@ -271,16 +328,25 @@ def search_all(query: str, limit_per_type: int = 3) -> Dict[str, List[Dict]]:
     try:
         query_embedding = get_embedding(query)
     except OllamaError as e:
-        return {"error": str(e), "customers": [], "work_orders": [], "items": []}
+        return {
+            "error": str(e),
+            "customers": [],
+            "work_orders": [],
+            "items": [],
+            "documentation": [],
+        }
 
     return {
         "customers": search_similar_customers(query_embedding, limit_per_type),
         "work_orders": search_similar_work_orders(query_embedding, limit_per_type),
         "items": search_similar_items(query_embedding, limit_per_type),
+        "documentation": search_similar_documentation(query_embedding, limit_per_type),
     }
 
 
-def build_context_from_search(search_results: Dict[str, List[Dict]], min_similarity: float = 0.3) -> str:
+def build_context_from_search(
+    search_results: Dict[str, List[Dict]], min_similarity: float = 0.3
+) -> str:
     """
     Build a context string from search results for the LLM.
 
@@ -294,33 +360,54 @@ def build_context_from_search(search_results: Dict[str, List[Dict]], min_similar
     context_parts = []
 
     # Add customer context
-    customers = [r for r in search_results.get("customers", []) if r["similarity"] >= min_similarity]
+    customers = [
+        r
+        for r in search_results.get("customers", [])
+        if r["similarity"] >= min_similarity
+    ]
     if customers:
         context_parts.append("RELEVANT CUSTOMERS:")
         for c in customers:
             context_parts.append(f"- {c['content']}")
 
     # Add work order context
-    work_orders = [r for r in search_results.get("work_orders", []) if r["similarity"] >= min_similarity]
+    work_orders = [
+        r
+        for r in search_results.get("work_orders", [])
+        if r["similarity"] >= min_similarity
+    ]
     if work_orders:
         context_parts.append("\nRELEVANT WORK ORDERS:")
         for wo in work_orders:
             context_parts.append(f"- {wo['content']}")
 
     # Add item context
-    items = [r for r in search_results.get("items", []) if r["similarity"] >= min_similarity]
+    items = [
+        r for r in search_results.get("items", []) if r["similarity"] >= min_similarity
+    ]
     if items:
         context_parts.append("\nRELEVANT ITEMS:")
         for item in items:
             context_parts.append(f"- {item['content']}")
 
+    # Add documentation context
+    documentation = [
+        r
+        for r in search_results.get("documentation", [])
+        if r["similarity"] >= min_similarity
+    ]
+    if documentation:
+        context_parts.append("\nRELEVANT DOCUMENTATION:")
+        for doc in documentation:
+            context_parts.append(
+                f"- [{doc['title']}] ({doc['category']}) - {doc['content'][:200]}..."
+            )
+
     return "\n".join(context_parts) if context_parts else ""
 
 
 def chat_completion(
-    messages: List[Dict[str, str]],
-    context: str = "",
-    system_prompt: str = None
+    messages: List[Dict[str, str]], context: str = "", system_prompt: str = None
 ) -> Tuple[str, Dict]:
     """
     Generate a chat completion using DeepSeek V3 with optional RAG context.
@@ -359,19 +446,27 @@ Your goal is to answer user questions based *only* on the information provided i
 
     try:
         client = get_deepseek_client()
-        response = client.chat.completions.create(
+        response = client.responses.create(
             model=DEEPSEEK_CHAT_MODEL,
-            messages=api_messages,
-            temperature=0.7,
-            max_tokens=2048,
+            input=api_messages,
+            temperature=0.2,
+            max_output_tokens=2048,
         )
 
-        response_text = response.choices[0].message.content or ""
+        response_text = ""
+        for item in response.output:
+            if item["type"] == "message":
+                for content in item["content"]:
+                    if content["type"] == "output_text":
+                        response_text += content["text"]
+
         metadata = {
             "model": DEEPSEEK_CHAT_MODEL,
             "context_provided": bool(context),
             "prompt_tokens": response.usage.prompt_tokens if response.usage else None,
-            "completion_tokens": response.usage.completion_tokens if response.usage else None,
+            "completion_tokens": response.usage.completion_tokens
+            if response.usage
+            else None,
             "total_tokens": response.usage.total_tokens if response.usage else None,
         }
 
@@ -385,7 +480,7 @@ def chat_with_rag(
     user_message: str,
     conversation_history: List[Dict[str, str]] = None,
     work_order_context: str = None,
-    customer_context: str = None
+    customer_context: str = None,
 ) -> Tuple[str, Dict]:
     """
     High-level function to chat with RAG-enhanced context.
@@ -410,9 +505,13 @@ def chat_with_rag(
     if work_order_context:
         wo = WorkOrder.query.get(work_order_context)
         if wo:
-            additional_context.append(f"CURRENT WORK ORDER: {wo.WorkOrderNo} - {wo.WOName}")
+            additional_context.append(
+                f"CURRENT WORK ORDER: {wo.WorkOrderNo} - {wo.WOName}"
+            )
             additional_context.append(f"  Customer: {wo.CustID}")
-            additional_context.append(f"  Special Instructions: {wo.SpecialInstructions or 'None'}")
+            additional_context.append(
+                f"  Special Instructions: {wo.SpecialInstructions or 'None'}"
+            )
             additional_context.append(f"  Return Status: {wo.ReturnStatus or 'N/A'}")
 
     if customer_context:
@@ -445,6 +544,7 @@ def chat_with_rag(
 # ============================================================================
 # Embedding Management Functions
 # ============================================================================
+
 
 def create_customer_text(customer: Customer) -> str:
     """Create searchable text representation of a customer."""
@@ -508,6 +608,71 @@ def create_item_text(item: WorkOrderItem) -> str:
     return " | ".join(parts)
 
 
+def create_documentation_text(
+    file_path: str, title: str = None, category: str = None, content: str = None
+) -> str:
+    """Create searchable text representation of a documentation file.
+
+    Args:
+        file_path: Relative path from project root
+        title: Document title (extracted from H1 or filename)
+        category: Category folder (architecture, developer-guide, etc.)
+        content: Full markdown content
+
+    Returns:
+        Pipe-separated searchable text
+    """
+    parts = [
+        f"Documentation: {title or 'Untitled'}",
+        f"Category: {category or 'General'}",
+        f"Path: {file_path}",
+    ]
+
+    # Add first 500 chars of content as preview
+    if content:
+        preview = content.replace("\n", " ")[:500]
+        parts.append(f"Content: {preview}")
+
+    return " | ".join(parts)
+
+
+def extract_markdown_metadata(file_path: str) -> Dict[str, str]:
+    """Extract title and category from markdown file.
+
+    Args:
+        file_path: Absolute or relative path to .md file
+
+    Returns:
+        Dict with 'title', 'category', 'content', 'relative_path'
+    """
+    import os
+    import re
+
+    # Read file content
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Extract title from first H1 heading
+    title_match = re.search(r"^#\s+(.+)$", content, re.MULTILINE)
+    title = (
+        title_match.group(1)
+        if title_match
+        else os.path.basename(file_path).replace(".md", "")
+    )
+
+    # Extract category from path
+    relative_path = file_path.replace(os.getcwd() + "/", "")
+    parts = relative_path.split("/")
+    category = parts[1] if len(parts) > 2 and parts[0] == "docs" else "general"
+
+    return {
+        "title": title,
+        "category": category,
+        "content": content,
+        "relative_path": relative_path,
+    }
+
+
 def sync_customer_embedding(customer_id: str) -> bool:
     """
     Create or update embedding for a single customer.
@@ -537,9 +702,7 @@ def sync_customer_embedding(customer_id: str) -> bool:
         existing.embedding = embedding
     else:
         new_emb = CustomerEmbedding(
-            customer_id=customer_id,
-            content=text,
-            embedding=embedding
+            customer_id=customer_id, content=text, embedding=embedding
         )
         db.session.add(new_emb)
 
@@ -576,9 +739,7 @@ def sync_work_order_embedding(work_order_no: str) -> bool:
         existing.embedding = embedding
     else:
         new_emb = WorkOrderEmbedding(
-            work_order_no=work_order_no,
-            content=text,
-            embedding=embedding
+            work_order_no=work_order_no, content=text, embedding=embedding
         )
         db.session.add(new_emb)
 
@@ -614,15 +775,73 @@ def sync_item_embedding(item_id: int) -> bool:
         existing.content = text
         existing.embedding = embedding
     else:
-        new_emb = ItemEmbedding(
-            item_id=item_id,
-            content=text,
-            embedding=embedding
-        )
+        new_emb = ItemEmbedding(item_id=item_id, content=text, embedding=embedding)
         db.session.add(new_emb)
 
     db.session.commit()
     return True
+
+
+def sync_documentation_embedding(file_path: str) -> bool:
+    """Create or update embedding for a documentation file.
+
+    Args:
+        file_path: Path to markdown file (absolute or relative)
+
+    Returns:
+        True if successful, False otherwise
+    """
+    import os
+
+    # Make path absolute if needed
+    if not os.path.isabs(file_path):
+        file_path = os.path.join(os.getcwd(), file_path)
+
+    if not os.path.exists(file_path):
+        return False
+
+    try:
+        # Extract metadata
+        metadata = extract_markdown_metadata(file_path)
+
+        # Create searchable text
+        text = create_documentation_text(
+            metadata["relative_path"],
+            metadata["title"],
+            metadata["category"],
+            metadata["content"],
+        )
+
+        # Generate embedding
+        embedding = get_embedding(text)
+
+        # Check if embedding exists
+        existing = DocumentationEmbedding.query.filter_by(
+            file_path=metadata["relative_path"]
+        ).first()
+
+        if existing:
+            existing.title = metadata["title"]
+            existing.category = metadata["category"]
+            existing.content = text
+            existing.embedding = embedding
+        else:
+            new_emb = DocumentationEmbedding(
+                file_path=metadata["relative_path"],
+                title=metadata["title"],
+                category=metadata["category"],
+                content=text,
+                embedding=embedding,
+            )
+            db.session.add(new_emb)
+
+        db.session.commit()
+        return True
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error syncing documentation {file_path}: {e}")
+        return False
 
 
 def sync_all_embeddings(batch_size: int = 100) -> Dict[str, int]:
@@ -673,6 +892,38 @@ def sync_all_embeddings(batch_size: int = 100) -> Dict[str, int]:
     return stats
 
 
+def sync_all_documentation_embeddings(docs_path: str = "docs") -> Dict[str, int]:
+    """Sync embeddings for all markdown documentation files.
+
+    Args:
+        docs_path: Path to documentation directory (default: docs)
+
+    Returns:
+        Dictionary with sync statistics
+    """
+    import os
+    import glob
+
+    stats = {"synced": 0, "failed": 0, "skipped": 0}
+
+    # Find all .md files in docs directory
+    pattern = os.path.join(docs_path, "**/*.md")
+    md_files = glob.glob(pattern, recursive=True)
+
+    for file_path in md_files:
+        # Skip certain files if needed
+        if "node_modules" in file_path or ".venv" in file_path:
+            stats["skipped"] += 1
+            continue
+
+        if sync_documentation_embedding(file_path):
+            stats["synced"] += 1
+        else:
+            stats["failed"] += 1
+
+    return stats
+
+
 def check_ollama_status() -> Dict:
     """
     Check if DeepSeek API is available and configured.
@@ -713,8 +964,7 @@ def check_deepseek_status() -> Dict:
             client = get_openai_client()
             # Try to generate a test embedding as health check
             test_response = client.embeddings.create(
-                model=OPENAI_EMBED_MODEL,
-                input="test"
+                model=OPENAI_EMBED_MODEL, input="test"
             )
             status["embed_model_available"] = True
             status["embed_dimension"] = len(test_response.data[0].embedding)
@@ -733,11 +983,15 @@ def check_deepseek_status() -> Dict:
         status["ollama_running"] = True  # Backwards compatibility
 
         # Get available models
-        available_models = [m.id for m in models_response.data] if models_response.data else []
+        available_models = (
+            [m.id for m in models_response.data] if models_response.data else []
+        )
         status["available_models"] = available_models
 
         # Check if our chat model is available
-        status["chat_model_available"] = DEEPSEEK_CHAT_MODEL in available_models or "deepseek" in DEEPSEEK_CHAT_MODEL
+        status["chat_model_available"] = (
+            DEEPSEEK_CHAT_MODEL in available_models or "deepseek" in DEEPSEEK_CHAT_MODEL
+        )
 
     except Exception as e:
         status["error"] = str(e)
@@ -760,17 +1014,17 @@ AVAILABLE_TOOLS = [
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Search query - can be customer name, ID, contact name, email, or any keyword"
+                        "description": "Search query - can be customer name, ID, contact name, email, or any keyword",
                     },
                     "limit": {
                         "type": "integer",
                         "description": "Maximum number of results to return (default 5)",
-                        "default": 5
-                    }
+                        "default": 5,
+                    },
                 },
-                "required": ["query"]
-            }
-        }
+                "required": ["query"],
+            },
+        },
     },
     {
         "type": "function",
@@ -782,12 +1036,12 @@ AVAILABLE_TOOLS = [
                 "properties": {
                     "customer_id": {
                         "type": "string",
-                        "description": "The customer ID (e.g., 'CUST001' or 'ABC123')"
+                        "description": "The customer ID (e.g., 'CUST001' or 'ABC123')",
                     }
                 },
-                "required": ["customer_id"]
-            }
-        }
+                "required": ["customer_id"],
+            },
+        },
     },
     {
         "type": "function",
@@ -799,22 +1053,22 @@ AVAILABLE_TOOLS = [
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Search query - can be work order number, customer ID, status, or keyword"
+                        "description": "Search query - can be work order number, customer ID, status, or keyword",
                     },
                     "status": {
                         "type": "string",
                         "description": "Filter by return status (optional)",
-                        "enum": ["In", "Out", "Pending", "Complete"]
+                        "enum": ["In", "Out", "Pending", "Complete"],
                     },
                     "limit": {
                         "type": "integer",
                         "description": "Maximum number of results (default 10)",
-                        "default": 10
-                    }
+                        "default": 10,
+                    },
                 },
-                "required": ["query"]
-            }
-        }
+                "required": ["query"],
+            },
+        },
     },
     {
         "type": "function",
@@ -826,12 +1080,12 @@ AVAILABLE_TOOLS = [
                 "properties": {
                     "work_order_no": {
                         "type": "string",
-                        "description": "The work order number (e.g., 'WO001' or '12345')"
+                        "description": "The work order number (e.g., 'WO001' or '12345')",
                     }
                 },
-                "required": ["work_order_no"]
-            }
-        }
+                "required": ["work_order_no"],
+            },
+        },
     },
     {
         "type": "function",
@@ -841,19 +1095,16 @@ AVAILABLE_TOOLS = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "customer_id": {
-                        "type": "string",
-                        "description": "The customer ID"
-                    },
+                    "customer_id": {"type": "string", "description": "The customer ID"},
                     "limit": {
                         "type": "integer",
                         "description": "Maximum number of work orders to return (default 20)",
-                        "default": 20
-                    }
+                        "default": 20,
+                    },
                 },
-                "required": ["customer_id"]
-            }
-        }
+                "required": ["customer_id"],
+            },
+        },
     },
     {
         "type": "function",
@@ -865,25 +1116,25 @@ AVAILABLE_TOOLS = [
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "Search query - can be item description, material, color, etc."
+                        "description": "Search query - can be item description, material, color, etc.",
                     },
                     "material": {
                         "type": "string",
-                        "description": "Filter by material type (optional)"
+                        "description": "Filter by material type (optional)",
                     },
                     "color": {
                         "type": "string",
-                        "description": "Filter by color (optional)"
+                        "description": "Filter by color (optional)",
                     },
                     "limit": {
                         "type": "integer",
                         "description": "Maximum number of results (default 10)",
-                        "default": 10
-                    }
+                        "default": 10,
+                    },
                 },
-                "required": ["query"]
-            }
-        }
+                "required": ["query"],
+            },
+        },
     },
     {
         "type": "function",
@@ -895,13 +1146,13 @@ AVAILABLE_TOOLS = [
                 "properties": {
                     "customer_id": {
                         "type": "string",
-                        "description": "Optional: filter stats by customer ID"
+                        "description": "Optional: filter stats by customer ID",
                     }
                 },
-                "required": []
-            }
-        }
-    }
+                "required": [],
+            },
+        },
+    },
 ]
 
 
@@ -909,36 +1160,39 @@ AVAILABLE_TOOLS = [
 # Tool Implementation Functions
 # ============================================================================
 
+
 def tool_search_customers(query: str, limit: int = 5) -> Dict:
     """Search customers by query text."""
     query_lower = query.lower()
 
     # Search in database
-    customers = Customer.query.filter(
-        db.or_(
-            Customer.CustID.ilike(f"%{query}%"),
-            Customer.Name.ilike(f"%{query}%"),
-            Customer.Contact.ilike(f"%{query}%"),
-            Customer.EmailAddress.ilike(f"%{query}%"),
+    customers = (
+        Customer.query.filter(
+            db.or_(
+                Customer.CustID.ilike(f"%{query}%"),
+                Customer.Name.ilike(f"%{query}%"),
+                Customer.Contact.ilike(f"%{query}%"),
+                Customer.EmailAddress.ilike(f"%{query}%"),
+            )
         )
-    ).limit(limit).all()
+        .limit(limit)
+        .all()
+    )
 
     results = []
     for c in customers:
-        results.append({
-            "customer_id": c.CustID,
-            "name": c.Name,
-            "contact": c.Contact,
-            "phone": c.get_primary_phone(),
-            "email": c.clean_email(),
-            "address": c.get_full_address(),
-        })
+        results.append(
+            {
+                "customer_id": c.CustID,
+                "name": c.Name,
+                "contact": c.Contact,
+                "phone": c.get_primary_phone(),
+                "email": c.clean_email(),
+                "address": c.get_full_address(),
+            }
+        )
 
-    return {
-        "query": query,
-        "count": len(results),
-        "customers": results
-    }
+    return {"query": query, "count": len(results), "customers": results}
 
 
 def tool_get_customer_details(customer_id: str) -> Dict:
@@ -961,9 +1215,13 @@ def tool_get_customer_details(customer_id: str) -> Dict:
         "source": customer.Source,
         "work_order_count": len(work_orders),
         "recent_work_orders": [
-            {"work_order_no": wo.WorkOrderNo, "name": wo.WOName, "status": wo.ReturnStatus}
+            {
+                "work_order_no": wo.WorkOrderNo,
+                "name": wo.WOName,
+                "status": wo.ReturnStatus,
+            }
             for wo in work_orders[:5]
-        ]
+        ],
     }
 
 
@@ -985,20 +1243,24 @@ def tool_search_work_orders(query: str, status: str = None, limit: int = 10) -> 
 
     results = []
     for wo in work_orders:
-        results.append({
-            "work_order_no": wo.WorkOrderNo,
-            "name": wo.WOName,
-            "customer_id": wo.CustID,
-            "status": wo.ReturnStatus,
-            "rack_location": wo.RackNo,
-            "special_instructions": wo.SpecialInstructions[:100] if wo.SpecialInstructions else None,
-        })
+        results.append(
+            {
+                "work_order_no": wo.WorkOrderNo,
+                "name": wo.WOName,
+                "customer_id": wo.CustID,
+                "status": wo.ReturnStatus,
+                "rack_location": wo.RackNo,
+                "special_instructions": wo.SpecialInstructions[:100]
+                if wo.SpecialInstructions
+                else None,
+            }
+        )
 
     return {
         "query": query,
         "status_filter": status,
         "count": len(results),
-        "work_orders": results
+        "work_orders": results,
     }
 
 
@@ -1015,6 +1277,16 @@ def tool_get_work_order_details(work_order_no: str) -> Dict:
     # Get customer
     customer = Customer.query.get(wo.CustID) if wo.CustID else None
 
+    # Determine if order is open or closed
+    is_open = wo.DateCompleted is None
+
+    # Calculate age from creation date
+    from datetime import datetime
+
+    age_days = None
+    if wo.created_at:
+        age_days = (datetime.utcnow() - wo.created_at).days
+
     return {
         "work_order_no": wo.WorkOrderNo,
         "name": wo.WOName,
@@ -1023,6 +1295,15 @@ def tool_get_work_order_details(work_order_no: str) -> Dict:
             "name": customer.Name if customer else None,
         },
         "status": wo.ReturnStatus,
+        "is_open": is_open,
+        "created_at": wo.created_at.strftime("%Y-%m-%d") if wo.created_at else None,
+        "completed_at": wo.DateCompleted.strftime("%Y-%m-%d")
+        if wo.DateCompleted
+        else None,
+        "age_days": age_days,
+        "date_in": wo.DateIn.strftime("%Y-%m-%d") if wo.DateIn else None,
+        "clean_date": wo.Clean.strftime("%Y-%m-%d") if wo.Clean else None,
+        "treat_date": wo.Treat.strftime("%Y-%m-%d") if wo.Treat else None,
         "rack_location": wo.RackNo,
         "storage_time": wo.StorageTime,
         "special_instructions": wo.SpecialInstructions,
@@ -1038,36 +1319,72 @@ def tool_get_work_order_details(work_order_no: str) -> Dict:
                 "quantity": item.Qty,
             }
             for item in items
-        ]
+        ],
     }
 
 
 def tool_get_customer_work_orders(customer_id: str, limit: int = 20) -> Dict:
-    """Get all work orders for a customer."""
+    """Get all work orders for a customer with enhanced temporal and status context."""
     customer = Customer.query.get(customer_id)
 
     if not customer:
         return {"error": f"Customer '{customer_id}' not found"}
 
-    work_orders = WorkOrder.query.filter_by(CustID=customer_id).limit(limit).all()
+    work_orders = (
+        WorkOrder.query.filter_by(CustID=customer_id)
+        .order_by(WorkOrder.created_at.desc())
+        .limit(limit)
+        .all()
+    )
 
-    return {
-        "customer_id": customer_id,
-        "customer_name": customer.Name,
-        "count": len(work_orders),
-        "work_orders": [
+    # Calculate age and status for each order
+    from datetime import datetime
+
+    enriched_orders = []
+    for wo in work_orders:
+        is_open = wo.DateCompleted is None
+        age_days = None
+        if wo.created_at:
+            age_days = (datetime.utcnow() - wo.created_at).days
+
+        enriched_orders.append(
             {
                 "work_order_no": wo.WorkOrderNo,
                 "name": wo.WOName,
                 "status": wo.ReturnStatus,
+                "is_open": is_open,
+                "created_at": wo.created_at.strftime("%Y-%m-%d")
+                if wo.created_at
+                else None,
+                "completed_at": wo.DateCompleted.strftime("%Y-%m-%d")
+                if wo.DateCompleted
+                else None,
+                "age_days": age_days,
                 "rack_location": wo.RackNo,
+                "ship_to": wo.ShipTo,
+                "storage_time": wo.StorageTime,
             }
-            for wo in work_orders
-        ]
+        )
+
+    # Separate into open and closed orders
+    open_orders = [o for o in enriched_orders if o["is_open"]]
+    closed_orders = [o for o in enriched_orders if not o["is_open"]]
+
+    return {
+        "customer_id": customer_id,
+        "customer_name": customer.Name,
+        "total_count": len(work_orders),
+        "open_count": len(open_orders),
+        "closed_count": len(closed_orders),
+        "work_orders": enriched_orders,
+        "open_work_orders": open_orders,
+        "closed_work_orders": closed_orders,
     }
 
 
-def tool_search_items(query: str, material: str = None, color: str = None, limit: int = 10) -> Dict:
+def tool_search_items(
+    query: str, material: str = None, color: str = None, limit: int = 10
+) -> Dict:
     """Search items by query text."""
     filters = [
         db.or_(
@@ -1086,22 +1403,24 @@ def tool_search_items(query: str, material: str = None, color: str = None, limit
 
     results = []
     for item in items:
-        results.append({
-            "id": item.id,
-            "work_order_no": item.WorkOrderNo,
-            "description": item.Description,
-            "material": item.Material,
-            "color": item.Color,
-            "condition": item.Condition,
-            "quantity": item.Qty,
-        })
+        results.append(
+            {
+                "id": item.id,
+                "work_order_no": item.WorkOrderNo,
+                "description": item.Description,
+                "material": item.Material,
+                "color": item.Color,
+                "condition": item.Condition,
+                "quantity": item.Qty,
+            }
+        )
 
     return {
         "query": query,
         "material_filter": material,
         "color_filter": color,
         "count": len(results),
-        "items": results
+        "items": results,
     }
 
 
@@ -1124,7 +1443,9 @@ def tool_get_work_order_stats(customer_id: str = None) -> Dict:
     total_items = 0
     if customer_id:
         for wo in work_orders:
-            total_items += WorkOrderItem.query.filter_by(WorkOrderNo=wo.WorkOrderNo).count()
+            total_items += WorkOrderItem.query.filter_by(
+                WorkOrderNo=wo.WorkOrderNo
+            ).count()
     else:
         total_items = WorkOrderItem.query.count()
 
@@ -1164,10 +1485,11 @@ def execute_tool(tool_name: str, arguments: Dict) -> str:
 # Chat with Tools (Function Calling)
 # ============================================================================
 
+
 def chat_with_tools(
     user_message: str,
     conversation_history: List[Dict[str, str]] = None,
-    max_tool_calls: int = 5
+    max_tool_calls: int = 5,
 ) -> Tuple[str, Dict]:
     """
     Chat with the LLM using function calling for database queries.
@@ -1197,7 +1519,30 @@ def chat_with_tools(
 7.  **Be Data-Driven:** Do not make assumptions beyond the data returned by the tools. If the user asks a question that the tools cannot answer, state that you do not have the ability to answer that question.
 8.  **Clarify Ambiguity:** If the user's request is ambiguous (e.g., "look up Smith's order"), and a tool returns multiple customers named Smith, ask the user for clarification (e.g., "I found multiple customers named Smith. Can you provide a customer ID or a more specific name?").
 
-Your goal is to be a reliable interface to the database. Think of yourself as a database query engine with a natural language interface.
+**Temporal Context & Status Interpretation:**
+9.  **Distinguish Order Age:** When presenting multiple work orders, ALWAYS note significant age differences. For example:
+    - If one order is from 2023 (age_days > 365) and another is from this week (age_days < 14), explicitly state this: "WO#12345 is from 2023 (historical), while WO#67890 is from last week (active)."
+10. **Identify Open vs Closed Orders:** Use the `is_open` and `completed_at` fields to distinguish active from historical orders:
+    - If `is_open: true` and `completed_at: null`, describe it as "currently open" or "in progress"
+    - If `is_open: false` and `completed_at` has a date, describe it as "completed on [date]" or "archived"
+11. **Connect Related Work:** If you see multiple orders for the same customer with identical or similar items, note this relationship. For example: "This customer previously had service in 2023 for the same awnings, which may be related to the current mold issue."
+12. **Interpret Process Status:** Use process dates (clean_date, treat_date) to explain where an order is in the workflow:
+    - If `clean_date` exists but `completed_at` is null: "This order has been cleaned but is not yet complete."
+    - If neither exist: "This order is awaiting processing."
+
+**Response Formatting & Citations:**
+13. **Structure Your Answers:** Use clear markdown formatting:
+    - Use **bold** for important record IDs and key facts
+    - Use bullet points or numbered lists for multiple items
+    - Use markdown tables for comparing multiple records
+14. **Always Cite Sources:** When you reference specific data, cite the source inline:
+    - "According to **Work Order #56471**, the items were treated on 2025-01-15..."
+    - "**Customer 25565** (Uhrig) has 2 work orders in the system..."
+15. **Professional Tone:** Your responses should be informative but concise. Avoid unnecessary pleasantries. Get straight to the facts.
+
+**Critical: Your responses should transform raw data into actionable insights by interpreting dates, statuses, and relationships.**
+
+Your goal is to be a reliable interface to the database that provides context-aware, intelligent answers - not just raw data dumps. The UI will automatically display your tool calls and database queries in a separate citation section, so focus on providing a clear narrative in your main response.
 """
 
     messages = [{"role": "system", "content": system_prompt}]
@@ -1215,7 +1560,7 @@ Your goal is to be a reliable interface to the database. Think of yourself as a 
             messages=messages,
             tools=AVAILABLE_TOOLS,
             tool_choice="auto",
-            temperature=0.7,
+            temperature=0.2,
             max_tokens=2048,
         )
 
@@ -1224,21 +1569,23 @@ Your goal is to be a reliable interface to the database. Think of yourself as a 
         # Check if we need to call tools
         if assistant_message.tool_calls:
             # Add assistant message to conversation
-            messages.append({
-                "role": "assistant",
-                "content": assistant_message.content,
-                "tool_calls": [
-                    {
-                        "id": tc.id,
-                        "type": "function",
-                        "function": {
-                            "name": tc.function.name,
-                            "arguments": tc.function.arguments
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": assistant_message.content,
+                    "tool_calls": [
+                        {
+                            "id": tc.id,
+                            "type": "function",
+                            "function": {
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments,
+                            },
                         }
-                    }
-                    for tc in assistant_message.tool_calls
-                ]
-            })
+                        for tc in assistant_message.tool_calls
+                    ],
+                }
+            )
 
             # Execute each tool call
             for tool_call in assistant_message.tool_calls:
@@ -1250,18 +1597,20 @@ Your goal is to be a reliable interface to the database. Think of yourself as a 
 
                 # Execute the tool
                 result = execute_tool(tool_name, arguments)
-                tool_calls_made.append({
-                    "tool": tool_name,
-                    "arguments": arguments,
-                    "result_preview": result[:200] + "..." if len(result) > 200 else result
-                })
+                tool_calls_made.append(
+                    {
+                        "tool": tool_name,
+                        "arguments": arguments,
+                        "result_preview": result[:200] + "..."
+                        if len(result) > 200
+                        else result,
+                    }
+                )
 
                 # Add tool result to messages
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": result
-                })
+                messages.append(
+                    {"role": "tool", "tool_call_id": tool_call.id, "content": result}
+                )
         else:
             # No more tool calls, return the response
             response_text = assistant_message.content or ""
@@ -1269,14 +1618,21 @@ Your goal is to be a reliable interface to the database. Think of yourself as a 
                 "model": DEEPSEEK_CHAT_MODEL,
                 "tool_calls": tool_calls_made,
                 "tool_calls_count": len(tool_calls_made),
-                "prompt_tokens": response.usage.prompt_tokens if response.usage else None,
-                "completion_tokens": response.usage.completion_tokens if response.usage else None,
+                "prompt_tokens": response.usage.prompt_tokens
+                if response.usage
+                else None,
+                "completion_tokens": response.usage.completion_tokens
+                if response.usage
+                else None,
                 "total_tokens": response.usage.total_tokens if response.usage else None,
             }
             return response_text, metadata
 
     # Max tool calls reached, return last response
-    response_text = assistant_message.content or "I've gathered some information but reached the limit of queries I can make. Please try a more specific question."
+    response_text = (
+        assistant_message.content
+        or "I've gathered some information but reached the limit of queries I can make. Please try a more specific question."
+    )
     metadata = {
         "model": DEEPSEEK_CHAT_MODEL,
         "tool_calls": tool_calls_made,

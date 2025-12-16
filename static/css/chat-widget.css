@@ -416,107 +416,232 @@
     margin: 4px 0;
 }
 
-/* Sources display */
-.chat-sources {
-    margin-top: 8px;
-    padding: 8px 12px;
-    background: rgba(13, 110, 253, 0.05);
-    border-left: 3px solid var(--bs-primary, #0d6efd);
-    border-radius: 6px;
-    font-size: 12px;
-}
-
-.sources-title, .tools-title {
-    font-weight: 600;
-    margin-bottom: 6px;
-    color: var(--bs-body-color, #212529);
+/* Citations Container */
+.citations-container {
+    margin-top: 10px;
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 6px;
 }
 
-.sources-list, .tools-used {
-    margin-bottom: 8px;
-}
-
-.sources-list:last-child, .tools-used:last-child {
-    margin-bottom: 0;
-}
-
-.source-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    margin: 3px 4px 3px 0;
-    background: white;
+/* Citations Dropdown */
+.citations-dropdown {
     border: 1px solid var(--bs-border-color, #dee2e6);
-    border-radius: 12px;
-    text-decoration: none;
+    border-radius: 8px;
+    background: var(--bs-body-bg, #fff);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.citations-dropdown[open] {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.citations-summary {
+    padding: 10px 12px;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--bs-body-color, #212529);
+    background: var(--bs-secondary-bg, #f8f9fa);
+    transition: background 0.2s;
+    list-style: none;
+}
+
+.citations-summary::-webkit-details-marker {
+    display: none;
+}
+
+.citations-summary:hover {
+    background: var(--bs-tertiary-bg, #e9ecef);
+}
+
+.citations-summary i.fa-tools,
+.citations-summary i.fa-book {
+    color: var(--bs-primary, #0d6efd);
     font-size: 11px;
-    transition: all 0.2s;
+}
+
+.citations-label {
+    flex: 1;
+    font-weight: 600;
+}
+
+.citations-chevron {
+    font-size: 10px;
+    color: var(--bs-secondary, #6c757d);
+    transition: transform 0.2s;
+}
+
+.citations-dropdown[open] .citations-chevron {
+    transform: rotate(180deg);
+}
+
+/* Citations Content */
+.citations-content {
+    padding: 8px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Tool Call Items */
+.tool-call-item {
+    padding: 8px;
+    background: var(--bs-light, #f8f9fa);
+    border-radius: 6px;
+    border-left: 3px solid var(--bs-primary, #0d6efd);
+}
+
+.tool-call-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.tool-call-header i {
+    font-size: 10px;
+    color: var(--bs-primary, #0d6efd);
+}
+
+.tool-call-name {
+    font-weight: 600;
+    font-size: 11px;
     color: var(--bs-body-color, #212529);
 }
 
-.source-link:hover {
-    background: var(--bs-primary-bg-subtle, #cfe2ff);
-    border-color: var(--bs-primary, #0d6efd);
-    color: var(--bs-primary, #0d6efd);
-    text-decoration: none;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.source-link.customer {
-    border-left: 3px solid #198754;
-}
-
-.source-link.work-order {
-    border-left: 3px solid #0d6efd;
-}
-
-.source-link.item {
-    border-left: 3px solid #fd7e14;
-}
-
-.source-link i {
+.tool-call-args {
     font-size: 10px;
-}
-
-/* Tool badges */
-.tools-list {
+    color: var(--bs-secondary, #6c757d);
+    padding-left: 16px;
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
 }
 
-.tool-badge {
+.tool-arg {
     display: inline-block;
-    padding: 3px 8px;
+}
+
+.tool-arg strong {
+    color: var(--bs-body-color, #212529);
+}
+
+.tool-args-empty {
+    font-style: italic;
+    color: var(--bs-secondary, #6c757d);
+}
+
+/* Citation Links */
+.citation-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: var(--bs-body-bg, #fff);
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 12px;
+    color: var(--bs-body-color, #212529);
+    transition: all 0.2s;
+}
+
+.citation-link:hover {
     background: var(--bs-primary-bg-subtle, #cfe2ff);
+    border-color: var(--bs-primary, #0d6efd);
     color: var(--bs-primary, #0d6efd);
-    border-radius: 10px;
-    font-size: 10px;
-    font-weight: 500;
-    cursor: help;
+    text-decoration: none;
+    transform: translateX(4px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
-.tool-badge:hover {
-    background: var(--bs-primary, #0d6efd);
-    color: white;
+.citation-link i {
+    font-size: 11px;
+    width: 14px;
+    text-align: center;
 }
 
-/* Dark theme adjustments for sources */
-[data-theme="dark"] .chat-sources {
-    background: rgba(13, 110, 253, 0.1);
+.citation-link.customer {
+    border-left-width: 3px;
+    border-left-color: #198754;
 }
 
-[data-theme="dark"] .source-link {
+.citation-link.work-order {
+    border-left-width: 3px;
+    border-left-color: #0d6efd;
+}
+
+.citation-link.item {
+    border-left-width: 3px;
+    border-left-color: #fd7e14;
+}
+
+/* Tool Execution Spinner */
+.tool-execution {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: var(--bs-light, #f8f9fa);
+    border-radius: 6px;
+    border-left: 3px solid var(--bs-info, #0dcaf0);
+    font-size: 11px;
+    color: var(--bs-body-color, #212529);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tool-execution-spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--bs-border-color, #dee2e6);
+    border-top-color: var(--bs-primary, #0d6efd);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.tool-execution-text {
+    flex: 1;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .citations-dropdown {
+    background: var(--bs-dark, #212529);
+    border-color: var(--bs-border-color, #495057);
+}
+
+[data-theme="dark"] .citations-summary {
+    background: var(--bs-secondary-bg, #343a40);
+    color: var(--bs-body-color, #dee2e6);
+}
+
+[data-theme="dark"] .citations-summary:hover {
+    background: var(--bs-tertiary-bg, #495057);
+}
+
+[data-theme="dark"] .tool-call-item {
+    background: var(--bs-secondary-bg, #343a40);
+}
+
+[data-theme="dark"] .citation-link {
     background: var(--bs-secondary-bg, #343a40);
     border-color: var(--bs-border-color, #495057);
     color: var(--bs-body-color, #dee2e6);
 }
 
-[data-theme="dark"] .source-link:hover {
+[data-theme="dark"] .citation-link:hover {
     background: var(--bs-primary-bg-subtle, #052c65);
+}
+
+[data-theme="dark"] .tool-execution {
+    background: var(--bs-secondary-bg, #343a40);
 }

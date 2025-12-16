@@ -271,6 +271,9 @@ def cleaning_queue():
     show_sail_orders = (
         request.args.get("show_sail_orders", "true").lower() == "true"
     )  # Default to showing sail orders
+    show_cushion_orders = (
+        request.args.get("show_cushion_orders", "true").lower() == "true"
+    )  # Default to showing cushion orders
 
     # Helper: build search filter if search term is provided
     def search_filter(query):
@@ -326,6 +329,15 @@ def cleaning_queue():
         logger.debug(
             "NOT applying sail order filter (showing all orders including sail orders)"
         )
+
+    # Apply cushion order filter if needed
+    if not show_cushion_orders:
+        logger.debug("Applying cushion order filter, excluding cushion orders")
+        all_orders_query = all_orders_query.filter(
+            (WorkOrder.isCushion == False) | (WorkOrder.isCushion == None)
+        )
+    else:
+        logger.debug("NOT applying cushion order filter (showing all orders including cushion orders)")
 
     # Apply ordering
     all_orders_query = all_orders_query.order_by(
@@ -413,6 +425,7 @@ def cleaning_queue():
         search=search,
         per_page=per_page,
         show_sail_orders=show_sail_orders,
+        show_cushion_orders=show_cushion_orders,
         queue_counts=queue_counts,
     )
 

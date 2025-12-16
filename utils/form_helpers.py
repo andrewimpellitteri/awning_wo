@@ -46,6 +46,7 @@ def extract_work_order_fields(form):
         "Quote": form.get("Quote"),
         "RushOrder": "RushOrder" in form,
         "FirmRush": "FirmRush" in form,
+        "isCushion": "isCushion" in form,
         "DateIn": parse_form_date(form, "DateIn"),
         "DateRequired": parse_form_date(form, "DateRequired"),
         "Clean": parse_form_date(form, "Clean"),

@@ -5,6 +5,43 @@
 {% block content %}
 <head>
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <style>
+        .has-tooltip {
+            position: relative;
+        }
+
+        .tooltip-text {
+            visibility: hidden;
+            width: 220px;
+            background-color: #333;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1080;
+            bottom: 125%; /* Position the tooltip above the element */
+            left: 50%;
+            margin-left: -110px; /* Use half of the width to center the tooltip */
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tooltip-text ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .tooltip-text ul li {
+            padding: 2px 0;
+        }
+
+        .has-tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
 </head>
 <div class="container-fluid">
     <div class="row">
@@ -79,7 +116,15 @@
                     {% if work_orders %}
                         <ul class="list-group list-group-flush">
                             {% for work_order in work_orders %}
-                            <li class="list-group-item d-flex align-items-center">
+                            <li class="list-group-item d-flex align-items-center has-tooltip">
+                                <span class="tooltip-text">
+                                    <strong>Items ({{ work_order.items|length }}):</strong>
+                                    <ul>
+                                        {% for item in work_order.items %}
+                                            <li>{{ item.Description }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </span>
                                 {% if tab == 'in_progress' %}
                                     <span class="badge bg-success me-3">
                                         <i class="fas fa-spinner fa-spin"></i> In Progress

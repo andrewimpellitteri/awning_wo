@@ -50,6 +50,7 @@ urllib3<2.0
 # HTTP and Web
 requests==2.31.0
 beautifulsoup4==4.12.3
+httpx>=0.27.2,<0.28.0
 
 # Utilities
 packaging==25.0
@@ -57,7 +58,7 @@ six==1.17.0
 typing_extensions==4.14.1
 
 # RAG Chatbot dependencies
-openai==1.12.0
+openai>=1.56.0,<1.57.0
 pgvector>=0.2.0
 # Note: Using OpenAI text-embedding-3-small for embeddings (~$0.02/1M tokens)
 # Set DEEPSEEK_API_KEY (for chat) and OPENAI_API_KEY (for embeddings) environment variables

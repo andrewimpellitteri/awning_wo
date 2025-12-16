@@ -339,11 +339,11 @@
 
         messageDiv.appendChild(contentDiv);
 
-        // Add sources if available (for RAG responses)
-        if (role === 'assistant' && metadata.sources) {
-            const sourcesDiv = createSourcesDisplay(metadata.sources, metadata.tool_calls);
-            if (sourcesDiv) {
-                messageDiv.appendChild(sourcesDiv);
+        // Add citations/sources if available (for RAG or tool responses)
+        if (role === 'assistant' && (metadata.sources || metadata.tool_calls)) {
+            const citationsDiv = createCitationsDisplay(metadata.sources, metadata.tool_calls);
+            if (citationsDiv) {
+                messageDiv.appendChild(citationsDiv);
             }
         }
 
@@ -390,28 +390,82 @@
     }
 
     /**
-     * Create a pretty display of sources used for RAG responses
+     * Create a professional dropdown display for citations and tool calls
      */
-    function createSourcesDisplay(sources, toolCalls) {
+    function createCitationsDisplay(sources, toolCalls) {
         if (!sources && !toolCalls) return null;
 
-        const sourcesDiv = document.createElement('div');
-        sourcesDiv.className = 'chat-sources';
+        const container = document.createElement('div');
+        container.className = 'citations-container';
 
-        // Display RAG sources (from semantic search)
+        // Tool Calls Section (if any)
+        if (toolCalls && toolCalls.length > 0) {
+            const toolsSection = document.createElement('details');
+            toolsSection.className = 'citations-dropdown';
+            toolsSection.open = true; // Open by default
+
+            const summary = document.createElement('summary');
+            summary.className = 'citations-summary';
+            summary.innerHTML = `
+                <i class="fas fa-tools"></i>
+                <span class="citations-label">Database Queries (${toolCalls.length})</span>
+                <i class="fas fa-chevron-down citations-chevron"></i>
+            `;
+
+            const content = document.createElement('div');
+            content.className = 'citations-content';
+
+            toolCalls.forEach((call, idx) => {
+                const toolItem = document.createElement('div');
+                toolItem.className = 'tool-call-item';
+
+                const toolName = call.tool || `Query ${idx + 1}`;
+                const args = call.arguments || {};
+
+                toolItem.innerHTML = `
+                    <div class="tool-call-header">
+                        <i class="fas fa-database"></i>
+                        <span class="tool-call-name">${toolName}</span>
+                    </div>
+                    <div class="tool-call-args">${formatToolArguments(args)}</div>
+                `;
+
+                content.appendChild(toolItem);
+            });
+
+            toolsSection.appendChild(summary);
+            toolsSection.appendChild(content);
+            container.appendChild(toolsSection);
+        }
+
+        // Sources Section (if any)
         if (sources && (sources.customers?.length || sources.work_orders?.length || sources.items?.length)) {
-            const sourcesList = document.createElement('div');
-            sourcesList.className = 'sources-list';
-            sourcesList.innerHTML = '<div class="sources-title"><i class="fas fa-book"></i> Sources:</div>';
+            const sourcesSection = document.createElement('details');
+            sourcesSection.className = 'citations-dropdown';
+
+            const totalSources = (sources.customers?.length || 0) +
+                                (sources.work_orders?.length || 0) +
+                                (sources.items?.length || 0);
+
+            const summary = document.createElement('summary');
+            summary.className = 'citations-summary';
+            summary.innerHTML = `
+                <i class="fas fa-book"></i>
+                <span class="citations-label">Sources (${totalSources})</span>
+                <i class="fas fa-chevron-down citations-chevron"></i>
+            `;
+
+            const content = document.createElement('div');
+            content.className = 'citations-content';
 
             if (sources.customers?.length) {
                 sources.customers.forEach(custId => {
                     const link = document.createElement('a');
                     link.href = `/customers/${custId}`;
-                    link.className = 'source-link customer';
+                    link.className = 'citation-link customer';
                     link.innerHTML = `<i class="fas fa-user"></i> Customer ${custId}`;
                     link.target = '_blank';
-                    sourcesList.appendChild(link);
+                    content.appendChild(link);
                 });
             }
 
@@ -419,10 +473,10 @@
                 sources.work_orders.forEach(woNo => {
                     const link = document.createElement('a');
                     link.href = `/work_orders/${woNo}`;
-                    link.className = 'source-link work-order';
-                    link.innerHTML = `<i class="fas fa-clipboard-list"></i> WO ${woNo}`;
+                    link.className = 'citation-link work-order';
+                    link.innerHTML = `<i class="fas fa-clipboard-list"></i> Work Order ${woNo}`;
                     link.target = '_blank';
-                    sourcesList.appendChild(link);
+                    content.appendChild(link);
                 });
             }
 
@@ -430,37 +484,36 @@
                 sources.items.forEach(itemId => {
                     const link = document.createElement('a');
                     link.href = `#item-${itemId}`;
-                    link.className = 'source-link item';
+                    link.className = 'citation-link item';
                     link.innerHTML = `<i class="fas fa-box"></i> Item ${itemId}`;
-                    sourcesList.appendChild(link);
+                    content.appendChild(link);
                 });
             }
 
-            sourcesDiv.appendChild(sourcesList);
+            sourcesSection.appendChild(summary);
+            sourcesSection.appendChild(content);
+            container.appendChild(sourcesSection);
         }
 
-        // Display tool calls (from function calling)
-        if (toolCalls && toolCalls.length > 0) {
-            const toolsDiv = document.createElement('div');
-            toolsDiv.className = 'tools-used';
-            toolsDiv.innerHTML = `<div class="tools-title"><i class="fas fa-tools"></i> Tools used: ${toolCalls.length}</div>`;
+        return container.children.length > 0 ? container : null;
+    }
 
-            const toolsList = document.createElement('div');
-            toolsList.className = 'tools-list';
-
-            toolCalls.forEach((call, idx) => {
-                const toolBadge = document.createElement('span');
-                toolBadge.className = 'tool-badge';
-                toolBadge.textContent = call.tool || `Tool ${idx + 1}`;
-                toolBadge.title = JSON.stringify(call.arguments || {}, null, 2);
-                toolsList.appendChild(toolBadge);
-            });
-
-            toolsDiv.appendChild(toolsList);
-            sourcesDiv.appendChild(toolsDiv);
+    /**
+     * Format tool arguments for display
+     */
+    function formatToolArguments(args) {
+        if (!args || Object.keys(args).length === 0) {
+            return '<span class="tool-args-empty">No parameters</span>';
         }
 
-        return sourcesDiv.children.length > 0 ? sourcesDiv : null;
+        return Object.entries(args)
+            .map(([key, value]) => {
+                const displayValue = typeof value === 'string' && value.length > 50
+                    ? value.substring(0, 50) + '...'
+                    : value;
+                return `<span class="tool-arg"><strong>${key}:</strong> ${displayValue}</span>`;
+            })
+            .join(' ');
     }
 
     /**
@@ -471,21 +524,40 @@
     }
 
     /**
-     * Show typing indicator
+     * Show typing indicator (with enhanced "thinking" display)
      */
     function showTypingIndicator() {
         const indicator = document.createElement('div');
         indicator.className = 'chat-message assistant';
         indicator.id = 'typing-indicator';
         indicator.innerHTML = `
-            <div class="typing-indicator">
-                <span></span>
-                <span></span>
-                <span></span>
+            <div class="chat-message-content">
+                <div class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+            <div class="tool-execution">
+                <div class="tool-execution-spinner"></div>
+                <span class="tool-execution-text">Searching database...</span>
             </div>
         `;
         messagesContainer.appendChild(indicator);
         scrollToBottom();
+    }
+
+    /**
+     * Update thinking indicator with tool info
+     */
+    function updateThinkingText(text) {
+        const indicator = document.getElementById('typing-indicator');
+        if (indicator) {
+            const textEl = indicator.querySelector('.tool-execution-text');
+            if (textEl) {
+                textEl.textContent = text;
+            }
+        }
     }
 
     /**

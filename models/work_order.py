@@ -40,6 +40,7 @@ class WorkOrder(db.Model):
     Quote = db.Column("quote", db.String)  # needs to be sting
     RushOrder = db.Column("rushorder", db.Boolean, default=False)
     FirmRush = db.Column("firmrush", db.Boolean, default=False)
+    isCushion = db.Column("iscushion", db.Boolean, default=False)
     SeeRepair = db.Column("seerepair", db.String)  # needs to be string
     # String fields (keep as string)
     ShipTo = db.Column("shipto", db.String, db.ForeignKey("tblsource.ssource"))

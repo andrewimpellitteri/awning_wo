@@ -50,5 +50,5 @@ def downgrade() -> None:
                existing_nullable=False)
     op.alter_column('customer_embeddings', 'embedding',
                existing_type=pgvector.sqlalchemy.Vector(1536),
-               type_=postgresql.ARRAY(.DOUBLE_PRECISION(precision=53)),
+               type_=postgresql.ARRAY(sa.DOUBLE_PRECISION(precision=53)),
                existing_nullable=False)

@@ -8,6 +8,8 @@ from sqlalchemy.orm import joinedload
 from extensions import db
 from datetime import datetime
 from utils.cache_helpers import invalidate_analytics_cache
+from sqlalchemy.orm import aliased
+
 
 in_progress_bp = Blueprint("in_progress", __name__)
 
@@ -27,13 +29,14 @@ def list_in_progress():
     sort_by = request.args.get("sort_by", "recent")
 
     query = WorkOrder.query.options(
-        joinedload(WorkOrder.customer).joinedload(Customer.source_info)
+        joinedload(WorkOrder.customer).joinedload(Customer.source_info),
+        joinedload(WorkOrder.items),
     ).filter(WorkOrder.ProcessingStatus == True)
 
     # Apply sorting
     if sort_by == "source":
         query = query.join(Customer, WorkOrder.CustID == Customer.CustID, isouter=True)
-        query = query.join(Source, Customer.Source == Source.Source, isouter=True)
+        query = query.join(Source, Customer.Source == Source.SSource, isouter=True)
         query = query.order_by(Source.SSource.asc(), WorkOrder.updated_at.desc())
     else:  # Default to 'recent'
         query = query.order_by(WorkOrder.updated_at.desc())
@@ -60,7 +63,8 @@ def list_recently_cleaned():
     sort_by = request.args.get("sort_by", "recent")
 
     query = WorkOrder.query.options(
-        joinedload(WorkOrder.customer).joinedload(Customer.source_info)
+        joinedload(WorkOrder.customer).joinedload(Customer.source_info),
+        joinedload(WorkOrder.items),
     ).filter(
         or_(WorkOrder.Clean.isnot(None), WorkOrder.Treat.isnot(None)),
         WorkOrder.DateCompleted.is_(None),
@@ -69,7 +73,7 @@ def list_recently_cleaned():
     # Apply sorting
     if sort_by == "source":
         query = query.join(Customer, WorkOrder.CustID == Customer.CustID, isouter=True)
-        query = query.join(Source, Customer.Source == Source.Source, isouter=True)
+        query = query.join(Source, Customer.Source == Source.SSource, isouter=True)
         query = query.order_by(Source.SSource.asc(), WorkOrder.updated_at.desc())
     else:  # Default to 'recent'
         query = query.order_by(WorkOrder.updated_at.desc())
@@ -96,7 +100,8 @@ def list_cleaned():
     sort_by = request.args.get("sort_by", "recent")
 
     query = WorkOrder.query.options(
-        joinedload(WorkOrder.customer).joinedload(Customer.source_info)
+        joinedload(WorkOrder.customer).joinedload(Customer.source_info),
+        joinedload(WorkOrder.items),
     ).filter(
         WorkOrder.Clean.isnot(None),
         WorkOrder.DateCompleted.is_(None),
@@ -106,7 +111,7 @@ def list_cleaned():
     # Apply sorting
     if sort_by == "source":
         query = query.join(Customer, WorkOrder.CustID == Customer.CustID, isouter=True)
-        query = query.join(Source, Customer.Source == Source.Source, isouter=True)
+        query = query.join(Source, Customer.Source == Source.SSource, isouter=True)
         query = query.order_by(Source.SSource.asc(), WorkOrder.updated_at.desc())
     else:  # Default to 'recent'
         query = query.order_by(WorkOrder.updated_at.desc())
@@ -133,7 +138,8 @@ def list_treated():
     sort_by = request.args.get("sort_by", "recent")
 
     query = WorkOrder.query.options(
-        joinedload(WorkOrder.customer).joinedload(Customer.source_info)
+        joinedload(WorkOrder.customer).joinedload(Customer.source_info),
+        joinedload(WorkOrder.items),
     ).filter(
         WorkOrder.Treat.isnot(None),
         WorkOrder.DateCompleted.is_(None),
@@ -142,9 +148,10 @@ def list_treated():
 
     # Apply sorting
     if sort_by == "source":
+        src = aliased(Source)
         query = query.join(Customer, WorkOrder.CustID == Customer.CustID, isouter=True)
-        query = query.join(Source, Customer.Source == Source.Source, isouter=True)
-        query = query.order_by(Source.SSource.asc(), WorkOrder.updated_at.desc())
+        query = query.join(src, Customer.Source == src.SSource, isouter=True)
+        query = query.order_by(src.SSource.asc(), WorkOrder.updated_at.desc())
     else:  # Default to 'recent'
         query = query.order_by(WorkOrder.updated_at.desc())
 
@@ -161,7 +168,6 @@ def list_treated():
     )
 
 
-# Route for packaged work orders
 @in_progress_bp.route("/list_packaged")
 @login_required
 def list_packaged():
@@ -170,19 +176,23 @@ def list_packaged():
     sort_by = request.args.get("sort_by", "recent")
 
     query = WorkOrder.query.options(
-        joinedload(WorkOrder.customer).joinedload(Customer.source_info)
+        joinedload(WorkOrder.customer).joinedload(Customer.source_info),
+        joinedload(WorkOrder.items),
     ).filter(
         WorkOrder.final_location.isnot(None),
         WorkOrder.final_location != "",
         WorkOrder.DateCompleted.is_(None),
     )
 
-    # Apply sorting
     if sort_by == "source":
-        query = query.join(Customer, WorkOrder.CustID == Customer.CustID, isouter=True)
-        query = query.join(Source, Customer.Source == Source.Source, isouter=True)
-        query = query.order_by(Source.SSource.asc(), WorkOrder.updated_at.desc())
-    else:  # Default to 'recent'
+        src = aliased(Source)
+        query = query.outerjoin(WorkOrder.customer).outerjoin(
+            src, Customer.Source == src.SSource
+        )
+        query = query.order_by(
+            src.SSource.asc().nullsfirst(), WorkOrder.updated_at.desc()
+        )
+    else:
         query = query.order_by(WorkOrder.updated_at.desc())
 
     pagination = query.paginate(page=page, per_page=per_page)
@@ -207,7 +217,8 @@ def all_recent():
     sort_by = request.args.get("sort_by", "recent")
 
     query = WorkOrder.query.options(
-        joinedload(WorkOrder.customer).joinedload(Customer.source_info)
+        joinedload(WorkOrder.customer).joinedload(Customer.source_info),
+        joinedload(WorkOrder.items),
     ).filter(
         or_(
             WorkOrder.ProcessingStatus == True,
@@ -221,7 +232,7 @@ def all_recent():
     # Apply sorting
     if sort_by == "source":
         query = query.join(Customer, WorkOrder.CustID == Customer.CustID, isouter=True)
-        query = query.join(Source, Customer.Source == Source.Source, isouter=True)
+        query = query.join(Source, Customer.Source == Source.SSource, isouter=True)
         query = query.order_by(Source.SSource.asc(), WorkOrder.updated_at.desc())
     else:  # Default to 'recent'
         query = query.order_by(WorkOrder.updated_at.desc())

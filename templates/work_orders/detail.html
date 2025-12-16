@@ -225,12 +225,12 @@
                                     <div class="detail-row">
                                         <div class="detail-label">Rush Order</div>
                                         <div class="detail-value">
-                                            {% if (work_order.RushOrder | yesdash) != '-' %}
+                                            {% if work_order.RushOrder %}
                                                 <span class="badge bg-warning text-dark">
-                                                    <i class="fas fa-bolt me-1"></i>{{ (work_order.RushOrder | yesdash) }}
+                                                    <i class="fas fa-bolt me-1"></i>Yes
                                                 </span>
                                             {% else %}
-                                                <span class="text-muted">-</span>
+                                                No
                                             {% endif %}
                                         </div>
                                     </div>
@@ -238,16 +238,29 @@
                                     <div class="detail-row">
                                         <div class="detail-label">Firm Rush</div>
                                         <div class="detail-value">
-                                            {% if (work_order.FirmRush | yesdash) != '-' %}
+                                            {% if work_order.FirmRush %}
                                                 <span class="badge bg-danger">
-                                                    <i class="fas fa-exclamation-triangle me-1"></i>{{ (work_order.FirmRush | yesdash) }}
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>Yes
                                                 </span>
                                             {% else %}
-                                                <span class="text-muted">-</span>
+                                                No
                                             {% endif %}
                                         </div>
                                     </div>
-                                    
+
+                                    <div class="detail-row">
+                                        <div class="detail-label">Cushion</div>
+                                        <div class="detail-value">
+                                            {% if work_order.isCushion %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-couch me-1"></i>Yes
+                                                </span>
+                                            {% else %}
+                                                No
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
                                     <div class="detail-row">
                                         <div class="detail-label">Clean</div>
                                         <div class="detail-value">

@@ -743,6 +743,28 @@ def test_work_order_get_sail_order_sources(app):
         assert sources == ["Source 1", "Source 2"]
 
 
+@pytest.mark.unit
+def test_work_order_is_cushion_default(app):
+    """
+    GIVEN a WorkOrder model
+    WHEN a new WorkOrder is created without isCushion specified
+    THEN the isCushion field should default to False
+    """
+    with app.app_context():
+        customer = Customer(CustID="60009", Name="Test Customer")
+        db.session.add(customer)
+        db.session.commit()
+
+        work_order = WorkOrder(
+            WorkOrderNo="WO011",
+            CustID="60009",
+        )
+        db.session.add(work_order)
+        db.session.commit()
+
+        assert work_order.isCushion is False
+
+
 # --- WorkOrderItem Model Tests ---
 
 

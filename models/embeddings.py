@@ -90,3 +90,33 @@ class ItemEmbedding(db.Model):
 
     def __repr__(self):
         return f"<ItemEmbedding {self.id}: item {self.item_id}>"
+
+
+class DocumentationEmbedding(db.Model):
+    """Stores embeddings for documentation markdown files."""
+    __tablename__ = "documentation_embeddings"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    file_path = db.Column(db.String(512), nullable=False, unique=True, index=True)  # Relative path from project root
+    title = db.Column(db.String(256), nullable=True)  # Extracted from markdown title or filename
+    category = db.Column(db.String(64), nullable=True, index=True)  # e.g., 'architecture', 'user-guide', 'deployment'
+    content = db.Column(db.Text, nullable=False)  # The text that was embedded
+    embedding = db.Column(Vector(EMBEDDING_DIMENSION), nullable=False)  # Vector embedding
+
+    created_at = db.Column(db.DateTime, server_default=func.now(), nullable=False)
+    updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    def to_dict(self):
+        """Convert to dictionary (excludes embedding for efficiency)."""
+        return {
+            "id": self.id,
+            "file_path": self.file_path,
+            "title": self.title,
+            "category": self.category,
+            "content": self.content[:200] + "..." if len(self.content) > 200 else self.content,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+    def __repr__(self):
+        return f"<DocumentationEmbedding {self.id}: {self.file_path}>"
