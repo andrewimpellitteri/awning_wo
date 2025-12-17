@@ -936,3 +936,36 @@ def test_work_order_file_to_dict(app):
         assert file_dict["filename"] == "test.jpg"
         assert file_dict["file_path"] == "/uploads/test.jpg"
         assert "uploaded_at" in file_dict
+
+
+@pytest.mark.unit
+def test_cushion_field_in_to_dict(app):
+    """
+    Ensure isCushion field is included in to_dict serialization.
+    """
+    with app.app_context():
+        # Create a work order with isCushion=True
+        # Use a dummy customer ID (999) - unit tests usually mock DB or don't enforce FK strictly unless setup
+        # But to be safe, creating a customer would be better if constraints exist.
+        # Assuming existing patterns in this file work (some use '60009', etc.)
+        
+        # Checking previous tests in this file, they create customer first.
+        customer = Customer(CustID="999-CUSHION", Name="Test Customer")
+        db.session.add(customer)
+        db.session.commit()
+
+        wo = WorkOrder(
+            WorkOrderNo="TEST-REPRO",
+            CustID="999-CUSHION",
+            WOName="Cushion Repro",
+            isCushion=True
+        )
+        # No need to commit if just testing to_dict, but might as well follow pattern
+        
+        # Serialize
+        data = wo.to_dict()
+        
+        # Verify
+        assert "isCushion" in data, "isCushion field is missing from to_dict"
+        assert data["isCushion"] is True, "isCushion should be True"
+

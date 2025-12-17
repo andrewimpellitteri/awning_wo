@@ -553,6 +553,41 @@ class TestWorkOrderAPIRoutes:
         assert "data" in data
         # Should not crash - DATE type columns should be sortable
 
+    def test_cushion_field_in_api_response(self, admin_client, sample_data, app):
+        """
+        Ensure isCushion field is included in API response.
+        """
+        with app.app_context():
+            # Create a work order
+            wo = WorkOrder(
+                WorkOrderNo="TEST-API-CUSHION",
+                CustID="100",  # Use existing sample data customer from fixture
+                WOName="API Cushion Test",
+                isCushion=True
+            )
+            db.session.add(wo)
+            db.session.commit()
+            
+            # Call API
+            response = admin_client.get("/work_orders/api/work_orders?search=TEST-API-CUSHION")
+            assert response.status_code == 200
+            data = response.get_json()
+            
+            # Verify
+            found = False
+            for item in data["data"]:
+                if item["WorkOrderNo"] == "TEST-API-CUSHION":
+                    assert "isCushion" in item, "isCushion missing from API response item"
+                    assert item["isCushion"] is True
+                    found = True
+                    break
+            assert found, "Test work order not found in API response"
+            
+            # Cleanup
+            db.session.delete(wo)
+            db.session.commit()
+
+
 
 class TestWorkOrderFileRoutes:
     """Test work order file upload/download HTTP routes."""
