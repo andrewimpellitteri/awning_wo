@@ -6,99 +6,100 @@
 {% block admin_content %}
 <h1><i class="fas fa-brain me-2"></i>ML Model Dashboard</h1>
 
-    <!-- Model Status -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0">Model Status</h5>
-        </div>
-        <div class="card-body">
-            <div class="row text-center" id="modelStatus">
-                <div class="col-md-3">
-                    <h3 id="modelTrained" class="text-primary display-4">❌</h3>
-                    <p class="text-muted">Model Trained</p>
-                </div>
-                <div class="col-md-3">
-                    <h3 id="mae" class="text-primary display-4">--</h3>
-                    <p class="text-muted">MAE (days)</p>
-                </div>
-                <div class="col-md-3">
-                    <h3 id="r2" class="text-primary display-4">--</h3>
-                    <p class="text-muted">R² Score</p>
-                </div>
-                <div class="col-md-3">
-                    <h3 id="samples" class="text-primary display-4">--</h3>
-                    <p class="text-muted">Training Samples</p>
-                </div>
+<!-- Model Status -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Model Status</h5>
+    </div>
+    <div class="card-body">
+        <div class="row text-center" id="modelStatus">
+            <div class="col-md-3">
+                <h3 id="modelTrained" class="text-primary display-4">❌</h3>
+                <p class="text-muted">Model Trained</p>
+            </div>
+            <div class="col-md-3">
+                <h3 id="mae" class="text-primary display-4">--</h3>
+                <p class="text-muted">MAE (days)</p>
+            </div>
+            <div class="col-md-3">
+                <h3 id="r2" class="text-primary display-4">--</h3>
+                <p class="text-muted">R² Score</p>
+            </div>
+            <div class="col-md-3">
+                <h3 id="samples" class="text-primary display-4">--</h3>
+                <p class="text-muted">Training Samples</p>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Action Buttons -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0">Actions</h5>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-6 col-lg-4">
-                    <button class="btn btn-primary w-100" onclick="getStatus()">
-                        <i class="fas fa-sync me-1"></i> Refresh Status
-                    </button>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <button class="btn btn-success w-100" onclick="trainModel('baseline')">
-                        <i class="fas fa-running me-1"></i> Train Baseline (Fast)
-                    </button>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <button class="btn btn-warning w-100" onclick="trainModel('deep_wide')">
-                        <i class="fas fa-bolt me-1"></i> Train Deep+Wide (Best)
-                    </button>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <button class="btn btn-info w-100" onclick="testPredict()">
-                        <i class="fas fa-crystal-ball me-1"></i> Test Prediction
-                    </button>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <button class="btn btn-info w-100" onclick="batchPredict()">
-                        <i class="fas fa-list me-1"></i> Batch Predict
-                    </button>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <a href="{{ url_for('ml.performance_dashboard') }}" class="btn btn-purple w-100">
-                        <i class="fas fa-chart-line me-1"></i> Performance Tracking
-                    </a>
-                </div>
-                <div class="col-md-6 col-lg-4">
-                    <button class="btn btn-secondary w-100" onclick="generateWeeklyPredictions()">
-                        <i class="fas fa-calendar-day me-1"></i> Generate Daily Snapshot
-                    </button>
-                </div>
-            </div>
-            
-            <div class="d-none text-center mt-3" id="loading">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-2">Processing...</p>
-            </div>
-        </div>
+<!-- Action Buttons -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Actions</h5>
     </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6 col-lg-4">
+                <button class="btn btn-primary w-100" onclick="getStatus()">
+                    <i class="fas fa-sync me-1"></i> Refresh Status
+                </button>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <button class="btn btn-success w-100" onclick="trainModel('baseline')">
+                    <i class="fas fa-running me-1"></i> Train Baseline (Fast)
+                </button>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <button class="btn btn-warning w-100" onclick="trainModel('deep_wide')">
+                    <i class="fas fa-bolt me-1"></i> Train Deep+Wide (Best)
+                </button>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <button class="btn btn-info w-100" onclick="testPredict()">
+                    <i class="fas fa-crystal-ball me-1"></i> Test Prediction
+                </button>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <button class="btn btn-info w-100" onclick="batchPredict()">
+                    <i class="fas fa-list me-1"></i> Batch Predict
+                </button>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <a href="{{ url_for('ml.performance_dashboard') }}" class="btn btn-purple w-100">
+                    <i class="fas fa-chart-line me-1"></i> Performance Tracking
+                </a>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <button class="btn btn-secondary w-100" onclick="generateDailyPredictions()">
+                    <i class="fas fa-calendar-day me-1"></i> Generate Daily Snapshot
+                </button>
+            </div>
+        </div>
 
-    <!-- Activity Log -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Activity Log</h5>
-            <button class="btn btn-sm btn-outline-secondary" onclick="clearLog()">
-                <i class="fas fa-trash me-1"></i> Clear Log
-            </button>
-        </div>
-        <div class="card-body">
-            <div id="log" class="bg-light p-3 rounded" style="height: 300px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.4;">
+        <div class="d-none text-center mt-3" id="loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
             </div>
+            <p class="mt-2">Processing...</p>
         </div>
     </div>
+</div>
+
+<!-- Activity Log -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Activity Log</h5>
+        <button class="btn btn-sm btn-outline-secondary" onclick="clearLog()">
+            <i class="fas fa-trash me-1"></i> Clear Log
+        </button>
+    </div>
+    <div class="card-body">
+        <div id="log" class="bg-light p-3 rounded"
+            style="height: 300px; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.4;">
+        </div>
+    </div>
+</div>
 
 <script>
     // Log function
@@ -129,19 +130,19 @@
             log('Fetching model status...');
             const response = await fetch('/ml/status');
             const data = await response.json();
-            
+
             // Update UI
             document.getElementById('modelTrained').textContent = data.trained ? '✅' : '❌';
             document.getElementById('mae').textContent = data.metadata.mae || '--';
             document.getElementById('r2').textContent = data.metadata.r2 ? `${(data.metadata.r2 * 100).toFixed(1)}%` : '--';
             document.getElementById('samples').textContent = data.metadata.sample_count || '--';
-            
+
             log(`Status updated. Model trained: ${data.trained}`, 'success');
-            
+
             if (data.trained) {
                 log(`Current model: ${data.metadata.config_name} (MAE: ${data.metadata.mae}, R²: ${data.metadata.r2})`, 'success');
             }
-            
+
         } catch (error) {
             log(`Error fetching status: ${error.message}`, 'error');
         }
@@ -152,23 +153,23 @@
         try {
             showLoading(true);
             log(`Starting training with config: ${config}...`);
-            
+
             const response = await fetch('/ml/train', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ config: config })
             });
-            
+
             const data = await response.json();
             showLoading(false);
-            
+
             if (response.ok) {
                 log(`Training completed! MAE: ${data.metrics.mae.toFixed(3)}, R²: ${data.metrics.r2.toFixed(3)}, Time: ${data.metrics.training_time.toFixed(1)}s`, 'success');
                 getStatus(); // Refresh status
             } else {
                 log(`Training failed: ${data.error}`, 'error');
             }
-            
+
         } catch (error) {
             showLoading(false);
             log(`Training error: ${error.message}`, 'error');
@@ -179,7 +180,7 @@
     async function testPredict() {
         try {
             log('Making test prediction...');
-            
+
             const testData = {
                 custid: 'TEST001',
                 datein: new Date().toISOString().split('T')[0],
@@ -189,22 +190,22 @@
                 specialinstructions: 'Test order for prediction',
                 repairsneeded: 'Minor cleaning required'
             };
-            
+
             const response = await fetch('/ml/predict', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(testData)
             });
-            
+
             const data = await response.json();
-            
+
             if (response.ok) {
                 log(`Prediction: ${data.predicted_days} days (${data.confidence_interval.lower}-${data.confidence_interval.upper} days range)`, 'success');
                 log(`Estimated completion: ${data.estimated_completion}`, 'success');
             } else {
                 log(`Prediction failed: ${data.error}`, 'error');
             }
-            
+
         } catch (error) {
             log(`Prediction error: ${error.message}`, 'error');
         }
@@ -242,12 +243,12 @@
     }
 
     // Generate daily predictions
-    async function generateWeeklyPredictions() {
+    async function generateDailyPredictions() {
         try {
             showLoading(true);
             log('Generating daily prediction snapshot...');
 
-            const response = await fetch('/ml/predict_weekly', {
+            const response = await fetch('/ml/predict_daily', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -269,7 +270,7 @@
     }
 
     // Load status on page load
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         log('Dashboard loaded');
         getStatus();
     });

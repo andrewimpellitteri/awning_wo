@@ -440,7 +440,7 @@ class MLService:
         return df
 
     @staticmethod
-    def generate_weekly_predictions(model, metadata):
+    def generate_daily_predictions(model, metadata):
         """Generate predictions for all open work orders and return DataFrame
 
         Args:
@@ -459,7 +459,7 @@ class MLService:
         open_df = df[df["datecompleted"].isna()].copy()
 
         if open_df.empty:
-            print("[WEEKLY PRED] No open work orders")
+            print("[DAILY PRED] No open work orders")
             return pd.DataFrame()
 
         # Prepare features
@@ -893,25 +893,25 @@ def status():
     )
 
 
-@ml_bp.route("/predict_weekly", methods=["POST"])
+@ml_bp.route("/predict_daily", methods=["POST"])
 @login_required
-def predict_weekly():
-    """Generate and save weekly predictions for all open work orders (requires login)"""
+def predict_daily():
+    """Generate and save daily predictions for all open work orders (requires login)"""
     model, metadata = get_current_model()
 
     if model is None:
         return jsonify({"error": "No model loaded"}), 400
 
     try:
-        df = MLService.generate_weekly_predictions(model, metadata)
+        df = MLService.generate_daily_predictions(model, metadata)
 
         if df.empty:
             return jsonify({"message": "No open work orders to predict"}), 200
 
-        key = save_weekly_prediction_file(df)
+        key = save_daily_prediction_file(df)
 
         return jsonify({
-            "message": "Weekly predictions saved",
+            "message": "Daily predictions saved",
             "records": len(df),
             "s3_key": key,
             "timestamp": datetime.now().isoformat()
@@ -921,9 +921,9 @@ def predict_weekly():
         return jsonify({"error": str(e)}), 500
 
 
-@ml_bp.route("/cron/predict_weekly", methods=["POST"])
-def cron_predict_weekly():
-    """Cron endpoint for weekly predictions (uses secret token instead of login)"""
+@ml_bp.route("/cron/predict_daily", methods=["POST"])
+def cron_predict_daily():
+    """Cron endpoint for daily predictions (uses secret token instead of login)"""
     # Simple security: check for a secret key
     secret = request.headers.get("X-Cron-Secret") or (request.json or {}).get("secret")
     expected_secret = os.getenv("CRON_SECRET", "your-secret-key")
@@ -938,28 +938,28 @@ def cron_predict_weekly():
 
     try:
         start_timestamp = datetime.now()
-        print(f"[CRON WEEKLY PRED] Starting at {start_timestamp}")
+        print(f"[CRON DAILY PRED] Starting at {start_timestamp}")
 
-        df = MLService.generate_weekly_predictions(model, metadata)
+        df = MLService.generate_daily_predictions(model, metadata)
 
         if df.empty:
-            print("[CRON WEEKLY PRED] No open work orders to predict")
+            print("[CRON DAILY PRED] No open work orders to predict")
             return jsonify({
                 "message": "No open work orders to predict",
                 "timestamp": start_timestamp.isoformat()
             }), 200
 
-        key = save_weekly_prediction_file(df)
+        key = save_daily_prediction_file(df)
 
         end_timestamp = datetime.now()
         total_time = (end_timestamp - start_timestamp).total_seconds()
 
-        print(f"[CRON WEEKLY PRED] Completed successfully in {total_time:.2f} seconds")
-        print(f"[CRON WEEKLY PRED] Generated predictions for {len(df)} work orders")
-        print(f"[CRON WEEKLY PRED] Saved to: {key}")
+        print(f"[CRON DAILY PRED] Completed successfully in {total_time:.2f} seconds")
+        print(f"[CRON DAILY PRED] Generated predictions for {len(df)} work orders")
+        print(f"[CRON DAILY PRED] Saved to: {key}")
 
         return jsonify({
-            "message": "Weekly predictions saved",
+            "message": "Daily predictions saved",
             "records": len(df),
             "s3_key": key,
             "timestamp": end_timestamp.isoformat(),
@@ -969,7 +969,7 @@ def cron_predict_weekly():
     except Exception as e:
         error_timestamp = datetime.now()
         error_msg = str(e)
-        print(f"[CRON WEEKLY PRED] ERROR at {error_timestamp}: {error_msg}")
+        print(f"[CRON DAILY PRED] ERROR at {error_timestamp}: {error_msg}")
 
         return jsonify({
             "error": error_msg,
@@ -1059,19 +1059,30 @@ def performance_dashboard():
     import plotly.utils
 
     try:
-        # List all prediction snapshot files in S3
-        response = s3_client.list_objects_v2(
+        # List both daily and legacy weekly prediction snapshot files in S3
+        daily_response = s3_client.list_objects_v2(
+            Bucket=AWS_S3_BUCKET,
+            Prefix="ml_predictions/daily_"
+        )
+        
+        weekly_response = s3_client.list_objects_v2(
             Bucket=AWS_S3_BUCKET,
             Prefix="ml_predictions/weekly_"
         )
 
-        if "Contents" not in response:
-            flash("No prediction snapshots found yet. Weekly predictions will be generated automatically.", "info")
+        all_contents = []
+        if "Contents" in daily_response:
+            all_contents.extend(daily_response["Contents"])
+        if "Contents" in weekly_response:
+            all_contents.extend(weekly_response["Contents"])
+
+        if not all_contents:
+            flash("No prediction snapshots found yet. Daily predictions will be generated automatically.", "info")
             return render_template("ml/performance_dashboard.html", chart_json=None, stats=None)
 
         # Get all snapshot files, sorted by date
         snapshot_files = sorted(
-            [obj for obj in response["Contents"] if obj["Key"].endswith(".csv")],
+            [obj for obj in all_contents if obj["Key"].endswith(".csv")],
             key=lambda x: x["LastModified"]
         )
 
@@ -1145,8 +1156,8 @@ def performance_dashboard():
                     ci_lower = mae
                     ci_upper = mae
 
-                # Extract date from snapshot filename
-                date_str = snapshot_key.replace("ml_predictions/weekly_", "").replace(".csv", "")
+                # Extract date from snapshot filename (handle both daily_ and weekly_ prefixes)
+                date_str = snapshot_key.replace("ml_predictions/daily_", "").replace("ml_predictions/weekly_", "").replace(".csv", "")
 
                 time_series_data.append({
                     "date": date_str,
@@ -1654,12 +1665,12 @@ def cleanup_old_s3_models(keep=5):
             print(f"[S3 CLEANUP] Successfully deleted {len(models_to_delete)} models and their metadata.")
 
 
-def save_weekly_prediction_file(df):
-    """Save weekly predictions to S3
-
+def save_daily_prediction_file(df):
+    """Save daily predictions to S3
+    
     Args:
         df: DataFrame with prediction results
-
+        
     Returns:
         str: S3 key where the file was saved
     """
@@ -1667,7 +1678,7 @@ def save_weekly_prediction_file(df):
     import io
 
     date_str = datetime.now().strftime("%Y-%m-%d")
-    key = f"ml_predictions/weekly_{date_str}.csv"
+    key = f"ml_predictions/daily_{date_str}.csv"
 
     buffer = io.StringIO()
     df.to_csv(buffer, index=False)
@@ -1680,7 +1691,7 @@ def save_weekly_prediction_file(df):
         ContentType="text/csv"
     )
 
-    print(f"[WEEKLY PRED] Saved prediction file: {key}")
+    print(f"[DAILY PRED] Saved prediction file: {key}")
     return key
 
 
@@ -1739,13 +1750,23 @@ def check_predictions_status():
     from io import BytesIO
 
     try:
-        # Load prediction snapshots
-        response = s3_client.list_objects_v2(
+        # Load prediction snapshots (both daily and weekly)
+        daily_response = s3_client.list_objects_v2(
+            Bucket=AWS_S3_BUCKET,
+            Prefix="ml_predictions/daily_"
+        )
+        weekly_response = s3_client.list_objects_v2(
             Bucket=AWS_S3_BUCKET,
             Prefix="ml_predictions/weekly_"
         )
 
-        if "Contents" not in response:
+        all_contents = []
+        if "Contents" in daily_response:
+            all_contents.extend(daily_response["Contents"])
+        if "Contents" in weekly_response:
+            all_contents.extend(weekly_response["Contents"])
+
+        if not all_contents:
             return jsonify({
                 "status": "no_snapshots",
                 "message": "No prediction snapshots found",
@@ -1753,7 +1774,7 @@ def check_predictions_status():
             })
 
         # Get all snapshots
-        snapshot_files = [obj for obj in response["Contents"] if obj["Key"].endswith(".csv")]
+        snapshot_files = [obj for obj in all_contents if obj["Key"].endswith(".csv")]
 
         # Load all predictions
         all_predictions = []
@@ -1765,7 +1786,7 @@ def check_predictions_status():
             buffer.seek(0)
             df = pd.read_csv(buffer)
 
-            snapshot_date = obj["Key"].replace("ml_predictions/weekly_", "").replace(".csv", "")
+            snapshot_date = obj["Key"].split('/')[-1].replace("daily_", "").replace("weekly_", "").replace(".csv", "")
             df['snapshot_date'] = snapshot_date
 
             all_predictions.append(df)

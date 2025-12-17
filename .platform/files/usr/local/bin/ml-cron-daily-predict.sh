@@ -23,20 +23,20 @@ log_with_timestamp() {
 touch $LOG_FILE
 chmod 644 $LOG_FILE
 
-log_with_timestamp "=== [VERIFICATION-TEST] Starting rapid 2-min ML EVALUATION cron ==="
+log_with_timestamp "=== Starting daily ML prediction snapshot ==="
 log_with_timestamp "Using CRON_SECRET: ${CRON_SECRET:0:5}..." # Log first 5 chars only
-log_with_timestamp "Target URL: $APP_URL/ml/cron/predict_weekly"
+log_with_timestamp "Target URL: $APP_URL/ml/cron/predict_daily"
 log_with_timestamp "Env check: CRON_SECRET is present? $([ -z "$CRON_SECRET" ] && echo "NO" || echo "YES")"
 
 # Check if the application is running
-if ! curl -s --connect-timeout 5 $APP_URL/health \u003e /dev/null 2\u003e\u00261; then
+if ! curl -s --connect-timeout 5 $APP_URL/health > /dev/null 2>&1; then
     log_with_timestamp "WARNING: Application health check failed, proceeding anyway..."
 else
     log_with_timestamp "Application health check passed"
 fi
 
 # Make the API call to generate daily predictions
-log_with_timestamp "Generating EVALUATION snapshots..."
+log_with_timestamp "Generating predictions..."
 
 # Increased timeout for prediction generation (can take a while)
 RESPONSE=$(curl -s -w "HTTPSTATUS:%{http_code}" \
@@ -45,7 +45,7 @@ RESPONSE=$(curl -s -w "HTTPSTATUS:%{http_code}" \
   -X POST \
   -H "Content-Type: application/json" \
   -H "X-Cron-Secret: $CRON_SECRET" \
-  $APP_URL/ml/cron/predict_weekly 2\u003e\u00261)
+  $APP_URL/ml/cron/predict_daily 2>&1)
 
 # Parse response
 HTTP_STATUS=$(echo $RESPONSE | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
@@ -53,7 +53,7 @@ HTTP_BODY=$(echo $RESPONSE | sed -e 's/HTTPSTATUS:.*//g')
 
 # Log results
 if [ "$HTTP_STATUS" -eq 200 ]; then
-    log_with_timestamp "SUCCESS: EVALUATION snapshots generated successfully (HTTP $HTTP_STATUS)"
+    log_with_timestamp "SUCCESS: Daily predictions generated successfully (HTTP $HTTP_STATUS)"
     log_with_timestamp "Response details: $HTTP_BODY"
 
     # Extract key metrics from response if available
@@ -62,7 +62,7 @@ if [ "$HTTP_STATUS" -eq 200 ]; then
         S3_KEY=$(echo "$HTTP_BODY" | grep -o '"s3_key":"[^"]*"' | cut -d: -f2 | tr -d '"')
 
         if [ ! -z "$RECORDS" ]; then
-            log_with_timestamp "Evaluated $RECORDS open work orders"
+            log_with_timestamp "Saved $RECORDS work order predictions"
         fi
         if [ ! -z "$S3_KEY" ]; then
             log_with_timestamp "Saved to S3: $S3_KEY"
@@ -78,7 +78,7 @@ elif [ "$HTTP_STATUS" -eq 400 ]; then
     log_with_timestamp "Response: $HTTP_BODY"
 
 elif [ "$HTTP_STATUS" -eq 500 ]; then
-    log_with_timestamp "ERROR: Server error during EVALUATION (HTTP $HTTP_STATUS)"
+    log_with_timestamp "ERROR: Server error during prediction (HTTP $HTTP_STATUS)"
     log_with_timestamp "Response: $HTTP_BODY"
 
 elif [ -z "$HTTP_STATUS" ]; then
@@ -91,5 +91,5 @@ else
 fi
 
 # Log completion
-log_with_timestamp "=== [VERIFICATION-TEST] ML EVALUATION completed ==="
+log_with_timestamp "=== Daily ML prediction snapshot completed ==="
 log_with_timestamp ""

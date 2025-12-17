@@ -20,22 +20,23 @@ def check_prediction_snapshots():
     print("="*80)
 
     try:
-        # List all prediction files
-        response = s3.list_objects_v2(
-            Bucket=BUCKET,
-            Prefix="ml_predictions/weekly_"
-        )
+        # List all prediction files (support both new daily and legacy weekly)
+        all_contents = []
+        for prefix in ["ml_predictions/daily_", "ml_predictions/weekly_"]:
+            res = s3.list_objects_v2(Bucket=BUCKET, Prefix=prefix)
+            if "Contents" in res:
+                all_contents.extend(res["Contents"])
 
-        if "Contents" not in response:
+        if not all_contents:
             print("\n❌ No prediction snapshots found!")
             print("\nThis means the daily cron job hasn't created any snapshots yet.")
-            print("The cron job runs at 1:00 AM daily: /ml/cron/predict_weekly\n")
+            print("The cron job runs at 1:00 AM daily: /ml/cron/predict_daily\n")
             return False
 
         # Get CSV files
-        snapshot_files = [obj for obj in response["Contents"] if obj["Key"].endswith(".csv")]
+        snapshot_files = [obj for obj in all_contents if obj["Key"].endswith(".csv")]
 
-        print(f"\n✅ Found {len(snapshot_files)} prediction snapshot(s):\n")
+        print(f"\n✅ Found {len(snapshot_files)} total prediction snapshot(s) (daily + weekly):\n")
 
         total_predictions = 0
         for obj in sorted(snapshot_files, key=lambda x: x["LastModified"], reverse=True):
@@ -164,7 +165,7 @@ To see data on the dashboard:
    - The dashboard will automatically show data once they complete
 
 To manually trigger a new snapshot:
-- POST /ml/cron/predict_weekly (with X-Cron-Secret header)
+- POST /ml/cron/predict_daily (with X-Cron-Secret header)
 - Or wait until 1:00 AM for automatic run
 
 To test with mock data:
