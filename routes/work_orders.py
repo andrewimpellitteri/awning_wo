@@ -1402,6 +1402,7 @@ def api_work_orders():
             "DateRequired": format_date_from_str(wo.DateRequired),
             "Source": wo.source_name,  # Use denormalized column for performance
             "is_rush": bool(wo.RushOrder or wo.FirmRush),  # Add rush flag
+            "isCushion": wo.isCushion,
             "detail_url": url_for(
                 "work_orders.view_work_order",
                 work_order_no=wo.WorkOrderNo,

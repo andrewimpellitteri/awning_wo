@@ -166,6 +166,7 @@ class WorkOrder(db.Model):
             "updated_at": self.updated_at.strftime("%m/%d/%Y %H:%M:%S")
             if self.updated_at
             else None,
+            "isCushion": self.isCushion,
         }
         if include_items:
             data["items"] = [item.to_dict() for item in self.items]
