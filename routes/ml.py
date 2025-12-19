@@ -264,44 +264,25 @@ class MLService:
             & (train_df["days_to_complete"] <= mean_days + 3 * std_days)
         ].copy()
 
-        # TEMPORAL AUGMENTATION: Create multiple training samples per work order
-        # to simulate different stages of completion
+        # TEMPORAL AUGMENTATION: Create Stage 0 samples (no clean/treat info)
+        # This matches the prediction scenario where we don't have progress dates yet
+        # Previously used 3 stages (0, 1, 2) but Stage 1/2 diluted training signal
         augmented_samples = []
 
         for idx, row in train_df.iterrows():
-            # Stage 0: No clean or treat dates (early stage - most common in production)
+            # Stage 0 ONLY: No clean or treat dates (matches prediction time)
             stage_0 = row.copy()
             stage_0["clean"] = pd.NaT
             stage_0["treat"] = pd.NaT
             stage_0["augmentation_stage"] = 0
             augmented_samples.append(stage_0)
 
-            # Stage 1: Has clean date but no treat date (middle stage)
-            if pd.notna(row["clean"]):
-                stage_1 = row.copy()
-                stage_1["treat"] = pd.NaT
-                stage_1["augmentation_stage"] = 1
-                augmented_samples.append(stage_1)
-
-            # Stage 2: Has both clean and treat dates (late stage - original data)
-            stage_2 = row.copy()
-            stage_2["augmentation_stage"] = 2
-            augmented_samples.append(stage_2)
-
         # Create augmented dataframe
         augmented_df = pd.DataFrame(augmented_samples).reset_index(drop=True)
 
         print(f"[AUGMENTATION] Original samples: {len(train_df)}")
-        print(f"[AUGMENTATION] Augmented samples: {len(augmented_df)}")
-        print(
-            f"[AUGMENTATION] Stage 0 (no dates): {(augmented_df['augmentation_stage'] == 0).sum()}"
-        )
-        print(
-            f"[AUGMENTATION] Stage 1 (clean only): {(augmented_df['augmentation_stage'] == 1).sum()}"
-        )
-        print(
-            f"[AUGMENTATION] Stage 2 (both dates): {(augmented_df['augmentation_stage'] == 2).sum()}"
-        )
+        print(f"[AUGMENTATION] Stage 0 only (no clean/treat info): {len(augmented_df)}")
+        print(f"[AUGMENTATION] This matches prediction scenario for better accuracy")
 
         return augmented_df
 
@@ -410,25 +391,21 @@ class MLService:
             )
 
         # --- Customer features ---
-        if (
-            "custid" in df.columns
-            and df["custid"].nunique() > 1
-            and "days_to_complete" in df.columns
-        ):
+        # NOTE: Customer stats (cust_mean, cust_std, cust_count) are calculated
+        # AFTER train/test split to prevent data leakage. This function only
+        # encodes customer IDs and creates placeholder columns.
+        if "custid" in df.columns and df["custid"].nunique() > 1:
             le_cust = LabelEncoder()
             df["customer_encoded"] = le_cust.fit_transform(df["custid"].astype(str))
 
-            cust_stats = (
-                df.groupby("custid")["days_to_complete"]
-                .agg(["mean", "std", "count"])
-                .add_prefix("cust_")
-            )
-            df = df.merge(cust_stats, on="custid", how="left")
-            df["cust_std"] = df["cust_std"].fillna(0)
+            # Create placeholder columns (will be filled after train/test split)
+            df["cust_mean"] = 0.0
+            df["cust_std"] = 0.0
+            df["cust_count"] = 0
         else:
             df["customer_encoded"] = 0
-            df["cust_mean"] = 0
-            df["cust_std"] = 0
+            df["cust_mean"] = 0.0
+            df["cust_std"] = 0.0
             df["cust_count"] = 0
 
         # --- Storage features ---
@@ -522,11 +499,12 @@ def train_model():
         # Removed: needs_cleaning, needs_treatment (only exist after work is done)
         # Removed: storage_impact (redundant with storagetime_numeric)
         # Removed: has_special_instructions (low importance, redundant with instructions_len)
+        # Removed: order_age (causes train/predict mismatch - training sees aged orders, prediction sees age=0)
         feature_cols = [
             "rushorder_binary",
             "firmrush_binary",
             "storagetime_numeric",
-            "order_age",
+            # "order_age",  # REMOVED - see above
             "month_in",
             "dow_in",
             "quarter_in",
@@ -557,12 +535,46 @@ def train_model():
             return jsonify({"error": "Insufficient training data"}), 400
 
         # Compute recency weights (bias toward recent completion patterns)
-        sample_weights = MLService.compute_recency_weights(train_df, scale=4.0)
+        # Reduced from 4.0 to 2.0 to avoid overfitting (4.0 gave 55x weight, 2.0 gives ~7x)
+        sample_weights = MLService.compute_recency_weights(train_df, scale=2.0)
 
         # Train/test split (stratified by weights to preserve recency distribution)
         X_train, X_test, y_train, y_test, weights_train, weights_test = train_test_split(
             X, y, sample_weights, test_size=0.2, random_state=42
         )
+
+        # FIX DATA LEAKAGE: Calculate customer stats using ONLY training data
+        # (Previously calculated on entire dataset, causing 50x MAE inflation)
+        if "custid" in train_df.columns and train_df["custid"].nunique() > 1:
+            # Create temporary dataframe with training data + target
+            train_with_target = pd.DataFrame({
+                'custid': train_df.loc[X_train.index, 'custid'],
+                'days_to_complete': y_train.values
+            })
+
+            # Calculate customer statistics from TRAINING data only
+            train_cust_stats = train_with_target.groupby("custid")["days_to_complete"] \
+                .agg(["mean", "std", "count"]) \
+                .add_prefix("cust_")
+            train_cust_stats["cust_std"] = train_cust_stats["cust_std"].fillna(0)
+
+            # Apply to training set
+            train_custids = train_df.loc[X_train.index, ['custid']]
+            train_stats_merged = train_custids.merge(train_cust_stats, on='custid', how='left')
+            X_train.loc[:, 'cust_mean'] = train_stats_merged['cust_mean'].fillna(0).values
+            X_train.loc[:, 'cust_std'] = train_stats_merged['cust_std'].fillna(0).values
+            X_train.loc[:, 'cust_count'] = train_stats_merged['cust_count'].fillna(0).values
+
+            # Apply same stats to test set (using training stats, not test stats!)
+            test_custids = train_df.loc[X_test.index, ['custid']]
+            test_stats_merged = test_custids.merge(train_cust_stats, on='custid', how='left')
+            X_test.loc[:, 'cust_mean'] = test_stats_merged['cust_mean'].fillna(0).values
+            X_test.loc[:, 'cust_std'] = test_stats_merged['cust_std'].fillna(0).values
+            X_test.loc[:, 'cust_count'] = test_stats_merged['cust_count'].fillna(0).values
+
+            print(f"[CUSTOMER STATS] Calculated from {len(X_train)} training samples")
+            print(f"[CUSTOMER STATS] Unique customers in train: {train_df.loc[X_train.index, 'custid'].nunique()}")
+            print(f"[CUSTOMER STATS] Mean completion time range: {train_cust_stats['cust_mean'].min():.1f} to {train_cust_stats['cust_mean'].max():.1f} days")
 
         # Train model with recency weighting
         start_time = time.time()
@@ -1013,6 +1025,22 @@ def evaluate_snapshots():
         current_df["datein"] = pd.to_datetime(current_df["datein"], errors="coerce")
         current_df["datecompleted"] = pd.to_datetime(current_df["datecompleted"], errors="coerce")
 
+        # Filter out invalid dates (bad data like 7777-07-07, 2111-11-11, etc.)
+        min_valid_date = pd.Timestamp('2000-01-01')
+        max_valid_date = pd.Timestamp.now() + pd.Timedelta(days=365)
+
+        current_df = current_df[
+            (current_df["datecompleted"].isna()) |
+            ((current_df["datecompleted"] >= min_valid_date) &
+             (current_df["datecompleted"] <= max_valid_date))
+        ].copy()
+
+        current_df = current_df[
+            (current_df["datein"].isna()) |
+            ((current_df["datein"] >= min_valid_date) &
+             (current_df["datein"] <= max_valid_date))
+        ].copy()
+
         # Evaluate each snapshot
         evaluations = []
         for snapshot_obj in snapshot_files:
@@ -1099,6 +1127,24 @@ def performance_dashboard():
         current_df["datein"] = pd.to_datetime(current_df["datein"], errors="coerce")
         current_df["datecompleted"] = pd.to_datetime(current_df["datecompleted"], errors="coerce")
 
+        # Filter out invalid dates (bad data like 7777-07-07, 2111-11-11, etc.)
+        min_valid_date = pd.Timestamp('2000-01-01')
+        max_valid_date = pd.Timestamp.now() + pd.Timedelta(days=365)
+
+        # Only keep work orders with valid completion dates
+        current_df = current_df[
+            (current_df["datecompleted"].isna()) |  # Keep open orders
+            ((current_df["datecompleted"] >= min_valid_date) &
+             (current_df["datecompleted"] <= max_valid_date))  # Or valid completed dates
+        ].copy()
+
+        # Also filter datein (should be reasonable)
+        current_df = current_df[
+            (current_df["datein"].isna()) |
+            ((current_df["datein"] >= min_valid_date) &
+             (current_df["datein"] <= max_valid_date))
+        ].copy()
+
         # Evaluate each snapshot and collect detailed error data
         time_series_data = []
         for snapshot_obj in snapshot_files:
@@ -1159,11 +1205,17 @@ def performance_dashboard():
                 # Extract date from snapshot filename (handle both daily_ and weekly_ prefixes)
                 date_str = snapshot_key.replace("ml_predictions/daily_", "").replace("ml_predictions/weekly_", "").replace(".csv", "")
 
+                # Calculate completion percentage
+                total_predictions = len(snapshot_df)
+                completion_pct = (n / total_predictions * 100) if total_predictions > 0 else 0
+
                 time_series_data.append({
                     "date": date_str,
                     "mae": mae,
                     "rmse": rmse,
                     "n": n,
+                    "total_predictions": total_predictions,
+                    "completion_pct": completion_pct,
                     "std_error": std_error,
                     "ci_lower": max(0, ci_lower),  # MAE can't be negative
                     "ci_upper": ci_upper,
@@ -1199,7 +1251,13 @@ def performance_dashboard():
             mode='lines+markers',
             name='MAE (Mean Absolute Error)',
             line=dict(color='rgb(31, 119, 180)', width=2),
-            marker=dict(size=8)
+            marker=dict(size=8),
+            customdata=ts_df[["n", "total_predictions", "completion_pct"]],
+            hovertemplate='<b>Date:</b> %{x|%Y-%m-%d}<br>' +
+                         '<b>MAE:</b> %{y:.2f} days<br>' +
+                         '<b>Completed:</b> %{customdata[0]} / %{customdata[1]}<br>' +
+                         '<b>Completion Rate:</b> %{customdata[2]:.1f}%<br>' +
+                         '<extra></extra>'
         ))
 
         # Add confidence interval shading
@@ -1221,7 +1279,13 @@ def performance_dashboard():
             mode='lines+markers',
             name='RMSE (Root Mean Squared Error)',
             line=dict(color='rgb(255, 127, 14)', width=2, dash='dash'),
-            marker=dict(size=8)
+            marker=dict(size=8),
+            customdata=ts_df[["n", "total_predictions", "completion_pct"]],
+            hovertemplate='<b>Date:</b> %{x|%Y-%m-%d}<br>' +
+                         '<b>RMSE:</b> %{y:.2f} days<br>' +
+                         '<b>Completed:</b> %{customdata[0]} / %{customdata[1]}<br>' +
+                         '<b>Completion Rate:</b> %{customdata[2]:.1f}%<br>' +
+                         '<extra></extra>'
         ))
 
         # Update layout
@@ -1229,7 +1293,7 @@ def performance_dashboard():
             title='Model Performance Over Time (Realized Prediction Accuracy)',
             xaxis_title='Snapshot Date',
             yaxis_title='Error (days)',
-            hovermode='x unified',
+            hovermode='closest',  # Show custom tooltips with completion %
             template='plotly_white',
             height=500,
             legend=dict(x=0.01, y=0.99, bgcolor='rgba(255,255,255,0.8)')
@@ -1438,11 +1502,12 @@ def cron_retrain():
         # Removed: needs_cleaning, needs_treatment (only exist after work is done)
         # Removed: storage_impact (redundant with storagetime_numeric)
         # Removed: has_special_instructions (low importance, redundant with instructions_len)
+        # Removed: order_age (causes train/predict mismatch - training sees aged orders, prediction sees age=0)
         feature_cols = [
             "rushorder_binary",
             "firmrush_binary",
             "storagetime_numeric",
-            "order_age",
+            # "order_age",  # REMOVED - see above
             "month_in",
             "dow_in",
             "quarter_in",
@@ -1470,6 +1535,30 @@ def cron_retrain():
                 {"error": error_msg, "timestamp": start_timestamp.isoformat()}
             ), 400
 
+        # Calculate customer stats on FULL dataset (no data leakage concern for cron - no test set)
+        # For cron retrain, we train on ALL data, so we calculate stats on the full dataset
+        if "custid" in train_df.columns and train_df["custid"].nunique() > 1:
+            # Calculate customer statistics from ALL training data
+            cust_stats = train_df.groupby("custid")["days_to_complete"] \
+                .agg(["mean", "std", "count"]) \
+                .add_prefix("cust_")
+            cust_stats["cust_std"] = cust_stats["cust_std"].fillna(0)
+
+            # Merge customer stats back into train_df
+            train_df = train_df.merge(cust_stats, on='custid', how='left', suffixes=('', '_new'))
+
+            # Update the placeholder columns with real values
+            train_df["cust_mean"] = train_df["cust_mean_new"].fillna(0)
+            train_df["cust_std"] = train_df["cust_std_new"].fillna(0)
+            train_df["cust_count"] = train_df["cust_count_new"].fillna(0)
+
+            # Drop the temporary columns
+            train_df = train_df.drop(columns=['cust_mean_new', 'cust_std_new', 'cust_count_new'])
+
+            print(f"[CRON CUSTOMER STATS] Calculated from {len(train_df)} samples")
+            print(f"[CRON CUSTOMER STATS] Unique customers: {train_df['custid'].nunique()}")
+            print(f"[CRON CUSTOMER STATS] Mean completion time range: {cust_stats['cust_mean'].min():.1f} to {cust_stats['cust_mean'].max():.1f} days")
+
         # Prepare ALL data for training (no test holdout for cron job)
         X = train_df[feature_cols].fillna(0)
         y = train_df["days_to_complete"]
@@ -1482,7 +1571,8 @@ def cron_retrain():
             ), 400
 
         # Compute recency weights (bias toward recent completion patterns)
-        sample_weights = MLService.compute_recency_weights(train_df, scale=4.0)
+        # Reduced from 4.0 to 2.0 to avoid overfitting (4.0 gave 55x weight, 2.0 gives ~7x)
+        sample_weights = MLService.compute_recency_weights(train_df, scale=2.0)
 
         print(
             f"[CRON RETRAIN] Training on ALL {len(X)} samples with {len(feature_cols)} features (recency-weighted)"
@@ -1821,6 +1911,22 @@ def check_predictions_status():
         # Convert dates
         current_df['datein'] = pd.to_datetime(current_df['datein'], errors='coerce')
         current_df['datecompleted'] = pd.to_datetime(current_df['datecompleted'], errors='coerce')
+
+        # Filter out invalid dates (bad data like 7777-07-07, 2111-11-11, etc.)
+        min_valid_date = pd.Timestamp('2000-01-01')
+        max_valid_date = pd.Timestamp.now() + pd.Timedelta(days=365)
+
+        current_df = current_df[
+            (current_df["datecompleted"].isna()) |
+            ((current_df["datecompleted"] >= min_valid_date) &
+             (current_df["datecompleted"] <= max_valid_date))
+        ].copy()
+
+        current_df = current_df[
+            (current_df["datein"].isna()) |
+            ((current_df["datein"] >= min_valid_date) &
+             (current_df["datein"] <= max_valid_date))
+        ].copy()
 
         # Calculate actual completion time
         current_df['actual_days'] = (current_df['datecompleted'] - current_df['datein']).dt.days

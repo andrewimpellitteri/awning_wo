@@ -394,6 +394,39 @@
                         </div>
                     </div>
 
+                    <!-- Delete File Confirmation Modal -->
+                    <div class="modal fade" id="deleteFileModal" tabindex="-1" aria-labelledby="deleteFileModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title" id="deleteFileModalLabel">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>Delete File
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-warning mb-3">
+                                        <i class="fas fa-exclamation-circle me-2"></i>
+                                        <strong>Warning:</strong> This action cannot be undone.
+                                    </div>
+                                    <p class="mb-3">Are you sure you want to permanently delete this file?</p>
+                                    <div class="bg-light p-3 rounded">
+                                        <strong>File:</strong>
+                                        <div class="text-break mt-1" id="deleteFileNameDisplay"></div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer d-flex gap-2">
+                                    <button type="button" class="btn btn-secondary flex-fill" data-bs-dismiss="modal" style="min-height: 48px;">
+                                        <i class="fas fa-times me-2"></i>Cancel
+                                    </button>
+                                    <button type="button" class="btn btn-danger flex-fill" id="confirmDeleteBtn" style="min-height: 48px;">
+                                        <i class="fas fa-trash me-2"></i>Delete Permanently
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Status Card -->
                     <div class="card mb-4 shadow-sm">
                         <div class="card-header">
@@ -685,7 +718,25 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function confirmDeleteFile(fileId, fileName) {
-    if (confirm(`Are you sure you want to delete "${fileName}"? This action cannot be undone.`)) {
+    // Store file info for later use
+    const deleteModal = document.getElementById('deleteFileModal');
+    const modal = new bootstrap.Modal(deleteModal);
+    const fileNameDisplay = document.getElementById('deleteFileNameDisplay');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+
+    // Update modal with file name
+    fileNameDisplay.textContent = fileName;
+
+    // Remove any existing event listeners by cloning the button
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+    // Add new click handler for this specific file
+    newConfirmBtn.addEventListener('click', function() {
+        // Disable button to prevent double-clicks
+        newConfirmBtn.disabled = true;
+        newConfirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Deleting...';
+
         fetch(`/work_orders/delete_file/${fileId}`, {
             method: 'DELETE',
             headers: {
@@ -716,15 +767,40 @@ function confirmDeleteFile(fileId, fileName) {
                         }
                     }
                 }
+
+                // Close modal and show success
+                modal.hide();
+
+                // Optional: Show a success toast/message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+                alertDiv.style.zIndex = '9999';
+                alertDiv.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>File deleted successfully
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(alertDiv);
+                setTimeout(() => alertDiv.remove(), 3000);
+
             } else {
+                modal.hide();
                 alert(data.error || 'Failed to delete file.');
             }
         })
         .catch(err => {
             console.error('Delete error:', err);
+            modal.hide();
             alert('Error deleting file.');
+        })
+        .finally(() => {
+            // Re-enable button
+            newConfirmBtn.disabled = false;
+            newConfirmBtn.innerHTML = '<i class="fas fa-trash me-2"></i>Delete Permanently';
         });
-    }
+    });
+
+    // Show the modal
+    modal.show();
 }
 
 </script>    
