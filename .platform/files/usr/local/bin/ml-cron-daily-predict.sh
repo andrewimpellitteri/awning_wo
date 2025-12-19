@@ -10,7 +10,7 @@ if [ -z "$CRON_SECRET" ]; then
 fi
 
 # Configuration
-LOG_FILE="/var/log/ml-weekly-predict.log"
+LOG_FILE="/var/log/ml-daily-predict.log"
 APP_URL="http://localhost"
 CRON_SECRET="${CRON_SECRET:-your-secret-key}" # Will use env var if sourced correctly
 
