@@ -16,6 +16,12 @@ Start here to get your development environment set up:
 - [Contributing](contributing.md) - Contribution guidelines
 - [API Reference](api-reference.md) - API endpoints and usage
 
+## Features & Systems
+
+- [ML Prediction System](ml-prediction-system.md) - Work order completion time predictions
+- [File Uploads](file-uploads.md) - S3-based file storage system
+- [Item Exclusion Feature](item-exclusion-feature.md) - Catalog item exclusion logic
+
 ## Code Refactoring & Maintenance
 
 Learn about recent refactoring efforts and patterns:

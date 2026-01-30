@@ -48,7 +48,7 @@ def load_work_orders(db_engine):
         df["datecompleted"] = pd.to_datetime(df["datecompleted"], errors="coerce")
 
         valid_start = pd.to_datetime("2001-01-01")
-        valid_end = pd.to_datetime("2025-12-31")
+        valid_end = pd.to_datetime(datetime.now()) + pd.DateOffset(years=1)
 
         # For datein: Keep NaT or valid range
         df = df[
