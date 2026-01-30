@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 from extensions import db
 from datetime import datetime
 from utils.cache_helpers import invalidate_analytics_cache
+from utils.query_helpers import apply_search_filter
 from sqlalchemy.orm import aliased
 
 
@@ -27,11 +28,16 @@ def list_in_progress():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 10, type=int)
     sort_by = request.args.get("sort_by", "recent")
+    search = request.args.get("search", "").strip()
 
     query = WorkOrder.query.options(
         joinedload(WorkOrder.customer).joinedload(Customer.source_info),
         joinedload(WorkOrder.items),
     ).filter(WorkOrder.ProcessingStatus == True)
+
+    # Apply search filter across name and source
+    if search:
+        query = apply_search_filter(query, WorkOrder, search, ["WOName", "source_name"])
 
     # Apply sorting
     if sort_by == "source":
@@ -51,6 +57,7 @@ def list_in_progress():
         tab="in_progress",
         sort_by=sort_by,
         per_page=per_page,
+        search=search,
     )
 
 
@@ -61,6 +68,7 @@ def list_recently_cleaned():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 10, type=int)
     sort_by = request.args.get("sort_by", "recent")
+    search = request.args.get("search", "").strip()
 
     query = WorkOrder.query.options(
         joinedload(WorkOrder.customer).joinedload(Customer.source_info),
@@ -69,6 +77,10 @@ def list_recently_cleaned():
         or_(WorkOrder.Clean.isnot(None), WorkOrder.Treat.isnot(None)),
         WorkOrder.DateCompleted.is_(None),
     )
+
+    # Apply search filter across name and source
+    if search:
+        query = apply_search_filter(query, WorkOrder, search, ["WOName", "source_name"])
 
     # Apply sorting
     if sort_by == "source":
@@ -88,6 +100,7 @@ def list_recently_cleaned():
         tab="recently_cleaned",
         sort_by=sort_by,
         per_page=per_page,
+        search=search,
     )
 
 
@@ -98,6 +111,7 @@ def list_cleaned():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 10, type=int)
     sort_by = request.args.get("sort_by", "recent")
+    search = request.args.get("search", "").strip()
 
     query = WorkOrder.query.options(
         joinedload(WorkOrder.customer).joinedload(Customer.source_info),
@@ -107,6 +121,10 @@ def list_cleaned():
         WorkOrder.DateCompleted.is_(None),
         WorkOrder.Treat.is_(None),
     )
+
+    # Apply search filter across name and source
+    if search:
+        query = apply_search_filter(query, WorkOrder, search, ["WOName", "source_name"])
 
     # Apply sorting
     if sort_by == "source":
@@ -126,6 +144,7 @@ def list_cleaned():
         tab="cleaned",
         sort_by=sort_by,
         per_page=per_page,
+        search=search,
     )
 
 
@@ -136,6 +155,7 @@ def list_treated():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 10, type=int)
     sort_by = request.args.get("sort_by", "recent")
+    search = request.args.get("search", "").strip()
 
     query = WorkOrder.query.options(
         joinedload(WorkOrder.customer).joinedload(Customer.source_info),
@@ -145,6 +165,10 @@ def list_treated():
         WorkOrder.DateCompleted.is_(None),
         or_(WorkOrder.final_location.is_(None), WorkOrder.final_location == ""),
     )
+
+    # Apply search filter across name and source
+    if search:
+        query = apply_search_filter(query, WorkOrder, search, ["WOName", "source_name"])
 
     # Apply sorting
     if sort_by == "source":
@@ -165,6 +189,7 @@ def list_treated():
         tab="treated",
         sort_by=sort_by,
         per_page=per_page,
+        search=search,
     )
 
 
@@ -174,6 +199,7 @@ def list_packaged():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 10, type=int)
     sort_by = request.args.get("sort_by", "recent")
+    search = request.args.get("search", "").strip()
 
     query = WorkOrder.query.options(
         joinedload(WorkOrder.customer).joinedload(Customer.source_info),
@@ -183,6 +209,10 @@ def list_packaged():
         WorkOrder.final_location != "",
         WorkOrder.DateCompleted.is_(None),
     )
+
+    # Apply search filter across name and source
+    if search:
+        query = apply_search_filter(query, WorkOrder, search, ["WOName", "source_name"])
 
     if sort_by == "source":
         src = aliased(Source)
@@ -205,6 +235,7 @@ def list_packaged():
         tab="packaged",
         sort_by=sort_by,
         per_page=per_page,
+        search=search,
     )
 
 
@@ -215,6 +246,7 @@ def all_recent():
     page = request.args.get("page", 1, type=int)
     per_page = request.args.get("per_page", 10, type=int)
     sort_by = request.args.get("sort_by", "recent")
+    search = request.args.get("search", "").strip()
 
     query = WorkOrder.query.options(
         joinedload(WorkOrder.customer).joinedload(Customer.source_info),
@@ -228,6 +260,10 @@ def all_recent():
         ),
         WorkOrder.DateCompleted.is_(None),
     )
+
+    # Apply search filter across name and source
+    if search:
+        query = apply_search_filter(query, WorkOrder, search, ["WOName", "source_name"])
 
     # Apply sorting
     if sort_by == "source":
@@ -247,6 +283,7 @@ def all_recent():
         tab="all_recent",
         sort_by=sort_by,
         per_page=per_page,
+        search=search,
     )
 
 

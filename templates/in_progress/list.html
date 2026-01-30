@@ -92,8 +92,24 @@
                         <small class="text-muted">{{ work_orders|length }} items</small>
                     </div>
 
-                    <!-- Sort and Pagination Controls -->
-                    <form method="GET" class="row g-2">
+                    <!-- Search, Sort, and Pagination Controls -->
+                    <form method="GET" class="row g-2 align-items-end">
+                        <div class="col-12 col-md-4">
+                            <label for="search" class="form-label small mb-1">Search:</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" name="search" id="search" class="form-control"
+                                       placeholder="Search by name or source..."
+                                       value="{{ search|default('', true) }}">
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                {% if search %}
+                                <a href="{{ url_for(request.endpoint) }}" class="btn btn-outline-secondary" title="Clear search">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
                         <div class="col-auto">
                             <label for="sortBy" class="form-label small mb-1">Sort by:</label>
                             <select name="sort_by" id="sortBy" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -279,7 +295,7 @@
 
                     {% if pagination.has_prev %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for(current_route, page=pagination.prev_num, sort_by=sort_by, per_page=per_page) }}">
+                            <a class="page-link" href="{{ url_for(current_route, page=pagination.prev_num, sort_by=sort_by, per_page=per_page, search=search) }}">
                                 Previous
                             </a>
                         </li>
@@ -290,7 +306,7 @@
                             <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
                         {% else %}
                             <li class="page-item">
-                                <a class="page-link" href="{{ url_for(current_route, page=page_num, sort_by=sort_by, per_page=per_page) }}">
+                                <a class="page-link" href="{{ url_for(current_route, page=page_num, sort_by=sort_by, per_page=per_page, search=search) }}">
                                     {{ page_num }}
                                 </a>
                             </li>
@@ -299,7 +315,7 @@
 
                     {% if pagination.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for(current_route, page=pagination.next_num, sort_by=sort_by, per_page=per_page) }}">
+                            <a class="page-link" href="{{ url_for(current_route, page=pagination.next_num, sort_by=sort_by, per_page=per_page, search=search) }}">
                                 Next
                             </a>
                         </li>

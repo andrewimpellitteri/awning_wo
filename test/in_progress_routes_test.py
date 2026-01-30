@@ -5,6 +5,8 @@ Tests for In-Progress routes.
 import pytest
 from datetime import date
 from models.work_order import WorkOrder
+from models.customer import Customer
+from models.source import Source
 from extensions import db
 from werkzeug.security import generate_password_hash
 from models.user import User
@@ -382,3 +384,182 @@ class TestInProgressRoutes:
             work_order = WorkOrder.query.get("1004")
             assert work_order.DateCompleted.date() == date(2024, 1, 16)
             assert work_order.QueuePosition is None
+
+
+@pytest.fixture
+def search_test_data(app):
+    """Create sample data for testing search functionality."""
+    with app.app_context():
+        # Create sources
+        source1 = Source(SSource="ABC Sail Loft")
+        source2 = Source(SSource="XYZ Marine")
+        db.session.add_all([source1, source2])
+        db.session.commit()
+
+        # Create customers with sources
+        c1 = Customer(CustID="SEARCH001", Name="Customer One", Source="ABC Sail Loft")
+        c2 = Customer(CustID="SEARCH002", Name="Customer Two", Source="XYZ Marine")
+        c3 = Customer(CustID="SEARCH003", Name="Customer Three", Source="ABC Sail Loft")
+        db.session.add_all([c1, c2, c3])
+        db.session.commit()
+
+        # Create work orders with different names and source_name (denormalized)
+        wo1 = WorkOrder(
+            WorkOrderNo="SEARCH1001",
+            WOName="Alpha Umbrella Cleaning",
+            ProcessingStatus=True,
+            DateIn=date(2024, 1, 10),
+            CustID="SEARCH001",
+            source_name="ABC Sail Loft",
+        )
+        wo2 = WorkOrder(
+            WorkOrderNo="SEARCH1002",
+            WOName="Beta Awning Repair",
+            Clean=date(2024, 1, 12),
+            DateIn=date(2024, 1, 11),
+            CustID="SEARCH002",
+            source_name="XYZ Marine",
+        )
+        wo3 = WorkOrder(
+            WorkOrderNo="SEARCH1003",
+            WOName="Gamma Canvas Treatment",
+            Clean=date(2024, 1, 12),
+            Treat=date(2024, 1, 13),
+            DateIn=date(2024, 1, 12),
+            CustID="SEARCH003",
+            source_name="ABC Sail Loft",
+        )
+        wo4 = WorkOrder(
+            WorkOrderNo="SEARCH1004",
+            WOName="Delta Cushion Storage",
+            Clean=date(2024, 1, 12),
+            Treat=date(2024, 1, 13),
+            final_location="Shelf D",
+            DateIn=date(2024, 1, 13),
+            CustID="SEARCH001",
+            source_name="ABC Sail Loft",
+        )
+
+        db.session.add_all([wo1, wo2, wo3, wo4])
+        db.session.commit()
+        yield
+        db.session.query(WorkOrder).filter(
+            WorkOrder.WorkOrderNo.like("SEARCH%")
+        ).delete(synchronize_session=False)
+        db.session.query(Customer).filter(
+            Customer.CustID.like("SEARCH%")
+        ).delete(synchronize_session=False)
+        db.session.query(Source).filter(
+            Source.SSource.in_(["ABC Sail Loft", "XYZ Marine"])
+        ).delete(synchronize_session=False)
+        db.session.commit()
+
+
+class TestInProgressSearch:
+    """Tests for search functionality on In Progress pages (Issue #203)."""
+
+    def test_search_by_name_all_recent(self, logged_in_client, search_test_data):
+        """Search by WOName should filter results on all_recent tab."""
+        response = logged_in_client.get("/in_progress/all_recent?search=Alpha")
+        assert response.status_code == 200
+        assert b"Alpha Umbrella Cleaning" in response.data
+        assert b"Beta Awning Repair" not in response.data
+        assert b"Gamma Canvas Treatment" not in response.data
+
+    def test_search_by_source_all_recent(self, logged_in_client, search_test_data):
+        """Search by source_name should filter results on all_recent tab."""
+        response = logged_in_client.get("/in_progress/all_recent?search=XYZ%20Marine")
+        assert response.status_code == 200
+        assert b"Beta Awning Repair" in response.data
+        assert b"Alpha Umbrella Cleaning" not in response.data
+
+    def test_search_case_insensitive(self, logged_in_client, search_test_data):
+        """Search should be case-insensitive."""
+        response = logged_in_client.get("/in_progress/all_recent?search=alpha")
+        assert response.status_code == 200
+        assert b"Alpha Umbrella Cleaning" in response.data
+
+        response = logged_in_client.get("/in_progress/all_recent?search=ALPHA")
+        assert response.status_code == 200
+        assert b"Alpha Umbrella Cleaning" in response.data
+
+    def test_search_partial_match(self, logged_in_client, search_test_data):
+        """Search should match partial strings."""
+        response = logged_in_client.get("/in_progress/all_recent?search=Umbrella")
+        assert response.status_code == 200
+        assert b"Alpha Umbrella Cleaning" in response.data
+
+    def test_search_by_source_partial(self, logged_in_client, search_test_data):
+        """Search should match partial source names."""
+        response = logged_in_client.get("/in_progress/all_recent?search=Sail")
+        assert response.status_code == 200
+        # Should match multiple work orders from ABC Sail Loft
+        assert b"Alpha Umbrella Cleaning" in response.data
+        assert b"Gamma Canvas Treatment" in response.data
+        assert b"Delta Cushion Storage" in response.data
+        # Should NOT match XYZ Marine
+        assert b"Beta Awning Repair" not in response.data
+
+    def test_search_empty_returns_all(self, logged_in_client, search_test_data):
+        """Empty search should return all results."""
+        response = logged_in_client.get("/in_progress/all_recent?search=")
+        assert response.status_code == 200
+        assert b"Alpha Umbrella Cleaning" in response.data
+        assert b"Beta Awning Repair" in response.data
+
+    def test_search_no_results(self, logged_in_client, search_test_data):
+        """Search with no matches should return empty results gracefully."""
+        response = logged_in_client.get("/in_progress/all_recent?search=NonExistentOrder12345")
+        assert response.status_code == 200
+        assert b"Alpha Umbrella Cleaning" not in response.data
+        assert b"no recent work orders" in response.data.lower() or b"0 items" in response.data.lower()
+
+    def test_search_on_in_progress_tab(self, logged_in_client, search_test_data):
+        """Search should work on in_progress tab."""
+        response = logged_in_client.get("/in_progress/list_in_progress?search=Alpha")
+        assert response.status_code == 200
+        assert b"Alpha Umbrella Cleaning" in response.data
+
+    def test_search_on_cleaned_tab(self, logged_in_client, search_test_data):
+        """Search should work on cleaned tab."""
+        response = logged_in_client.get("/in_progress/list_cleaned?search=Beta")
+        assert response.status_code == 200
+        assert b"Beta Awning Repair" in response.data
+
+    def test_search_on_treated_tab(self, logged_in_client, search_test_data):
+        """Search should work on treated tab."""
+        response = logged_in_client.get("/in_progress/list_treated?search=Gamma")
+        assert response.status_code == 200
+        assert b"Gamma Canvas Treatment" in response.data
+
+    def test_search_on_packaged_tab(self, logged_in_client, search_test_data):
+        """Search should work on packaged tab."""
+        response = logged_in_client.get("/in_progress/list_packaged?search=Delta")
+        assert response.status_code == 200
+        assert b"Delta Cushion Storage" in response.data
+
+    def test_search_preserved_with_sort(self, logged_in_client, search_test_data):
+        """Search should be preserved when combined with sort."""
+        response = logged_in_client.get("/in_progress/all_recent?search=Sail&sort_by=source")
+        assert response.status_code == 200
+        assert b"Alpha Umbrella Cleaning" in response.data
+        assert b"Beta Awning Repair" not in response.data
+
+    def test_search_preserved_with_per_page(self, logged_in_client, search_test_data):
+        """Search should be preserved when combined with per_page."""
+        response = logged_in_client.get("/in_progress/all_recent?search=ABC&per_page=25")
+        assert response.status_code == 200
+        assert b"Alpha Umbrella Cleaning" in response.data
+
+    def test_search_input_rendered(self, logged_in_client, search_test_data):
+        """Search input should be rendered in the template."""
+        response = logged_in_client.get("/in_progress/all_recent")
+        assert response.status_code == 200
+        assert b'name="search"' in response.data
+        assert b'placeholder="Search by name or source..."' in response.data
+
+    def test_search_value_preserved_in_input(self, logged_in_client, search_test_data):
+        """Search value should be preserved in the input field."""
+        response = logged_in_client.get("/in_progress/all_recent?search=TestSearch")
+        assert response.status_code == 200
+        assert b'value="TestSearch"' in response.data
