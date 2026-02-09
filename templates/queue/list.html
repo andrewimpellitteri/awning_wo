@@ -125,8 +125,8 @@
                                 {% if current_user != 'user' %}
                                 <span class="me-3 text-muted drag-handle" style="cursor: grab;">⋮⋮</span>
                                 {% endif %}
-                                <span class="badge bg-light text-dark me-3 queue-position">
-                                    {{ loop.index + (pagination.page - 1) * pagination.per_page }}
+                                <span class="badge bg-light text-dark me-3 queue-position" title="Queue Position">
+                                    {{ work_order.QueuePosition or '—' }}
                                 </span>
                                 <div class="priority-col me-3" style="width: 90px; text-align: center;">
                                     {% if work_order.priority_class != 'priority-regular' %}
@@ -251,21 +251,32 @@
 <script>
 // Fixed JavaScript for the queue template
 const sortableQueue = document.getElementById('sortable-queue');
+const isFiltered = {{ 'true' if search or not show_sail_orders or not show_cushion_orders else 'false' }};
+
 if (sortableQueue) {
-    new Sortable(sortableQueue, {
-        animation: 150,
-        handle: '.drag-handle',
-        onEnd: function(evt) {
-            // Immediately update position numbers
-            updatePositionNumbers();
+    if (isFiltered) {
+        // Disable drag-drop when filters are active
+        document.querySelectorAll('.drag-handle').forEach(handle => {
+            handle.style.cursor = 'not-allowed';
+            handle.style.opacity = '0.3';
+            handle.title = 'Reordering disabled while filters are active';
+        });
+    } else {
+        new Sortable(sortableQueue, {
+            animation: 150,
+            handle: '.drag-handle',
+            onEnd: function(evt) {
+                // Immediately update position numbers
+                updatePositionNumbers();
 
-            // Get the work order IDs in new order
-            const workOrderIds = Array.from(sortableQueue.children).map(item => item.dataset.woId);
+                // Get the work order IDs in new order
+                const workOrderIds = Array.from(sortableQueue.children).map(item => item.dataset.woId);
 
-            // Save to server with page information
-            saveQueueOrder(workOrderIds);
-        }
-    });
+                // Save to server with page information
+                saveQueueOrder(workOrderIds);
+            }
+        });
+    }
 }
 
 // Save queue order with concurrency handling
@@ -464,15 +475,18 @@ function showConcurrencyModal(workOrderIds) {
 }
 
 function updatePositionNumbers() {
-    // Fixed: use correct selector for list items
+    // After drag-drop, the actual QueuePosition values are updated server-side.
+    // For immediate visual feedback, we show the new relative positions based on
+    // the page's starting position. The actual positions will be correct on reload.
     const items = document.querySelectorAll('#sortable-queue .list-group-item');
     const currentPage = {{ pagination.page }};
     const perPage = {{ pagination.per_page }};
     const startIndex = (currentPage - 1) * perPage;
-    
+
     items.forEach((item, i) => {
         const positionElement = item.querySelector('.queue-position');
         if (positionElement) {
+            // Show the new position after reorder (this matches what the server will assign)
             positionElement.textContent = startIndex + i + 1;
         }
     });

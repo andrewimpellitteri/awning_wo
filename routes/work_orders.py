@@ -591,6 +591,7 @@ def list_work_orders():
 
 
 @work_orders_bp.route("/<work_order_no>")
+@login_required
 def view_work_order(work_order_no):
     work_order = (
         WorkOrder.query.filter_by(WorkOrderNo=work_order_no)
@@ -612,6 +613,7 @@ def view_work_order(work_order_no):
 
 
 @work_orders_bp.route("/status/<status>")
+@login_required
 def list_by_status(status):
     """Filter work orders by completion status using DateCompleted"""
     search = request.args.get("search", "")
@@ -652,18 +654,21 @@ def list_by_status(status):
 
 
 @work_orders_bp.route("/pending")
+@login_required
 def pending_work_orders():
     """Show work orders that are not completed"""
     return list_by_status("PENDING")
 
 
 @work_orders_bp.route("/completed")
+@login_required
 def completed_work_orders():
     """Show completed work orders"""
     return list_by_status("COMPLETED")
 
 
 @work_orders_bp.route("/rush")
+@login_required
 def rush_work_orders():
     """Show open rush work orders"""
     search = request.args.get("search", "")

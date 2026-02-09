@@ -505,6 +505,7 @@ def list_repair_work_orders():
 
 
 @repair_work_orders_bp.route("/<repair_order_no>")
+@login_required
 def view_repair_work_order(repair_order_no):
     """Displays the detail page for a single repair work order."""
     repair_work_order = (
@@ -523,6 +524,7 @@ def view_repair_work_order(repair_order_no):
 
 
 @repair_work_orders_bp.route("/api/repair_work_orders")
+@login_required
 def api_repair_work_orders():
     """
     API endpoint to provide repair work order data with robust filtering,
