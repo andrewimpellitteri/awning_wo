@@ -59,7 +59,16 @@ def safe_date_sort_key(date_value):
 
 
 def initialize_queue_positions_for_unassigned():
-    """Initialize queue positions for work orders that don't have them (preserves existing manual ordering)"""
+    """Initialize queue positions for work orders that don't have them.
+
+    When new orders enter the queue, their entire priority tier is re-sorted
+    to maintain correct FIFO ordering based on DateIn (or DateRequired for firm rush).
+
+    Priority order:
+    1. Firm Rush: sorted by DateRequired (closest first), then DateIn
+    2. Rush: sorted by DateIn (oldest first - FIFO)
+    3. Regular: sorted by DateIn (oldest first - FIFO)
+    """
     try:
         base_filter = and_(
             WorkOrder.DateCompleted.is_(None),
@@ -77,119 +86,81 @@ def initialize_queue_positions_for_unassigned():
             return 0
 
         # Separate unassigned orders by priority
-        firm_rush_orders = [wo for wo in unassigned_orders if wo.FirmRush]
-        rush_orders = [
-            wo for wo in unassigned_orders if wo.RushOrder and not wo.FirmRush
-        ]
-        regular_orders = [
-            wo for wo in unassigned_orders if not wo.RushOrder and not wo.FirmRush
-        ]
+        new_firm_rush = [wo for wo in unassigned_orders if wo.FirmRush]
+        new_rush = [wo for wo in unassigned_orders if wo.RushOrder and not wo.FirmRush]
+        new_regular = [wo for wo in unassigned_orders if not wo.RushOrder and not wo.FirmRush]
 
-        # Sort each priority group appropriately
-        # Firm Rush: by DateRequired (closest first), then DateIn (oldest first)
-        firm_rush_orders.sort(
-            key=lambda wo: (
+        # Get ALL existing orders by priority tier (with positions)
+        existing_firm_rush = WorkOrder.query.filter(
+            base_filter,
+            WorkOrder.FirmRush == True,
+            WorkOrder.QueuePosition.isnot(None)
+        ).all()
+
+        existing_rush = WorkOrder.query.filter(
+            base_filter,
+            WorkOrder.RushOrder == True,
+            or_(WorkOrder.FirmRush == False, WorkOrder.FirmRush.is_(None)),
+            WorkOrder.QueuePosition.isnot(None)
+        ).all()
+
+        existing_regular = WorkOrder.query.filter(
+            base_filter,
+            or_(WorkOrder.RushOrder == False, WorkOrder.RushOrder.is_(None)),
+            or_(WorkOrder.FirmRush == False, WorkOrder.FirmRush.is_(None)),
+            WorkOrder.QueuePosition.isnot(None)
+        ).all()
+
+        # Re-sort each tier that has new orders, preserving other tiers
+        # Combine new orders with existing ones in their tier and sort
+
+        if new_firm_rush:
+            # Re-sort entire firm rush tier
+            all_firm_rush = existing_firm_rush + new_firm_rush
+            all_firm_rush.sort(key=lambda wo: (
                 safe_date_sort_key(wo.DateRequired),
                 safe_date_sort_key(wo.DateIn),
-                wo.WorkOrderNo,
-            )
-        )
+                wo.WorkOrderNo
+            ))
+        else:
+            # Keep existing firm rush order
+            all_firm_rush = sorted(existing_firm_rush, key=lambda wo: wo.QueuePosition or 0)
 
-        # Rush: by DateIn (oldest first)
-        rush_orders.sort(key=lambda wo: (safe_date_sort_key(wo.DateIn), wo.WorkOrderNo))
+        if new_rush:
+            # Re-sort entire rush tier
+            all_rush = existing_rush + new_rush
+            all_rush.sort(key=lambda wo: (
+                safe_date_sort_key(wo.DateIn),
+                wo.WorkOrderNo
+            ))
+        else:
+            # Keep existing rush order
+            all_rush = sorted(existing_rush, key=lambda wo: wo.QueuePosition or 0)
 
-        # Regular: by DateIn (oldest first)
-        regular_orders.sort(
-            key=lambda wo: (safe_date_sort_key(wo.DateIn), wo.WorkOrderNo)
-        )
+        if new_regular:
+            # Re-sort entire regular tier
+            all_regular = existing_regular + new_regular
+            all_regular.sort(key=lambda wo: (
+                safe_date_sort_key(wo.DateIn),
+                wo.WorkOrderNo
+            ))
+        else:
+            # Keep existing regular order
+            all_regular = sorted(existing_regular, key=lambda wo: wo.QueuePosition or 0)
 
-        position_counter = 0
+        # Assign positions: firm rush first, then rush, then regular
+        position = 1
+        for wo in all_firm_rush:
+            wo.QueuePosition = position
+            position += 1
 
-        # Handle Firm Rush orders - insert at the very beginning
-        if firm_rush_orders:
-            # Shift all existing orders down by the number of firm rush orders
-            existing_orders = (
-                WorkOrder.query.filter(base_filter, WorkOrder.QueuePosition.isnot(None))
-                .order_by(WorkOrder.QueuePosition)
-                .all()
-            )
+        for wo in all_rush:
+            wo.QueuePosition = position
+            position += 1
 
-            for existing_wo in existing_orders:
-                existing_wo.QueuePosition += len(firm_rush_orders)
-
-            # Assign positions to firm rush orders at the top
-            for i, wo in enumerate(firm_rush_orders):
-                wo.QueuePosition = i + 1
-                position_counter += 1
-
-        # Handle Rush orders - insert after firm rush but before regular
-        if rush_orders:
-            # Find where rush orders should start (after last firm rush, before first regular)
-            # Get all existing firm rush and rush orders to find the insertion point
-            existing_firm_rush = (
-                WorkOrder.query.filter(
-                    base_filter,
-                    WorkOrder.FirmRush == True,
-                    WorkOrder.QueuePosition.isnot(None),
-                )
-                .order_by(WorkOrder.QueuePosition.desc())
-                .first()
-            )
-
-            existing_rush = (
-                WorkOrder.query.filter(
-                    base_filter,
-                    WorkOrder.RushOrder == True,
-                    WorkOrder.FirmRush == False,
-                    WorkOrder.QueuePosition.isnot(None),
-                )
-                .order_by(WorkOrder.QueuePosition.desc())
-                .first()
-            )
-
-            # Determine insertion point
-            if existing_rush:
-                # Insert after the last existing rush order
-                insertion_point = existing_rush.QueuePosition
-            elif existing_firm_rush:
-                # Insert after the last firm rush order
-                insertion_point = existing_firm_rush.QueuePosition
-            else:
-                # No existing firm rush or rush orders, insert at position 0
-                insertion_point = 0
-
-            # Shift all orders after the insertion point down
-            orders_to_shift = (
-                WorkOrder.query.filter(
-                    base_filter,
-                    WorkOrder.QueuePosition > insertion_point,
-                    WorkOrder.QueuePosition.isnot(None),
-                )
-                .order_by(WorkOrder.QueuePosition.desc())
-                .all()
-            )
-
-            for existing_wo in orders_to_shift:
-                existing_wo.QueuePosition += len(rush_orders)
-
-            # Assign positions to rush orders starting after insertion point
-            for i, wo in enumerate(rush_orders):
-                wo.QueuePosition = insertion_point + i + 1
-                position_counter += 1
-
-        # Handle Regular orders - add at the end
-        if regular_orders:
-            # Get the current highest position
-            max_position = (
-                db.session.query(func.max(WorkOrder.QueuePosition))
-                .filter(base_filter)
-                .scalar()
-                or 0
-            )
-
-            for i, wo in enumerate(regular_orders):
-                wo.QueuePosition = max_position + i + 1
-                position_counter += 1
+        for wo in all_regular:
+            wo.QueuePosition = position
+            position += 1
 
         db.session.commit()
         return len(unassigned_orders)
